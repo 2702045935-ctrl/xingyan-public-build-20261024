@@ -77,6 +77,10 @@ def main() -> None:
             raise AssertionError(f"gateway cluster drill missing {needle}")
     if "smoke-gateway" not in (ROOT / "server/tools/gateway-cluster-smoke.js").read_text(encoding="utf-8"):
         raise AssertionError("gateway cluster smoke tool missing")
+    preflight = (ROOT / "server/tools/gateway-cluster-preflight.js").read_text(encoding="utf-8")
+    for needle in ["less-than-two-live-gateway-nodes", "gateway-upstream-not-ready", "canary-percent-required"]:
+        if needle not in preflight:
+            raise AssertionError(f"gateway preflight missing {needle}")
     print("long connection foundation: passed")
 
 
