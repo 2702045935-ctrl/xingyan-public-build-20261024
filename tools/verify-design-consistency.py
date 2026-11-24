@@ -132,9 +132,9 @@ require(
     "the people-flow pages must reuse shared panels, rows, actions and statuses",
 )
 require(
-    "Color(hex: 0x" not in PROFILE
-    and "Color(hex: 0x" not in CONTACTS
-    and "Color(hex: 0x" not in CHATS
+    re.search(r"(?:UI)?Color\(hex:\s*0x[0-9A-Fa-f]{6}", PROFILE) is None
+    and re.search(r"(?:UI)?Color\(hex:\s*0x[0-9A-Fa-f]{6}", CONTACTS) is None
+    and re.search(r"(?:UI)?Color\(hex:\s*0x[0-9A-Fa-f]{6}", CHATS) is None
     and "AppPalette" in CHATS
     and "OrbitTheme.gold" in CONTACTS
     and "OrbitTheme.blue" in CONTACTS
