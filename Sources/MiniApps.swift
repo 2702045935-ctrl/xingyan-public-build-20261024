@@ -124,10 +124,12 @@ struct MiniAppShare: Decodable {
 
 struct MiniAppCardBubble: View {
     let info: MiniAppShare
+    var mine: Bool = false
+    var showTail: Bool = false
     var onOpen: () -> Void
 
     var body: some View {
-        WeChatMessageCard {
+        WeChatMessageCard(mine: mine, showTail: showTail) {
             HStack(spacing: 10) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)

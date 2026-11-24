@@ -88,13 +88,13 @@ struct UserCardBubble: View {
                     }
                     Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 13)
-                .padding(.vertical, 12)
+                .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+                .padding(.vertical, WhatsAppChatLayout.bubblePadV)
 
                 Rectangle()
                     .fill(C.hairline)
                     .frame(height: 0.5)
-                    .padding(.horizontal, 13)
+                    .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
 
                 HStack(spacing: 5) {
                     Image(systemName: "person.text.rectangle")
@@ -106,7 +106,7 @@ struct UserCardBubble: View {
                         .font(.system(size: 9, weight: .semibold))
                 }
                 .foregroundColor(C.subLabel)
-                .padding(.horizontal, 13)
+                .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
                 .frame(height: 31)
             }
         }
@@ -136,7 +136,7 @@ struct AnnounceBubble: View {
                     .font(pf(12.5, .medium))
                     .foregroundColor(C.label)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
             .frame(height: 36)
 
             Text(text)
@@ -145,8 +145,8 @@ struct AnnounceBubble: View {
                 .lineSpacing(3)
                 .lineLimit(5)
                 .multilineTextAlignment(.leading)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 10)
+                .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+                .padding(.bottom, WhatsAppChatLayout.bubblePadV)
 
             HairLine(inset: 0)
 
@@ -158,7 +158,7 @@ struct AnnounceBubble: View {
                     .font(.system(size: 9, weight: .semibold))
             }
             .foregroundColor(C.green)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
             .frame(height: 32)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -933,8 +933,8 @@ struct SendingFileBubble: View {
             .frame(height: 3)
             .animation(.linear(duration: 0.16), value: value)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 11)
+        .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+        .padding(.vertical, WhatsAppChatLayout.bubblePadV)
         .frame(width: 218)
         .background(BubbleFill(mine: true, tail: true))
         .clipShape(BubbleShape(mine: true, tail: true))

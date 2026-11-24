@@ -46,9 +46,17 @@ require(
     "olderPrefetch.count < target" in CHAT
     and "newerPrefetch.count < target" in CHAT
     and "limit: historyPageSize" in CHAT
+    and "let requestLimit = min(" in CHAT
+    and "limit: requestLimit" in CHAT
     and "Array(rows.suffix(count))" in CHAT
     and "Array(rows.prefix(count))" in CHAT,
-    "prefetch must fill bounded caches and consume exactly one page at a time",
+    "prefetch must fill a 360-row cache in one bounded request while consuming one page",
+)
+require(
+    "initialCacheReady = true\n            // Start the hidden history runway" in CHAT
+    and "rebuildIndex()\n            scheduleOlderPrefetch()" in CHAT
+    and "scroll.bounds.height * 12.0" in CHAT,
+    "cached chats must arm the runway before the latest-page network refresh",
 )
 require(
     "private func invalidateOlderPrefetch()" in CHAT

@@ -4312,7 +4312,10 @@ struct ChatDetailView: View {
               !loadingOlder,
               let scroll = ChatScrollHandle.shared.scroll else { return }
         let y = offsetY ?? scroll.contentOffset.y
-        let runway = max(5_200, min(9_600, scroll.bounds.height * 6.0))
+        // Refill the hidden runway while the user is still roughly one
+        // viewport-group away from the visible edge. Waiting until 5.2k points
+        // left only a few dozen rows, so a slow round trip became visible.
+        let runway = max(12_000, min(24_000, scroll.bounds.height * 12.0))
         guard y < runway else { return }
         if requireActiveMotion,
            !ChatScrollHandle.shared.movingTowardOlder {
@@ -4330,7 +4333,7 @@ struct ChatDetailView: View {
               !loadingOlder,
               !olderPrefetch.isEmpty,
               let scroll = ChatScrollHandle.shared.scroll else { return }
-        let runway = max(5_200, min(9_600, scroll.bounds.height * 6.0))
+        let runway = max(12_000, min(24_000, scroll.bounds.height * 12.0))
         guard scroll.contentOffset.y < runway else { return }
         historyRuntime.pendingOlderHandoff = false
         ChatScrollDiag.shared.note("手势结束前预取页无感交接")
@@ -4502,10 +4505,14 @@ struct ChatDetailView: View {
                       more,
                       emptyPages < 3,
                       !Task.isCancelled {
+                    let requestLimit = min(
+                        historyRunwayTarget,
+                        max(historyPageSize, needed - collected.count)
+                    )
                     let page = try await API.shared.messagesSince(
                         chatId: chat.id,
                         since: cursor,
-                        limit: historyPageSize
+                        limit: requestLimit
                     )
                     guard !Task.isCancelled, newerPrefetchToken == token else { return }
                     more = page.hasMore
@@ -8013,6 +8020,11 @@ struct ChatDetailView: View {
         if initial {
             // 缓存用于立即放开聊天页；网络首屏继续在后台补齐最新消息。
             initialCacheReady = true
+            // Start the hidden history runway as soon as the local cache has
+            // an edge. Waiting for the latest-message refresh made the first
+            // upward gesture a foreground network request on slow connections.
+            rebuildIndex()
+            scheduleOlderPrefetch()
         }
         do {
 
@@ -8343,9 +8355,13 @@ struct ChatDetailView: View {
                       more,
                       emptyPages < 3,
                       !Task.isCancelled {
+                    let requestLimit = min(
+                        historyRunwayTarget,
+                        max(historyPageSize, needed - collected.count)
+                    )
                     let page = try await API.shared.messages(
                         chatId: chat.id,
-                        limit: historyPageSize,
+                        limit: requestLimit,
                         before: cursor,
                         all: true
                     )
@@ -9340,7 +9356,7 @@ struct MessageRow: View {
 
         case "link":
             if let link = ShopLink(json: message.body) {
-                ShopLinkCard(link: link) {
+                ShopLinkCard(link: link, mine: mine, showTail: showTail) {
                     ShopOpener.open(link) { url in onOpenWeb?(url) }
                 }
             } else {
@@ -9348,8 +9364,8 @@ struct MessageRow: View {
                 Text(linkFallbackText(message.body))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+                    .padding(.vertical, WhatsAppChatLayout.bubblePadV)
                 .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
 
@@ -9382,15 +9398,15 @@ struct MessageRow: View {
                      : Tr("[名片]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+                    .padding(.vertical, WhatsAppChatLayout.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
 
         case "music":
 
             if let m = MusicCardInfo(json: message.body) {
-                MusicBubble(info: m) {
+                MusicBubble(info: m, mine: mine, showTail: showTail) {
                     let t = m.asTrack
                     MusicPlayer.shared.play(t)
                     MusicSheet.shared.open(t)
@@ -9399,23 +9415,23 @@ struct MessageRow: View {
                 Text(Tr("[音乐]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+                    .padding(.vertical, WhatsAppChatLayout.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
 
         case "mall":
 
             if let m = MallCardInfo(json: message.body) {
-                MallCardBubble(info: m) {
+                MallCardBubble(info: m, mine: mine, showTail: showTail) {
                     MallSheet.shared.open(m.asProduct)
                 }
             } else {
                 Text(Tr("[商品]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+                    .padding(.vertical, WhatsAppChatLayout.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
 
@@ -9437,13 +9453,17 @@ struct MessageRow: View {
         case "miniapp":
 
             if let m = MiniAppShare(json: message.body) {
-                MiniAppCardBubble(info: m) { onOpenMiniApp?(m.asApp) }
+                MiniAppCardBubble(
+                    info: m,
+                    mine: mine,
+                    showTail: showTail
+                ) { onOpenMiniApp?(m.asApp) }
             } else {
                 Text(Tr("[小游戏]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+                    .padding(.vertical, WhatsAppChatLayout.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
 
@@ -9461,8 +9481,8 @@ struct MessageRow: View {
                 Text(Tr("[通知]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+                    .padding(.vertical, WhatsAppChatLayout.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
 
@@ -9481,7 +9501,7 @@ struct MessageRow: View {
                 Text(unknownCardText(message.body))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
+                    .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
                 } else if let q = message.quote {
@@ -9731,8 +9751,8 @@ struct MessageRow: View {
                     .font(pf(12)).foregroundColor(bubbleSecondaryInk).lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
+            .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+            .padding(.vertical, WhatsAppChatLayout.bubblePadV)
         }
         .frame(width: 216)
         .background(BubbleFill(mine: mine, tail: showTail))
@@ -9777,9 +9797,9 @@ struct MessageRow: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 11)
-            .padding(.top, 11)
-            .padding(.bottom, 10)
+            .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+            .padding(.top, WhatsAppChatLayout.bubblePadV)
+            .padding(.bottom, WhatsAppChatLayout.bubblePadV)
 
             Rectangle()
                 .fill(Color.white.opacity(0.22))
@@ -9798,7 +9818,7 @@ struct MessageRow: View {
                     .foregroundColor(.white)
                     .lineLimit(1)
             }
-            .padding(.horizontal, 11)
+            .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
             .frame(height: 28)
         }
 
@@ -10189,8 +10209,8 @@ struct MessageRow: View {
                     Text("¥\(String(format: "%.0f", price))").font(pfMoney(12)).foregroundColor(C.red)
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
+        .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+        .padding(.vertical, WhatsAppChatLayout.bubblePadV)
         .background(
             BubbleFill(mine: mine, tail: showTail)
         )
@@ -10225,7 +10245,7 @@ struct MessageRow: View {
                                  ? bubbleSecondaryInk.opacity(0.78)
                                  : ChatTheme.secondary.opacity(0.7))
         }
-        .padding(.horizontal, 13)
+        .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
         .frame(width: min(224, maxBubbleWidth), height: 72, alignment: .leading)
         .background(BubbleFill(mine: mine, tail: showTail))
         .clipShape(BubbleShape(mine: mine, tail: showTail))
@@ -10249,8 +10269,8 @@ struct MessageRow: View {
                 }
             }
         }
-        .padding(.horizontal, L.bubblePadHPill)
-        .padding(.vertical, L.bubblePadV)
+        .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+        .padding(.vertical, WhatsAppChatLayout.bubblePadV)
         .background(
             BubbleFill(mine: mine, tail: showTail)
         )

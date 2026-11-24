@@ -1098,12 +1098,14 @@ struct MusicPlayButton: View {
 
 struct MusicBubble: View {
     let info: MusicCardInfo
+    var mine: Bool = false
+    var showTail: Bool = false
 
     var onOpen: () -> Void
     @ObservedObject private var player = MusicPlayer.shared
 
     var body: some View {
-        WeChatMessageCard {
+        WeChatMessageCard(mine: mine, showTail: showTail) {
             HStack(spacing: 10) {
                 ZStack(alignment: .bottomTrailing) {
                     MusicCover(path: info.cover, size: 56, radius: 12)

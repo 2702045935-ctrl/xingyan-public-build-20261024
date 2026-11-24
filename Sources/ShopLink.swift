@@ -116,6 +116,8 @@ struct WebURL: Identifiable {
 
 struct ShopLinkCard: View {
     let link: ShopLink
+    var mine: Bool = false
+    var showTail: Bool = false
     var onTap: () -> Void
     private let linkAccent = Color.dyn(0x0056D6, 0x8FD3FF)
 
@@ -127,7 +129,7 @@ struct ShopLinkCard: View {
     }
 
     private var richBody: some View {
-        WeChatMessageCard {
+        WeChatMessageCard(mine: mine, showTail: showTail) {
             HStack(alignment: .top, spacing: 12) {
                 RemoteImage(path: link.image, mode: .fill, maxSide: 360)
                     .frame(width: 82, height: 82)
@@ -193,7 +195,7 @@ struct ShopLinkCard: View {
     }
 
     private var simpleBody: some View {
-        WeChatMessageCard {
+        WeChatMessageCard(mine: mine, showTail: showTail) {
             HStack(spacing: 12) {
 
                 if !link.image.isEmpty {

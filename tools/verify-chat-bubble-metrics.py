@@ -11,6 +11,15 @@ MEDIA = (ROOT / "Sources" / "ChatMediaBubbles.swift").read_text(encoding="utf-8"
 MEDIA_ROW = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(
     encoding="utf-8"
 )
+MUSIC_SOURCE = (ROOT / "Sources" / "MusicShare.swift").read_text(
+    encoding="utf-8"
+)
+MALL_SOURCE = (ROOT / "Sources" / "MallShareCard.swift").read_text(
+    encoding="utf-8"
+)
+MINI_SOURCE = (ROOT / "Sources" / "MiniApps.swift").read_text(
+    encoding="utf-8"
+)
 TEXT_ROW = (ROOT / "Sources" / "NativeChatTextRowCell.swift").read_text(
     encoding="utf-8"
 )
@@ -127,6 +136,27 @@ require(
     and "private var shortConversationSurface" not in CHAT
     and "private var legacyNativeMessageList" not in CHAT,
     "every message surface must use the same native edge rail",
+)
+require(
+    "bubblePadHPill" not in CHAT
+    and "padding(.horizontal, WhatsAppChatLayout.bubblePadH)" in CHAT
+    and "padding(.vertical, WhatsAppChatLayout.bubblePadV)" in CHAT
+    and "padding(.horizontal, WhatsAppChatLayout.bubblePadH)" in MEDIA
+    and "padding(.vertical, WhatsAppChatLayout.bubblePadV)" in MEDIA,
+    "plain text and generic message cards must share one inner padding",
+)
+require(
+    "ShopLinkCard(link: link, mine: mine, showTail: showTail)" in CHAT
+    and "MusicBubble(info: m, mine: mine, showTail: showTail)" in CHAT
+    and "MallCardBubble(info: m, mine: mine, showTail: showTail)" in CHAT
+    and "info: m,\n                    mine: mine,\n                    showTail: showTail" in CHAT
+    and "WeChatMessageCard(mine: mine, showTail: showTail)" in (
+        ROOT / "Sources" / "ShopLink.swift"
+    ).read_text(encoding="utf-8")
+    and "WeChatMessageCard(mine: mine, showTail: showTail)" in MUSIC_SOURCE
+    and "WeChatMessageCard(mine: mine, showTail: showTail)" in MALL_SOURCE
+    and "WeChatMessageCard(mine: mine, showTail: showTail)" in MINI_SOURCE,
+    "generic link, music, shop and mini-app cards must share the message bubble shell",
 )
 require(
     "private let extraImageViews" in MEDIA_ROW
