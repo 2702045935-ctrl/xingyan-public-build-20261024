@@ -1753,6 +1753,7 @@ struct ChatDetailView: View {
         MessageStressFixture.isActive ? stressMessageWindow : historyWindowLimit
     }
     private let historyPageSize = 120
+    private let historyScrollChunkSize = 48
     private let historyPrefetchPages = 3
     private let historyWindowPages = 10
     private var historyRunwayTarget: Int {
@@ -4591,7 +4592,10 @@ struct ChatDetailView: View {
         newerPrefetchToken = UUID()
         let rows = newerPrefetch
         guard !rows.isEmpty else { return [] }
-        let count = min(historyPageSize, rows.count)
+        let consumeLimit = ChatScrollHandle.shared.moving
+            ? historyScrollChunkSize
+            : historyPageSize
+        let count = min(consumeLimit, rows.count)
         newerPrefetch = Array(rows.dropFirst(count))
         return Array(rows.prefix(count))
     }
@@ -8450,7 +8454,10 @@ struct ChatDetailView: View {
         olderPrefetchToken = UUID()
         let rows = olderPrefetch
         guard !rows.isEmpty else { return [] }
-        let count = min(historyPageSize, rows.count)
+        let consumeLimit = ChatScrollHandle.shared.moving
+            ? historyScrollChunkSize
+            : historyPageSize
+        let count = min(consumeLimit, rows.count)
         olderPrefetch = Array(rows.dropLast(count))
         return Array(rows.suffix(count))
     }

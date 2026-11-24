@@ -34,6 +34,12 @@ require(
     "older and newer traversal must rotate opposite edges of the active window",
 )
 require(
+    "private let historyScrollChunkSize = 48" in CHAT
+    and "let consumeLimit = ChatScrollHandle.shared.moving" in CHAT
+    and CHAT.count("historyScrollChunkSize") >= 3,
+    "moving prefetch consumption must be split into 48-row native updates",
+)
+require(
     "if olderPrefetch.isEmpty, let pending = olderPrefetchTask" in CHAT
     and "await pending.value" in CHAT
     and "private func scheduleOlderPrefetch(" in CHAT
