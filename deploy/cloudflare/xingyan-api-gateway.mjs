@@ -16,6 +16,14 @@ const mailTarget = {
   port: Number(process.env.MAIL_PORT || 443),
   hostHeader: process.env.MAIL_HOST_HEADER || 'mail.xingyanmail.site',
 };
+const agents = {
+  'http:': new http.Agent({ keepAlive: true, maxSockets: 64 }),
+  'https:': new https.Agent({
+    keepAlive: true,
+    maxSockets: 64,
+    rejectUnauthorized: false,
+  }),
+};
 
 function route(rawUrl) {
   const path = rawUrl || '/';
@@ -44,6 +52,7 @@ function upstreamOptions(req, selected) {
     method: req.method,
     path: selected.path,
     headers,
+    agent: agents[`${selected.target.protocol}:`],
     rejectUnauthorized: false,
     timeout: 120000,
   };

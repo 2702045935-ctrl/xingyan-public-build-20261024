@@ -26,12 +26,12 @@ require(
     "the app upload boundary must use only the 11/21 raw upload endpoints",
 )
 require(
-    "req.httpBody = data\n        let (d, resp) = try await session.data(for: req)"
+    "req.httpBody = data\n        let (d, resp) = try await uploadSession.data(for: req)"
     in API
-    and "session.upload(\n            for: req,\n            fromFile: file,\n            delegate: delegate"
+    and "uploadSession.upload(\n            for: req,\n            fromFile: file,\n            delegate: delegate"
     in API
     and "req.timeoutInterval = 600" in API,
-    "binary and file uploads must use the original URLSession transfer mode",
+    "binary and file uploads must use the dedicated high-throughput URLSession",
 )
 require(
     "private func uploadRawJPEG(" in API
@@ -78,11 +78,15 @@ require(
 require(
     "let progress = ImageUploadProgress(count: list.count)" in CHAT
     and "let state = progress.update(index: i, value: p)" in CHAT
-    and "while nextIdx < min(3, list.count)" in CHAT,
-    "multi-image sends must restore the original three-lane upload flow",
+    and "while nextIdx < min(6, list.count)" in CHAT,
+    "multi-image sends must use six lanes to fill the upload connection pool",
 )
 require(
-    "URLSessionConfiguration.default" in CLIENT
+    "private let uploadSession: URLSession" in API
+    and "let uploadConfig = URLSessionConfiguration.default" in API
+    and "uploadConfig.httpMaximumConnectionsPerHost = 6" in API
+    and "req.networkServiceType = .responsiveData" in API
+    and "URLSessionConfiguration.default" in CLIENT
     and "httpMaximumConnectionsPerHost = 6" in CLIENT
     and "requestCachePolicy = .reloadIgnoringLocalCacheData" in CLIENT
     and "A background session can" in CLIENT
@@ -90,7 +94,7 @@ require(
     and "handleEventsForBackgroundURLSession" in (
         ROOT / "Sources" / "PushCenter.swift"
     ).read_text(encoding="utf-8"),
-    "active chunk uploads must start immediately on a foreground URLSession",
+    "active uploads must start immediately on a high-throughput foreground URLSession",
 )
 require(
     "process.env.ENABLE_TRANSFER_KERNEL === '1'" in SERVER
@@ -141,6 +145,12 @@ require(
     and "kind: 'video-transcode'" in SERVER
     and "async function update(ownerId, id, patch)" in KERNEL,
     "video processing must run asynchronously after media is sendable",
+)
+require(
+    "let uploadDirUsageCache = { at: 0, bytes: 0 }" in SERVER
+    and "now - uploadDirUsageCache.at < 5000" in SERVER
+    and "uploadDirUsageCache = { at: now, bytes: total }" in SERVER,
+    "upload capacity checks must reuse a short-lived directory-size cache",
 )
 require(
     "TransferUploader" not in API

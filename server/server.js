@@ -26935,6 +26935,7 @@ const UPLOAD_MAX_COUNT = 60;
 const UPLOAD_MAX_BYTES = 200 * 1024 * 1024;
 const UPLOAD_DIR_MAX = 8 * 1024 * 1024 * 1024;
 const uploadHits = new Map();       // userId -> { t, n, bytes }
+let uploadDirUsageCache = { at: 0, bytes: 0 };
 
 function uploadRateAllow(userId) {
   const now = Date.now();
@@ -26945,17 +26946,27 @@ function uploadRateAllow(userId) {
 }
 function noteUpload(userId, bytes) {
   const r = uploadHits.get(userId);
-  if (!r) return;
-  r.n += 1;
-  r.bytes += bytes;
+  if (r) {
+    r.n += 1;
+    r.bytes += bytes;
+  }
+  uploadDirUsageCache = {
+    at: Date.now(),
+    bytes: Math.max(0, uploadDirUsageCache.bytes) + Math.max(0, Number(bytes) || 0)
+  };
 }
 function uploadDirFull() {
+  const now = Date.now();
+  if (now - uploadDirUsageCache.at < 5000) {
+    return uploadDirUsageCache.bytes > UPLOAD_DIR_MAX;
+  }
   try {
     const files = fs.readdirSync(UPLOAD_DIR);
     let total = 0;
     for (const f of files) {
       try { total += fs.statSync(path.join(UPLOAD_DIR, f)).size; } catch (err) { }
     }
+    uploadDirUsageCache = { at: now, bytes: total };
     return total > UPLOAD_DIR_MAX;
   } catch (err) { return false; }
 }

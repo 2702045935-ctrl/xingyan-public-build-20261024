@@ -2610,6 +2610,40 @@ struct ChatDetailView: View {
         )
     }
 
+    private func refreshPreviewLuminance(_ image: UIImage) async {
+        let samples = await Task.detached(priority: .utility) {
+            () -> (full: [Double], top: [Double], bottom: [Double])? in
+            guard let cgImage = image.cgImage else { return nil }
+            guard let full = Self.averageImageSample(
+                cgImage,
+                normalizedRect: CGRect(x: 0, y: 0, width: 1, height: 1)
+            ),
+            let top = Self.averageImageSample(
+                cgImage,
+                normalizedRect: CGRect(x: 0, y: 0.66, width: 1, height: 0.34)
+            ),
+            let bottom = Self.averageImageSample(
+                cgImage,
+                normalizedRect: CGRect(x: 0, y: 0, width: 1, height: 0.34)
+            ) else { return nil }
+            return (full, top, bottom)
+        }.value
+        guard !Task.isCancelled, let samples else { return }
+        backgroundLuminance = samples.full[0]
+        backgroundTopLuminance = samples.top[0]
+        backgroundBottomLuminance = samples.bottom[0]
+        wallpaperTopTint = Color(
+            red: samples.top[1],
+            green: samples.top[2],
+            blue: samples.top[3]
+        )
+        wallpaperBottomTint = Color(
+            red: samples.bottom[1],
+            green: samples.bottom[2],
+            blue: samples.bottom[3]
+        )
+    }
+
     private static func averageImageSample(_ image: CGImage,
                                            normalizedRect: CGRect) -> [Double]? {
         let source = CIImage(cgImage: image)
@@ -7210,7 +7244,7 @@ struct ChatDetailView: View {
                                 }
                             }
                         }
-                        while nextIdx < min(3, list.count) { addUpload(nextIdx); nextIdx += 1 }
+                        while nextIdx < min(6, list.count) { addUpload(nextIdx); nextIdx += 1 }
                         for await r in group {
                             if let e = r.5 {
                                 if upError == nil { upError = e }
