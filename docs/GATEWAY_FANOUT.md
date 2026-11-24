@@ -15,6 +15,10 @@ Gateway 侧 `/__gateway/publish` 目前是内部接口，必须带
 群消息路径只做路由计划和 `dryRun` 投递，不改变现有真实投递结果，用于验证节点选择、
 批次大小、回执和故障指标。确认无重复、无丢失后再切换 live 模式。
 
+设置 `GATEWAY_FANOUT_MODE=live` 后，热点群消息会先进入
+`fanout-outbox.jsonl`，由 dispatcher 批量发给 Gateway；本地已由 Gateway 承载的
+虚拟连接会跳过旧 `sendTo`，避免双发。没有可用 Gateway 时自动回退本地链路。
+
 接入主消息路径前还需要补：
 
 1. durable outbox 和批次 ack；

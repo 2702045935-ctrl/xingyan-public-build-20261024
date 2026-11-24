@@ -247,6 +247,7 @@ server.on('upgrade', (req, socket) => {
     send('closed', connectionId, {});
   });
   send('open', connectionId, {
+    nodeId: NODE_ID,
     url: req.url,
     ip,
     headers: {

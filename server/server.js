@@ -59,6 +59,8 @@ const {
 } = require('./lib/gateway-multiplex');
 const { GatewayFanoutBus } = require('./lib/gateway-fanout');
 const { HotGroupRouter } = require('./lib/hot-group-router');
+const { FanoutOutbox } = require('./lib/fanout-outbox');
+const { FanoutDispatcher } = require('./lib/fanout-dispatcher');
 const {
   normalizeBillTimeZone,
   billMonthKey,
@@ -8579,12 +8581,13 @@ function buildOfSocket(socket) {
   const m = raw.match(/B(\d+)/);
   return m ? Number(m[1]) : 0;
 }
-function sendToLocal(userId, payload, textCache, textCacheKey) {
+function sendToLocal(userId, payload, textCache, textCacheKey, options) {
   const set = connections.get(userId);
   if (!set) return 0;
   let sent = 0;
   const cache = new Map();
   set.forEach((socket) => {
+    if (options && options.skipGateway && socket.__clusterGatewayId) return;
     const build = buildOfSocket(socket);
     const key = String(build);
     const compositeKey = textCache ? `${textCacheKey}\u0000${key}` : '';
@@ -9013,13 +9016,13 @@ function relayToShardPeers(userId, payload) {
   relayToShardPorts(userId, payload, shardPorts());
 }
 
-function broadcastCompactChatMessage(chat, payload) {
+function broadcastCompactChatMessage(chat, payload, options) {
   const textCache = new Map();
   let sent = 0;
   chat.memberIds.forEach((id) => {
     if (!connections.has(id)) return;
     sent += sendToLocal(
-      id, payload, textCache, 'large-group-message'
+      id, payload, textCache, 'large-group-message', options
     );
   });
   const body = JSON.stringify({ chatId: chat.id, payload });
@@ -9049,7 +9052,8 @@ function sendTo(userId, payload, fanoutContext) {
     userId,
     payload,
     fanoutContext && fanoutContext.textCache,
-    fanoutContext && fanoutContext.textCacheKey
+    fanoutContext && fanoutContext.textCacheKey,
+    fanoutContext
   );
   /* 只把消息转发给「确实有这条用户连接」的分片。以前每个人都会向所有
      分片各发一次请求，万人群广播时会平白产生几万次本地 HTTP 请求。 */
@@ -9209,24 +9213,41 @@ function sendToChat(chat, payload, exceptUserId) {
   return sent;
 }
 
-function scheduleShadowGatewayFanout(chat, recipients, payload, publishId) {
-  if (gatewayFanoutMode !== 'shadow' || chat.type !== 'group') return;
-  if (recipients.length < hotGroupRouter.threshold) return;
+function scheduleGatewayFanout(chat, recipients, payload, publishId) {
+  if ((gatewayFanoutMode !== 'shadow' && gatewayFanoutMode !== 'live')
+      || chat.type !== 'group') return false;
+  if (recipients.length < hotGroupRouter.threshold) return false;
   const live = gatewayDirectory.liveNodes().filter((node) => node.endpoint);
-  if (!live.length) return;
+  if (!live.length) return false;
   const plan = hotGroupRouter.plan({
     chatId: chat.id,
     memberIds: recipients,
     nodeIds: live.map((node) => node.id)
   });
-  if (plan.mode === 'local') return;
+  if (plan.mode === 'local') return false;
   const byId = new Map(live.map((node) => [node.id, node]));
   const nodes = plan.batches.map((batch) => ({
     id: batch.nodeId,
     endpoint: byId.get(batch.nodeId) && byId.get(batch.nodeId).endpoint,
     userIds: batch.userIds
   })).filter((node) => node.endpoint);
+  if (!nodes.length) return false;
   gatewayFanoutMetrics.plans += 1;
+  if (gatewayFanoutMode === 'live' && fanoutDispatcher) {
+    try {
+      fanoutDispatcher.enqueue({
+        publishId,
+        chatId: chat.id,
+        payload,
+        nodes
+      });
+      return true;
+    } catch (error) {
+      gatewayFanoutMetrics.failures += 1;
+      gatewayFanoutMetrics.lastError = String(error && error.message || error);
+      return false;
+    }
+  }
   gatewayFanoutBus.publish({
     publishId,
     nodes,
@@ -9244,6 +9265,7 @@ function scheduleShadowGatewayFanout(chat, recipients, payload, publishId) {
     gatewayFanoutMetrics.failures += 1;
     gatewayFanoutMetrics.lastError = String(error && error.message || error);
   });
+  return true;
 }
 
 function fanoutChatMessage(chat, message, sender, clientId) {
@@ -9260,8 +9282,10 @@ function fanoutChatMessage(chat, message, sender, clientId) {
       || '';
     const out = Object.assign({}, message, { senderName });
     const payload = { type: 'message', message: out };
-    scheduleShadowGatewayFanout(chat, recipients, payload, message.id);
-    return broadcastCompactChatMessage(chat, payload);
+    const clusterFanout = scheduleGatewayFanout(chat, recipients, payload, message.id);
+    return broadcastCompactChatMessage(chat, payload, {
+      skipGateway: clusterFanout
+    });
   }
   const messageRows = loadMessages(chat.id);
   const summaryContext = {
@@ -9269,9 +9293,10 @@ function fanoutChatMessage(chat, message, sender, clientId) {
     memberPreviewIds,
     messageRows
   };
+  let clusterFanout = false;
   if (chat.type === 'group') {
     summaryContext.mentionIndex = mentionIndexForChat(chat.id, messageRows);
-    scheduleShadowGatewayFanout(chat, recipients,
+    clusterFanout = scheduleGatewayFanout(chat, recipients,
       { type: 'message', message }, message.id);
   }
   /* 多人同时在线时，把「哪些消息算未读、谁被 @」只建一次索引。
@@ -9323,7 +9348,8 @@ function fanoutChatMessage(chat, message, sender, clientId) {
     }, {
       textCache,
       textCacheKey: textCache ? textCacheKey : '',
-      relayBatch
+      relayBatch,
+      skipGateway: clusterFanout
     });
   }
   flushFanoutRelays(relayBatch);
@@ -26941,6 +26967,19 @@ const gatewayFanoutBus = new GatewayFanoutBus({
   retries: Number(process.env.GATEWAY_FANOUT_RETRIES) || 1,
   timeoutMs: Number(process.env.GATEWAY_FANOUT_TIMEOUT_MS) || 2500
 });
+const fanoutOutbox = (gatewayFanoutMode === 'shadow' || gatewayFanoutMode === 'live')
+  ? new FanoutOutbox({
+    file: path.join(DATA_DIR, 'fanout-outbox.jsonl'),
+    maxEntries: Number(process.env.FANOUT_OUTBOX_MAX) || 100000
+  })
+  : null;
+const fanoutDispatcher = fanoutOutbox
+  ? new FanoutDispatcher({
+    outbox: fanoutOutbox,
+    bus: gatewayFanoutBus,
+    maxBackoffMs: Number(process.env.FANOUT_MAX_BACKOFF_MS) || 60000
+  })
+  : null;
 const hotGroupRouter = new HotGroupRouter({
   threshold: Number(process.env.HOT_GROUP_THRESHOLD) || 512,
   maxBatch: Number(process.env.HOT_GROUP_BATCH) || 512,
@@ -26954,6 +26993,22 @@ const gatewayFanoutMetrics = {
   failures: 0,
   lastError: ''
 };
+let fanoutFlushTimer = null;
+if (fanoutDispatcher) {
+  fanoutFlushTimer = setInterval(() => {
+    fanoutDispatcher.flush({
+      limit: Number(process.env.FANOUT_DISPATCH_BATCH) || 50,
+      dryRun: gatewayFanoutMode === 'shadow'
+    }).then((result) => {
+      gatewayFanoutMetrics.published += Number(result.acked) || 0;
+      gatewayFanoutMetrics.failures += Number(result.failed) || 0;
+    }).catch((error) => {
+      gatewayFanoutMetrics.failures += 1;
+      gatewayFanoutMetrics.lastError = String(error && error.message || error);
+    });
+  }, Math.max(250, Number(process.env.FANOUT_FLUSH_MS) || 500));
+  if (fanoutFlushTimer.unref) fanoutFlushTimer.unref();
+}
 gatewayDirectory.register({
   id: gatewayNodeId,
   endpoint: String(process.env.GATEWAY_ENDPOINT || ''),
@@ -27209,6 +27264,7 @@ function handleGatewayUpstream(req, socket) {
             ws.sendText(socket, gatewayEnvelope('closed', message.connectionId, {}));
           }
         });
+        virtual.__clusterGatewayId = String(message.nodeId || '');
         sessions.add(message.connectionId);
         gatewayUpstreamSessions.set(message.connectionId, { virtual, user });
         handleSocket(user, virtual);
