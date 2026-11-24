@@ -250,6 +250,8 @@ jobs:
           node server/test/gateway-directory-etcd.test.js
           node server/test/gateway-multiplex.test.js
           node server/test/gateway-fanout.test.js
+          node server/test/fanout-outbox.test.js
+          node server/test/fanout-dispatcher.test.js
           node server/test/hot-group-router.test.js
           node server/test/payment-database-concurrency.test.js
           node server/test/payment-provider-server.test.js

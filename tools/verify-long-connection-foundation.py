@@ -57,6 +57,14 @@ def main() -> None:
     for needle in ["publishId", "retries", "timeoutMs", "delivered"]:
         if needle not in fanout:
             raise AssertionError(f"gateway fanout missing {needle}")
+    outbox = (ROOT / "server/lib/fanout-outbox.js").read_text(encoding="utf-8")
+    for needle in ["enqueue", "attempt", "ack", "fail", "replay", "fsyncSync"]:
+        if needle not in outbox:
+            raise AssertionError(f"fanout outbox missing {needle}")
+    dispatcher = (ROOT / "server/lib/fanout-dispatcher.js").read_text(encoding="utf-8")
+    for needle in ["enqueue", "flush", "backoff", "dryRun"]:
+        if needle not in dispatcher:
+            raise AssertionError(f"fanout dispatcher missing {needle}")
     print("long connection foundation: passed")
 
 
