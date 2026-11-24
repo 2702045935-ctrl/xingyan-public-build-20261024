@@ -248,6 +248,9 @@ struct ProfileEditViewOld: View {
         busy = true
         let localPath = stageLocalImagePreview(image, prefix: "local-avatar")
         app.applyMyProfileFields(["avatar": localPath])
+        // The visible profile is already updated. Do not keep the whole edit
+        // surface in a busy state while upload and server acknowledgement run.
+        busy = false
         Task {
             if let url = try? await API.shared.upload(image: image) {
                 await cacheUploadedImage(image, path: url)
@@ -255,7 +258,6 @@ struct ProfileEditViewOld: View {
                     try await API.shared.updateMeChecked(["avatar": url])
                     app.applyMyProfileFields(["avatar": url])
                 } catch {
-                    busy = false
                     app.show(Tr("已在本机换好，联网后自动同步"))
                     return
                 }
@@ -263,7 +265,6 @@ struct ProfileEditViewOld: View {
             } else {
                 app.show(Tr("已在本机换好，联网后自动同步"))
             }
-            busy = false
         }
     }
 

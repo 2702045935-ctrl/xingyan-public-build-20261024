@@ -154,6 +154,7 @@ jobs:
           python3 tools/verify-contacts-derived-cache.py
           python3 tools/verify-contacts-5000.py
           python3 tools/verify-cover-immediate.py
+          python3 tools/verify-profile-fast-preview.py
           python3 tools/verify-push-multidevice.py
           python3 tools/verify-group-avatar-three.py
           python3 tools/verify-plus-panel-native.py

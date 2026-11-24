@@ -2089,6 +2089,7 @@ final class AppState: ObservableObject {
         guard var me = me else { return }
         func text(_ key: String) -> String? { fields[key] as? String }
         let now = Date()
+        var changed = false
         for key in ["nickname", "bio", "region", "gender", "birthday",
                     "patText", "phone", "username", "avatar", "momentCover",
                     "chatBackground"] {
@@ -2096,17 +2097,51 @@ final class AppState: ObservableObject {
                 localProfileOverrides[key] = (value, now)
             }
         }
-        if let value = text("nickname") { me.nickname = value }
-        if let value = text("bio") { me.bio = value }
-        if let value = text("region") { me.region = value }
-        if let value = text("gender") { me.gender = value }
-        if let value = text("birthday") { me.birthday = value }
-        if let value = text("patText") { me.patText = value }
-        if let value = text("phone") { me.phone = value }
-        if let value = text("username") { me.username = value }
-        if let value = text("avatar") { me.avatar = value }
-        if let value = text("momentCover") { me.momentCover = value }
-        if let value = text("chatBackground") { me.chatBackground = value }
+        if let value = text("nickname"), me.nickname != value {
+            me.nickname = value
+            changed = true
+        }
+        if let value = text("bio"), me.bio != value {
+            me.bio = value
+            changed = true
+        }
+        if let value = text("region"), me.region != value {
+            me.region = value
+            changed = true
+        }
+        if let value = text("gender"), me.gender != value {
+            me.gender = value
+            changed = true
+        }
+        if let value = text("birthday"), me.birthday != value {
+            me.birthday = value
+            changed = true
+        }
+        if let value = text("patText"), me.patText != value {
+            me.patText = value
+            changed = true
+        }
+        if let value = text("phone"), me.phone != value {
+            me.phone = value
+            changed = true
+        }
+        if let value = text("username"), me.username != value {
+            me.username = value
+            changed = true
+        }
+        if let value = text("avatar"), me.avatar != value {
+            me.avatar = value
+            changed = true
+        }
+        if let value = text("momentCover"), me.momentCover != value {
+            me.momentCover = value
+            changed = true
+        }
+        if let value = text("chatBackground"), me.chatBackground != value {
+            me.chatBackground = value
+            changed = true
+        }
+        guard changed else { return }
         self.me = me
         rememberLastUser()
     }

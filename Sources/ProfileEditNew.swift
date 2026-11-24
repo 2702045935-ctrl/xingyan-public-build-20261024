@@ -510,6 +510,7 @@ struct ProfileEditView: View {
         busy = true
         let localPath = stageLocalImagePreview(image, prefix: "local-avatar")
         app.applyMyProfileFields(["avatar": localPath])
+        busy = false
         Task {
             if let url = try? await API.shared.upload(image: image) {
                 await cacheUploadedImage(image, path: url)
@@ -522,7 +523,6 @@ struct ProfileEditView: View {
                         app.applyMyProfileFields(fields)
                     }
                 } catch {
-                    busy = false
                     app.show(Tr("已在本机换好，联网后自动同步"))
                     return
                 }
@@ -530,7 +530,6 @@ struct ProfileEditView: View {
             } else {
                 app.show(Tr("已在本机换好，联网后自动同步"))
             }
-            busy = false
         }
     }
 
