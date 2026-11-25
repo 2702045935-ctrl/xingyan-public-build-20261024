@@ -356,7 +356,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
                            shouldReceive touch: UITouch) -> Bool {
         if let model, case .file = model.kind { return false }
-        bubble.frame.contains(touch.location(in: self))
+        return bubble.frame.contains(touch.location(in: self))
     }
 
     override func layoutSubviews() {
