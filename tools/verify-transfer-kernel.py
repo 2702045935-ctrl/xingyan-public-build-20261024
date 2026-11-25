@@ -21,11 +21,17 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "TransferUploader" not in API
-    and "uploadSession" not in API
+    "uploadSession" not in API
     and 'base + "/api/upload/raw"' in API
     and API.count('base + "/api/upload/raw"') >= 3,
-    "media uploads must use only the proven 11/21 raw endpoint",
+    "small media uploads must retain the proven raw endpoint",
+)
+require(
+    "fileSize >= 4 * 1024 * 1024" in API
+    and "TransferUploader.shared.uploadFile(" in API
+    and "catch TransferUploaderError.unsupported" in API
+    and "process.env.ENABLE_TRANSFER_KERNEL !== '0'" in SERVER,
+    "large files and videos must use the enabled parallel resumable transfer kernel",
 )
 require(
     "req.httpBody = data\n        let (d, resp) = try await session.data(for: req)"

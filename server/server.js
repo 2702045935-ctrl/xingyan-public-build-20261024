@@ -24946,7 +24946,7 @@ async function handleApi(req, res, pathname, query) {
 
   /* 可恢复传输内核：先声明任务，再幂等写分片，最后统一校验。
      分片直接以 AES-256-CTR 写入最终加密文件，不会先落一份明文。 */
-  if (process.env.ENABLE_TRANSFER_KERNEL === '1'
+  if (process.env.ENABLE_TRANSFER_KERNEL !== '0'
       && parts[0] === 'transfer' && parts.length >= 2) {
     const kernel = getTransferKernel();
     try {
