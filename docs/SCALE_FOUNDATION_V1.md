@@ -20,6 +20,19 @@ This removes the single `chats.json` string-size failure for a 10,000-member
 group and gives migration code a safe target. The server does not switch to this
 directory until the physical-shard and shadow-reconciliation gates are complete.
 
+Shadow migration is read-only by default:
+
+```powershell
+node server/tools/group-membership-shadow-migration.js `
+  --chats=DATA_DIR/chats.json `
+  --root=SHADOW_ROOT `
+  --out=SHADOW_REPORT.json
+```
+
+Only an explicit `--apply` writes the isolated shadow directory. Every migrated
+group is verified by member count, full member digest, first-page round trip and
+generation manifest before the report can pass.
+
 ## Connection directory
 
 `server/lib/connection-directory.js` defines the connection ownership contract

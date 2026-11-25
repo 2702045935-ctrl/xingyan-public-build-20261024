@@ -207,6 +207,7 @@ jobs:
           node server/test/physical-auto-scale-controller.test.js
           node server/test/logical-shard-directory.test.js
           node server/test/scale-foundation.test.js
+          node server/test/group-membership-shadow-migration.test.js
           node server/test/shard-write-freeze.test.js
           node server/test/shard-minimal-release.test.js
           node server/test/shard-release-install.test.js

@@ -9,6 +9,9 @@ MEMBERS = (ROOT / "server" / "lib" / "group-membership-directory.js").read_text(
 CONNECTIONS = (ROOT / "server" / "lib" / "connection-directory.js").read_text(
     encoding="utf-8"
 )
+MIGRATION = (
+    ROOT / "server" / "tools" / "group-membership-shadow-migration.js"
+).read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -40,6 +43,14 @@ require(
     "python3 tools/verify-scale-foundation.py" in WORKFLOW
     and "node server/test/scale-foundation.test.js" in WORKFLOW,
     "scale foundation contracts must remain in the build gate",
+)
+require(
+    "function runMigration(options)" in MIGRATION
+    and "opts.apply === true" in MIGRATION
+    and "round-trip membership digest differs from source" in MIGRATION
+    and "first membership page differs from source" in MIGRATION
+    and "node server/test/group-membership-shadow-migration.test.js" in WORKFLOW,
+    "inline group membership migration must be shadow-first and fully reconciled",
 )
 
 print("scale-foundation: passed")
