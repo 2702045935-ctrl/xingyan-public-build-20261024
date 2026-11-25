@@ -322,10 +322,10 @@ require(
     "private static let stressMomentInitialWindow = 10_000" in (
         ROOT / "Sources" / "DiscoverView.swift"
     ).read_text(encoding="utf-8")
-    and "private static let stressMomentWindow = 50_000" in (
+    and "private static let stressMomentWindow = 100_000" in (
         ROOT / "Sources" / "DiscoverView.swift"
     ).read_text(encoding="utf-8"),
-    "Moments must paint 10000 rows initially and grow without trimming through 50000",
+    "Moments must paint 10000 rows initially and grow all the way through 100000",
 )
 require(
     "private static let hardCap = 300_000" in CONFIG,
