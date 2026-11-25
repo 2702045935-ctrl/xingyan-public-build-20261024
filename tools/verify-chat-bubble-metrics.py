@@ -250,10 +250,10 @@ require(
     'let hidesBubbleMetadata = [\n            "image", "images", "video", "livephoto", "transfer"\n        ].contains(message.kindName)' in CHAT
     and 'metaText: hidesBubbleMetadata ? "" : TimeFmt.messageClock(message.createdAt)' in CHAT
     and "tickCount: hidesBubbleMetadata" in CHAT
-    and '!["image", "images", "video", "livephoto", "transfer"]' in CHAT
+    and '!["image", "images", "video", "livephoto", "transfer", "audio"]' in CHAT
     and "if showsBubbleMetadata,\n                       message.kindName != \"audio\",\n                       !senderName.isEmpty" in CHAT
     and "if showsBubbleMetadata {\n                        HStack(spacing: 3)" in CHAT,
-    "media and transfer must omit overlays while voice omits the in-bubble sender name",
+    "media, transfer and voice must omit message timestamps and voice must omit sender names",
 )
 require(
     ".overlay(alignment: .bottomTrailing)" in CHAT
