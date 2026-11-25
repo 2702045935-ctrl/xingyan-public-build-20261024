@@ -81,6 +81,9 @@ require(
 require(
     "fs.createWriteStream(outPath)" in SERVER
     and "req.pipe(ws2)" in SERVER
+    and "req.pipe(uploadCipher).pipe(ws2)" in SERVER
+    and "const streamEncrypted = ctype.indexOf('image/') !== 0" in SERVER
+    and "const head = Buffer.alloc(4)" in SERVER
     and "sealUploadInPlace(name)" in SERVER
     and "receiveEncryptedRaw" not in SERVER,
     "the server upload path must match the 11/21 receive, validate and encrypt flow",

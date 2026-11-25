@@ -5674,8 +5674,18 @@ function saveUploadPlain(plainBuf, ext) {
 function sealUploadInPlace(name) {
   const file = path.join(UPLOAD_DIR, name);
   try {
+    const fd = fs.openSync(file, 'r');
+    const head = Buffer.alloc(4);
+    let got = 0;
+    try {
+      got = fs.readSync(fd, head, 0, 4, 0);
+    } finally {
+      fs.closeSync(fd);
+    }
+    if (got === 4 && head.equals(UPLOAD_MAGIC)) {
+      return fs.statSync(file).size;
+    }
     const raw = fs.readFileSync(file);
-    if (raw.length >= 20 && raw.subarray(0, 4).equals(UPLOAD_MAGIC)) return raw.length;
     fs.writeFileSync(file + '.tmp', sealUploadBuffer(name, raw));
     fs.renameSync(file + '.tmp', file);
     return fs.statSync(file).size;
@@ -24992,7 +25002,15 @@ async function handleApi(req, res, pathname, query) {
     const outPath = path.join(UPLOAD_DIR, name);
     const MAX = 60 * 1024 * 1024;
     let size = 0, tooBig = false;
+    const streamEncrypted = ctype.indexOf('image/') !== 0
+      && ctype.indexOf('video/') !== 0;
     const ws2 = fs.createWriteStream(outPath);
+    let uploadCipher = null;
+    if (streamEncrypted) {
+      const iv = crypto.randomBytes(16);
+      uploadCipher = crypto.createCipheriv('aes-256-ctr', uploadFileKey(name), iv);
+      ws2.write(Buffer.concat([UPLOAD_MAGIC, iv]));
+    }
     try {
       await new Promise((resolve, reject) => {
       let done = false;
@@ -25013,8 +25031,10 @@ async function handleApi(req, res, pathname, query) {
       });
       req.on('error', finish);
       ws2.on('error', finish);
+      if (uploadCipher) uploadCipher.on('error', finish);
       ws2.on('finish', () => finish());
-      req.pipe(ws2);
+      if (uploadCipher) req.pipe(uploadCipher).pipe(ws2);
+      else req.pipe(ws2);
       });
     } catch (err) {
       try { ws2.destroy(); } catch (_) { }
