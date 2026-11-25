@@ -252,7 +252,7 @@ final class AppState: ObservableObject {
 
     @Published var defaultChatBackground = ""
 
-    @Published var toast: String?
+    @Published var toast: AppToastNotice?
 
     @Published var payScan: PayScanInfo?
 
@@ -769,11 +769,20 @@ final class AppState: ObservableObject {
     private var toastTask: Task<Void, Never>?
 
     func show(_ text: String) {
-        toast = text
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let notice = AppToastNotice(text: trimmed)
+        // Commit the visual state immediately. The task only removes the toast
+        // after it has been readable; it never delays first presentation.
+        toast = notice
         toastTask?.cancel()
-        toastTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 1_900_000_000)
-            if !Task.isCancelled { self?.toast = nil }
+        toastTask = Task { @MainActor [weak self] in
+            UIAccessibility.post(notification: .announcement, argument: trimmed)
+            try? await Task.sleep(
+                nanoseconds: UInt64(notice.duration * 1_000_000_000)
+            )
+            guard !Task.isCancelled, self?.toast?.id == notice.id else { return }
+            self?.toast = nil
         }
     }
 
@@ -2920,20 +2929,28 @@ struct RootView: View {
                     }
                 }
 
-                if let text = app.toast {
+                if let notice = app.toast {
                     VStack {
                         Spacer()
-                        Text(text)
-                            .font(pf(14))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.black.opacity(0.78)))
+                        AppToastView(notice: notice)
+                            .id(notice.id)
+                            .transition(
+                                .asymmetric(
+                                    insertion: .scale(scale: 0.96, anchor: .bottom)
+                                        .combined(with: .opacity),
+                                    removal: .opacity
+                                )
+                            )
                             .padding(.bottom, L.tabH + L.safeBottom + 40)
                     }
                     .allowsHitTesting(false)
+                    .zIndex(19)
                 }
             }
+            .animation(
+                .spring(response: 0.26, dampingFraction: 0.90),
+                value: app.toast?.id
+            )
             // UI 配置刷新只应重绘界面，不能重建主 Tab 容器；否则当前 Tab、
             // 导航栈和滚动位置都会被重置。账号登录完成仍可通过 authVersion
             // 重建一次根视图，确保新账号从干净的首页开始。

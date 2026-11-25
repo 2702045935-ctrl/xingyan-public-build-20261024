@@ -184,6 +184,7 @@ jobs:
           python3 tools/verify-account-sidebar.py
           python3 tools/verify-prefetch-waiting.py
           python3 tools/verify-theme-immediacy.py
+          python3 tools/verify-success-toast.py
           python3 tools/verify-scale-foundation.py
           node server/tools/server-boot-preflight.js
 

@@ -2026,7 +2026,7 @@ struct WorksView: View {
                 try await API.shared.updateMeChecked(["momentCover": url])
                 app.applyMyProfileFields(["momentCover": url])
                 coverPreview = nil
-                app.show(Tr("作品页背景已更换"))
+                app.show(Tr("作品背景已更新"))
             } catch {
                 app.show((error as? APIError)?.errorDescription ?? Tr("背景保存失败"))
             }
