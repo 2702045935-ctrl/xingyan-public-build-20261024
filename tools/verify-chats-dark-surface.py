@@ -65,6 +65,13 @@ require(
     "native row signatures must invalidate when the effective theme changes",
 )
 require(
+    "if context.coordinator.dark != dark" in NATIVE_LIST
+    and "context.coordinator.refreshVisibleRowsAfterThemeChange()" in NATIVE_LIST
+    and "table.reloadRows(at: visible, with: .none)" in NATIVE_LIST
+    and "table.setContentOffset(previousOffset, animated: false)" in NATIVE_LIST,
+    "native rows must repaint the visible window immediately after a theme switch",
+)
+require(
     "if snapshot.list.isEmpty {\n                    VStack" not in CHATS
     and "private var chatListEmptyState" in CHATS
     and "private var chatListEmptyTitle" in CHATS
