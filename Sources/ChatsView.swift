@@ -6,7 +6,9 @@ private enum ChatListVisual {
     static var rowHeight: CGFloat { NativeChatRowMetrics.rowHeight }
     static let rowLeading: CGFloat = 16
     static let headerLeading: CGFloat = 12
-    static let trailing: CGFloat = 16
+    static let trailing: CGFloat = 20
+    static let timeSlotWidth: CGFloat = 68
+    static let timeSlotGap: CGFloat = 8
     static let avatarSize: CGFloat = 48
     static let avatarGap: CGFloat = 13
     static let dividerLeading: CGFloat = 77
@@ -390,10 +392,11 @@ struct ChatRow: View, Equatable {
                                    weight: .regular))
                     .foregroundStyle(ChatListVisual.timeInk)
                     .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
+                    .minimumScaleFactor(0.78)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                 unreadAvatarBadge
             }
-            .frame(minWidth: 64, alignment: .trailing)
+            .frame(width: ChatListVisual.timeSlotWidth, alignment: .trailing)
         }
     }
 
@@ -1650,6 +1653,23 @@ struct ChatsView: View {
         (Lang.isEnglish || Lang.isRussian) ? "Star chat" : "星言"
     }
 
+    @ViewBuilder
+    private func chatListMetaSlot<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        if app.me?.ops == true {
+            Color.clear
+                .frame(width: ChatListVisual.timeSlotWidth)
+        } else {
+            content()
+                .font(pfStyled(size: 12, weight: .regular))
+                .foregroundStyle(ChatListVisual.timeInk)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+                .frame(width: ChatListVisual.timeSlotWidth, alignment: .trailing)
+        }
+    }
+
     private var navTitle: String {
 
         if app.offline {
@@ -2285,11 +2305,8 @@ struct ChatsView: View {
                     }
                     Spacer(minLength: 8)
 
-                    if app.me?.ops != true {
+                    chatListMetaSlot {
                         Text(officialRowTime("official"))
-                            .font(pfStyled(size: 12, weight: .regular))
-                            .foregroundStyle(ChatListVisual.timeInk)
-                            .lineLimit(1)
                     }
                 }
                 .padding(.leading, ChatListVisual.rowLeading)
@@ -2397,11 +2414,8 @@ struct ChatsView: View {
                             .lineLimit(1)
                     }
                     Spacer(minLength: 8)
-                    if app.me?.ops != true {
+                    chatListMetaSlot {
                         Text(officialRowTime("pay"))
-                            .font(pfStyled(size: 12, weight: .regular))
-                            .foregroundStyle(ChatListVisual.timeInk)
-                            .lineLimit(1)
                     }
                 }
                 .padding(.leading, ChatListVisual.rowLeading)
@@ -2487,11 +2501,8 @@ struct ChatsView: View {
                             .lineLimit(1)
                     }
                     Spacer(minLength: 8)
-                    if app.me?.ops != true {
+                    chatListMetaSlot {
                         Text(officialRowTime("weather"))
-                            .font(pfStyled(size: 12, weight: .regular))
-                            .foregroundStyle(ChatListVisual.timeInk)
-                            .lineLimit(1)
                     }
                 }
                 .padding(.leading, ChatListVisual.rowLeading)

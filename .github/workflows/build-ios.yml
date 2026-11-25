@@ -180,6 +180,7 @@ jobs:
           python3 tools/verify-mall-module.py
           python3 tools/verify-chat-list-order.py
           python3 tools/verify-chat-list-time.py
+          python3 tools/verify-chat-list-grid.py
           python3 tools/verify-account-sidebar.py
           python3 tools/verify-prefetch-waiting.py
           python3 tools/verify-theme-immediacy.py
