@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import time
 
 from pymobiledevice3.remote import userspace_tunnel
 from pymobiledevice3.remote.core_device.hid_service import (
@@ -65,6 +66,7 @@ async def run(args: argparse.Namespace) -> None:
     try:
         async with UniversalHIDServiceService(provider) as touch:
             await asyncio.sleep(TOUCH_AUTH_SETTLE_SECONDS)
+            print(f"MOTION_START {time.time()}", flush=True)
             for _ in range(max(1, args.repeat)):
                 await send_touch(
                     touch,
@@ -78,6 +80,7 @@ async def run(args: argparse.Namespace) -> None:
                 )
                 if args.gap > 0:
                     await asyncio.sleep(args.gap)
+            print(f"MOTION_END {time.time()}", flush=True)
     finally:
         await provider.close()
 

@@ -32,10 +32,12 @@ require(
     "Moments stress data must consume one page and keep a bounded active window",
 )
 require(
-    "momentPaging.moments = MomentStressFixture.moments(" in VIEW
+    "momentPaging.moments = await Self.generateStressMoments(" in VIEW
+    and "private static func generateStressMoments(range: Range<Int>) async -> [Moment]" in VIEW
+    and "Task.detached(priority: .userInitiated)" in VIEW
     and "if let task = momentPaging.task {\n                await task.value" in VIEW
     and "scheduleMomentPrefetch()" in VIEW,
-    "Moments stress data must use the same one-page prefetch-and-consume contract as chat",
+    "Moments stress pages must be generated off the main thread before display",
 )
 require(
     "@StateObject private var momentPaging = MomentPrefetchStore()" in VIEW

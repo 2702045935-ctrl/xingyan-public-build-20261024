@@ -3090,8 +3090,9 @@ struct MomentsView: View {
         momentPaging.running = false
         if MomentStressFixture.isActive {
             stressWindowStart = 0
-            stressLoadedCount = min(MomentStressFixture.count, Self.stressMomentWindow)
-            stressLoadedMoments = MomentStressFixture.moments(range: 0..<stressLoadedCount)
+            let target = min(MomentStressFixture.count, Self.stressMomentWindow)
+            stressLoadedMoments = await Self.generateStressMoments(range: 0..<target)
+            stressLoadedCount = target
             momentTotal = MomentStressFixture.count
             hasMoreMoments = stressLoadedCount < MomentStressFixture.count
             loadingMore = false
@@ -3144,7 +3145,7 @@ struct MomentsView: View {
                     MomentStressFixture.count,
                     stressLoadedCount + Self.stressMomentPageSize
                 )
-                page = MomentStressFixture.moments(range: stressLoadedCount..<next)
+                page = await Self.generateStressMoments(range: stressLoadedCount..<next)
                 more = next < MomentStressFixture.count
             }
             guard !page.isEmpty else {
@@ -3249,7 +3250,7 @@ struct MomentsView: View {
                 MomentStressFixture.count,
                 stressLoadedCount + Self.stressMomentPageSize
             )
-            momentPaging.moments = MomentStressFixture.moments(
+            momentPaging.moments = await Self.generateStressMoments(
                 range: stressLoadedCount..<next
             )
             momentPaging.hasMore = next < MomentStressFixture.count
@@ -3268,6 +3269,12 @@ struct MomentsView: View {
             !known.contains($0.id) && !locallyDeletedMomentIds.contains($0.id)
         }
         momentPaging.hasMore = feed.hasMore && !momentPaging.moments.isEmpty
+    }
+
+    private static func generateStressMoments(range: Range<Int>) async -> [Moment] {
+        await Task.detached(priority: .userInitiated) {
+            MomentStressFixture.moments(range: range)
+        }.value
     }
 
     @discardableResult
