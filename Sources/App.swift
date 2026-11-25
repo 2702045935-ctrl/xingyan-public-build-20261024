@@ -967,6 +967,7 @@ final class AppState: ObservableObject {
         let user = try await API.shared.login(username: username, password: password, sliderTicket: "")
         beginAccountTransition()
         me = user
+        restoreCachedAccountSnapshot(for: user)
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -977,6 +978,7 @@ final class AppState: ObservableObject {
         let user = try await API.shared.login(username: username, password: password, sliderTicket: sliderTicket)
         beginAccountTransition()
         me = user
+        restoreCachedAccountSnapshot(for: user)
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -986,6 +988,7 @@ final class AppState: ObservableObject {
     func adoptRegistered(_ user: User) async {
         beginAccountTransition()
         me = user
+        restoreCachedAccountSnapshot(for: user)
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -1004,6 +1007,7 @@ final class AppState: ObservableObject {
         let user = try await API.shared.loginPhone(phone: phone, code: code, register: register)
         beginAccountTransition()
         me = user
+        restoreCachedAccountSnapshot(for: user)
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -1013,6 +1017,7 @@ final class AppState: ObservableObject {
     func finishLogin(_ user: User) async {
         beginAccountTransition()
         me = user
+        restoreCachedAccountSnapshot(for: user)
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -1025,6 +1030,19 @@ final class AppState: ObservableObject {
         showSavedLogin = false
         if me != nil {
             authVersion += 1
+        }
+    }
+
+    /// 登录后先恢复当前账号自己的本机快照，再让 refreshAll 网络校准。
+    /// 不能等首包回来才把会话和联系人铺上，否则首登会短暂显示空页面。
+    private func restoreCachedAccountSnapshot(for user: User) {
+        let cachedChats = LocalStore.cachedChatList(userId: user.id)
+        if !cachedChats.isEmpty {
+            chats = cachedChats
+        }
+        let cachedContacts = Self.cachedContacts(userId: user.id)
+        if !cachedContacts.isEmpty {
+            contacts = cachedContacts
         }
     }
 

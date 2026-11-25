@@ -61,8 +61,13 @@ require(
     "dark search must sit quietly on the near-black canvas instead of using a raised light card",
 )
 require(
-    '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS,
-    "native row signatures must invalidate when the effective theme changes",
+    '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS
+    and "if context.coordinator.dark != dark" in NATIVE_LIST
+    and "context.coordinator.refreshVisibleRowsAfterThemeChange()" in NATIVE_LIST
+    and "table.cellForRow(at: indexPath) as? NativeChatRowCell" in NATIVE_LIST
+    and "cell.configure(configuration)" in NATIVE_LIST
+    and "table.reloadRows" not in NATIVE_LIST,
+    "native rows must repaint visible cells without entering a table update transaction",
 )
 require(
     "if snapshot.list.isEmpty {\n                    VStack" not in CHATS

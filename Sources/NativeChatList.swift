@@ -69,7 +69,8 @@ where Item.ID: Hashable {
     @ViewBuilder let row: (Item) -> Row
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onScrollStateChange: onScrollStateChange,
+        Coordinator(dark: dark,
+                    onScrollStateChange: onScrollStateChange,
                     onOffsetChange: onOffsetChange,
                     onZoneChange: onZoneChange,
                     onApproachingStart: onApproachingStart,
@@ -164,6 +165,10 @@ where Item.ID: Hashable {
         context.coordinator.row = row
         context.coordinator.height = height
         context.coordinator.nativeRow = nativeRow
+        if context.coordinator.dark != dark {
+            context.coordinator.dark = dark
+            context.coordinator.refreshVisibleRowsAfterThemeChange()
+        }
         if context.coordinator.itemsRevision != revision {
             context.coordinator.itemsRevision = revision
             context.coordinator.apply(items, animated: false)
@@ -185,6 +190,7 @@ where Item.ID: Hashable {
     final class Coordinator: NSObject,
                              UITableViewDelegate,
                              UITableViewDataSourcePrefetching {
+        var dark: Bool
         var lookup: [Item.ID: Item] = [:]
         var row: (Item) -> Row
         var height: (Item) -> CGFloat
@@ -213,7 +219,8 @@ where Item.ID: Hashable {
         private var hasCompletedInitialApply = false
         private var layoutObservers: [NSObjectProtocol] = []
 
-        init(onScrollStateChange: @escaping (Bool) -> Void,
+        init(dark: Bool,
+             onScrollStateChange: @escaping (Bool) -> Void,
              onOffsetChange: @escaping (CGFloat) -> Void,
              onZoneChange: @escaping (Int) -> Void,
              onApproachingStart: @escaping () -> Void,
@@ -223,6 +230,7 @@ where Item.ID: Hashable {
              height: @escaping (Item) -> CGFloat,
              nativeRow: ((Item) -> NativeChatRowConfiguration?)?,
              row: @escaping (Item) -> Row) {
+            self.dark = dark
             self.onScrollStateChange = onScrollStateChange
             self.onOffsetChange = onOffsetChange
             self.onZoneChange = onZoneChange
@@ -726,6 +734,21 @@ where Item.ID: Hashable {
             dataSource.apply(snapshot, animatingDifferences: false) {
                 table.layoutIfNeeded()
                 table.setContentOffset(previousOffset, animated: false)
+            }
+        }
+
+        fileprivate func refreshVisibleRowsAfterThemeChange() {
+            guard let table, let dataSource else { return }
+            for indexPath in table.indexPathsForVisibleRows ?? [] {
+                guard let id = dataSource.itemIdentifier(for: indexPath),
+                      let entry = lookup[id],
+                      let configuration = nativeRow?(entry),
+                      let cell = table.cellForRow(at: indexPath) as? NativeChatRowCell else {
+                    continue
+                }
+                // Reconfigure in place. Submitting a UITableView reload here can
+                // race the list snapshot/prefetch transaction during theme changes.
+                cell.configure(configuration)
             }
         }
 

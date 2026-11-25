@@ -45,5 +45,18 @@ require(
     and APP.count("Self.saveCachedContacts(friends, userId: me?.id)") >= 2,
     "contacts must be available on the first frame and refreshed in the background",
 )
+login_start = APP.index("func login(username: String, password: String) async throws")
+login_end = APP.index("func login(phone:", login_start)
+login = APP[login_start:login_end]
+require(
+    "private func restoreCachedAccountSnapshot(for user: User)" in APP
+    and "let cachedChats = LocalStore.cachedChatList(userId: user.id)" in APP
+    and "if !cachedChats.isEmpty {\n            chats = cachedChats" in APP
+    and login.count("restoreCachedAccountSnapshot(for: user)") >= 2
+    and login.index("beginAccountTransition()")
+    < login.index("restoreCachedAccountSnapshot(for: user)")
+    < login.index("finishLoginTransition()"),
+    "login must restore the target account snapshot before the first network frame",
+)
 
 print("cache-first-pages: passed")
