@@ -2223,6 +2223,29 @@ enum TimeFmt {
             : fSystemYearMonthDay.string(from: d)
     }
 
+    static func listConversation(_ s: String?) -> String {
+        guard let d = date(s) else { return "" }
+        let cal = Calendar.current
+        if cal.isDateInToday(d) {
+            let seconds = max(0, Date().timeIntervalSince(d))
+            if seconds < 60 { return Tr("刚刚") }
+            if seconds < 3_600 {
+                return "\(max(1, Int(seconds / 60))) " + Tr("分钟前")
+            }
+            return fClock.string(from: d)
+        }
+        if cal.isDateInYesterday(d) {
+            return fSystemRelative.localizedString(for: d, relativeTo: Date())
+        }
+        let days = cal.dateComponents([.day],
+                                      from: cal.startOfDay(for: d),
+                                      to: cal.startOfDay(for: Date())).day ?? 99
+        if days < 7 { return fSystemWeekday.string(from: d) }
+        return cal.isDate(d, equalTo: Date(), toGranularity: .year)
+            ? fSystemMonthDay.string(from: d)
+            : fSystemYearMonthDay.string(from: d)
+    }
+
     static func list(_ s: String?) -> String {
         guard let d = date(s) else { return "" }
         let cal = Calendar.current

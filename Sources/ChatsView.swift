@@ -385,7 +385,7 @@ struct ChatRow: View, Equatable {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text(TimeFmt.listApple(chat.listTimestamp))
+                Text(TimeFmt.listConversation(chat.listTimestamp))
                     .font(pfStyled(size: 12,
                                    weight: .regular))
                     .foregroundStyle(ChatListVisual.timeInk)
@@ -2225,7 +2225,7 @@ struct ChatsView: View {
 
     private func officialRowTime(_ key: String) -> String {
         let stamp = officialRowStamp(key)
-        return TimeFmt.listApple(stamp)
+        return TimeFmt.listConversation(stamp)
     }
 
     private func markOfficialRowTime(_ key: String) {
@@ -2794,7 +2794,7 @@ struct ChatsView: View {
             previewKind: draft.isEmpty ? kind : "draft",
             highlightMention: !mentionPrefix.isEmpty,
             previewColor: previewColor,
-            time: TimeFmt.listApple(chat.listTimestamp),
+            time: TimeFmt.listConversation(chat.listTimestamp),
             timeColor: timeColor,
             rowBackground: rowBg,
             dividerColor: isDark

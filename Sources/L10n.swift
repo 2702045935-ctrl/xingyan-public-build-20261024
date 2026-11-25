@@ -90,6 +90,8 @@ enum L10n {
         "猜你想搜": "You may also like",
         "查找失败，请稍后再试": "Search failed. Try again later.",
         "撤回了一条消息": "recalled a message",
+        "刚刚": "Just now",
+        "分钟前": "min ago",
         "成员": "Members",
         "创建你的 Star chat 账号": "Create your Star chat account",
         "注册星言账号": "Create a Star chat account",
