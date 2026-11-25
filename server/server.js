@@ -5694,6 +5694,45 @@ function sealUploadInPlace(name) {
   }
 }
 
+/** 上传请求内使用：整块 I/O 不阻塞事件循环，也只有必要文件才走第二遍。 */
+async function sealUploadInPlaceStreaming(name) {
+  const file = path.join(UPLOAD_DIR, name);
+  const fd = await fs.promises.open(file, 'r');
+  const head = Buffer.alloc(4);
+  let got = 0;
+  try {
+    got = (await fd.read(head, 0, 4, 0)).bytesRead;
+  } finally {
+    await fd.close();
+  }
+  if (got === 4 && head.equals(UPLOAD_MAGIC)) {
+    return (await fs.promises.stat(file)).size;
+  }
+
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-ctr', uploadFileKey(name), iv);
+  const temp = file + '.seal-' + crypto.randomBytes(6).toString('hex');
+  await new Promise((resolve, reject) => {
+    const reader = fs.createReadStream(file);
+    const writer = fs.createWriteStream(temp);
+    const finish = (error) => {
+      if (error) reject(error);
+      else resolve();
+    };
+    reader.on('error', finish);
+    cipher.on('error', finish);
+    writer.on('error', finish);
+    writer.on('finish', () => finish());
+    writer.write(Buffer.concat([UPLOAD_MAGIC, iv]));
+    reader.pipe(cipher).pipe(writer);
+  }).catch(async (error) => {
+    try { await fs.promises.unlink(temp); } catch (_) { }
+    throw error;
+  });
+  await fs.promises.rename(temp, file);
+  return (await fs.promises.stat(file)).size;
+}
+
 function getTransferKernel() {
   if (!transferKernelInstance) {
     transferKernelInstance = createTransferKernel({
@@ -25047,7 +25086,7 @@ async function handleApi(req, res, pathname, query) {
        现在图片一律过一遍尺寸体检：超限直接拒，大图自动缩小。 */
     if (ctype.indexOf('image/') === 0) {
       try {
-        const buf2 = fs.readFileSync(outPath);
+        const buf2 = await fs.promises.readFile(outPath);
         const mime2 = sniffImageMime(buf2) || (ctype.indexOf('png') >= 0 ? 'image/png' : 'image/jpeg');
         const img2 = checkImage(buf2, mime2);
         if (!img2.ok) { try { fs.unlinkSync(outPath); } catch (err) { } return fail(res, 422, img2.error); }
@@ -25056,7 +25095,7 @@ async function handleApi(req, res, pathname, query) {
           const small2 = shrinkImageBuffer(img2.buffer, '.' + ext);
           if (small2 && small2.length) final2 = small2;
         }
-        fs.writeFileSync(outPath, final2);
+        await fs.promises.writeFile(outPath, sealUploadBuffer(name, final2));
         size = final2.length;
       } catch (err) {
         try { fs.unlinkSync(outPath); } catch (err2) { }
@@ -25076,10 +25115,11 @@ async function handleApi(req, res, pathname, query) {
     if (videoTooBig) {
       const before = size;
       try {
-        const tmpIn = path.join(os.tmpdir(), 'chris-up-' + crypto.randomBytes(6).toString('hex') + '.' + ext);
-        const outTmp = tmpIn + '.small.mp4';
-        fs.writeFileSync(tmpIn, fs.readFileSync(outPath));
-        const rr = await runFfAsync(ffmpegExe(), ['-y', '-loglevel', 'error', '-i', tmpIn,
+        const outTmp = path.join(
+          os.tmpdir(),
+          'chris-up-' + crypto.randomBytes(6).toString('hex') + '.small.mp4'
+        );
+        const rr = await runFfAsync(ffmpegExe(), ['-y', '-loglevel', 'error', '-i', outPath,
           '-vf', "scale='if(gt(iw,ih),min(1280,iw),-2)':'if(gt(iw,ih),-2,min(1280,ih))'",
           '-c:v', 'libx264', '-profile:v', 'high', '-preset', 'veryfast',
           '-b:v', '1200k', '-maxrate', '1500k', '-bufsize', '3000k',
@@ -25096,13 +25136,17 @@ async function handleApi(req, res, pathname, query) {
           callTrace('聊天视频压缩 ' + Math.round(before / 1024) + 'KB → ' + Math.round(size / 1024) + 'KB');
         }
         try { fs.unlinkSync(outTmp); } catch (err) { }
-        try { fs.unlinkSync(tmpIn); } catch (err) { }
       } catch (err) {
         callTrace('聊天视频压缩失败，用原文件：' + String(err && err.message || err).slice(0, 120));
       }
     }
     /* 上传目录里的东西一律加密落盘（以前这个口是直接写明文，重启才补加密） */
-    sealUploadInPlace(name);
+    try {
+      await sealUploadInPlaceStreaming(name);
+    } catch (err) {
+      try { fs.unlinkSync(path.join(UPLOAD_DIR, name)); } catch (_) { }
+      return fail(res, 422, '文件加密落盘失败，请重试');
+    }
     try {
       const uploaded = fs.statSync(path.join(UPLOAD_DIR, name));
       if (!uploaded.isFile() || uploaded.size <= 20) {
