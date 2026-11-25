@@ -408,7 +408,7 @@ final class NativeMallGridCoordinator: NSObject,
 
 private final class NativeMallHostingSupplementaryView: UICollectionReusableView {
     static let reuseID = "NativeMallHostingSupplementaryView"
-    private var revision = ""
+    private var revision: String?
 
     func configure(_ content: AnyView?, revision: String) {
         guard self.revision != revision else { return }

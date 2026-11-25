@@ -362,6 +362,7 @@ final class DDStore: ObservableObject {
     @Published private(set) var products: [DDProduct] = []
     @Published private(set) var live: [DDProduct] = []
     @Published private(set) var categories: [String] = []
+    @Published private(set) var catalogRevision = 0
 
     @Published private(set) var banners: [String] = []
 
@@ -637,6 +638,7 @@ final class DDStore: ObservableObject {
         live = catalogKernel.live
         categories = catalogKernel.categories
         rebuildRelevanceLookups()
+        catalogRevision &+= 1
         if persist { scheduleCatalogPersist() }
     }
 
@@ -2150,6 +2152,7 @@ struct DDHomeTab: View {
     @State private var cate: String? = nil
     @State private var sellerScope: String? = nil
     @State private var gridLimit = 120
+    @State private var nativeGridController = NativeMallProductGridController()
     private var list: [DDProduct] {
         store.gridProducts(category: cate,
                            sellerScope: sellerScope,
@@ -2174,7 +2177,186 @@ struct DDHomeTab: View {
         }
     }
 
+    private var nativePerformanceMode: Bool {
+        !store.products.isEmpty
+    }
+
+    private var nativeHeaderRevision: String {
+        [
+            String(store.catalogRevision),
+            String(topChannel),
+            cate ?? "*",
+            sellerScope ?? "*",
+            String(store.mutedCates.count),
+            String(store.disliked.count)
+        ].joined(separator: "|")
+    }
+
+    private var nativeFooterRevision: String {
+        [
+            String(store.catalogRevision),
+            String(store.ads.count),
+            String(store.channels.count),
+            String(store.mutedCates.count)
+        ].joined(separator: "|")
+    }
+
     var body: some View {
+        if nativePerformanceMode {
+            nativePerformanceBody
+        } else {
+            editorialBody
+        }
+    }
+
+    private var nativePerformanceBody: some View {
+        NativeMallProductGrid(
+            products: list,
+            onOpen: onOpen,
+            onAddCart: { product in
+                store.addCart(product.id)
+                appState.show(Tr("已加入购物车"))
+            },
+            header: AnyView(nativePerformanceHeader),
+            footer: AnyView(nativePerformanceFooter),
+            headerRevision: nativeHeaderRevision,
+            footerRevision: nativeFooterRevision,
+            controller: nativeGridController
+        )
+        .background(DDColor.page)
+        .sheet(item: $channel) { kind in
+            DDChannelView(kind: kind, onCart: { channel = nil; onCart() })
+                .environmentObject(appState)
+        }
+        .sheet(isPresented: $showVipAd) {
+            DDVipPageView { product in
+                showVipAd = false
+                onOpen(product)
+            }
+            .environmentObject(appState)
+        }
+        .fullScreenCover(isPresented: $showMusicAd) {
+            NavigationStack { ListenView().environmentObject(appState) }
+        }
+        .sheet(isPresented: $showAdOrders) {
+            DDOrdersView().environmentObject(appState)
+        }
+        .sheet(isPresented: $showAdFav) {
+            DDFavView(onOpen: { product in
+                showAdFav = false
+                onOpen(product)
+            })
+            .environmentObject(appState)
+        }
+        .sheet(isPresented: $showAdViews) {
+            DDViewsView(onOpen: { product in
+                showAdViews = false
+                onOpen(product)
+            })
+        }
+        .sheet(isPresented: $showAddressHome) {
+            DDAddressListView().environmentObject(appState)
+        }
+    }
+
+    private var nativePerformanceHeader: some View {
+        VStack(spacing: 14) {
+            carousel(nil)
+            categoryQuickRail(nil)
+            curatedStrip
+            recommendationDock
+            if store.disliked.count >= 20 &&
+                store.dislikedProducts.count >= store.live.count {
+                restoreDislikedNotice
+            }
+        }
+        .padding(.top, 10)
+        .padding(.bottom, 4)
+    }
+
+    private var recommendationDock: some View {
+        VStack(spacing: 0) {
+            sectionTitle(
+                Tr("为你推荐"),
+                subtitle: Tr("按兴趣和热度持续更新"),
+                right: Tr("全部商品")
+            ) {
+                cate = nil
+                sellerScope = nil
+                toGrid(nil)
+            }
+            cateRow
+            sellerScopeRow
+            if !store.mutedCates.isEmpty { mutedNote }
+        }
+        .padding(.vertical, 8)
+        .background(
+            DDColor.card,
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(DDColor.cardEdge, lineWidth: 0.6)
+        }
+        .shadow(color: Color.black.opacity(0.045), radius: 14, y: 5)
+        .padding(.horizontal, 10)
+    }
+
+    private var nativePerformanceFooter: some View {
+        VStack(spacing: 14) {
+            seckill(nil)
+            sellerGateway(nil)
+            sectionTitle(
+                Tr("品牌好价"),
+                subtitle: Tr("大牌直降 · 平台补贴"),
+                right: Tr("全部好价")
+            ) {
+                channel = .subsidy
+            }
+            dealBoard
+            couponRail
+            sectionTitle(
+                Tr("精选会场"),
+                subtitle: Tr("主题频道与限时活动"),
+                right: Tr("更多频道")
+            ) {
+                channel = .rank
+            }
+            promoBoard(onViewAll: {
+                cate = nil
+                sellerScope = nil
+                toGrid(nil)
+            })
+            adStrip
+            Spacer().frame(height: 16)
+        }
+        .padding(.top, 10)
+    }
+
+    private var restoreDislikedNotice: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "hand.thumbsdown")
+                .font(.system(size: 12))
+                .foregroundColor(DDColor.sub)
+            Text(Tr("你把商品都隐藏了，先给你看全部"))
+                .font(pf(12))
+                .foregroundColor(DDColor.sub)
+            Spacer(minLength: 0)
+            Button {
+                store.restoreAllDisliked()
+                appState.show(Tr("已全部恢复"))
+            } label: {
+                Text(Tr("全部恢复"))
+                    .font(pf(12.5, .medium))
+                    .foregroundColor(DDColor.red)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+    }
+
+    private var editorialBody: some View {
 
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
@@ -2330,8 +2512,14 @@ struct DDHomeTab: View {
         }
     }
 
-    private func toGrid(_ proxy: ScrollViewProxy) {
-        withAnimation(.easeInOut(duration: 0.3)) { proxy.scrollTo("dd-grid", anchor: .top) }
+    private func toGrid(_ proxy: ScrollViewProxy?) {
+        guard let proxy else {
+            nativeGridController.scrollToProductStart()
+            return
+        }
+        withAnimation(.easeInOut(duration: 0.3)) {
+            proxy.scrollTo("dd-grid", anchor: .top)
+        }
     }
 
     @ViewBuilder
@@ -2413,7 +2601,7 @@ struct DDHomeTab: View {
     }
 
     @ViewBuilder
-    private func categoryQuickRail(_ proxy: ScrollViewProxy) -> some View {
+    private func categoryQuickRail(_ proxy: ScrollViewProxy?) -> some View {
         let cats = Array(store.categories.prefix(10))
         if !cats.isEmpty {
             VStack(alignment: .leading, spacing: 9) {
@@ -2774,7 +2962,7 @@ struct DDHomeTab: View {
 
     @State private var bannerPage = 0
 
-    @ViewBuilder private func carousel(_ proxy: ScrollViewProxy) -> some View {
+    @ViewBuilder private func carousel(_ proxy: ScrollViewProxy?) -> some View {
         let imgs = store.banners.filter { !$0.isEmpty }
         if !imgs.isEmpty {
             VStack(spacing: 8) {
@@ -2921,7 +3109,7 @@ struct DDHomeTab: View {
         .padding(.horizontal, 10)
     }
 
-    private func seckill(_ proxy: ScrollViewProxy) -> some View {
+    private func seckill(_ proxy: ScrollViewProxy?) -> some View {
         VStack(alignment: .leading, spacing: 10) {
 
             HStack(spacing: 0) {
@@ -2980,7 +3168,7 @@ struct DDHomeTab: View {
         .frame(width: 82)
     }
 
-    private func sellerGateway(_ proxy: ScrollViewProxy) -> some View {
+    private func sellerGateway(_ proxy: ScrollViewProxy?) -> some View {
         let counts = store.sellerCounts(category: nil)
         let selfCount = counts.selfOperated
         let thirdCount = counts.third
@@ -3001,7 +3189,7 @@ struct DDHomeTab: View {
 
     private func sellerGatewayCard(_ scope: String, title: String, subtitle: String,
                                    count: Int, icon: String, colors: [Color],
-                                   proxy: ScrollViewProxy) -> some View {
+                                   proxy: ScrollViewProxy?) -> some View {
         Button {
             withAnimation(.easeOut(duration: 0.18)) {
                 cate = nil

@@ -102,6 +102,17 @@ require(
     "the native product grid must recycle cells, cancel stale prefetch and preserve its anchor",
 )
 require(
+    "!store.products.isEmpty" in MALL
+    and "private var nativePerformanceMode: Bool" in MALL
+    and "private var nativePerformanceBody: some View" in MALL
+    and "header: AnyView(nativePerformanceHeader)" in MALL
+    and "footer: AnyView(nativePerformanceFooter)" in MALL
+    and "controller: nativeGridController" in MALL
+    and "context.coordinator.header = header" in NATIVE_GRID
+    and "context.coordinator.footer = footer" in NATIVE_GRID,
+    "large mall home feeds must switch to the windowed native storefront",
+)
+require(
     "static let supportedCounts = [0, 5_000, 9_000]" in MALL
     and "func setStressProductCount(_ count: Int)" in MALL
     and "store.setStressProductCount(count)" in MALL
