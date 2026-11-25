@@ -64,10 +64,11 @@ require(
     '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS
     and "if context.coordinator.dark != dark" in NATIVE_LIST
     and "context.coordinator.refreshVisibleRowsAfterThemeChange()" in NATIVE_LIST
-    and "table.cellForRow(at: indexPath) as? NativeChatRowCell" in NATIVE_LIST
-    and "cell.configure(configuration)" in NATIVE_LIST
+    and "let cell = table.cellForRow(at: indexPath)" in NATIVE_LIST
+    and "nativeCell.configure(configuration)" in NATIVE_LIST
+    and "cell.contentConfiguration = UIHostingConfiguration" in NATIVE_LIST
     and "table.reloadRows" not in NATIVE_LIST,
-    "native rows must repaint visible cells without entering a table update transaction",
+    "native and hosted rows must repaint together without a table update transaction",
 )
 require(
     "if snapshot.list.isEmpty {\n                    VStack" not in CHATS

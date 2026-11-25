@@ -746,13 +746,24 @@ where Item.ID: Hashable {
             for indexPath in table.indexPathsForVisibleRows ?? [] {
                 guard let id = dataSource.itemIdentifier(for: indexPath),
                       let entry = lookup[id],
-                      let configuration = nativeRow?(entry),
-                      let cell = table.cellForRow(at: indexPath) as? NativeChatRowCell else {
+                      let cell = table.cellForRow(at: indexPath) else {
                     continue
                 }
-                // Reconfigure in place. Submitting a UITableView reload here can
-                // race the list snapshot/prefetch transaction during theme changes.
-                cell.configure(configuration)
+                if let nativeCell = cell as? NativeChatRowCell,
+                   let configuration = nativeRow?(entry) {
+                    // Reconfigure in place. Submitting a UITableView reload here
+                    // can race the snapshot/prefetch transaction.
+                    nativeCell.configure(configuration)
+                } else {
+                    cell.backgroundColor = .clear
+                    cell.contentView.backgroundColor = .clear
+                    cell.contentConfiguration = UIHostingConfiguration {
+                        row(entry)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .margins(.all, 0)
+                    .background(.clear)
+                }
             }
         }
 
