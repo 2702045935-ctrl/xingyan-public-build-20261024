@@ -28,11 +28,14 @@ require(
 )
 require(
     "static var usesGlass: Bool { preset == .glass }" in CHAT
-    and "if activeGlass" in CHAT
-    and "ChatSurfaceMaterial.bubble(" in CHAT
-    and "dark ? 0.17 : 0.42" in SURFACE
+    and "11/22 material baseline" in CHAT
+    and "private var activeGlass" not in CHAT
+    and "if activeGlass" not in CHAT
+    and "dark _: Bool" in SURFACE
+    and "glass _: Bool" in SURFACE
+    and "dark ? 0.17 : 0.42" not in SURFACE
     and "let r = min(pill ? min(rect.height / 2, 24) : radius" in CHAT,
-    "glass bubbles must use the unified WhatsApp geometry and restrained highlights",
+    "the glass preset must keep its canvas while message bubbles retain the 11/22 material",
 )
 require(
     "case .glass:\n            glassScene(size: size)" in WALLPAPER
@@ -42,15 +45,15 @@ require(
     "glass must have a static atmospheric backdrop without animated blur",
 )
 require(
-    "var bubbleGlass: Bool" in TEXT_ROW
-    and "var glass = false" in TEXT_ROW
+    "var bubbleGlass: Bool" not in TEXT_ROW
+    and "var bubbleGlass: Bool" not in MEDIA_ROW
+    and "var glass = false" not in TEXT_ROW
+    and "bubble.glass" not in MEDIA_ROW
     and "cornerRadius: WhatsAppChatLayout.cornerRadius" in TEXT_ROW
-    and "context.drawLinearGradient(" in TEXT_ROW
-    and "ChatSurfaceMaterial.uiBubble(" in TEXT_ROW
-    and "UIColor.white.withAlphaComponent(mine" in SURFACE
-    and "path.lineWidth = 0.8" in TEXT_ROW
-    and "bubble.glass = next.bubbleGlass" in MEDIA_ROW,
-    "UIKit text and media bubbles must pre-render glass highlights on WhatsApp paths",
+    and "context.drawLinearGradient(" not in TEXT_ROW
+    and "ChatSurfaceMaterial.uiBubble(" not in TEXT_ROW
+    and "path.lineWidth = 0.8" not in TEXT_ROW,
+    "UIKit text and media bubbles must match the opaque 11/22 material",
 )
 require(
     "python3 tools/verify-glass-chat-theme.py" in WORKFLOW,

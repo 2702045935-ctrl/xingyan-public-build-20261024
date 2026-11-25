@@ -7,23 +7,15 @@ enum ChatMessageSurface {
     static let gridRadius: CGFloat = 5
 
     static var cardFill: Color {
-        cardFill(mine: false)
+        Color.dyn(0xFFFFFF, 0x1C1C1E)
     }
 
-    static func cardFill(mine: Bool) -> Color {
-        if ChatTheme.usesGlass {
-            return (mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther)
-                .opacity(mine ? 0.84 : 0.74)
-        }
-        return mine
-            ? ChatTheme.bubbleMine
-            : Color.dyn(0xFFFFFF, 0x1C1C1E)
+    static func cardFill(mine _: Bool) -> Color {
+        cardFill
     }
 
     static var cardBorder: Color {
-        ChatTheme.usesGlass
-            ? Color.white.opacity(0.14)
-            : Color.dyn(0xE7E7E8, 0x343436)
+        Color.dyn(0xE7E7E8, 0x343436)
     }
 }
 
@@ -57,25 +49,29 @@ struct WeChatMessageCard<Content: View>: View {
                 .padding(.horizontal, padding)
                 .padding(.vertical, verticalPadding)
                 .frame(width: width, alignment: .leading)
-                .background(BubbleFill(mine: mine, tail: showTail))
-                .clipShape(BubbleShape(mine: mine, tail: showTail))
-                .contentShape(BubbleShape(mine: mine, tail: showTail))
+                .background {
+                    RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                     style: .continuous)
+                        .fill(ChatMessageSurface.cardFill)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                            style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                     style: .continuous)
+                        .stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)
+                }
+                .contentShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                               style: .continuous))
         } else {
             content
                 .padding(.horizontal, padding)
                 .padding(.vertical, verticalPadding)
                 .frame(width: width, alignment: .leading)
                 .background {
-                    ZStack {
-                        if ChatTheme.usesGlass {
-                            RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                                             style: .continuous)
-                                .fill(.ultraThinMaterial)
-                        }
-                        RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                                         style: .continuous)
-                            .fill(ChatMessageSurface.cardFill)
-                    }
+                    RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                     style: .continuous)
+                        .fill(ChatMessageSurface.cardFill)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
                                             style: .continuous))

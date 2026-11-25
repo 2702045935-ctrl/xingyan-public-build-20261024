@@ -79,7 +79,7 @@ def test_one(session: requests.Session,
         digest = hashlib.sha256(chunk).hexdigest()
         with lock:
             chunk_started[index] = time.monotonic()
-        result = requests.post(
+        result = requests.put(
             f"{base}/api/transfer/{transfer_id}/chunk",
             headers={
                 **headers,

@@ -578,7 +578,7 @@ final class TransferUploader {
                     throw TransferUploaderError.badResponse
                 }
                 var request = URLRequest(url: url)
-                request.httpMethod = "POST"
+                request.httpMethod = "PUT"
                 request.timeoutInterval = 120
                 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
                 request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")

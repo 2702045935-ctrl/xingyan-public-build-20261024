@@ -33,9 +33,8 @@ require(
     "full UIImage decoding must only be a fallback after data decoding",
 )
 require(
-    WALLPAPER.count(
-        "PhotoPicker(maxSide: chatWallpaperDecodeSide()) { image in"
-    ) >= 2,
+    WALLPAPER.count("maxSide: chatWallpaperDecodeSide(),") >= 2
+    and WALLPAPER.count("onPreviewPick: beginComposingPreview") >= 2,
     "wallpaper picks must request the native wallpaper decode size",
 )
 require(

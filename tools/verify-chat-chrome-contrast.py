@@ -19,9 +19,9 @@ require(
     "wallpaper edge masks must choose a scrim opposite to the selected ink",
 )
 require(
-    "contrastScrim.opacity(effectiveDark ? 0.30 : 0.26)" in CHAT
-    and "contrastScrim.opacity(effectiveDark ? 0.18 : 0.15)" in CHAT,
-    "top and bottom chrome need a strong-to-transparent contrast falloff",
+    "contrastScrim.opacity(effectiveDark ? 0.24 : 0.20)" in CHAT
+    and "contrastScrim.opacity(effectiveDark ? 0.14 : 0.11)" in CHAT,
+    "top and bottom chrome need a restrained contrast falloff over wallpapers",
 )
 require(
     "private struct ChatCleanEdgeMask" in CHAT
@@ -31,10 +31,11 @@ require(
     "light chat chrome must use a clean edge surface instead of layered wallpaper effects",
 )
 require(
-    "if composerUsesLightInk" in CHAT
-    and "NativeGlassHeaderMaterial(forcedDark: true)" in CHAT
-    and "Color(uiColor: .systemBackground).opacity(0.97)" in CHAT,
-    "composer field backing must be solid in light mode and keep glass over dark wallpapers",
+    "NativeGlassHeaderMaterial(\n"
+    "                            forcedDark: composerUsesLightInk" in CHAT
+    and "Color.black.opacity(0.28)" in CHAT
+    and "Color.white.opacity(0.76)" in CHAT,
+    "composer fields must keep one refined native-glass surface on every wallpaper",
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT
@@ -43,8 +44,10 @@ require(
     "top header glass and icon capsules must switch to dark material over black wallpapers",
 )
 require(
-    CHAT.count("if !path.isEmpty { return true }") >= 2,
-    "unsampled custom wallpapers must default to light chrome instead of system light ink",
+    CHAT.count("if !path.isEmpty { return scheme == .dark }") >= 2
+    and "backgroundSamplePath == path, let backgroundTopLuminance" in CHAT
+    and "backgroundSamplePath == path, let backgroundBottomLuminance" in CHAT,
+    "wallpaper changes must ignore stale samples and default safely by appearance mode",
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark:" in CHAT
@@ -52,10 +55,10 @@ require(
     "contrast protection must preserve the existing native glass controls",
 )
 require(
-    "Color.white.opacity(0.90)" in CHAT
-    and "Color(hex: 0x3E4A52)" in CHAT
+    "Color(hex: 0xEFF5F1).opacity(0.92)" in CHAT
+    and "Color(hex: 0x35413C)" in CHAT
     and "composerUtilityInk.opacity(0.82)" in CHAT,
-    "composer utility icons and placeholder must retain readable contrast",
+    "composer icons and placeholder must use the refined adaptive ink",
 )
 require(
     "python3 tools/verify-chat-chrome-contrast.py" in WORKFLOW,

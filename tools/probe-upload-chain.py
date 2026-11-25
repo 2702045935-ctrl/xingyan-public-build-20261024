@@ -38,6 +38,9 @@ def main() -> None:
         raise SystemExit("test token or server missing")
 
     session = requests.Session()
+    # Production upload measurements must exercise the target ingress directly;
+    # an ambient desktop proxy adds a second hop and invalidates the result.
+    session.trust_env = False
     session.verify = False
     headers = {"Authorization": "Bearer " + token}
 

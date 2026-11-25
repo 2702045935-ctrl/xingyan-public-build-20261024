@@ -24988,7 +24988,8 @@ async function handleApi(req, res, pathname, query) {
         ok(res, { transfer: transfer });
         return;
       }
-      if (parts[2] === 'chunk' && parts.length === 3 && method === 'POST') {
+      if (parts[2] === 'chunk' && parts.length === 3
+          && (method === 'POST' || method === 'PUT')) {
         const result = await kernel.putChunk({
           ownerId: user.id,
           id: transferId,

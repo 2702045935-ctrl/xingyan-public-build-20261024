@@ -13,19 +13,21 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private var composerFieldShape: RoundedRectangle" in CHAT
-    and "NativeGlassHeaderMaterial(forcedDark: true)" in CHAT
-    and "Color(uiColor: .systemBackground).opacity(0.97)" in CHAT
+    and "NativeGlassHeaderMaterial(\n"
+        "                            forcedDark: composerUsesLightInk" in CHAT
+    and "Color.black.opacity(0.28)" in CHAT
+    and "Color.white.opacity(0.76)" in CHAT
     and ".clipShape(composerFieldShape)" in CHAT,
-    "composer field must use clean light mode and native glass over dark wallpapers",
+    "composer field must use the unified refined native-glass surface",
 )
 require(
     "composerFieldShape.fill(.regularMaterial)" not in CHAT,
     "composer field must not fall back to an opaque material-only surface",
 )
 require(
-    "Color.white.opacity(0.18)" in CHAT
-    and "Color.black.opacity(0.055)" in CHAT,
-    "composer field needs the subtle native hairline",
+    "Color.white.opacity(0.12)" in CHAT
+    and "Color.black.opacity(0.045)" in CHAT,
+    "composer field needs one restrained native hairline",
 )
 
 print("composer-native-field: passed")

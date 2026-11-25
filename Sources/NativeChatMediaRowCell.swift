@@ -24,7 +24,6 @@ struct NativeChatMediaRowModel {
     var secondaryColor: UIColor
     var bubbleColor: UIColor
     var showTail: Bool
-    var bubbleGlass: Bool
     var showsAvatar: Bool = true
     var reservesAvatarSpace: Bool = true
     var metaText: String
@@ -233,7 +232,6 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         bubble.fillColor = next.bubbleColor
         bubble.mine = next.mine
         bubble.showTail = next.showTail
-        bubble.glass = next.bubbleGlass
         metadata.configure(
             time: next.metaText,
             tickCount: next.tickCount,
@@ -274,8 +272,6 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             durationLabel.isHidden = seconds <= 0
             durationLabel.text = " \(max(0, seconds))s "
         case .file(let name, let path, let bytes, let type):
-            bubble.fillColor = .secondarySystemGroupedBackground
-            bubble.glass = false
             bubble.showTail = false
             fileIcon.isHidden = false
             titleLabel.isHidden = false

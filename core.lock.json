@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/API.swift",
-      "size": 227866,
-      "sha256": "74bc46fd9f1636a551aae096b9e4c627d727b0b4d60a29816345309d8236eb97"
+      "size": 227215,
+      "sha256": "29d59db538b32076d960ed823d3cf7fd1e0ee81d11c1a679b8d8a0336ec25f5e"
     },
     {
       "path": "Sources/App.swift",
@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 436574,
-      "sha256": "34d40a91a0f2fc2bcc80e5daaaec94e3616a21d13e73f9b18652ac627eb218ba"
+      "size": 436461,
+      "sha256": "df7c1db936445175f4a89263ffe90b47b936944b7e9f30d5e0867fc4cca9731f"
     },
     {
       "path": "Sources/GroupInfoView.swift",
@@ -148,8 +148,8 @@
     },
     {
       "path": "Sources/ChatSurfaceMaterial.swift",
-      "size": 3502,
-      "sha256": "b341f583ad3494549c58a26fa59df743ee9011a5b7665aa503cb71033b6a06f8"
+      "size": 2534,
+      "sha256": "3e5a361ddcb054a1929125f967f4817508bf808a24b4ac010fd3633f1b1d02e1"
     },
     {
       "path": "Sources/WhatsAppChatLayout.swift",
@@ -158,8 +158,8 @@
     },
     {
       "path": "Sources/TransferUploader.swift",
-      "size": 29255,
-      "sha256": "53f9511a89d571921cadd5270d3c273fa52e88a8250f0ccd16eae1fb5b99a938"
+      "size": 29254,
+      "sha256": "7b34e4a06f948028aad7f3182ba317ea22b85a6de0bf39168156adf67badc323"
     }
   ]
 }

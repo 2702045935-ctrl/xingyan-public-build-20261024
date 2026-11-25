@@ -27,11 +27,15 @@ require(
     "small media uploads must retain the proven raw endpoint",
 )
 require(
-    "fileSize >= 4 * 1024 * 1024" in API
-    and "TransferUploader.shared.uploadFile(" in API
-    and "catch TransferUploaderError.unsupported" in API
-    and "process.env.ENABLE_TRANSFER_KERNEL !== '0'" in SERVER,
-    "large files and videos must use the enabled parallel resumable transfer kernel",
+    "fileSize >= 4 * 1024 * 1024" not in API
+    and "TransferUploader.shared.uploadFile(" not in API
+    and "TransferUploaderError.unsupported" not in API
+    and 'request.httpMethod = "PUT"' in (
+        ROOT / "Sources" / "TransferUploader.swift"
+    ).read_text(encoding="utf-8")
+    and "process.env.ENABLE_TRANSFER_KERNEL !== '0'" in SERVER
+    and "(method === 'POST' || method === 'PUT')" in SERVER,
+    "chat uploads must keep the faster raw path while the resumable kernel remains diagnostic",
 )
 require(
     "req.httpBody = data\n        let (d, resp) = try await session.data(for: req)"

@@ -20,7 +20,6 @@ struct NativeChatTextRowModel {
     var secondaryColor: UIColor
     var mentionColor: UIColor
     var showTail: Bool
-    var bubbleGlass: Bool
     var showsAvatar: Bool = true
     var reservesAvatarSpace: Bool = true
     var metaText: String
@@ -50,10 +49,6 @@ final class NativeChatBubbleBackground: UIView {
     var showTail = true {
         didSet { setNeedsDisplay() }
     }
-    var glass = false {
-        didSet { setNeedsDisplay() }
-    }
-
     override init(frame: CGRect) {
         super.init(frame: frame)
         isOpaque = false
@@ -104,39 +99,8 @@ final class NativeChatBubbleBackground: UIView {
             }
         }
         path.close()
-        let dark = traitCollection.userInterfaceStyle == .dark
-        let surface = ChatSurfaceMaterial.uiBubble(
-            base: fillColor,
-            mine: mine,
-            dark: dark,
-            glass: glass
-        )
-        surface.fill.setFill()
+        fillColor.setFill()
         path.fill()
-        guard glass, let context = UIGraphicsGetCurrentContext() else { return }
-        context.saveGState()
-        path.addClip()
-        let colors = [
-            surface.highlight.cgColor,
-            UIColor.clear.cgColor,
-            surface.shade.cgColor
-        ] as CFArray
-        if let gradient = CGGradient(
-            colorsSpace: CGColorSpaceCreateDeviceRGB(),
-            colors: colors,
-            locations: [0, 0.52, 1]
-        ) {
-            context.drawLinearGradient(
-                gradient,
-                start: CGPoint(x: 0, y: 0),
-                end: CGPoint(x: 0, y: bounds.height),
-                options: []
-            )
-        }
-        context.restoreGState()
-        surface.border.setStroke()
-        path.lineWidth = 0.8
-        path.stroke()
     }
 }
 
@@ -280,7 +244,6 @@ final class NativeChatTextRowView: UIView, UIGestureRecognizerDelegate {
         bubble.fillColor = next.bubbleColor
         bubble.mine = next.mine
         bubble.showTail = next.showTail
-        bubble.glass = next.bubbleGlass
         textLabel.attributedText = attributedText(next)
         metadata.configure(
             time: next.metaText,

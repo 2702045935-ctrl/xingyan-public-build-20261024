@@ -23,6 +23,9 @@ MINI_SOURCE = (ROOT / "Sources" / "MiniApps.swift").read_text(
 TEXT_ROW = (ROOT / "Sources" / "NativeChatTextRowCell.swift").read_text(
     encoding="utf-8"
 )
+SURFACE = (ROOT / "Sources" / "ChatSurfaceMaterial.swift").read_text(
+    encoding="utf-8"
+)
 LAYOUT = (ROOT / "Sources" / "WhatsAppChatLayout.swift").read_text(
     encoding="utf-8"
 )
@@ -56,12 +59,13 @@ require(
 )
 require(
     "var glass: Bool = false" in CHAT
-    and "private var activeGlass: Bool { glass || ChatTheme.usesGlass }" in CHAT
-    and "if activeGlass {" in CHAT
-    and "ChatSurfaceMaterial.bubble(" in CHAT
-    and ".fill(surface.fill)" in CHAT
+    and "11/22 material baseline" in CHAT
+    and "private var activeGlass" not in CHAT
+    and "if activeGlass {" not in CHAT
+    and ".fill(ChatTheme.bubbleMine)" in CHAT
+    and ".fill(ChatTheme.bubbleOther)" in CHAT
     and "BubbleFill(mine: mine, tail: showTail, glass: false)" in CHAT,
-    "classic bubbles must stay flat while the glass preset opts into translucent fills",
+    "default and wallpaper bubbles must retain the opaque 11/22 material",
 )
 require(
     "return 2.5" in CHAT
@@ -90,11 +94,22 @@ require(
     and "static let gridRadius: CGFloat = 5" in CARDS
     and ".fill(ChatMessageSurface.cardFill)" in CARDS
     and ".stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)" in CARDS
-    and "if ChatTheme.usesGlass {" in CARDS
-    and ".opacity(mine ? 0.84 : 0.74)" in CARDS
-    and ".fill(.ultraThinMaterial)" in CARDS
+    and "if ChatTheme.usesGlass {" not in CARDS
+    and ".opacity(mine ? 0.84 : 0.74)" not in CARDS
+    and ".fill(.ultraThinMaterial)" not in CARDS
+    and "Color.dyn(0xFFFFFF, 0x1C1C1E)" in CARDS
+    and "Color.dyn(0xE7E7E8, 0x343436)" in CARDS
     and ".regularMaterial" not in CARDS,
-    "message cards must keep the flat theme and use the glass material when selected",
+    "message cards must share the opaque 11/22 surface on every wallpaper",
+)
+require(
+    "dark _: Bool,\n                       glass _: Bool" in SURFACE
+    and "fill: base,\n            fillEnd: base" in SURFACE
+    and "highlight: .clear" in SURFACE
+    and "shade: .clear" in SURFACE
+    and "border: .clear" in SURFACE
+    and "(base, .clear, .clear, .clear)" in SURFACE,
+    "native bubble materials must use the same opaque no-overlay 11/22 style",
 )
 require(
     "static let cornerRadius: CGFloat = 8" in LAYOUT

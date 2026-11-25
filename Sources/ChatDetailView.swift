@@ -412,7 +412,6 @@ struct BubbleFill: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.bubbleUsesLightInk) private var wallpaperUsesLightInk
     private var usesDarkBackdrop: Bool { wallpaperUsesLightInk ?? (scheme == .dark) }
-    private var activeGlass: Bool { glass || ChatTheme.usesGlass }
     private var capsule: Bool { pill }
 
     private var gloss: Color {
@@ -424,17 +423,14 @@ struct BubbleFill: View {
 
     private var edgeAlpha: CGFloat { UIConfig.num("bubbleEdge", 0) }
 
-    private var surface: ChatSurfaceStyle {
-        ChatSurfaceMaterial.bubble(
-            mine: mine,
-            dark: usesDarkBackdrop,
-            glass: activeGlass
-        )
-    }
-
-    private var surfaceFill: LinearGradient {
+    // 11/22 material baseline: the wallpaper never changes bubble opacity or
+    // adds a translucent layer. Both default and custom wallpapers use this fill.
+    private var mineFill: LinearGradient {
         LinearGradient(
-            colors: [surface.fill, surface.fillEnd],
+            colors: [
+                ChatTheme.bubbleMine,
+                ChatTheme.bubbleMine.opacity(0.88)
+            ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
@@ -442,29 +438,17 @@ struct BubbleFill: View {
 
     var body: some View {
         ZStack {
-            if activeGlass {
-                BubbleShape(mine: mine, tail: tail, pill: capsule)
-                    .fill(surfaceFill)
+            if mine {
+                if glass {
+                    BubbleShape(mine: mine, tail: tail, pill: capsule)
+                        .fill(mineFill)
+                } else {
+                    BubbleShape(mine: mine, tail: tail, pill: capsule)
+                        .fill(ChatTheme.bubbleMine)
+                }
             } else {
                 BubbleShape(mine: mine, tail: tail, pill: capsule)
-                    .fill(surface.fill)
-            }
-
-            if activeGlass {
-                BubbleShape(mine: mine, tail: tail, pill: capsule)
-                    .fill(LinearGradient(
-                        stops: [
-                            .init(color: surface.highlight, location: 0),
-                            .init(color: surface.highlight.opacity(0.20), location: 0.33),
-                            .init(color: Color.clear, location: 0.62),
-                            .init(color: surface.shade, location: 1)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ))
-
-                BubbleShape(mine: mine, tail: tail, pill: capsule)
-                    .stroke(surface.border, lineWidth: 0.8)
+                    .fill(ChatTheme.bubbleOther)
             }
 
             if UIConfig.num("bubbleGloss", 0) > 0
@@ -585,9 +569,9 @@ private struct ChatImmersiveEdgeMask: View {
 
                 LinearGradient(
                     stops: [
-                        .init(color: contrastScrim.opacity(effectiveDark ? 0.30 : 0.26),
+                        .init(color: contrastScrim.opacity(effectiveDark ? 0.24 : 0.20),
                               location: 0),
-                        .init(color: contrastScrim.opacity(effectiveDark ? 0.18 : 0.15),
+                        .init(color: contrastScrim.opacity(effectiveDark ? 0.14 : 0.11),
                               location: 0.58),
                         .init(color: .clear, location: 1)
                     ],
@@ -1013,6 +997,7 @@ struct ChatDetailView: View {
     @State private var backgroundLuminance: Double? = nil
     @State private var backgroundTopLuminance: Double? = nil
     @State private var backgroundBottomLuminance: Double? = nil
+    @State private var backgroundSamplePath = ""
     @State private var wallpaperTopTint: Color? = nil
     @State private var wallpaperBottomTint: Color? = nil
     @State private var historySyncTask: Task<Void, Never>?
@@ -2325,7 +2310,9 @@ struct ChatDetailView: View {
         default:
             break
         }
-        if let backgroundLuminance { return backgroundLuminance < 0.46 }
+        if backgroundSamplePath == path, let backgroundLuminance {
+            return backgroundLuminance < 0.46
+        }
         return scheme == .dark
     }
 
@@ -2350,8 +2337,10 @@ struct ChatDetailView: View {
         default:
             break
         }
-        if let backgroundBottomLuminance { return backgroundBottomLuminance < 0.46 }
-        if !path.isEmpty { return true }
+        if backgroundSamplePath == path, let backgroundBottomLuminance {
+            return backgroundBottomLuminance < 0.46
+        }
+        if !path.isEmpty { return scheme == .dark }
         return senderNameUsesLightInk
     }
 
@@ -2371,10 +2360,10 @@ struct ChatDetailView: View {
         default:
             break
         }
-        if let backgroundTopLuminance {
+        if backgroundSamplePath == path, let backgroundTopLuminance {
             return Self.prefersLightTopInk(for: backgroundTopLuminance)
         }
-        if !path.isEmpty { return true }
+        if !path.isEmpty { return scheme == .dark }
         return senderNameUsesLightInk
     }
 
@@ -2391,7 +2380,9 @@ struct ChatDetailView: View {
     }
 
     private var adaptiveTopInk: Color {
-        topBarUsesLightInk ? .white : .black
+        topBarUsesLightInk
+            ? Color(hex: 0xF7FAF8)
+            : Color(hex: 0x101714)
     }
 
     private var adaptiveTopAccent: Color {
@@ -2408,8 +2399,8 @@ struct ChatDetailView: View {
 
     private var adaptiveTopGlyphShadow: Color {
         topBarUsesLightInk
-            ? Color.black.opacity(0.52)
-            : Color.white.opacity(0.62)
+            ? Color.black.opacity(0.46)
+            : Color.white.opacity(0.54)
     }
 
     private var adaptiveSystemSecondaryInk: Color {
@@ -2448,18 +2439,20 @@ struct ChatDetailView: View {
 
     private var composerUtilityInk: Color {
         composerUsesLightInk
-            ? Color.white.opacity(0.90)
-            : Color(hex: 0x3E4A52)
+            ? Color(hex: 0xEFF5F1).opacity(0.92)
+            : Color(hex: 0x35413C)
     }
 
     private var adaptiveComposerSurface: Color {
         composerUsesLightInk
-            ? Color.black.opacity(0.34)
-            : Color.white.opacity(0.82)
+            ? Color.black.opacity(0.24)
+            : Color.white.opacity(0.70)
     }
 
     private var composerTextInk: Color {
-        composerUsesLightInk ? .white : Color(hex: 0x111B21)
+        composerUsesLightInk
+            ? Color(hex: 0xF7FAF8)
+            : Color(hex: 0x101714)
     }
 
     private var adaptiveComposerStroke: Color {
@@ -2474,6 +2467,7 @@ struct ChatDetailView: View {
             backgroundLuminance = nil
             backgroundTopLuminance = nil
             backgroundBottomLuminance = nil
+            backgroundSamplePath = ""
             wallpaperTopTint = nil
             wallpaperBottomTint = nil
             return
@@ -2483,6 +2477,7 @@ struct ChatDetailView: View {
             backgroundLuminance = 1
             backgroundTopLuminance = 1
             backgroundBottomLuminance = 1
+            backgroundSamplePath = path
             wallpaperTopTint = .white
             wallpaperBottomTint = .white
             return
@@ -2490,6 +2485,7 @@ struct ChatDetailView: View {
             backgroundLuminance = 0
             backgroundTopLuminance = 0
             backgroundBottomLuminance = 0
+            backgroundSamplePath = path
             wallpaperTopTint = .black
             wallpaperBottomTint = .black
             return
@@ -2530,6 +2526,7 @@ struct ChatDetailView: View {
         backgroundLuminance = samples.full[0]
         backgroundTopLuminance = samples.top[0]
         backgroundBottomLuminance = samples.bottom[0]
+        backgroundSamplePath = path
         wallpaperTopTint = Color(
             red: samples.top[1],
             green: samples.top[2],
@@ -2543,6 +2540,8 @@ struct ChatDetailView: View {
     }
 
     private func refreshPreviewLuminance(_ image: UIImage) async {
+        let path = normalizedChatBackground(backgroundPath)
+        guard !path.isEmpty else { return }
         let samples = await Task.detached(priority: .utility) {
             () -> (full: [Double], top: [Double], bottom: [Double])? in
             guard let cgImage = image.cgImage else { return nil }
@@ -2560,10 +2559,13 @@ struct ChatDetailView: View {
             ) else { return nil }
             return (full, top, bottom)
         }.value
-        guard !Task.isCancelled, let samples else { return }
+        guard !Task.isCancelled,
+              path == normalizedChatBackground(backgroundPath),
+              let samples else { return }
         backgroundLuminance = samples.full[0]
         backgroundTopLuminance = samples.top[0]
         backgroundBottomLuminance = samples.bottom[0]
+        backgroundSamplePath = path
         wallpaperTopTint = Color(
             red: samples.top[1],
             green: samples.top[2],
@@ -3840,7 +3842,6 @@ struct ChatDetailView: View {
             secondaryColor: UIColor(ChatTheme.secondary),
             mentionColor: UIColor(mine ? ChatTheme.mentionMeOnMine : ChatTheme.mentionMe),
             showTail: false,
-            bubbleGlass: ChatTheme.usesGlass,
             showsAvatar: true,
             reservesAvatarSpace: true,
             metaText: TimeFmt.messageClock(message.createdAt),
@@ -3877,7 +3878,6 @@ struct ChatDetailView: View {
             secondaryColor: UIColor(ChatTheme.mineSecondaryInk),
             mentionColor: UIColor(ChatTheme.mentionMeOnMine),
             showTail: false,
-            bubbleGlass: ChatTheme.usesGlass,
             showsAvatar: true,
             reservesAvatarSpace: true,
             metaText: TimeFmt.messageClock(pending.at),
@@ -3976,7 +3976,6 @@ struct ChatDetailView: View {
             secondaryColor: UIColor(mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary),
             bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
             showTail: false,
-            bubbleGlass: ChatTheme.usesGlass,
             showsAvatar: true,
             reservesAvatarSpace: true,
             metaText: hidesBubbleMetadata ? "" : TimeFmt.messageClock(message.createdAt),
@@ -5894,8 +5893,8 @@ struct ChatDetailView: View {
 
     private var composerFieldBorder: Color {
         composerUsesLightInk
-            ? Color.white.opacity(0.18)
-            : Color.black.opacity(0.055)
+            ? Color.white.opacity(0.12)
+            : Color.black.opacity(0.045)
     }
 
     private var draftImagesBar: some View {
@@ -6336,14 +6335,14 @@ struct ChatDetailView: View {
                 .frame(height: composerInputHeight)
                 .background {
                     ZStack {
-                        if composerUsesLightInk {
-                            NativeGlassHeaderMaterial(forcedDark: true)
-                            composerFieldShape.fill(Color.black.opacity(0.42))
-                        } else {
-                            composerFieldShape.fill(
-                                Color(uiColor: .systemBackground).opacity(0.97)
-                            )
-                        }
+                        NativeGlassHeaderMaterial(
+                            forcedDark: composerUsesLightInk
+                        )
+                        composerFieldShape.fill(
+                            composerUsesLightInk
+                                ? Color.black.opacity(0.28)
+                                : Color.white.opacity(0.76)
+                        )
                         if recorder.recording {
                             composerFieldShape.fill(
                                 recorder.willCancel
@@ -10125,7 +10124,7 @@ struct MessageRow: View {
                                         style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: outerRadius, style: .continuous)
-                    .stroke(Color.white.opacity(ChatTheme.usesGlass ? 0.16 : 0.06),
+                    .stroke(Color.white.opacity(0.06),
                             lineWidth: 0.7)
             }
         }

@@ -5754,22 +5754,6 @@ private struct StarredPayload: Decodable {
     func uploadBinaryFile(_ file: URL, mime: String,
                           skipTranscode: Bool = false,
                           onProgress: @escaping (Double) -> Void) async throws -> String {
-        let fileSize = ((try? file.resourceValues(forKeys: [.fileSizeKey]))?.fileSize) ?? 0
-        if fileSize >= 4 * 1024 * 1024 {
-            do {
-                return try await TransferUploader.shared.uploadFile(
-                    file,
-                    mime: mime,
-                    skipTranscode: skipTranscode,
-                    base: base,
-                    token: token,
-                    session: session,
-                    onProgress: onProgress
-                )
-            } catch TransferUploaderError.unsupported {
-                // Older deployments can fall back without losing correctness.
-            }
-        }
         guard let url = URL(string: base + "/api/upload/raw") else {
             throw APIError.message("服务器地址不正确")
         }

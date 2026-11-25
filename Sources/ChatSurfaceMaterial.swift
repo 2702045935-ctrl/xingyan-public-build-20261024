@@ -11,29 +11,15 @@ struct ChatSurfaceStyle {
 
 enum ChatSurfaceMaterial {
     static func bubble(mine: Bool,
-                       dark: Bool,
-                       glass: Bool) -> ChatSurfaceStyle {
+                       dark _: Bool,
+                       glass _: Bool) -> ChatSurfaceStyle {
         let base = mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther
-        guard glass else {
-            return ChatSurfaceStyle(
-                fill: base,
-                fillEnd: base,
-                highlight: .clear,
-                shade: .clear,
-                border: .clear
-            )
-        }
-        let fill = base.opacity(mine ? 0.84 : 0.74)
         return ChatSurfaceStyle(
-            fill: fill,
-            fillEnd: fill.opacity(0.72),
-            highlight: Color.white.opacity(mine
-                ? (dark ? 0.17 : 0.42)
-                : (dark ? 0.12 : 0.72)),
-            shade: Color.black.opacity(dark ? 0.07 : 0.035),
-            border: Color.white.opacity(mine
-                ? (dark ? 0.17 : 0.42)
-                : (dark ? 0.12 : 0.72))
+            fill: base,
+            fillEnd: base,
+            highlight: .clear,
+            shade: .clear,
+            border: .clear
         )
     }
 
@@ -58,22 +44,12 @@ enum ChatSurfaceMaterial {
 
     static func uiBubble(base: UIColor,
                          mine: Bool,
-                         dark: Bool,
-                         glass: Bool) -> (fill: UIColor,
+                         dark _: Bool,
+                         glass _: Bool) -> (fill: UIColor,
                                           highlight: UIColor,
                                           shade: UIColor,
                                           border: UIColor) {
-        guard glass else { return (base, .clear, .clear, .clear) }
-        return (
-            base.withAlphaComponent(mine ? 0.84 : 0.74),
-            UIColor.white.withAlphaComponent(mine
-                ? (dark ? 0.17 : 0.42)
-                : (dark ? 0.12 : 0.72)),
-            UIColor.black.withAlphaComponent(dark ? 0.07 : 0.035),
-            UIColor.white.withAlphaComponent(mine
-                ? (dark ? 0.17 : 0.42)
-                : (dark ? 0.12 : 0.72))
-        )
+        (base, .clear, .clear, .clear)
     }
 
     static func uiSystem(dark: Bool,
