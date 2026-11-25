@@ -1811,7 +1811,10 @@ final class API {
     static let publicIngressServer = "mail.xingyanmail.site:443"
     static let publicIngressPath = "/xy"
     private static let legacyDirectServer = "43.242.194.89:8443"
-    private static let directUploadBase = "https://43.242.194.89:8443"
+    private static let directUploadBases = [
+        "https://43.242.194.89:8443",
+        "https://43.242.194.89:5443"
+    ]
 
     private(set) var token: String = ""
 
@@ -5825,7 +5828,7 @@ private struct StarredPayload: Decodable {
 
     private var rawUploadBases: [String] {
         let roots = server == API.publicIngressServer
-            ? [API.directUploadBase, base]
+            ? API.directUploadBases + [base]
             : [base]
         var seen = Set<String>()
         return roots.filter { !$0.isEmpty && seen.insert($0).inserted }

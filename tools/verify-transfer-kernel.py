@@ -22,7 +22,9 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private let uploadSession: URLSession" in API
-    and 'directUploadBase = "https://43.242.194.89:8443"' in API
+    and '"https://43.242.194.89:8443"' in API
+    and '"https://43.242.194.89:5443"' in API
+    and "API.directUploadBases + [base]" in API
     and "private var rawUploadBases: [String]" in API
     and 'root + "/api/upload/raw"' in API
     and "uploadCfg.httpMaximumConnectionsPerHost = 8" in API
