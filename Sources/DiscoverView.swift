@@ -1356,7 +1356,8 @@ private enum MomentTimelineMode: String, CaseIterable {
 
 struct MomentsView: View {
     private static let momentPageSize = 30
-    private static let stressMomentWindow = 10_000
+    private static let stressMomentInitialWindow = 10_000
+    private static let stressMomentWindow = 50_000
     private static let stressMomentPageSize = 20
     private static let monthDayFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -1408,7 +1409,7 @@ struct MomentsView: View {
     @State private var locallyPostedMoments: [String: Moment] = [:]
     @State private var stressWindowStart = 0
     @State private var stressLoadedCount = min(MomentStressFixture.count,
-                                               Self.stressMomentWindow)
+                                               Self.stressMomentInitialWindow)
     @StateObject private var momentPaging = MomentPrefetchStore()
     @State private var locallyDeletedMomentIds: Set<String> = []
 
@@ -1483,6 +1484,7 @@ struct MomentsView: View {
     @State private var tapLockUntil = Date(timeIntervalSince1970: 0)
     @State private var lastRouteOpenAt = Date.distantPast
     @State private var loadingMore = false
+    @State private var pendingMomentCommit = false
     @State private var momentTotal = 0
 
     @State private var pullY: CGFloat = 0
@@ -1566,9 +1568,14 @@ struct MomentsView: View {
                     ScrollOffsetProbe(onChange: { _, _ in },
                                       onDragChange: { _ in },
                                       onScrollStateChange: { scrolling in
-                        guard momentsScrollActive != scrolling else { return }
-                        withSystemAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
-                            momentsScrollActive = scrolling
+                        if momentsScrollActive != scrolling {
+                            withSystemAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
+                                momentsScrollActive = scrolling
+                            }
+                        }
+                        if !scrolling, pendingMomentCommit {
+                            pendingMomentCommit = false
+                            Task { await loadMoreMoments() }
                         }
                     })
                 }
@@ -3145,7 +3152,7 @@ struct MomentsView: View {
         momentPaging.running = false
         if MomentStressFixture.isActive {
             stressWindowStart = 0
-            let target = min(MomentStressFixture.count, Self.stressMomentWindow)
+            let target = min(MomentStressFixture.count, Self.stressMomentInitialWindow)
             stressLoadedMoments = await Self.generateStressMoments(range: 0..<target)
             stressLoadedCount = target
             momentTotal = MomentStressFixture.count
@@ -3184,6 +3191,12 @@ struct MomentsView: View {
     }
 
     private func loadMoreMoments() async {
+        if momentsScrollActive {
+            pendingMomentCommit = true
+            scheduleMomentPrefetch()
+            return
+        }
+        pendingMomentCommit = false
         if MomentStressFixture.isActive {
             guard hasMoreMoments, !loadingMore else { return }
             loadingMore = true

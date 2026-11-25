@@ -32,6 +32,16 @@ require(
     "Moments stress data must consume one page and keep a bounded active window",
 )
 require(
+    "@State private var pendingMomentCommit = false" in VIEW
+    and "if momentsScrollActive {\n"
+    "            pendingMomentCommit = true\n"
+    "            scheduleMomentPrefetch()\n"
+    "            return\n"
+    "        }" in VIEW
+    and "if !scrolling, pendingMomentCommit" in VIEW,
+    "Moments prefetched pages must commit only after the active scroll stops",
+)
+require(
     "momentPaging.moments = await Self.generateStressMoments(" in VIEW
     and "private static func generateStressMoments(range: Range<Int>) async -> [Moment]" in VIEW
     and "Task.detached(priority: .userInitiated)" in VIEW
