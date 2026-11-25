@@ -36,7 +36,9 @@ require(
     "history insertion and tail-window trimming must not run as two snapshots",
 )
 require(
-    "let bounded = merged.count > maxMessageWindow" in WINDOW,
+    "private func installHistoryWindow(" in WINDOW
+    and "let overflow = max(0, rows.count - maxMessageWindow)" in WINDOW
+    and "installHistoryWindow(merged, evictingNewestIntoOlder: true)" in WINDOW,
     "the prepend and bounded message window must be committed atomically",
 )
 require(

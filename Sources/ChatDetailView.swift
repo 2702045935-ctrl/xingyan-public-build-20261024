@@ -150,15 +150,11 @@ private struct TypingPeer: Equatable {
 private final class ChatHistoryRuntime {
     var revision = 0
     var loadingOlder = false
-    var lastScrollRunwayCheck = 0.0
     var oldestLoadedSeq = 0
     var newestLoadedSeq = 0
     var olderPrefetch: [Message] = []
     var olderPrefetchHasMore = false
     var olderNextCursor = 0
-    var olderPrefetchTask: Task<Void, Never>?
-    var olderPrefetchToken = UUID()
-    var pendingOlderHandoff = false
 
     var loadingNewer = false
     var lastOlderLoad = Date.distantPast
@@ -166,9 +162,6 @@ private final class ChatHistoryRuntime {
     var newerPrefetch: [Message] = []
     var newerPrefetchHasMore = false
     var newerNextCursor = 0
-    var newerPrefetchTask: Task<Void, Never>?
-    var newerPrefetchToken = UUID()
-    var pendingNewerHandoff = false
     var newestKnownSeq = 0
 
 }
@@ -1188,6 +1181,46 @@ struct ChatDetailView: View {
     private func visibleMessages(_ rows: [Message]) -> [Message] {
         let sorted = rows.filter { !hiddenMessageIds.contains($0.id) }
             .sorted(by: messageSortsBefore)
+        return deduplicatedVisibleMessages(sorted)
+    }
+
+    /// Older/newer pages are already ordered. Merge them into the active
+    /// window linearly instead of sorting the complete bounded window again
+    /// for every 48-row rotation during a long fling.
+    private func mergeVisibleMessages(_ left: [Message],
+                                      _ right: [Message]) -> [Message] {
+        let a = visibleMessages(left)
+        let b = right.filter { !hiddenMessageIds.contains($0.id) }
+        guard !a.isEmpty else { return deduplicatedVisibleMessages(b) }
+        guard !b.isEmpty else { return deduplicatedVisibleMessages(a) }
+
+        var merged: [Message] = []
+        merged.reserveCapacity(a.count + b.count)
+        var ai = 0
+        var bi = 0
+        while ai < a.count, bi < b.count {
+            let older = a[ai]
+            let newer = b[bi]
+            if older.id == newer.id {
+                // Prefer the active-window copy: it may contain a newer
+                // receipt/read state than the runway copy.
+                merged.append(newer)
+                ai += 1
+                bi += 1
+            } else if messageSortsBefore(older, newer) {
+                merged.append(older)
+                ai += 1
+            } else {
+                merged.append(newer)
+                bi += 1
+            }
+        }
+        if ai < a.count { merged.append(contentsOf: a[ai...]) }
+        if bi < b.count { merged.append(contentsOf: b[bi...]) }
+        return deduplicatedVisibleMessages(merged)
+    }
+
+    private func deduplicatedVisibleMessages(_ sorted: [Message]) -> [Message] {
         var seenClientIds = Set<String>()
         var recentProductCards: [String: Message] = [:]
         var out: [Message] = []
@@ -1210,6 +1243,73 @@ struct ChatDetailView: View {
             out.append(message)
         }
         return out
+    }
+
+    /// Install one bounded history window with a single index build. The
+    /// evicted edge becomes the opposite runway, so reversing direction never
+    /// waits for a duplicate network request.
+    private func installHistoryWindow(_ rows: [Message],
+                                      evictingNewestIntoOlder: Bool) {
+        let bounded: [Message]
+        let evicted: [Message]
+        if evictingNewestIntoOlder {
+            let overflow = max(0, rows.count - maxMessageWindow)
+            bounded = overflow > 0 ? Array(rows.dropLast(overflow)) : rows
+            evicted = overflow > 0 ? Array(rows.suffix(overflow)) : []
+        } else {
+            let overflow = max(0, rows.count - maxMessageWindow)
+            bounded = overflow > 0 ? Array(rows.dropFirst(overflow)) : rows
+            evicted = overflow > 0 ? Array(rows.prefix(overflow)) : []
+        }
+
+        var index = [String: Int](minimumCapacity: bounded.count)
+        var oldest = 0
+        var newest = 0
+        for (position, message) in bounded.enumerated() {
+            index[message.id] = position
+            let seq = message.seq ?? 0
+            guard seq > 0 else { continue }
+            if oldest == 0 || seq < oldest { oldest = seq }
+            if seq > newest { newest = seq }
+        }
+
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            messages = bounded
+        }
+        msgIndex = index
+        historyRuntime.oldestLoadedSeq = oldest
+        historyRuntime.newestLoadedSeq = newest
+        historyRuntime.revision &+= 1
+
+        if evictingNewestIntoOlder {
+            rotateNewerRunway(with: evicted)
+        } else {
+            rotateOlderRunway(with: evicted)
+        }
+    }
+
+    private func rotateNewerRunway(with evicted: [Message]) {
+        let edge = historyRuntime.newestLoadedSeq
+        let target = historyRunwayTarget
+        let combined = visibleMessages(evicted + newerPrefetch)
+            .filter { edge <= 0 || ($0.seq ?? 0) > edge }
+        newerPrefetch = Array(combined.prefix(target))
+        newerPrefetchHasMore = historyRuntime.newestLoadedSeq < newestAvailableSeq
+        newerNextCursor = newerPrefetch.last?.seq ?? edge
+    }
+
+    private func rotateOlderRunway(with evicted: [Message]) {
+        let edge = historyRuntime.oldestLoadedSeq
+        let target = historyRunwayTarget
+        let combined = visibleMessages(evicted + olderPrefetch)
+            .filter {
+                edge <= 0 || ($0.seq ?? 0) == 0 || ($0.seq ?? 0) < edge
+            }
+        olderPrefetch = Array(combined.suffix(target))
+        olderPrefetchHasMore = edge > 1
+        olderNextCursor = olderPrefetch.first?.seq ?? max(1, edge)
     }
 
     private func duplicateProductCard(_ first: Message, _ second: Message) -> Bool {
@@ -1596,16 +1696,6 @@ struct ChatDetailView: View {
         nonmutating set { historyRuntime.olderNextCursor = newValue }
     }
 
-    private var olderPrefetchTask: Task<Void, Never>? {
-        get { historyRuntime.olderPrefetchTask }
-        nonmutating set { historyRuntime.olderPrefetchTask = newValue }
-    }
-
-    private var olderPrefetchToken: UUID {
-        get { historyRuntime.olderPrefetchToken }
-        nonmutating set { historyRuntime.olderPrefetchToken = newValue }
-    }
-
     private var loadingNewer: Bool {
         get { historyRuntime.loadingNewer }
         nonmutating set { historyRuntime.loadingNewer = newValue }
@@ -1629,16 +1719,6 @@ struct ChatDetailView: View {
     private var newerPrefetchHasMore: Bool {
         get { historyRuntime.newerPrefetchHasMore }
         nonmutating set { historyRuntime.newerPrefetchHasMore = newValue }
-    }
-
-    private var newerPrefetchTask: Task<Void, Never>? {
-        get { historyRuntime.newerPrefetchTask }
-        nonmutating set { historyRuntime.newerPrefetchTask = newValue }
-    }
-
-    private var newerPrefetchToken: UUID {
-        get { historyRuntime.newerPrefetchToken }
-        nonmutating set { historyRuntime.newerPrefetchToken = newValue }
     }
 
     private var newestKnownSeq: Int {
@@ -3171,10 +3251,6 @@ struct ChatDetailView: View {
             outbox.removeAll()
             olderPrefetch.removeAll()
             newerPrefetch.removeAll()
-            olderPrefetchTask?.cancel()
-            newerPrefetchTask?.cancel()
-            olderPrefetchTask = nil
-            newerPrefetchTask = nil
             newestKnownSeq = 0
             selected.removeAll()
             selectMode = false
@@ -3478,12 +3554,6 @@ struct ChatDetailView: View {
             }
             historySyncTask?.cancel()
             historySyncTask = nil
-            olderPrefetchTask?.cancel()
-            olderPrefetchTask = nil
-            olderPrefetchToken = UUID()
-            newerPrefetchTask?.cancel()
-            newerPrefetchTask = nil
-            newerPrefetchToken = UUID()
             persistTask?.cancel()
             persistTask = nil
             draftSaveTask?.cancel()
@@ -3547,17 +3617,11 @@ struct ChatDetailView: View {
                     }
                     ScrollGate.shared.setScrolling(true)
                     followOwnSendUntil = Date.distantPast
-                    historyRuntime.pendingOlderHandoff = false
-                    historyRuntime.pendingNewerHandoff = false
                 } else {
                     if let gap = ChatScrollHandle.shared.gap {
                         atBottom = gap <= 16
                         wasAtBottom = gap <= 16
                     }
-                    let handoffOlder = ChatScrollHandle.shared.lastTravelWasOlder
-                        && ChatScrollHandle.shared.olderRunwayIntentActive
-                    let handoffNewer = ChatScrollHandle.shared.lastTravelWasNewer
-                        && ChatScrollHandle.shared.newerRunwayIntentActive
                     ScrollGate.shared.setScrolling(false)
                     if Date() < followOwnSendUntil,
                        messages.last?.senderId == myId {
@@ -3565,27 +3629,12 @@ struct ChatDetailView: View {
                     }
                     ChatScrollHandle.shared.endOlderRunwayIntent()
                     ChatScrollHandle.shared.endNewerRunwayIntent()
-                    // Hand off only a page that is already prepared. A stopped
-                    // gesture must never start another network page by itself.
-                    if handoffOlder {
-                        historyRuntime.pendingOlderHandoff = true
-                        consumeOlderRunwayOnHandoff()
-                    }
-                    if handoffNewer {
-                        historyRuntime.pendingNewerHandoff = true
-                        consumeNewerRunwayOnHandoff()
-                    }
                 }
             },
-            onScrollOffset: { y in
-                let now = ProcessInfo.processInfo.systemUptime
-                guard now - historyRuntime.lastScrollRunwayCheck >= 0.033 else {
-                    return
-                }
-                historyRuntime.lastScrollRunwayCheck = now
-                consumeOlderRunway(requireActiveMotion: true, offsetY: y)
-                consumeNewerRunway(requireActiveMotion: true)
-            },
+            // UICollectionView owns prefetch timing. The app only reacts to
+            // the system's prefetch callbacks below; scroll offsets do not
+            // start app-managed history requests.
+            onScrollOffset: nil,
             onSizeChange: {
                 if initialOpenSettling {
                     return
@@ -3614,12 +3663,12 @@ struct ChatDetailView: View {
             nativeHeight: nativeGroupUIKitHeight,
             onPrefetchStart: {
                 DispatchQueue.main.async {
-                    scheduleOlderPrefetch()
+                    requestOlderPageFromSystemPrefetch()
                 }
             },
             onPrefetchEnd: {
                 DispatchQueue.main.async {
-                    scheduleNewerPrefetch()
+                    requestNewerPageFromSystemPrefetch()
                 }
             }
         ) { item in
@@ -4307,42 +4356,23 @@ struct ChatDetailView: View {
     private func scheduleOlderRunwayRetry() {
         guard hasOlder else { return }
         lastOlderLoad = Date().addingTimeInterval(0.8)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-            consumeOlderRunway(requireActiveMotion: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { [self] in
+            requestOlderPageFromSystemPrefetch()
         }
     }
 
-    private func consumeOlderRunway(requireActiveMotion: Bool,
-                                    offsetY: CGFloat? = nil) {
-        guard initialScrollReady, hasOlder,
-              !loadingOlder,
-              let scroll = ChatScrollHandle.shared.scroll else { return }
-        let y = offsetY ?? scroll.contentOffset.y
-        // Refill the hidden runway while the user is still roughly one
-        // viewport-group away from the visible edge. Waiting until 5.2k points
-        // left only a few dozen rows, so a slow round trip became visible.
-        let runway = max(12_000, min(24_000, scroll.bounds.height * 12.0))
-        guard y < runway else { return }
-        if requireActiveMotion,
-           !ChatScrollHandle.shared.movingTowardOlder {
-            return
-        }
-        if requireActiveMotion {
-            ChatScrollHandle.shared.markOlderRunwayIntent()
-        }
-        autoLoadOlder()
-    }
-
-    private func consumeOlderRunwayOnHandoff() {
+    /// UICollectionViewDataSourcePrefetching decides when this edge is close.
+    /// Do not infer a second runway from pixels or timers here.
+    private func requestOlderPageFromSystemPrefetch() {
         guard initialScrollReady,
               hasOlder,
               !loadingOlder,
-              !olderPrefetch.isEmpty,
               let scroll = ChatScrollHandle.shared.scroll else { return }
-        let runway = max(12_000, min(24_000, scroll.bounds.height * 12.0))
-        guard scroll.contentOffset.y < runway else { return }
-        historyRuntime.pendingOlderHandoff = false
-        ChatScrollDiag.shared.note("手势结束前预取页无感交接")
+        guard scroll.isDragging || scroll.isTracking || scroll.isDecelerating else {
+            return
+        }
+        ChatScrollHandle.shared.markOlderRunwayIntent()
+        lastOlderLoad = .distantPast
         autoLoadOlder()
     }
 
@@ -4357,46 +4387,24 @@ struct ChatDetailView: View {
         historyRuntime.newestLoadedSeq < newestAvailableSeq
     }
 
-    private func consumeNewerRunway(requireActiveMotion: Bool) {
+    private func requestNewerPageFromSystemPrefetch() {
         guard initialScrollReady,
               hasNewerMessages,
               !loadingNewer,
               let scroll = ChatScrollHandle.shared.scroll else { return }
-        let runway = max(1_200, scroll.bounds.height * 1.6)
-        guard (ChatScrollHandle.shared.gap ?? .greatestFiniteMagnitude) < runway else {
+        guard scroll.isDragging || scroll.isTracking || scroll.isDecelerating else {
             return
         }
-        if requireActiveMotion,
-           !ChatScrollHandle.shared.movingTowardNewer {
-            return
-        }
-        if requireActiveMotion {
-            ChatScrollHandle.shared.markNewerRunwayIntent()
-        }
+        ChatScrollHandle.shared.markNewerRunwayIntent()
         lastNewerLoad = Date()
         Task { await loadNewer() }
-    }
-
-    private func consumeNewerRunwayOnHandoff() {
-        guard initialScrollReady,
-              hasNewerMessages,
-              !loadingNewer,
-              !newerPrefetch.isEmpty,
-              let scroll = ChatScrollHandle.shared.scroll else { return }
-        let runway = max(1_200, scroll.bounds.height * 1.6)
-        guard (ChatScrollHandle.shared.gap ?? .greatestFiniteMagnitude) < runway else {
-            return
-        }
-        historyRuntime.pendingNewerHandoff = false
-        ChatScrollDiag.shared.note("下行预取页无感交接")
-        consumeNewerRunway(requireActiveMotion: false)
     }
 
     private func scheduleNewerRunwayRetry() {
         guard hasNewerMessages else { return }
         lastNewerLoad = Date().addingTimeInterval(0.8)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-            consumeNewerRunway(requireActiveMotion: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { [self] in
+            requestNewerPageFromSystemPrefetch()
         }
     }
 
@@ -4406,23 +4414,11 @@ struct ChatDetailView: View {
         guard cursor > 0 else { return }
         loadingNewer = true
         newerPrefetchWaiting = newerPrefetch.isEmpty
-        var loadedUsefulPage = false
         defer {
             loadingNewer = false
             newerPrefetchWaiting = false
-            if loadedUsefulPage,
-               ChatScrollHandle.shared.moving
-                || ChatScrollHandle.shared.newerRunwayIntentActive {
-                lastNewerLoad = .distantPast
-                DispatchQueue.main.async {
-                    consumeNewerRunway(requireActiveMotion: true)
-                }
-            }
         }
         do {
-            if newerPrefetch.isEmpty, let pending = newerPrefetchTask {
-                await pending.value
-            }
             var incoming = takeNewerPrefetch()
                 .filter { ($0.seq ?? 0) > cursor }
             var more = newerPrefetchHasMore
@@ -4444,140 +4440,18 @@ struct ChatDetailView: View {
                 if more { scheduleNewerRunwayRetry() }
                 return
             }
-            let merged = visibleMessages(messages + incoming)
-            let bounded = Array(merged.suffix(maxMessageWindow))
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) {
-                messages = bounded
-            }
-            hasOlder = (bounded.first?.seq ?? 0) > 1
-            rebuildIndex()
-            // Rotating toward newer history changes the older edge. Rebuild
-            // that runway from the new head instead of reusing stale rows.
-            invalidateOlderPrefetch()
+            let merged = mergeVisibleMessages(messages, incoming)
+            installHistoryWindow(merged, evictingNewestIntoOlder: false)
+            hasOlder = (messages.first?.seq ?? 0) > 1
             let nextCursor = max(cursor, historyRuntime.newestLoadedSeq)
             newestKnownSeq = max(newestKnownSeq, nextCursor)
-            loadedUsefulPage = more
-            if !ChatScrollHandle.shared.moving {
-                historyRuntime.pendingNewerHandoff = false
-            }
-            scheduleNewerPrefetch(
-                since: nextCursor,
-                knownIds: Set(bounded.map(\.id)),
-                continues: more
-            )
-            scheduleOlderPrefetch(
-                before: bounded.lazy.compactMap(\.seq).first(where: { $0 > 0 }) ?? 0,
-                knownIds: Set(bounded.map(\.id)),
-                continues: hasOlder
-            )
         } catch {
             lastNewerLoad = Date().addingTimeInterval(1.2)
             scheduleNewerRunwayRetry()
         }
     }
 
-    private func scheduleNewerPrefetch(since explicitSeq: Int? = nil,
-                                       knownIds: Set<String>? = nil,
-                                       continues explicitMore: Bool? = nil) {
-        let canContinue = explicitMore ?? hasNewerMessages
-        let target = historyRunwayTarget
-        guard canContinue,
-              newerPrefetch.count < target,
-              newerPrefetchTask == nil else { return }
-        let existing = newerPrefetch
-        let seq = existing.isEmpty
-            ? (explicitSeq ?? historyRuntime.newestLoadedSeq)
-            : newerNextCursor
-        guard seq > 0 else { return }
-        let known = knownIds
-            ?? Set(messages.map(\.id))
-                .union(existing.map(\.id))
-        let token = UUID()
-        newerPrefetchToken = token
-        newerPrefetchTask = Task {
-            defer {
-                if newerPrefetchToken == token {
-                    newerPrefetchTask = nil
-                }
-            }
-            do {
-                var cursor = seq
-                var more = explicitMore ?? hasNewerMessages
-                var collected: [Message] = []
-                let needed = max(0, target - existing.count)
-                var seen = Set<String>()
-                var emptyPages = 0
-                while collected.count < needed,
-                      more,
-                      emptyPages < 3,
-                      !Task.isCancelled {
-                    let requestLimit = min(
-                        historyRunwayTarget,
-                        max(historyPageSize, needed - collected.count)
-                    )
-                    let page = try await API.shared.messagesSince(
-                        chatId: chat.id,
-                        since: cursor,
-                        limit: requestLimit
-                    )
-                    guard !Task.isCancelled, newerPrefetchToken == token else { return }
-                    more = page.hasMore
-                    let fresh = visibleMessages(page.messages).filter {
-                        ($0.seq ?? 0) > cursor
-                            && !known.contains($0.id)
-                            && seen.insert($0.id).inserted
-                    }
-                    if fresh.isEmpty {
-                        emptyPages += 1
-                        if !more { break }
-                        try? await Task.sleep(nanoseconds: 120_000_000)
-                    } else {
-                        emptyPages = 0
-                        collected.append(contentsOf: fresh)
-                    }
-                    let next = page.messages.compactMap(\.seq).max() ?? 0
-                    if next <= cursor { break }
-                    cursor = next
-                    if !more { break }
-                }
-                guard !Task.isCancelled, newerPrefetchToken == token else { return }
-                newerPrefetchHasMore = more
-                newerNextCursor = cursor
-                let combined = visibleMessages(collected + existing)
-                    .filter { ($0.seq ?? 0) > historyRuntime.newestLoadedSeq }
-                newerPrefetch = combined.count > target
-                    ? Array(combined.prefix(target))
-                    : combined
-                newestKnownSeq = max(
-                    newestKnownSeq,
-                    cursor
-                )
-                guard !newerPrefetch.isEmpty else {
-                    if more { scheduleNewerRunwayRetry() }
-                    return
-                }
-                lastNewerLoad = .distantPast
-                if historyRuntime.pendingNewerHandoff,
-                   ChatScrollHandle.shared.lastTravelWasNewer,
-                   !ChatScrollHandle.shared.moving {
-                    DispatchQueue.main.async {
-                        consumeNewerRunwayOnHandoff()
-                    }
-                }
-            } catch {
-                if newerPrefetchToken == token {
-                    newerPrefetchTask = nil
-                }
-            }
-        }
-    }
-
     private func takeNewerPrefetch() -> [Message] {
-        newerPrefetchTask?.cancel()
-        newerPrefetchTask = nil
-        newerPrefetchToken = UUID()
         let rows = newerPrefetch
         guard !rows.isEmpty else { return [] }
         let consumeLimit = ChatScrollHandle.shared.moving
@@ -4586,24 +4460,6 @@ struct ChatDetailView: View {
         let count = min(consumeLimit, rows.count)
         newerPrefetch = Array(rows.dropFirst(count))
         return Array(rows.prefix(count))
-    }
-
-    private func invalidateOlderPrefetch() {
-        olderPrefetchTask?.cancel()
-        olderPrefetchTask = nil
-        olderPrefetchToken = UUID()
-        olderPrefetch.removeAll(keepingCapacity: true)
-        olderPrefetchHasMore = false
-        olderNextCursor = 0
-    }
-
-    private func invalidateNewerPrefetch() {
-        newerPrefetchTask?.cancel()
-        newerPrefetchTask = nil
-        newerPrefetchToken = UUID()
-        newerPrefetch.removeAll(keepingCapacity: true)
-        newerPrefetchHasMore = false
-        newerNextCursor = 0
     }
 
     private func pinToBottomSoon(force: Bool = false,
@@ -7905,11 +7761,9 @@ struct ChatDetailView: View {
         if initial {
             // 缓存用于立即放开聊天页；网络首屏继续在后台补齐最新消息。
             initialCacheReady = true
-            // Start the hidden history runway as soon as the local cache has
-            // an edge. Waiting for the latest-message refresh made the first
-            // upward gesture a foreground network request on slow connections.
+            // The collection's prefetch data source owns page timing after the
+            // cached window becomes inspectable.
             rebuildIndex()
-            scheduleOlderPrefetch()
         }
         do {
 
@@ -7997,8 +7851,6 @@ struct ChatDetailView: View {
         initialRetryTask = nil
         }
         rebuildIndex()
-        scheduleOlderPrefetch()
-        scheduleNewerPrefetch()
         prefetchRecentFiles()
         loading = false
         autoOpenShopCard()
@@ -8092,26 +7944,11 @@ struct ChatDetailView: View {
         loadingOlder = true
         olderPrefetchWaiting = olderPrefetch.isEmpty
         lastOlderLoad = Date()
-        var loadedUsefulPage = false
         defer {
             loadingOlder = false
             olderPrefetchWaiting = false
-            if loadedUsefulPage,
-               ChatScrollHandle.shared.moving
-                || ChatScrollHandle.shared.olderRunwayIntentActive {
-                // A long fling can cross more than one history page. Re-arm the
-                // runway after every consumed page so the next page starts loading
-                // while the finger is still moving, matching the initial pages.
-                lastOlderLoad = .distantPast
-                DispatchQueue.main.async {
-                    consumeOlderRunway(requireActiveMotion: true)
-                }
-            }
         }
         do {
-            if olderPrefetch.isEmpty, let pending = olderPrefetchTask {
-                await pending.value
-            }
             var older = takeOlderPrefetch()
             var more = olderPrefetchHasMore
             if older.isEmpty {
@@ -8155,48 +7992,23 @@ struct ChatDetailView: View {
             guard !older.isEmpty else {
                 hasOlder = more
                 if more {
-                    scheduleOlderPrefetch(
-                        before: olderNextCursor > 0 ? olderNextCursor : max(1, seq - 1),
-                        knownIds: Set(messages.map(\.id)),
-                        continues: true
-                    )
                     scheduleOlderRunwayRetry()
                 }
                 return
             }
-            loadedUsefulPage = more
-            let merged = visibleMessages(older + messages)
-            let bounded = merged.count > maxMessageWindow
-                ? Array(merged.prefix(maxMessageWindow))
-                : merged
+            let merged = mergeVisibleMessages(older, messages)
             /* 插入旧页和裁掉尾部窗口必须合成同一次快照。
                分两次 apply 会在后段触发第二次全列表 diff，形成顿挫。 */
             ChatScrollHandle.shared.prepareForPrepend()
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) {
-                messages = bounded
-            }
+            installHistoryWindow(merged, evictingNewestIntoOlder: true)
             // Once the server reports the actual beginning, a full visible
             // window must not resurrect a phantom "older page".
             hasOlder = more
-            rebuildIndex()
-            // Rotating toward older history changes the newer edge. A cache
-            // prepared for the old edge would reintroduce a gap on reversal.
-            invalidateNewerPrefetch()
             // NativeStaticList restores the exact visible-row anchor in the
             // same diffable apply. A second height-delta fallback here would
             // move the viewport again after the anchor was already restored.
 
             ChatScrollDiag.shared.note("上翻加载完 → 原子补偿当前位置")
-            let nextCursor = bounded.lazy.compactMap(\.seq).first(where: { $0 > 0 }) ?? 0
-            if !ChatScrollHandle.shared.moving {
-                historyRuntime.pendingOlderHandoff = false
-            }
-            scheduleOlderPrefetch(before: nextCursor,
-                                  knownIds: Set(bounded.map(\.id)),
-                                  continues: more)
-            scheduleNewerPrefetch()
         } catch {
             // Continuous scroll events must not turn one failed prefetch into a
             // request storm. Hold the next automatic retry for a short, silent
@@ -8207,103 +8019,7 @@ struct ChatDetailView: View {
         }
     }
 
-    private func scheduleOlderPrefetch(before explicitSeq: Int? = nil,
-                                       knownIds: Set<String>? = nil,
-                                       continues explicitMore: Bool? = nil) {
-        let canContinue = explicitMore ?? hasOlder
-        let target = historyRunwayTarget
-        guard canContinue,
-              olderPrefetch.count < target,
-              olderPrefetchTask == nil else { return }
-        let existing = olderPrefetch
-        let seq = existing.isEmpty
-            ? (explicitSeq ?? oldestHistorySeq)
-            : olderNextCursor
-        guard seq > 0 else { return }
-        let known = knownIds
-            ?? Set(messages.map(\.id))
-                .union(existing.map(\.id))
-        let token = UUID()
-        olderPrefetchToken = token
-        olderPrefetchTask = Task {
-            defer {
-                if olderPrefetchToken == token {
-                    olderPrefetchTask = nil
-                }
-            }
-            do {
-                var cursor = seq
-                var more = explicitMore ?? hasOlder
-                var collected: [Message] = []
-                let needed = max(0, target - existing.count)
-                var seen = Set<String>()
-                var emptyPages = 0
-                while collected.count < needed,
-                      more,
-                      emptyPages < 3,
-                      !Task.isCancelled {
-                    let requestLimit = min(
-                        historyRunwayTarget,
-                        max(historyPageSize, needed - collected.count)
-                    )
-                    let page = try await API.shared.messages(
-                        chatId: chat.id,
-                        limit: requestLimit,
-                        before: cursor,
-                        all: true
-                    )
-                    guard !Task.isCancelled, olderPrefetchToken == token else { return }
-                    more = page.hasMore
-                    let fresh = visibleMessages(page.messages).filter {
-                        !known.contains($0.id) && seen.insert($0.id).inserted
-                    }
-                    if fresh.isEmpty {
-                        emptyPages += 1
-                        if !more { break }
-                        try? await Task.sleep(nanoseconds: 120_000_000)
-                    } else {
-                        emptyPages = 0
-                        collected.append(contentsOf: fresh)
-                    }
-                    let rawNext = page.messages.compactMap(\.seq).min() ?? 0
-                    let advanced = rawNext > 0 && rawNext < cursor
-                        ? rawNext
-                        : max(1, cursor - 1)
-                    if advanced <= 0 || advanced >= cursor { break }
-                    cursor = advanced
-                    if !more { break }
-                }
-                guard !Task.isCancelled, olderPrefetchToken == token else { return }
-                olderPrefetchHasMore = more
-                olderNextCursor = cursor
-                let combined = visibleMessages(collected + existing)
-                olderPrefetch = combined.count > target
-                    ? Array(combined.suffix(target))
-                    : combined
-                if olderPrefetch.isEmpty, !more {
-                    hasOlder = false
-                } else if olderPrefetch.isEmpty {
-                    scheduleOlderRunwayRetry()
-                } else if historyRuntime.pendingOlderHandoff,
-                          ChatScrollHandle.shared.lastTravelWasOlder,
-                          !ChatScrollHandle.shared.moving {
-                    lastOlderLoad = .distantPast
-                    DispatchQueue.main.async {
-                        consumeOlderRunwayOnHandoff()
-                    }
-                }
-            } catch {
-                if olderPrefetchToken == token {
-                    olderPrefetchTask = nil
-                }
-            }
-        }
-    }
-
     private func takeOlderPrefetch() -> [Message] {
-        olderPrefetchTask?.cancel()
-        olderPrefetchTask = nil
-        olderPrefetchToken = UUID()
         let rows = olderPrefetch
         guard !rows.isEmpty else { return [] }
         let consumeLimit = ChatScrollHandle.shared.moving

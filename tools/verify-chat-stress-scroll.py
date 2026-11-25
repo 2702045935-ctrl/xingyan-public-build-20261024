@@ -37,9 +37,11 @@ require(
     "moving history updates must not premeasure an entire page on the main thread",
 )
 require(
-    "scroll.bounds.height * 12.0" in CHAT
-    and "consumeOlderRunway(requireActiveMotion: true, offsetY: y)" in CHAT,
-    "group history must use a viewport-relative prefetch runway",
+    "prefetchDataSource = context.coordinator" in LIST
+    and "prefetchItemsAt indexPaths" in LIST
+    and "requestOlderPageFromSystemPrefetch()" in CHAT
+    and "onScrollOffset: nil" in CHAT,
+    "group history must use the collection view's system prefetch timing",
 )
 hot_start = CHAT.index("private var newestAvailableSeq")
 hot_end = CHAT.index("private func loadNewer", hot_start)
@@ -47,49 +49,51 @@ hot_path = CHAT[hot_start:hot_end]
 require(
     "historyRuntime.newestLoadedSeq" in hot_path
     and "messages.compactMap(\\.seq).max()" not in hot_path
-    and "now - historyRuntime.lastScrollRunwayCheck >= 0.033" in CHAT
-    and "historyRuntime.lastScrollRunwayCheck = now" in CHAT,
-    "scroll runway checks must be O(1) and capped at roughly thirty hertz",
+    and "requestNewerPageFromSystemPrefetch()" in hot_path
+    and "scroll.isDragging || scroll.isTracking || scroll.isDecelerating" in hot_path,
+    "newer history requests must remain O(1) and system-prefetch driven",
 )
 require(
     'if chat.type == "group" { return true }' in CHAT
     and "if (chat.memberCount ?? 0) > 2 { return true }" in CHAT
     and "if (chat.memberIds ?? []).count >= 3 { return true }" in CHAT,
-    "every group snapshot shape must enter the same history runway",
+    "every group snapshot shape must use the same system prefetch path",
 )
 require(
     "func scrollViewWillBeginDragging" in LIST
-    and "lastScrollState = false\n            prefetchStartArmed = true\n            prefetchEndArmed = true\n            publishScrollState(true)" in LIST,
-    "a new physical gesture must re-arm the history runway even during deceleration",
+    and "collection.isPrefetchingEnabled = true" in LIST
+    and "prefetchDataSource = context.coordinator" in LIST,
+    "the native collection must own prefetch re-arming and scheduling",
 )
 require(
     "olderRunwayConsumedForGesture" not in CHAT
-    and "!loadingOlder,\n              let scroll = ChatScrollHandle.shared.scroll" in CHAT
+    and "private func requestOlderPageFromSystemPrefetch()" in CHAT
+    and "requestNewerPageFromSystemPrefetch()" in CHAT
     and "if isGroup { autoLoadOlder() }" not in CHAT
     and ".onAppear { autoLoadOlder() }" not in CHAT
     and "nearTopIds.contains(message.id) { autoLoadOlder() }" not in CHAT
     and "private let historyPageSize = 120" in CHAT
     and "private let historyPrefetchPages = 3" in CHAT
     and "private let historyWindowPages = 10" in CHAT
-    and "let target = historyRunwayTarget" in CHAT
-    and "let canContinue = explicitMore ?? hasOlder" in CHAT
-    and "olderPrefetch.count < target" in CHAT
-    and "olderPrefetchTask == nil" in CHAT
-    and "scheduleOlderPrefetch(before: nextCursor" in CHAT,
-    "group history must only be consumed from the user's runway offset",
+    and "let target = historyPageSize" in CHAT
+    and "let maxPages = 1" in CHAT
+    and "scheduleOlderPrefetch(" not in CHAT
+    and "scheduleNewerPrefetch(" not in CHAT,
+    "each system prefetch callback must request exactly one history page",
 )
 require(
-    "loadedUsefulPage = more" in CHAT
-    and "lastOlderLoad = .distantPast" in CHAT
-    and "consumeOlderRunway(requireActiveMotion: true)" in CHAT
-    and "ChatScrollHandle.shared.olderRunwayIntentActive" in CHAT,
-    "every consumed history page must continue only while the active gesture remains in the runway",
+    "ChatScrollHandle.shared.markOlderRunwayIntent()" in CHAT
+    and "ChatScrollHandle.shared.markNewerRunwayIntent()" in CHAT
+    and CHAT.count(
+        "scroll.isDragging || scroll.isTracking || scroll.isDecelerating"
+    ) >= 2,
+    "system prefetch requests must only start during native scroll activity",
 )
 require(
     "var olderNextCursor = 0" in CHAT
-    and "olderNextCursor = cursor" in CHAT
-    and "let advanced = rawNext > 0 && rawNext < cursor" in CHAT
-    and "while collected.count < needed" in CHAT,
+    and "olderNextCursor = advanced" in CHAT
+    and "let advanced = next > 0 && next < cursor" in CHAT
+    and "if !more || advanced <= 0 { break }" in CHAT,
     "hidden or duplicate pages must advance without latching the history cursor",
 )
 require(
@@ -98,25 +102,21 @@ require(
     "reaching the actual first message must clear the phantom older page",
 )
 require(
-    "private func consumeOlderRunwayOnHandoff()" in CHAT
-    and "private func consumeNewerRunwayOnHandoff()" in CHAT
-    and "!olderPrefetch.isEmpty" in CHAT
-    and "!newerPrefetch.isEmpty" in CHAT
-    and "historyRuntime.pendingOlderHandoff," in CHAT
-    and "historyRuntime.pendingNewerHandoff," in CHAT
-    and "A stopped\n                    // gesture must never start another network page by itself." in CHAT,
-    "a completed stopped gesture may hand off one prepared page and no speculative chain",
+    "func collectionView(_ collectionView: UICollectionView,\n"
+    "                            prefetchItemsAt indexPaths: [IndexPath])" in LIST
+    and "onPrefetchStart?" in LIST
+    and "onPrefetchEnd?" in LIST
+    and "willDisplay cell" not in LIST,
+    "the collection's prefetch data source must be the only speculative page trigger",
 )
 require(
-    "!ChatScrollHandle.shared.movingTowardOlder" in CHAT
-    and "!ChatScrollHandle.shared.movingTowardNewer" in CHAT
-    and "func beginScrollGesture(offsetY: CGFloat)" in (
+    "func beginScrollGesture(offsetY: CGFloat)" in (
         ROOT / "Sources" / "ScrollProbe.swift"
     ).read_text(encoding="utf-8")
     and "let naturalStep = max(96" in (
         ROOT / "Sources" / "ScrollProbe.swift"
     ).read_text(encoding="utf-8"),
-    "chat history must consume only while the finger or momentum moves toward that edge",
+    "native scroll travel must still distinguish finger and layout compensation",
 )
 require(
     "private func scheduleOlderRunwayRetry()" in CHAT
@@ -130,20 +130,22 @@ require(
     "private let historyWindowPages = 10" in CHAT
     and "historyPageSize * historyWindowPages" in CHAT
     and "MessageStressFixture.isActive ? stressMessageWindow : historyWindowLimit" in CHAT
-    and "Array(merged.prefix(maxMessageWindow))" in CHAT
-    and "Array(merged.suffix(maxMessageWindow))" in CHAT
+    and "installHistoryWindow(merged, evictingNewestIntoOlder: true)" in CHAT
+    and "installHistoryWindow(merged, evictingNewestIntoOlder: false)" in CHAT
+    and "Array(rows.dropLast(overflow))" in CHAT
+    and "Array(rows.dropFirst(overflow))" in CHAT
     and "historyRuntime.oldestLoadedSeq = oldest" in CHAT
     and "historyRuntime.newestLoadedSeq = newest" in CHAT
     and "stressMessageWindow : 50_000" not in CHAT,
     "chat history must rotate a bounded two-way window instead of retaining all loaded rows",
 )
 require(
-    "private func invalidateOlderPrefetch()" in CHAT
-    and "private func invalidateNewerPrefetch()" in CHAT
-    and "invalidateNewerPrefetch()" in CHAT
-    and "invalidateOlderPrefetch()" in CHAT
+    "private func rotateOlderRunway(with evicted: [Message])" in CHAT
+    and "private func rotateNewerRunway(with evicted: [Message])" in CHAT
+    and "olderPrefetch = Array(combined.suffix(target))" in CHAT
+    and "newerPrefetch = Array(combined.prefix(target))" in CHAT
     and "newerNextCursor" in CHAT,
-    "direction changes must invalidate stale caches and rebuild independent cursors",
+    "window rotation must reuse evicted rows while preserving independent cursors",
 )
 require(
     "ChatScrollHandle.shared.prepareForPrepend()" in CHAT
@@ -154,10 +156,11 @@ require(
     "history prepend must translate the live native offset without snapping back",
 )
 require(
-    "private func consumeNewerRunway" in CHAT
+    "private func requestNewerPageFromSystemPrefetch" in CHAT
     and "private func loadNewer() async" in CHAT
     and "API.shared.messagesSince(" in CHAT
-    and "Array(merged.suffix(maxMessageWindow))" in CHAT,
+    and "installHistoryWindow(merged, evictingNewestIntoOlder: false)" in CHAT
+    and "Array(rows.dropFirst(overflow))" in CHAT,
     "scrolling back toward the present must refill newer messages bidirectionally",
 )
 require(

@@ -49,12 +49,13 @@ require(
     and "private let historyWindowPages = 10" in CHAT
     and "historyPageSize * historyWindowPages" in CHAT
     and "MessageStressFixture.isActive ? stressMessageWindow : historyWindowLimit" in CHAT
-    and "if olderPrefetch.isEmpty, let pending = olderPrefetchTask" in CHAT
+    and "installHistoryWindow(merged, evictingNewestIntoOlder: true)" in CHAT
+    and "installHistoryWindow(merged, evictingNewestIntoOlder: false)" in CHAT
     and "private let historyPageSize = 120" in CHAT
-    and "let target = historyRunwayTarget" in CHAT
-    and "limit: historyPageSize" in CHAT
-    and CHAT.count("scheduleOlderPrefetch(before: nextCursor") >= 1,
-    "stress and ordinary history must stay inside bounded windows and runways",
+    and "let target = historyPageSize" in CHAT
+    and "limit: target" in CHAT
+    and "requestOlderPageFromSystemPrefetch()" in CHAT,
+    "stress and ordinary history must stay bounded under system prefetch",
 )
 require(
     "python3 tools/verify-stress-eager-100k.py" in WORKFLOW,

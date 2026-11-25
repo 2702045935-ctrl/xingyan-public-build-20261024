@@ -20,13 +20,13 @@ private final class NativeStaticHostCell: UICollectionViewCell {
             let next = UIHostingController(rootView: rootView)
             next.view.backgroundColor = .clear
             contentView.addSubview(next.view)
+            NativeStaticCellConstraints.pin(next.view, to: contentView)
             host = next
         } else if hostedID != id || hostedSignature != signature {
             host?.rootView = rootView
         }
         hostedID = id
         hostedSignature = signature
-        host?.view.frame = contentView.bounds
     }
 
     func adopt(_ next: UIHostingController<AnyView>, id: String, signature: String) {
@@ -35,15 +35,10 @@ private final class NativeStaticHostCell: UICollectionViewCell {
             host = next
             next.view.backgroundColor = .clear
             contentView.addSubview(next.view)
+            NativeStaticCellConstraints.pin(next.view, to: contentView)
         }
         hostedID = id
         hostedSignature = signature
-        next.view.frame = contentView.bounds
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        host?.view.frame = contentView.bounds
     }
 }
 
@@ -55,16 +50,24 @@ private final class NativeStaticUIKitCell: UICollectionViewCell {
             nativeView?.removeFromSuperview()
             nativeView = view
             contentView.addSubview(view)
+            NativeStaticCellConstraints.pin(view, to: contentView)
         }
         backgroundColor = .clear
         contentView.backgroundColor = .clear
         clipsToBounds = true
         setNeedsLayout()
     }
+}
 
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        nativeView?.frame = contentView.bounds
+private enum NativeStaticCellConstraints {
+    static func pin(_ view: UIView, to contentView: UIView) {
+        view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            view.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            view.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            view.topAnchor.constraint(equalTo: contentView.topAnchor),
+            view.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        ])
     }
 }
 
@@ -1086,13 +1089,6 @@ where Item.ID: Hashable {
             ChatScrollHandle.shared.beginScrollGesture(offsetY: scrollView.contentOffset.y)
             waitsForInitialBottom = false
             scrollView.alpha = 1
-            // A new finger can land while the previous flick is still
-            // decelerating. The aggregate scrolling state stays true, but the
-            // history runway is consumed per physical gesture and must be
-            // re-armed by this new touch.
-            lastScrollState = false
-            prefetchStartArmed = true
-            prefetchEndArmed = true
             publishScrollState(true)
         }
 
@@ -1114,17 +1110,6 @@ where Item.ID: Hashable {
             if abs(y - lastReportedOffsetY) >= 24 {
                 lastReportedOffsetY = y
                 onScrollOffset?(y)
-                if let visible = collection?.indexPathsForVisibleItems {
-                    var first = Int.max
-                    var last = Int.min
-                    for indexPath in visible {
-                        first = min(first, indexPath.item)
-                        last = max(last, indexPath.item)
-                    }
-                    if last >= 0 {
-                        updateDataPrefetchEdges(first: first, last: last)
-                    }
-                }
             }
             publishScrollState(active, recordsOffset: false)
             scheduleVirtualScrollIndicatorUpdate()
@@ -1319,12 +1304,6 @@ where Item.ID: Hashable {
             } else {
                 prewarm(ids, maxCount: 8)
             }
-        }
-
-        func collectionView(_ collectionView: UICollectionView,
-                            willDisplay cell: UICollectionViewCell,
-                            forItemAt indexPath: IndexPath) {
-            updateDataPrefetchEdges(first: indexPath.item, last: indexPath.item)
         }
 
         func collectionView(_ collectionView: UICollectionView,

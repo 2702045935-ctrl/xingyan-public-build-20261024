@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+NATIVE = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
 SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
 
 
@@ -22,18 +23,22 @@ require(
 require(
     "private func loadOlder() async" in CHAT
     and "private func loadNewer() async" in CHAT
-    and "Array(merged.prefix(maxMessageWindow))" in CHAT
-    and "Array(merged.suffix(maxMessageWindow))" in CHAT,
+    and "installHistoryWindow(merged, evictingNewestIntoOlder: true)" in CHAT
+    and "installHistoryWindow(merged, evictingNewestIntoOlder: false)" in CHAT
+    and "Array(rows.dropLast(overflow))" in CHAT
+    and "Array(rows.dropFirst(overflow))" in CHAT,
     "older and newer pages must rotate a bounded active window",
 )
 require(
-    "private func scheduleOlderPrefetch(" in CHAT
-    and "private func scheduleNewerPrefetch(" in CHAT
+    "prefetchDataSource = context.coordinator" in NATIVE
+    and "prefetchItemsAt indexPaths" in NATIVE
+    and "requestOlderPageFromSystemPrefetch()" in CHAT
+    and "requestNewerPageFromSystemPrefetch()" in CHAT
     and "olderNextCursor" in CHAT
     and "newerNextCursor" in CHAT
-    and "invalidateOlderPrefetch()" in CHAT
-    and "invalidateNewerPrefetch()" in CHAT,
-    "both directions must retain independent cursors and invalidate stale caches",
+    and "rotateOlderRunway(with: evicted)" in CHAT
+    and "rotateNewerRunway(with: evicted)" in CHAT,
+    "system prefetch must drive both directions while evicted pages remain reusable",
 )
 require(
     "historyRuntime.oldestLoadedSeq = oldest" in CHAT

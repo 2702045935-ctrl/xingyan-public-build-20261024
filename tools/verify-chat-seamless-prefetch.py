@@ -29,9 +29,11 @@ require(
     "ordinary chat history must not grow to the legacy fifty-thousand-row window",
 )
 require(
-    "Array(merged.prefix(maxMessageWindow))" in CHAT
-    and "Array(merged.suffix(maxMessageWindow))" in CHAT,
-    "older and newer traversal must rotate opposite edges of the active window",
+    "installHistoryWindow(merged, evictingNewestIntoOlder: true)" in CHAT
+    and "installHistoryWindow(merged, evictingNewestIntoOlder: false)" in CHAT
+    and "Array(rows.dropLast(overflow))" in CHAT
+    and "Array(rows.dropFirst(overflow))" in CHAT,
+    "older and newer traversal must rotate opposite edges in one indexed commit",
 )
 require(
     "private let historyScrollChunkSize = 48" in CHAT
@@ -40,45 +42,45 @@ require(
     "moving prefetch consumption must be split into 48-row native updates",
 )
 require(
-    "if olderPrefetch.isEmpty, let pending = olderPrefetchTask" in CHAT
-    and "await pending.value" in CHAT
-    and "private func scheduleOlderPrefetch(" in CHAT
-    and "private func takeOlderPrefetch()" in CHAT
-    and "private func scheduleNewerPrefetch(" in CHAT
-    and "private func takeNewerPrefetch()" in CHAT,
-    "both history directions must retain reusable prefetch caches",
+    "prefetchDataSource = context.coordinator" in NATIVE
+    and "collectionView(_ collectionView: UICollectionView,\n                            prefetchItemsAt indexPaths: [IndexPath])" in NATIVE
+    and "requestOlderPageFromSystemPrefetch()" in CHAT
+    and "requestNewerPageFromSystemPrefetch()" in CHAT,
+    "UICollectionViewDataSourcePrefetching must request both history directions",
 )
 require(
-    "olderPrefetch.count < target" in CHAT
-    and "newerPrefetch.count < target" in CHAT
-    and "limit: historyPageSize" in CHAT
-    and "let requestLimit = min(" in CHAT
-    and "limit: requestLimit" in CHAT
-    and "Array(rows.suffix(count))" in CHAT
-    and "Array(rows.prefix(count))" in CHAT,
-    "prefetch must fill a 360-row cache in one bounded request while consuming one page",
+    "let target = historyPageSize" in CHAT
+    and "let maxPages = 1" in CHAT
+    and "limit: target" in CHAT
+    and "scheduleOlderPrefetch(" not in CHAT
+    and "scheduleNewerPrefetch(" not in CHAT,
+    "a system prefetch callback must request exactly one foreground history page",
 )
 require(
-    "initialCacheReady = true\n            // Start the hidden history runway" in CHAT
-    and "rebuildIndex()\n            scheduleOlderPrefetch()" in CHAT
-    and "scroll.bounds.height * 12.0" in CHAT,
-    "cached chats must arm the runway before the latest-page network refresh",
+    "initialCacheReady = true" in CHAT
+    and "The collection's prefetch data source owns page timing" in CHAT
+    and "onScrollOffset: nil" in CHAT
+    and "scroll.bounds.height * 12.0" not in CHAT,
+    "cached chats must wait for the collection's system prefetch timing",
 )
 require(
-    "private func invalidateOlderPrefetch()" in CHAT
-    and "private func invalidateNewerPrefetch()" in CHAT
-    and "invalidateNewerPrefetch()" in CHAT
-    and "invalidateOlderPrefetch()" in CHAT
-    and "scheduleOlderPrefetch(\n                before: bounded.lazy.compactMap" in CHAT,
-    "changing direction must invalidate stale caches and rebuild the opposite runway",
+    "installHistoryWindow(merged, evictingNewestIntoOlder: true)" in CHAT
+    and "installHistoryWindow(merged, evictingNewestIntoOlder: false)" in CHAT
+    and "rotateNewerRunway(with: evicted)" in CHAT
+    and "rotateOlderRunway(with: evicted)" in CHAT
+    and "newerPrefetch = Array(combined.prefix(target))" in CHAT
+    and "olderPrefetch = Array(combined.suffix(target))" in CHAT,
+    "changing direction must rotate the opposite in-memory runway",
 )
 require(
     "onPrefetchStart:" in NATIVE
     and "onPrefetchEnd:" in NATIVE
     and "prefetchStartArmed = true" in NATIVE
     and "prefetchEndArmed = true" in NATIVE
-    and "updateDataPrefetchEdges(first: first, last: last)" in NATIVE,
-    "native collection prefetch callbacks must rearm on every physical gesture",
+    and "updateDataPrefetchEdges(" in NATIVE
+    and "prefetchItemsAt indexPaths" in NATIVE
+    and "onScrollOffset: nil" in CHAT,
+    "native collection callbacks must be the sole chat prefetch trigger",
 )
 require(
     "deferredMeasureIDs" in NATIVE
@@ -100,6 +102,19 @@ require(
     "rotating the active history window must evict obsolete row measurements and hosts",
 )
 require(
+    "rotateNewerRunway(with: evicted)" in CHAT
+    and "rotateOlderRunway(with: evicted)" in CHAT
+    and "newerPrefetch = Array(combined.prefix(target))" in CHAT
+    and "olderPrefetch = Array(combined.suffix(target))" in CHAT,
+    "an evicted history edge must become the opposite in-memory runway",
+)
+require(
+    "private func mergeVisibleMessages(" in CHAT
+    and "while ai < a.count, bi < b.count" in CHAT
+    and "return deduplicatedVisibleMessages(merged)" in CHAT,
+    "history page consumption must merge ordered rows linearly",
+)
+require(
     "private func recoverVisibleWindowIfNeeded" in NATIVE
     and "collection.scrollToItem(" in NATIVE
     and "collection.collectionViewLayout.invalidateLayout()" in NATIVE,
@@ -111,6 +126,12 @@ require(
     and "preferredID: Item.ID? = nil" in NATIVE
     and "attributes.frame.minY\n                - (previousOffset.y + anchor.delta)" in NATIVE,
     "deferred native inserts must preserve in-flight pan displacement",
+)
+require(
+    "private enum NativeStaticCellConstraints" in NATIVE
+    and "view.translatesAutoresizingMaskIntoConstraints = false" in NATIVE
+    and "view.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)" in NATIVE,
+    "native collection cells must let Auto Layout position hosted row content",
 )
 require(
     '"randomOperations": 100_000' in MODEL
