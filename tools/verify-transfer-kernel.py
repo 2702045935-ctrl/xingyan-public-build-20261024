@@ -25,6 +25,9 @@ require(
     and '"https://43.242.194.89:8443"' in API
     and '"https://43.242.194.89:5443"' in API
     and "API.directUploadBases + [base]" in API
+    and "req.timeoutInterval = index + 1 < roots.count" in API
+    and "? min(timeout, 8)" in API
+    and ": min(timeout, 30)" in API
     and "private var rawUploadBases: [String]" in API
     and 'root + "/api/upload/raw"' in API
     and "uploadCfg.httpMaximumConnectionsPerHost = 8" in API

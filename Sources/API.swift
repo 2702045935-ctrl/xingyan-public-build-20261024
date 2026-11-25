@@ -5845,7 +5845,12 @@ private struct StarredPayload: Decodable {
             guard let url = URL(string: root + "/api/upload/raw") else { continue }
             var req = URLRequest(url: url)
             req.httpMethod = "POST"
-            req.timeoutInterval = timeout
+            // Bound connection/first-byte stalls so a blocked direct port
+            // falls through quickly. Streaming body callbacks keep resetting
+            // this idle timer once a transfer has actually started.
+            req.timeoutInterval = index + 1 < roots.count
+                ? min(timeout, 8)
+                : min(timeout, 30)
             req.networkServiceType = .responsiveData
             req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             req.setValue(mime, forHTTPHeaderField: "Content-Type")
