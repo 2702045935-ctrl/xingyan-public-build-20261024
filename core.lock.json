@@ -108,8 +108,8 @@
     },
     {
       "path": "Sources/ChatsView.swift",
-      "size": 149196,
-      "sha256": "e3669c5abaa782657e35b71c575f0388ba8b27d7fe5d4504fe92a50d35f5aaee"
+      "size": 149665,
+      "sha256": "e38c675657939c858e8d171413ce6577c6921f93e803ee00b6bf25429ed1da11"
     },
     {
       "path": "Sources/MessageStressFixture.swift",

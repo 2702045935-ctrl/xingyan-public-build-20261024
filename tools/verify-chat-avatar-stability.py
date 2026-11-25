@@ -7,6 +7,7 @@ SOURCE = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-
 TEXT_ROW = (ROOT / "Sources" / "NativeChatTextRowCell.swift").read_text(encoding="utf-8")
 MEDIA_ROW = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(encoding="utf-8")
 CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
+CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
 APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
@@ -95,8 +96,13 @@ require(
     and "NativeChatAvatarPrefetcher.prefetch(configuration)" in CHAT_LIST
     and "private final class NativeChatAvatarPrefetchLoader" in SOURCE
     and "RemoteImage.downsampled($0, maxSide: 150)" in SOURCE
-    and "Task.detached(priority: .utility)" in SOURCE,
-    "real conversation avatars must be decoded in the background before rows scroll in",
+    and "Task.detached(priority: .utility)" in SOURCE
+    and "guard inFlight.count < 64" in SOURCE
+    and "cacheOrder.count > 1_500" in SOURCE
+    and "private var cachedChatEntries: [NativeChatEntry] = []" in CHATS
+    and "private var cachedChatEntriesRevision = 0" in CHATS
+    and "context.coordinator.itemsRevision != revision" in CHAT_LIST,
+    "real conversation avatar and entry caches must stay bounded as account volume grows",
 )
 require(
     'if let path = app.contact(for: senderId)?.avatarPath, !path.isEmpty { return path }'

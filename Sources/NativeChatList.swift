@@ -55,6 +55,7 @@ func presentNativeChatDeleteConfirmation(from view: UIView?,
 struct NativeChatList<Item: Identifiable & Equatable, Row: View>: UIViewControllerRepresentable
 where Item.ID: Hashable {
     let items: [Item]
+    let revision: Int
     let dark: Bool
     let height: (Item) -> CGFloat
     let nativeRow: ((Item) -> NativeChatRowConfiguration?)?
@@ -147,6 +148,7 @@ where Item.ID: Hashable {
         }
         context.coordinator.dataSource = dataSource
         context.coordinator.table = table
+        context.coordinator.itemsRevision = revision
         context.coordinator.apply(items, animated: false)
 
         let refresh = UIRefreshControl()
@@ -162,6 +164,10 @@ where Item.ID: Hashable {
         context.coordinator.row = row
         context.coordinator.height = height
         context.coordinator.nativeRow = nativeRow
+        if context.coordinator.itemsRevision != revision {
+            context.coordinator.itemsRevision = revision
+            context.coordinator.apply(items, animated: false)
+        }
         context.coordinator.onScrollStateChange = onScrollStateChange
         context.coordinator.onOffsetChange = onOffsetChange
         context.coordinator.onZoneChange = onZoneChange
@@ -174,7 +180,6 @@ where Item.ID: Hashable {
             controller.tableView.topEdgeEffect.isHidden = true
             controller.tableView.bottomEdgeEffect.isHidden = true
         }
-        context.coordinator.apply(items, animated: false)
     }
 
     final class Coordinator: NSObject,
@@ -184,6 +189,7 @@ where Item.ID: Hashable {
         var row: (Item) -> Row
         var height: (Item) -> CGFloat
         var nativeRow: ((Item) -> NativeChatRowConfiguration?)?
+        var itemsRevision = -1
         var onScrollStateChange: (Bool) -> Void
         var onOffsetChange: (CGFloat) -> Void
         var onZoneChange: (Int) -> Void

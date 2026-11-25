@@ -89,6 +89,10 @@ private final class NativeChatAvatarPrefetchLoader {
             guard ImageStore.shared.get(key + "#150") == nil,
                   ImageStore.shared.get(key) == nil else { continue }
             lock.lock()
+            guard inFlight.count < 64 else {
+                lock.unlock()
+                break
+            }
             guard inFlight.insert(key).inserted else {
                 lock.unlock()
                 continue
@@ -921,6 +925,7 @@ private final class NativeChatAvatarView: UIView {
 private final class NativeGroupAvatarCache {
     static let shared = NativeGroupAvatarCache()
     private var cached: [String: [String]] = [:]
+    private var cacheOrder: [String] = []
     private var running: [String: Task<[String], Never>] = [:]
 
     func paths(chatId: String,
@@ -952,7 +957,15 @@ private final class NativeGroupAvatarCache {
         Task {
             let paths = await task.value
             cached[chatId] = paths
+            cacheOrder.append(chatId)
             running[chatId] = nil
+            if cacheOrder.count > 1_500 {
+                let dropped = cacheOrder.prefix(300)
+                cacheOrder.removeFirst(dropped.count)
+                for id in dropped {
+                    cached.removeValue(forKey: id)
+                }
+            }
             completion(paths)
         }
     }

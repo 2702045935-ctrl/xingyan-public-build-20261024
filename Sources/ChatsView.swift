@@ -1296,6 +1296,8 @@ struct ChatsView: View {
     @State private var stressLoadedCount = ChatStressFixture.initialWindow
     @State private var stressCountedEnd = ChatStressFixture.initialWindow
     @State private var stressChatEntries: [NativeChatEntry] = []
+    @State private var cachedChatEntries: [NativeChatEntry] = []
+    @State private var cachedChatEntriesRevision = 0
 
     @State private var oaOpenId = ""
     @State private var showOA = false
@@ -1361,7 +1363,7 @@ struct ChatsView: View {
         stressWindowStart = nextStart
         stressLoadedCount = nextEnd
         guard chatFilter == .all, keyword.isEmpty else {
-            cachedSnapshot = chatSnapshot()
+            refreshChatListCache(chatSnapshot())
             return
         }
         var counts = cachedSnapshot.unreadCounts
@@ -1396,6 +1398,7 @@ struct ChatsView: View {
             .map(nativeChatEntry(for:))
             .filter { !existingEntryIDs.contains($0.id) })
         cachedSnapshot = updated
+        refreshCachedChatEntries(updated)
     }
 
     private func loadPreviousStressChatsIfNeeded() {
@@ -1422,6 +1425,7 @@ struct ChatsView: View {
             stressLoadedCount -= removedTail
         }
         cachedSnapshot = updated
+        refreshCachedChatEntries(updated)
     }
 
     private func chatSnapshot() -> ChatFilterSnapshot {
@@ -2617,6 +2621,17 @@ struct ChatsView: View {
         stressChatEntries = snapshot.list.map(nativeChatEntry(for:))
     }
 
+    private func refreshChatListCache(_ snapshot: ChatFilterSnapshot) {
+        cachedSnapshot = snapshot
+        rebuildStressChatEntries(snapshot)
+        refreshCachedChatEntries(snapshot)
+    }
+
+    private func refreshCachedChatEntries(_ snapshot: ChatFilterSnapshot) {
+        cachedChatEntries = nativeChatEntries(snapshot)
+        cachedChatEntriesRevision &+= 1
+    }
+
     private func chatContactVisualSignature(_ chat: Chat) -> String {
         if chat.type == "group" || (chat.memberCount ?? 0) > 2 {
             return "group:\((chat.memberIds ?? []).joined(separator: ","))"
@@ -2893,7 +2908,8 @@ struct ChatsView: View {
 
             ZStack(alignment: .top) {
                 NativeChatList(
-                    items: nativeChatEntries(snapshot),
+                    items: cachedChatEntries,
+                    revision: cachedChatEntriesRevision,
                     dark: chatsIsDark,
                     height: { entry in
                         nativeChatHeight(entry)
@@ -3030,8 +3046,7 @@ struct ChatsView: View {
 
             .onAppear {
                 let next = chatSnapshot()
-                cachedSnapshot = next
-                rebuildStressChatEntries(next)
+                refreshChatListCache(next)
                 if MessageStressFixture.autoOpen,
                    !stressAutoOpened,
                    let first = MessageStressFixture.firstChat {
@@ -3045,22 +3060,19 @@ struct ChatsView: View {
             .onChange(of: app.chats) { _ in
                 guard !ChatStressFixture.isActive else { return }
                 let next = chatSnapshot()
-                cachedSnapshot = next
-                rebuildStressChatEntries(next)
+                refreshChatListCache(next)
             }
             .onChange(of: chatFilter) { _ in
                 let next = chatSnapshot()
-                cachedSnapshot = next
-                rebuildStressChatEntries(next)
+                refreshChatListCache(next)
             }
             .onChange(of: keyword) { _ in
                 let next = chatSnapshot()
-                cachedSnapshot = next
-                rebuildStressChatEntries(next)
+                refreshChatListCache(next)
             }
             .onChange(of: stressLoadedCount) { _ in
                 if !ChatStressFixture.isActive {
-                    cachedSnapshot = chatSnapshot()
+                    refreshChatListCache(chatSnapshot())
                 }
             }
 
