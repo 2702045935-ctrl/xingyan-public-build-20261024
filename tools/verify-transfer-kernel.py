@@ -52,7 +52,7 @@ require(
     "multi-image uploads must use the 11/21 three-lane progress flow",
 )
 require(
-    "progress - last >= 0.005" in API
+    "progress - last >= 0.002" in API
     and "didCompleteWithError error: Error?" in API
     and "onProgress?(1)" in API,
     "upload percentage must follow real URLSession byte callbacks and settle at completion",
@@ -72,7 +72,9 @@ require(
     and "progress: sendingFileProgress ?? 0" in CHAT
     and "struct SendingVideoBubble: View" in MEDIA
     and "struct SendingFileBubble: View" in MEDIA
-    and "ProgressView()\n                        .progressViewStyle(.circular)" in MEDIA
+    and 'Text(Tr("上传中"))' in MEDIA
+    and "geo.size.width * value" in MEDIA
+    and ".progressViewStyle(.circular)" not in MEDIA
     and "var phase:" not in MEDIA
     and "onRetry:" not in MEDIA
     and ".frame(width: 218)" in MEDIA,

@@ -1638,7 +1638,7 @@ private final class UploadProgressDelegate: NSObject, URLSessionTaskDelegate {
         let progress = min(1, max(0,
             Double(totalBytesSent) / Double(totalBytesExpectedToSend)))
         lock.lock()
-        guard progress >= 1 || progress - last >= 0.005 else {
+        guard progress >= 1 || progress - last >= 0.002 else {
             lock.unlock()
             return
         }
