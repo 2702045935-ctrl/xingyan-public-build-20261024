@@ -947,6 +947,7 @@ struct GroupMembersPage: View {
     @State private var nextCursor: Int
     @State private var hasMore: Bool
     @State private var loadingMore = false
+    @State private var loadMoreFailed = false
 
     init(chat: Chat,
          initialMembers: [User],
@@ -978,18 +979,35 @@ struct GroupMembersPage: View {
     }
 
     private func loadMoreMembers() async {
-        guard hasMore, !loadingMore else { return }
+        guard hasMore, !loadingMore, !loadMoreFailed else { return }
         loadingMore = true
         defer { loadingMore = false }
+        let previousCursor = nextCursor
         guard let page = try? await API.shared.chatMembersPage(
             chatId: chat.id,
             limit: 100,
-            cursor: nextCursor
-        ) else { return }
+            cursor: previousCursor
+        ) else {
+            loadMoreFailed = true
+            return
+        }
         let known = Set(members.map(\.id))
-        members.append(contentsOf: page.members.filter { !known.contains($0.id) })
+        let incoming = page.members.filter { !known.contains($0.id) }
+        let advanced = page.nextCursor > previousCursor
+        guard advanced, !incoming.isEmpty else {
+            // 空页或游标没有前进时必须停下，否则底部 spinner 会永久重复请求。
+            hasMore = false
+            return
+        }
+        members.append(contentsOf: incoming)
         nextCursor = page.nextCursor
         hasMore = page.hasMore
+        loadMoreFailed = false
+    }
+
+    private func retryMoreMembers() {
+        loadMoreFailed = false
+        Task { await loadMoreMembers() }
     }
 
     var body: some View {
@@ -1069,12 +1087,25 @@ struct GroupMembersPage: View {
                             .padding(.vertical, 36)
                     }
                     if hasMore {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .onAppear {
-                                Task { await loadMoreMembers() }
+                        if loadMoreFailed {
+                            Button {
+                                retryMoreMembers()
+                            } label: {
+                                Text(Tr("加载失败，点击重试"))
+                                    .font(pf(13, .medium))
+                                    .foregroundColor(C.green)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 40)
                             }
+                            .buttonStyle(.plain)
+                        } else {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .onAppear {
+                                    Task { await loadMoreMembers() }
+                                }
+                        }
                     }
                 }
                 .padding(.horizontal, 14)

@@ -74,8 +74,16 @@ require(
 require(
     "limit: 100,\n                cursor: 0" in GROUP
     and "private func loadMoreMembers() async" in GROUP
-    and "cursor: nextCursor" in GROUP
-    and "hasMore = page.hasMore" in GROUP,
+    and "cursor: previousCursor" in GROUP
+    and "hasMore = page.hasMore" in GROUP
+    and "@State private var loadMoreFailed = false" in GROUP
+    and "guard hasMore, !loadingMore, !loadMoreFailed else { return }" in GROUP
+    and "loadMoreFailed = true" in GROUP
+    and "let previousCursor = nextCursor" in GROUP
+    and "let advanced = page.nextCursor > previousCursor" in GROUP
+    and "guard advanced, !incoming.isEmpty else" in GROUP
+    and "private func retryMoreMembers()" in GROUP
+    and 'Text(Tr("加载失败，点击重试"))' in GROUP,
     "group info must load bounded pages instead of requesting all members",
 )
 require(
