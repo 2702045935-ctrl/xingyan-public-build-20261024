@@ -78,10 +78,10 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x9A9AA0 : 0x999999)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x77777D : 0xB2B2B2)" in CHATS
-    and "static let conversationPreviewInk = Color.dyn(0x999999, 0x9A9AA0)" in CHATS
-    and "static let timeInk = Color.dyn(0xB2B2B2, 0x77777D)" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0x74787D : 0x999999)" in CHATS
+    and "let timeColor = UIColor(hex: isDark ? 0x55595E : 0xB2B2B2)" in CHATS
+    and "static let conversationPreviewInk = Color.dyn(0x999999, 0x74787D)" in CHATS
+    and "static let timeInk = Color.dyn(0xB2B2B2, 0x55595E)" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
     and "UIColor(hex: isDark ? 0xEBEBF0 : 0x191919)" in CHATS,
     "chat-list title, preview and time must form the refined dark hierarchy",
