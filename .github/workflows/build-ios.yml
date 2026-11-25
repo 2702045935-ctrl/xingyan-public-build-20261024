@@ -178,6 +178,7 @@ jobs:
           python3 tools/verify-catalog-refresh-cache.py
           python3 tools/verify-mall-module.py
           python3 tools/verify-chat-list-order.py
+          python3 tools/verify-scale-foundation.py
           node server/tools/server-boot-preflight.js
 
       - name: 聊天接口回归
@@ -205,6 +206,7 @@ jobs:
           node server/test/physical-scale-orchestrator.test.js
           node server/test/physical-auto-scale-controller.test.js
           node server/test/logical-shard-directory.test.js
+          node server/test/scale-foundation.test.js
           node server/test/shard-write-freeze.test.js
           node server/test/shard-minimal-release.test.js
           node server/test/shard-release-install.test.js
