@@ -7169,7 +7169,8 @@ struct ChatDetailView: View {
                                 }
                             }
                         }
-                        while nextIdx < min(3, list.count) { addUpload(nextIdx); nextIdx += 1 }
+                        let uploadLanes = min(6, list.count)
+                        while nextIdx < uploadLanes { addUpload(nextIdx); nextIdx += 1 }
                         for await r in group {
                             if let e = r.5 {
                                 if upError == nil { upError = e }

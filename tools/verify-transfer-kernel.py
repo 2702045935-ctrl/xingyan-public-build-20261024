@@ -57,11 +57,12 @@ require(
 )
 require(
     "private final class ImageUploadProgress" in CHAT
-    and "while nextIdx < min(3, list.count)" in CHAT
+    and "let uploadLanes = min(6, list.count)" in CHAT
+    and "while nextIdx < uploadLanes" in CHAT
     and "sendProgress = min(0.82," in CHAT
     and "state.progress * 0.82" in CHAT
     and "sendProgress = 0\n            scrollTick += 1\n            let progress = ImageUploadProgress" in CHAT,
-    "multi-image uploads must use the 11/21 three-lane progress flow",
+    "multi-image uploads must use six bounded lanes with deterministic progress",
 )
 require(
     "progress - last >= 0.002" in API
