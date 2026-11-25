@@ -1805,11 +1805,16 @@ final class API {
     static let shared = API()
 
     let session: URLSession
+    private let uploadSession: URLSession
     private let trustDelegate = SecureURLSessionDelegate()
 
     static let publicIngressServer = "mail.xingyanmail.site:443"
     static let publicIngressPath = "/xy"
     private static let legacyDirectServer = "43.242.194.89:8443"
+    /// Uploads use the same direct origin path as the 10/20 fast build.
+    /// The public ingress adds a reverse-proxy hop that is unsuitable for
+    /// large request bodies.
+    static let directUploadBase = "https://43.242.194.89:5443"
 
     private(set) var token: String = ""
 
@@ -1885,6 +1890,22 @@ final class API {
         cfg.httpShouldSetCookies = false
         cfg.httpCookieAcceptPolicy = .never
         session = URLSession(configuration: cfg, delegate: trustDelegate, delegateQueue: nil)
+
+        let uploadCfg = URLSessionConfiguration.default
+        uploadCfg.timeoutIntervalForRequest = 60
+        uploadCfg.timeoutIntervalForResource = 900
+        uploadCfg.requestCachePolicy = .reloadIgnoringLocalCacheData
+        uploadCfg.urlCache = nil
+        uploadCfg.httpShouldSetCookies = false
+        uploadCfg.httpCookieAcceptPolicy = .never
+        uploadCfg.httpShouldUsePipelining = true
+        uploadCfg.networkServiceType = .responsiveData
+        uploadCfg.httpMaximumConnectionsPerHost = 8
+        uploadSession = URLSession(
+            configuration: uploadCfg,
+            delegate: trustDelegate,
+            delegateQueue: nil
+        )
 
         let legacyServers: Set<String> = [
 
@@ -5734,7 +5755,7 @@ private struct StarredPayload: Decodable {
     }
 
     func uploadBinary(_ data: Data, mime: String) async throws -> String {
-        guard let url = URL(string: base + "/api/upload/raw") else {
+        guard let url = URL(string: API.directUploadBase + "/api/upload/raw") else {
             throw APIError.message("服务器地址不正确")
         }
         var req = URLRequest(url: url)
@@ -5743,7 +5764,7 @@ private struct StarredPayload: Decodable {
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue(mime, forHTTPHeaderField: "Content-Type")
         req.httpBody = data
-        let (d, resp) = try await session.data(for: req)
+        let (d, resp) = try await uploadSession.data(for: req)
         guard let http = resp as? HTTPURLResponse,
               (200...299).contains(http.statusCode) else {
             throw APIError.message("上传失败，请检查网络后再试")
@@ -5754,7 +5775,7 @@ private struct StarredPayload: Decodable {
     func uploadBinaryFile(_ file: URL, mime: String,
                           skipTranscode: Bool = false,
                           onProgress: @escaping (Double) -> Void) async throws -> String {
-        guard let url = URL(string: base + "/api/upload/raw") else {
+        guard let url = URL(string: API.directUploadBase + "/api/upload/raw") else {
             throw APIError.message("服务器地址不正确")
         }
         var req = URLRequest(url: url)
@@ -5766,7 +5787,7 @@ private struct StarredPayload: Decodable {
             req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
         }
         let delegate = UploadProgressDelegate(onProgress)
-        let (d, resp) = try await session.upload(
+        let (d, resp) = try await uploadSession.upload(
             for: req,
             fromFile: file,
             delegate: delegate
@@ -5814,7 +5835,7 @@ private struct StarredPayload: Decodable {
 
     private func uploadRawJPEG(_ data: Data,
                                onProgress: ((Double) -> Void)? = nil) async throws -> String {
-        guard let url = URL(string: base + "/api/upload/raw") else {
+        guard let url = URL(string: API.directUploadBase + "/api/upload/raw") else {
             throw APIError.message("服务器地址不正确")
         }
         var req = URLRequest(url: url)
@@ -5827,13 +5848,13 @@ private struct StarredPayload: Decodable {
         let d: Data
         let resp: URLResponse
         if let delegate {
-            (d, resp) = try await session.upload(
+            (d, resp) = try await uploadSession.upload(
                 for: req,
                 from: data,
                 delegate: delegate
             )
         } else {
-            (d, resp) = try await session.upload(for: req, from: data)
+            (d, resp) = try await uploadSession.upload(for: req, from: data)
         }
         guard let http = resp as? HTTPURLResponse,
               (200...299).contains(http.statusCode) else {

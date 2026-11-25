@@ -21,10 +21,14 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "uploadSession" not in API
-    and 'base + "/api/upload/raw"' in API
-    and API.count('base + "/api/upload/raw"') >= 3,
-    "small media uploads must retain the proven raw endpoint",
+    'static let directUploadBase = "https://43.242.194.89:5443"' in API
+    and "private let uploadSession: URLSession" in API
+    and API.count('URL(string: API.directUploadBase + "/api/upload/raw")') >= 3
+    and "uploadSession.data(for: req)" in API
+    and API.count("uploadSession.upload") >= 3
+    and "directUploadBases" not in API
+    and "rawUploadBases" not in API,
+    "all uploads must use the 10/20 direct origin without proxy fallback chains",
 )
 require(
     "fileSize >= 4 * 1024 * 1024" not in API
@@ -38,13 +42,13 @@ require(
     "chat uploads must keep the faster raw path while the resumable kernel remains diagnostic",
 )
 require(
-    "req.httpBody = data\n        let (d, resp) = try await session.data(for: req)"
+    "req.httpBody = data\n        let (d, resp) = try await uploadSession.data(for: req)"
     in API
-    and "session.upload(\n            for: req,\n            fromFile: file,\n            delegate: delegate"
+    and "uploadSession.upload(\n            for: req,\n            fromFile: file,\n            delegate: delegate"
     in API
-    and "(d, resp) = try await session.upload(\n                for: req,\n                from: data,\n                delegate: delegate"
+    and "(d, resp) = try await uploadSession.upload(\n                for: req,\n                from: data,\n                delegate: delegate"
     in API,
-    "binary and file uploads must use the original 11/21 URLSession modes",
+    "binary and file uploads must use the dedicated direct upload session",
 )
 require(
     "private func uploadRawJPEG(" in API
