@@ -742,14 +742,18 @@ where Item.ID: Hashable {
         }
 
         fileprivate func refreshVisibleRowsAfterThemeChange() {
-            guard let table else { return }
-            let visible = table.indexPathsForVisibleRows ?? []
-            guard !visible.isEmpty else { return }
-            let previousOffset = table.contentOffset
-            UIView.performWithoutAnimation {
-                table.reloadRows(at: visible, with: .none)
-                table.layoutIfNeeded()
-                table.setContentOffset(previousOffset, animated: false)
+            guard let table, let dataSource else { return }
+            for indexPath in table.indexPathsForVisibleRows ?? [] {
+                guard let id = dataSource.itemIdentifier(for: indexPath),
+                      let entry = lookup[id],
+                      let configuration = nativeRow?(entry),
+                      let cell = table.cellForRow(at: indexPath) as? NativeChatRowCell else {
+                    continue
+                }
+                // Reconfigure the existing cell directly. Reloading rows here
+                // enters UITableView's update transaction and can collide with
+                // a conversation snapshot/prefetch update on the same frame.
+                cell.configure(configuration)
             }
         }
 

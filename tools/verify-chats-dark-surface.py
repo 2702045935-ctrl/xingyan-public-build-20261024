@@ -67,9 +67,10 @@ require(
 require(
     "if context.coordinator.dark != dark" in NATIVE_LIST
     and "context.coordinator.refreshVisibleRowsAfterThemeChange()" in NATIVE_LIST
-    and "table.reloadRows(at: visible, with: .none)" in NATIVE_LIST
-    and "table.setContentOffset(previousOffset, animated: false)" in NATIVE_LIST,
-    "native rows must repaint the visible window immediately after a theme switch",
+    and "table.cellForRow(at: indexPath) as? NativeChatRowCell" in NATIVE_LIST
+    and "cell.configure(configuration)" in NATIVE_LIST
+    and "table.reloadRows" not in NATIVE_LIST,
+    "native rows must reconfigure in place without entering a table update transaction",
 )
 require(
     "if snapshot.list.isEmpty {\n                    VStack" not in CHATS
