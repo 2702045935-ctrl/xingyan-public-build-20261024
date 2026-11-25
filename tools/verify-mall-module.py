@@ -91,12 +91,15 @@ require(
 require(
     "UICollectionViewCompositionalLayout" in NATIVE_GRID
     and "UICollectionViewDataSourcePrefetching" in NATIVE_GRID
+    and "UICollectionViewDiffableDataSource<Int, String>" in NATIVE_GRID
     and "NativeMallImageLoader.shared.prefetch(paths, side: 360)" in NATIVE_GRID
     and "view.prefetchDataSource = context.coordinator" in NATIVE_GRID
     and "prefetchItemsAt indexPaths: [IndexPath]) {" in NATIVE_GRID
-    and "collectionView.setContentOffset(.zero, animated: false)" in NATIVE_GRID
+    and "snapshot.reloadItems(changed)" in NATIVE_GRID
+    and "NativeMallImageLoader.shared.cancelPrefetch(paths, side: 360)" in NATIVE_GRID
+    and "collectionView.reloadData()" not in NATIVE_GRID
     and "UIColor.dyn(0xF5F5F7, 0x000000)" in NATIVE_GRID,
-    "the product grid must use native cell reuse, image prefetching and light/dark surfaces",
+    "the native product grid must recycle cells, cancel stale prefetch and preserve its anchor",
 )
 require(
     "static let supportedCounts = [0, 5_000, 9_000]" in MALL

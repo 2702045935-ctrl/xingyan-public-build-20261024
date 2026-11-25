@@ -1,6 +1,24 @@
 import SwiftUI
 import UIKit
 
+final class NativeMallProductGridController {
+    weak var collectionView: UICollectionView?
+
+    func attach(_ collectionView: UICollectionView?) {
+        self.collectionView = collectionView
+    }
+
+    func scrollToProductStart(animated: Bool = true) {
+        guard let collectionView,
+              collectionView.numberOfItems(inSection: 0) > 0 else { return }
+        collectionView.scrollToItem(
+            at: IndexPath(item: 0, section: 0),
+            at: .top,
+            animated: animated
+        )
+    }
+}
+
 private final class NativeMallImageLoader {
     static let shared = NativeMallImageLoader()
 
@@ -56,6 +74,16 @@ private final class NativeMallImageLoader {
             Task(priority: .utility) {
                 _ = await image(path: path, side: side)
             }
+        }
+    }
+
+    func cancelPrefetch(_ paths: [String], side: CGFloat) {
+        for path in paths where !path.isEmpty {
+            let stable = ImageCacheKey.stablePath(path)
+            let key = stable + "#mall-native-" + String(Int(max(160, side)))
+            lock.lock()
+            inFlight.removeValue(forKey: key)?.cancel()
+            lock.unlock()
         }
     }
 }
@@ -215,39 +243,142 @@ private final class NativeMallProductCell: UICollectionViewCell {
 }
 
 final class NativeMallGridCoordinator: NSObject,
-                                       UICollectionViewDataSource,
                                        UICollectionViewDelegate,
                                        UICollectionViewDataSourcePrefetching {
     var products: [DDProduct] = []
     var onOpen: ((DDProduct) -> Void)?
     var onAddCart: ((DDProduct) -> Void)?
+    var header: AnyView?
+    var footer: AnyView?
+    var headerRevision = ""
+    var footerRevision = ""
+    private var lookup: [String: DDProduct] = [:]
+    private var dataSource: UICollectionViewDiffableDataSource<Int, String>?
 
-    func collectionView(_ collectionView: UICollectionView,
-                        numberOfItemsInSection section: Int) -> Int {
-        products.count
-    }
-
-    func collectionView(_ collectionView: UICollectionView,
-                        cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard indexPath.item < products.count else {
-            return collectionView.dequeueReusableCell(
+    func makeDataSource(for collectionView: UICollectionView)
+        -> UICollectionViewDiffableDataSource<Int, String> {
+        let source = UICollectionViewDiffableDataSource<Int, String>(
+            collectionView: collectionView
+        ) { [weak self] collectionView, indexPath, id in
+            let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: NativeMallProductCell.reuseID,
                 for: indexPath
             )
-        }
-        let product = products[indexPath.item]
-        let cell = collectionView.dequeueReusableCell(
-            withReuseIdentifier: NativeMallProductCell.reuseID,
-            for: indexPath
-        )
-        if let cell = cell as? NativeMallProductCell {
-            cell.configure(product) { [weak self] in
+            guard let self,
+                  let product = self.lookup[id],
+                  let productCell = cell as? NativeMallProductCell else {
+                return cell
+            }
+            productCell.configure(product) { [weak self] in
                 self?.onAddCart?(product)
             }
-            cell.accessibilityLabel = product.title
-            cell.accessibilityTraits = .button
+            productCell.accessibilityLabel = product.title
+            productCell.accessibilityTraits = .button
+            return productCell
         }
-        return cell
+        source.supplementaryViewProvider = { [weak self] collectionView, kind, indexPath in
+            guard let self else { return nil }
+            let isHeader = kind == UICollectionView.elementKindSectionHeader
+            let candidate = isHeader
+                ? self.header.map { ($0, self.headerRevision) }
+                : self.footer.map { ($0, self.footerRevision) }
+            guard let (content, revision) = candidate else { return nil }
+            let view = collectionView.dequeueReusableSupplementaryView(
+                ofKind: kind,
+                withReuseIdentifier: NativeMallHostingSupplementaryView.reuseID,
+                for: indexPath
+            )
+            (view as? NativeMallHostingSupplementaryView)?
+                .configure(content, revision: revision)
+            return view
+        }
+        dataSource = source
+        return source
+    }
+
+    func updateSupplementary(
+        in collectionView: UICollectionView,
+        header: AnyView?,
+        footer: AnyView?,
+        headerRevision: String,
+        footerRevision: String
+    ) {
+        let headerChanged = self.headerRevision != headerRevision
+        let footerChanged = self.footerRevision != footerRevision
+        self.header = header
+        self.footer = footer
+        self.headerRevision = headerRevision
+        self.footerRevision = footerRevision
+        if headerChanged,
+           let view = collectionView.supplementaryView(
+               forElementKind: UICollectionView.elementKindSectionHeader,
+               at: IndexPath(item: 0, section: 0)
+           ) as? NativeMallHostingSupplementaryView {
+            view.configure(header, revision: headerRevision)
+        }
+        if footerChanged,
+           let view = collectionView.supplementaryView(
+               forElementKind: UICollectionView.elementKindSectionFooter,
+               at: IndexPath(item: 0, section: 0)
+           ) as? NativeMallHostingSupplementaryView {
+            view.configure(footer, revision: footerRevision)
+        }
+        if headerChanged || footerChanged {
+            collectionView.collectionViewLayout.invalidateLayout()
+        }
+    }
+
+    func apply(_ next: [DDProduct],
+               to collectionView: UICollectionView,
+               resetToTop: Bool) {
+        guard let dataSource else { return }
+        var uniqueProducts: [DDProduct] = []
+        var uniqueIDs = Set<String>()
+        for product in next where uniqueIDs.insert(product.id).inserted {
+            uniqueProducts.append(product)
+        }
+        let next = uniqueProducts
+        let old = products
+        let nextIDs = next.map(\.id)
+        guard old.map(\.id) != nextIDs || old != next else { return }
+
+        let previousOffset = collectionView.contentOffset
+        let topIndexPath = collectionView.indexPathsForVisibleItems.min()
+        let topAnchorID = topIndexPath.flatMap { dataSource.itemIdentifier(for: $0) }
+        let topAnchorDelta = topIndexPath.map {
+            collectionView.contentOffset.y
+                - (collectionView.layoutAttributesForItem(at: $0)?.frame.minY ?? 0)
+        }
+
+        let oldLookup = Dictionary(uniqueKeysWithValues: old.map { ($0.id, $0) })
+        products = next
+        lookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
+        var snapshot = NSDiffableDataSourceSnapshot<Int, String>()
+        snapshot.appendSections([0])
+        snapshot.appendItems(nextIDs, toSection: 0)
+        let changed = next.compactMap { product -> String? in
+            guard let previous = oldLookup[product.id] else { return nil }
+            return previous == product ? nil : product.id
+        }
+        if !changed.isEmpty {
+            snapshot.reloadItems(changed)
+        }
+        dataSource.apply(snapshot, animatingDifferences: false) {
+            collectionView.layoutIfNeeded()
+            if resetToTop {
+                collectionView.setContentOffset(.zero, animated: false)
+            } else if let topAnchorID,
+                      let indexPath = dataSource.indexPath(for: topAnchorID),
+                      let delta = topAnchorDelta,
+                      let attributes = collectionView.layoutAttributesForItem(at: indexPath) {
+                collectionView.setContentOffset(
+                    CGPoint(x: previousOffset.x, y: attributes.frame.minY + delta),
+                    animated: false
+                )
+            } else {
+                collectionView.setContentOffset(previousOffset, animated: false)
+            }
+        }
     }
 
     func collectionView(_ collectionView: UICollectionView,
@@ -266,13 +397,43 @@ final class NativeMallGridCoordinator: NSObject,
     }
 
     func collectionView(_ collectionView: UICollectionView,
-                        cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {}
+                        cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+        let paths = indexPaths.compactMap { index -> String? in
+            guard index.item < products.count else { return nil }
+            return products[index.item].img
+        }
+        NativeMallImageLoader.shared.cancelPrefetch(paths, side: 360)
+    }
+}
+
+private final class NativeMallHostingSupplementaryView: UICollectionReusableView {
+    static let reuseID = "NativeMallHostingSupplementaryView"
+    private var revision = ""
+
+    func configure(_ content: AnyView?, revision: String) {
+        guard self.revision != revision else { return }
+        self.revision = revision
+        guard let content else {
+            contentConfiguration = nil
+            return
+        }
+        contentConfiguration = UIHostingConfiguration {
+            content
+        }
+        .margins(.all, 0)
+        .background(.clear)
+    }
 }
 
 struct NativeMallProductGrid: UIViewRepresentable {
     let products: [DDProduct]
     let onOpen: (DDProduct) -> Void
     var onAddCart: ((DDProduct) -> Void)? = nil
+    var header: AnyView? = nil
+    var footer: AnyView? = nil
+    var headerRevision: String = ""
+    var footerRevision: String = ""
+    var controller: NativeMallProductGridController? = nil
 
     func makeCoordinator() -> NativeMallGridCoordinator {
         NativeMallGridCoordinator()
@@ -297,6 +458,28 @@ struct NativeMallProductGrid: UIViewRepresentable {
         let section = NSCollectionLayoutSection(group: group)
         section.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 7,
                                                         bottom: 16, trailing: 7)
+        var supplementary: [NSCollectionLayoutBoundarySupplementaryItem] = []
+        if header != nil {
+            supplementary.append(NSCollectionLayoutBoundarySupplementaryItem(
+                layoutSize: NSCollectionLayoutSize(
+                    widthDimension: .fractionalWidth(1),
+                    heightDimension: .estimated(2_400)
+                ),
+                elementKind: UICollectionView.elementKindSectionHeader,
+                alignment: .top
+            ))
+        }
+        if footer != nil {
+            supplementary.append(NSCollectionLayoutBoundarySupplementaryItem(
+                layoutSize: NSCollectionLayoutSize(
+                    widthDimension: .fractionalWidth(1),
+                    heightDimension: .estimated(1_800)
+                ),
+                elementKind: UICollectionView.elementKindSectionFooter,
+                alignment: .bottom
+            ))
+        }
+        section.boundarySupplementaryItems = supplementary
         let layout = UICollectionViewCompositionalLayout(section: section)
         let view = UICollectionView(frame: .zero, collectionViewLayout: layout)
         view.backgroundColor = UIColor.dyn(0xF5F5F7, 0x000000)
@@ -305,10 +488,27 @@ struct NativeMallProductGrid: UIViewRepresentable {
         view.showsVerticalScrollIndicator = true
         view.prefetchDataSource = context.coordinator
         view.delegate = context.coordinator
-        view.dataSource = context.coordinator
+        let dataSource = context.coordinator.makeDataSource(for: view)
+        view.dataSource = dataSource
         view.register(NativeMallProductCell.self,
                       forCellWithReuseIdentifier: NativeMallProductCell.reuseID)
+        view.register(
+            NativeMallHostingSupplementaryView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+            withReuseIdentifier: NativeMallHostingSupplementaryView.reuseID
+        )
+        view.register(
+            NativeMallHostingSupplementaryView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter,
+            withReuseIdentifier: NativeMallHostingSupplementaryView.reuseID
+        )
         view.contentInsetAdjustmentBehavior = .never
+        context.coordinator.header = header
+        context.coordinator.footer = footer
+        context.coordinator.headerRevision = headerRevision
+        context.coordinator.footerRevision = footerRevision
+        controller?.attach(view)
+        context.coordinator.apply(products, to: view, resetToTop: true)
         return view
     }
 
@@ -316,11 +516,15 @@ struct NativeMallProductGrid: UIViewRepresentable {
         let coordinator = context.coordinator
         coordinator.onOpen = onOpen
         coordinator.onAddCart = onAddCart
-        let old = coordinator.products
-        guard old != products else { return }
-        coordinator.products = products
-        collectionView.reloadData()
-        collectionView.layoutIfNeeded()
-        collectionView.setContentOffset(.zero, animated: false)
+        controller?.attach(collectionView)
+        coordinator.updateSupplementary(
+            in: collectionView,
+            header: header,
+            footer: footer,
+            headerRevision: headerRevision,
+            footerRevision: footerRevision
+        )
+        let resetToTop = coordinator.products.first?.id != products.first?.id
+        coordinator.apply(products, to: collectionView, resetToTop: resetToTop)
     }
 }
