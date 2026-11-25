@@ -7,6 +7,10 @@ private final class NativeMallImageLoader {
     private let cache = NSCache<NSString, UIImage>()
     private let lock = NSLock()
     private var inFlight: [String: Task<UIImage?, Never>] = [:]
+    private var prefetchQueue: [(path: String, side: CGFloat)] = []
+    private var prefetchQueued = Set<String>()
+    private var prefetchActive = 0
+    private let maxPrefetch = 2
 
     private init() {
         cache.countLimit = 900
@@ -14,6 +18,12 @@ private final class NativeMallImageLoader {
     }
 
     func image(path: String, side: CGFloat) async -> UIImage? {
+        await loadImage(path: path, side: side, decodePriority: .userInitiated)
+    }
+
+    private func loadImage(path: String,
+                           side: CGFloat,
+                           decodePriority: TaskPriority) async -> UIImage? {
         guard !path.isEmpty else { return nil }
         let stable = ImageCacheKey.stablePath(path)
         let key = stable + "#mall-native-" + String(Int(max(160, side)))
@@ -24,7 +34,7 @@ private final class NativeMallImageLoader {
             lock.unlock()
             return await task.value
         }
-        let task = Task<UIImage?, Never> {
+        let task = Task<UIImage?, Never>(priority: decodePriority) {
             var data = await Task.detached(priority: .utility) {
                 ImageStore.shared.diskRead(stable)
             }.value
@@ -32,7 +42,7 @@ private final class NativeMallImageLoader {
                 data = try? await API.shared.imageData(url)
             }
             guard let data else { return nil }
-            return await Task.detached(priority: .userInitiated) {
+            return await Task.detached(priority: decodePriority) {
                 RemoteImage.downsampled(data, maxSide: side)
             }.value
         }
@@ -52,9 +62,62 @@ private final class NativeMallImageLoader {
     }
 
     func prefetch(_ paths: [String], side: CGFloat) {
+        lock.lock()
         for path in paths where !path.isEmpty {
+            let key = ImageCacheKey.stablePath(path)
+                + "#mall-native-"
+                + String(Int(max(160, side)))
+            guard cache.object(forKey: key as NSString) == nil,
+                  inFlight[key] == nil,
+                  prefetchQueued.insert(key).inserted else { continue }
+            prefetchQueue.append((path, side))
+        }
+        lock.unlock()
+        pumpPrefetch()
+    }
+
+    func cancelPrefetch(_ paths: [String], side: CGFloat) {
+        let keys = Set(paths.map {
+            ImageCacheKey.stablePath($0)
+                + "#mall-native-"
+                + String(Int(max(160, side)))
+        })
+        lock.lock()
+        prefetchQueue.removeAll { job in
+            let key = ImageCacheKey.stablePath(job.path)
+                + "#mall-native-"
+                + String(Int(max(160, job.side)))
+            return keys.contains(key)
+        }
+        for key in keys { prefetchQueued.remove(key) }
+        lock.unlock()
+    }
+
+    private func pumpPrefetch() {
+        var jobs: [(path: String, side: CGFloat)] = []
+        lock.lock()
+        while prefetchActive < maxPrefetch, !prefetchQueue.isEmpty {
+            let job = prefetchQueue.removeFirst()
+            let key = ImageCacheKey.stablePath(job.path)
+                + "#mall-native-"
+                + String(Int(max(160, job.side)))
+            prefetchQueued.remove(key)
+            prefetchActive += 1
+            jobs.append(job)
+        }
+        lock.unlock()
+
+        for job in jobs {
             Task(priority: .utility) {
-                _ = await image(path: path, side: side)
+                _ = await loadImage(
+                    path: job.path,
+                    side: job.side,
+                    decodePriority: .utility
+                )
+                lock.lock()
+                prefetchActive = max(0, prefetchActive - 1)
+                lock.unlock()
+                pumpPrefetch()
             }
         }
     }
@@ -219,6 +282,7 @@ final class NativeMallGridCoordinator: NSObject,
                                        UICollectionViewDelegate,
                                        UICollectionViewDataSourcePrefetching {
     var products: [DDProduct] = []
+    var productSnapshotSignature = ""
     var onOpen: ((DDProduct) -> Void)?
     var onAddCart: ((DDProduct) -> Void)?
 
@@ -266,11 +330,18 @@ final class NativeMallGridCoordinator: NSObject,
     }
 
     func collectionView(_ collectionView: UICollectionView,
-                        cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {}
+                        cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+        let paths = indexPaths.compactMap { index -> String? in
+            guard index.item < products.count else { return nil }
+            return products[index.item].img
+        }
+        NativeMallImageLoader.shared.cancelPrefetch(paths, side: 360)
+    }
 }
 
 struct NativeMallProductGrid: UIViewRepresentable {
     let products: [DDProduct]
+    var revision: Int = 0
     let onOpen: (DDProduct) -> Void
     var onAddCart: ((DDProduct) -> Void)? = nil
 
@@ -316,8 +387,14 @@ struct NativeMallProductGrid: UIViewRepresentable {
         let coordinator = context.coordinator
         coordinator.onOpen = onOpen
         coordinator.onAddCart = onAddCart
-        let old = coordinator.products
-        guard old != products else { return }
+        let signature = [
+            String(revision),
+            String(products.count),
+            products.first?.id ?? "",
+            products.last?.id ?? ""
+        ].joined(separator: "|")
+        guard coordinator.productSnapshotSignature != signature else { return }
+        coordinator.productSnapshotSignature = signature
         coordinator.products = products
         collectionView.reloadData()
         collectionView.layoutIfNeeded()

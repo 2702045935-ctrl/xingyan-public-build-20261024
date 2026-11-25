@@ -21,6 +21,21 @@ require(
     "chat info must use stable native section grouping",
 )
 require(
+    "@State private var loading = false" in INFO
+    and "members = ids.compactMap { app.contact(for: $0) }" in INFO
+    and "loading = false" in INFO
+    and "成员信息正在后台同步" in INFO
+    and "ProgressView().frame(maxWidth: .infinity).padding(.vertical, 22)" not in INFO,
+    "cached members and settings must render before network refresh",
+)
+require(
+    "count: 4" in INFO
+    and "Avatar(path: u.avatarPath, size: 58, radius: 12" in INFO
+    and "Avatar(path: u.avatarPath, size: 60, radius: 12" in INFO
+    and ".minimumScaleFactor(0.78)" in INFO,
+    "group member grids must use readable four-column geometry",
+)
+require(
     "size: 68, radius: 16" in INFO
     and "Image(systemName: \"qrcode\")" in INFO
     and "HStack(spacing: 14)" in INFO,

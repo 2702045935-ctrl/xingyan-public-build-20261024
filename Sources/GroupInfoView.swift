@@ -14,7 +14,7 @@ struct GroupInfoView: View {
     @State private var membersHasMore = false
     @State private var ownerId = ""
     @State private var createdAt = ""
-    @State private var loading = true
+    @State private var loading = false
     @State private var pinned = false
     @State private var saving = false
 
@@ -55,8 +55,8 @@ struct GroupInfoView: View {
     }
 
     private let gridColumns = Array(
-        repeating: GridItem(.flexible(minimum: 0), spacing: 4, alignment: .top),
-        count: 5
+        repeating: GridItem(.flexible(minimum: 0), spacing: 8, alignment: .top),
+        count: 4
     )
 
     private var ownerName: String {
@@ -95,11 +95,20 @@ struct GroupInfoView: View {
             CrashCatcher.clearStep()
         }
         .task {
-
             let live = app.chats.first { $0.id == chat.id } ?? chat
             pinned = live.pinned == true
             muted = live.muted == true
             muteAll = live.muteAll == true
+            ownerId = live.ownerId ?? ownerId
+            memberCount = max(memberCount,
+                              live.memberCount ?? 0,
+                              live.memberIds?.count ?? 0)
+            if members.isEmpty, let ids = live.memberIds, !ids.isEmpty {
+                members = ids.compactMap { app.contact(for: $0) }
+            }
+            announce = chatAnnounceFromList()
+            loading = false
+
             if let r = try? await API.shared.chatMembersPage(
                 chatId: chat.id,
                 limit: 100,
@@ -112,7 +121,6 @@ struct GroupInfoView: View {
                 ownerId = r.ownerId
                 createdAt = r.createdAt
             }
-            announce = chatAnnounceFromList()
             loading = false
         }
 
@@ -674,8 +682,18 @@ struct GroupInfoView: View {
 
     private var memberCard: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if loading && members.isEmpty {
-                ProgressView().frame(maxWidth: .infinity).padding(.vertical, 22)
+            if members.isEmpty {
+                HStack(spacing: 9) {
+                    Image(systemName: "person.2.fill")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(C.subLabel)
+                    Text(Tr(loading ? "成员信息正在后台同步" : "成员信息稍后补齐"))
+                        .font(pf(13))
+                        .foregroundColor(C.subLabel)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 12)
+                .frame(height: 78)
             } else {
                 LazyVGrid(columns: gridColumns, spacing: 14) {
                     ForEach(visibleMembers) { u in
@@ -684,7 +702,7 @@ struct GroupInfoView: View {
                         } label: {
                             VStack(spacing: 6) {
                             ZStack(alignment: .topLeading) {
-                                Avatar(path: u.avatarPath, size: 52, radius: 10, level: u.qqLevel ?? 0)
+                                Avatar(path: u.avatarPath, size: 58, radius: 12, level: u.qqLevel ?? 0)
 
                                 if removing && isOwner && u.id != app.me?.id {
                                     Button {
@@ -706,9 +724,10 @@ struct GroupInfoView: View {
                             HStack(spacing: 3) {
                                 Text(u.groupName)
 
-                                    .font(pf(11))
+                                    .font(pf(12))
                                     .foregroundColor(Color.dyn(0x4A4A4A, 0xD8D8D8))
                                     .lineLimit(1)
+                                    .minimumScaleFactor(0.78)
 
                                 if let lv = u.qqLevel, lv > 0, GrowthFlags.showInContacts != false {
                                     QQLevelBadge(level: lv, size: 10, maxIcons: 2).fixedSize()
@@ -963,8 +982,8 @@ struct GroupMembersPage: View {
     }
 
     private let columns = Array(
-        repeating: GridItem(.flexible(minimum: 0), spacing: 12, alignment: .top),
-        count: 5
+        repeating: GridItem(.flexible(minimum: 0), spacing: 10, alignment: .top),
+        count: 4
     )
 
     private var filtered: [User] {
@@ -1029,12 +1048,13 @@ struct GroupMembersPage: View {
                             ForEach(Array(filtered.enumerated()), id: \.element.id) { index, u in
                                 Button { selected = u } label: {
                                     VStack(spacing: 7) {
-                                        Avatar(path: u.avatarPath, size: 54, radius: 11,
+                                        Avatar(path: u.avatarPath, size: 60, radius: 12,
                                                level: u.qqLevel ?? 0)
                                         Text(u.groupName)
-                                            .font(pf(11.5))
+                                            .font(pf(12.5))
                                             .foregroundColor(C.label)
                                             .lineLimit(1)
+                                            .minimumScaleFactor(0.78)
                                         if u.id == ownerId {
                                             Text(Tr("群主"))
                                                 .font(pf(9.5, .medium))

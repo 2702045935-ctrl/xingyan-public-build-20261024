@@ -82,7 +82,8 @@ require(
     and "store.categoryTags(" in CATEGORY
     and "store.relatedProducts(to: product, limit: 6)" in MALL
     and "NativeMallProductGrid(products: list" in CATEGORY
-    and "NativeMallProductGrid(products: store.live" in MALL
+    and "NativeMallProductGrid(" in MALL
+    and "revision: store.catalogRevision" in MALL
     and "NativeMallProductGrid(products: result)" in MALL
     and "Array(list.prefix(gridLimit))" in MALL
     and "gridLimit = min(list.count, gridLimit + 120)" in MALL,
@@ -92,9 +93,14 @@ require(
     "UICollectionViewCompositionalLayout" in NATIVE_GRID
     and "UICollectionViewDataSourcePrefetching" in NATIVE_GRID
     and "NativeMallImageLoader.shared.prefetch(paths, side: 360)" in NATIVE_GRID
+    and "private let maxPrefetch = 2" in NATIVE_GRID
+    and "private func pumpPrefetch()" in NATIVE_GRID
+    and "NativeMallImageLoader.shared.cancelPrefetch(paths, side: 360)" in NATIVE_GRID
     and "view.prefetchDataSource = context.coordinator" in NATIVE_GRID
     and "prefetchItemsAt indexPaths: [IndexPath]) {" in NATIVE_GRID
     and "collectionView.setContentOffset(.zero, animated: false)" in NATIVE_GRID
+    and "productSnapshotSignature" in NATIVE_GRID
+    and "let old = coordinator.products" not in NATIVE_GRID
     and "UIColor.dyn(0xF5F5F7, 0x000000)" in NATIVE_GRID,
     "the product grid must use native cell reuse, image prefetching and light/dark surfaces",
 )

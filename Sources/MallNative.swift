@@ -360,6 +360,7 @@ final class DDStore: ObservableObject {
     static let shared = DDStore()
 
     @Published private(set) var products: [DDProduct] = []
+    @Published private(set) var catalogRevision = 0
     @Published private(set) var live: [DDProduct] = []
     @Published private(set) var categories: [String] = []
 
@@ -634,6 +635,7 @@ final class DDStore: ObservableObject {
 
     private func syncCatalogCaches(persist: Bool = true) {
         catalogKernel.rebuild(products)
+        catalogRevision &+= 1
         live = catalogKernel.live
         categories = catalogKernel.categories
         rebuildRelevanceLookups()
@@ -3513,7 +3515,11 @@ struct DDRecTab: View {
     var onOpen: (DDProduct) -> Void
 
     var body: some View {
-        NativeMallProductGrid(products: store.live, onOpen: onOpen)
+        NativeMallProductGrid(
+            products: store.live,
+            revision: store.catalogRevision,
+            onOpen: onOpen
+        )
         .background(DDColor.page)
     }
 
