@@ -1012,6 +1012,7 @@ struct ChatDetailView: View {
     @State private var dismissDragActive = false
     @State private var loading = true
     @State private var initialCacheReady = false
+    @State private var olderPrefetchWaiting = false
     @State private var initialRetryTask: Task<Void, Never>?
     @State private var initialScrollReady = false
     @State private var initialOpenSettling = false
@@ -3728,6 +3729,7 @@ struct ChatDetailView: View {
         var hasher = Hasher()
         hasher.combine(historyRuntime.revision)
         hasher.combine(hasOlder)
+        hasher.combine(olderPrefetchWaiting)
         hasher.combine(selectMode)
         hasher.combine(hiddenMessageIds.count)
         hasher.combine(sendingMedia.count)
@@ -3776,7 +3778,7 @@ struct ChatDetailView: View {
         case .securityNotice:
             return "security-notice"
         case .older:
-            return "older:\(hasOlder)"
+            return "older:\(hasOlder):\(olderPrefetchWaiting)"
         case .timestamp(let message):
             return [
                 "timestamp",
@@ -4145,8 +4147,10 @@ struct ChatDetailView: View {
             securityNotice
 
         case .older:
-            Color.clear
-                .frame(height: 1)
+            PrefetchWaitingIndicator(
+                waiting: olderPrefetchWaiting,
+                label: Tr("正在加载更早消息…")
+            )
 
         case .timestamp(let message):
             timeLine(message)
@@ -8069,10 +8073,12 @@ struct ChatDetailView: View {
               oldestHistorySeq > 0 else { return }
         let seq = oldestHistorySeq
         loadingOlder = true
+        olderPrefetchWaiting = olderPrefetch.isEmpty
         lastOlderLoad = Date()
         var loadedUsefulPage = false
         defer {
             loadingOlder = false
+            olderPrefetchWaiting = false
             if loadedUsefulPage,
                ChatScrollHandle.shared.moving
                 || ChatScrollHandle.shared.olderRunwayIntentActive {

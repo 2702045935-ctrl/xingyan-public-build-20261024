@@ -2284,14 +2284,14 @@ struct MomentsView: View {
             }
 
             if hasMoreMoments && selectedTimelineDate == nil {
-                Text(loadingMore ? "正在加载…" : " ")
-                    .font(pf(14))
-                    .foregroundColor(C.subLabel)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .onAppear {
-                        Task { await loadMoreMoments() }
-                    }
+                PrefetchWaitingIndicator(
+                    waiting: loadingMore,
+                    label: "正在加载…"
+                )
+                .frame(height: 49)
+                .onAppear {
+                    Task { await loadMoreMoments() }
+                }
             } else if momentTotal > 0 && selectedTimelineDate == nil {
                 Text(Tr("没有更多了"))
                     .font(pf(13))

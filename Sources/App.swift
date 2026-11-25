@@ -367,34 +367,14 @@ final class AppState: ObservableObject {
         guard v != appearance else { return }
 
         appearanceTransitionTask?.cancel()
-        guard !UIAccessibility.isReduceMotionEnabled else {
-            appearance = v
-            UserDefaults.standard.set(v, forKey: "chris.appearance")
-            appearanceVeilOpacity = 0
-            return
-        }
-
-        let brightening = v == "light"
-        withAnimation(.easeOut(duration: 0.16)) {
-            appearanceVeilOpacity = brightening ? 0.16 : 0.12
-        }
-        appearanceTransitionTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 150_000_000)
-            guard let self, !Task.isCancelled else { return }
-            self.appearance = v
-            UserDefaults.standard.set(v, forKey: "chris.appearance")
-
-            // 新主题先落位，再用半秒以上撤掉压暗层，形成由深到浅的提亮。
-            withAnimation(.linear(duration: 0.03)) {
-                self.appearanceVeilOpacity = brightening ? 0.17 : 0.12
-            }
-            try? await Task.sleep(nanoseconds: 40_000_000)
-            guard !Task.isCancelled else { return }
-            withAnimation(.easeInOut(duration: brightening ? 0.54 : 0.42)) {
-                self.appearanceVeilOpacity = 0
-            }
-            self.appearanceTransitionTask = nil
-        }
+        appearanceTransitionTask = nil
+        // Theme switching is a system-level appearance update, not a screen
+        // transition. Every account, sheet and native surface must resolve the
+        // new semantic colors in the same update instead of lagging behind a
+        // timed veil animation.
+        appearance = v
+        UserDefaults.standard.set(v, forKey: "chris.appearance")
+        appearanceVeilOpacity = 0
     }
 
     func withSoftChatTransition(_ action: @escaping () -> Void) {
@@ -2702,7 +2682,6 @@ struct CHRISApp: App {
                     .environmentObject(app)
                     .environmentObject(externalFiles)
                     .preferredColorScheme(app.preferredScheme)
-                    .systemAnimation(.easeInOut(duration: 0.38), value: app.appearance)
                     .onOpenURL { url in
                         if url.isFileURL { ExternalFileInbox.shared.accept([url]) }
                     }
