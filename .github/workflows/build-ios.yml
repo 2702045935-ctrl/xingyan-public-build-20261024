@@ -196,6 +196,7 @@ jobs:
           node server/test/upload-raw-integrity.test.js
           node server/test/large-group-10000.test.js
           node server/test/media-object-routing.test.js
+          node server/test/mall-catalog-cache.test.js
           node server/test/messages-since.test.js
           node server/test/device-sync-state.test.js
           node server/test/push-burst.test.js

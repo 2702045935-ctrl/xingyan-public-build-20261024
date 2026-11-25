@@ -15093,7 +15093,71 @@ async function handleApi(req, res, pathname, query) {
     if (!Array.isArray(m.channels)) m.channels = [];
     return m;
   }
-  function saveMall(m) { writeJson(path.join(DATA_DIR, 'mall.json'), m); }
+  function saveMall(m) {
+    writeJson(path.join(DATA_DIR, 'mall.json'), m);
+    invalidateMallCatalogSnapshot();
+  }
+  let mallCatalogSnapshot = null;
+  function invalidateMallCatalogSnapshot() {
+    mallCatalogSnapshot = null;
+  }
+  function currentMallCatalogSnapshot() {
+    const file = path.join(DATA_DIR, 'mall.json');
+    let stat = null;
+    try {
+      stat = fs.statSync(file);
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+    }
+    if (!stat) {
+      readMall();
+      stat = fs.statSync(file);
+    }
+    if (mallCatalogSnapshot &&
+        mallCatalogSnapshot.mtimeMs === stat.mtimeMs &&
+        mallCatalogSnapshot.size === stat.size) {
+      return mallCatalogSnapshot;
+    }
+    const payload = {
+      ok: true,
+      data: publicMall(readMall())
+    };
+    const raw = applyMediaBase(signUploadsInText(JSON.stringify(payload)));
+    const etag = '"' + crypto.createHash('sha1').update(raw).digest('hex') + '"';
+    mallCatalogSnapshot = {
+      mtimeMs: stat.mtimeMs,
+      size: stat.size,
+      raw,
+      gzip: zlib.gzipSync(raw, { level: 6 }),
+      etag
+    };
+    return mallCatalogSnapshot;
+  }
+  function sendMallCatalog(req, res) {
+    const snapshot = currentMallCatalogSnapshot();
+    const base = {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'public, max-age=15, stale-while-revalidate=60',
+      'ETag': snapshot.etag,
+      'Vary': 'Accept-Encoding',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'no-referrer'
+    };
+    const requestTags = String(req.headers['if-none-match'] || '');
+    if (requestTags.split(',').map((v) => v.trim()).includes(snapshot.etag)) {
+      res.writeHead(304, base);
+      res.end();
+      return;
+    }
+    const wantsGzip = /\bgzip\b/.test(
+      String(req.headers['accept-encoding'] || '')
+    );
+    const body = wantsGzip ? snapshot.gzip : Buffer.from(snapshot.raw);
+    if (wantsGzip) base['Content-Encoding'] = 'gzip';
+    base['Content-Length'] = body.length;
+    res.writeHead(200, base);
+    res.end(body);
+  }
   function mallAdminSeed() {
     return {
       schemaVersion: 1,
@@ -15292,7 +15356,7 @@ async function handleApi(req, res, pathname, query) {
     });
   }
   if (parts[0] === 'mall' && method === 'GET' && parts.length === 1) {
-    ok(res, publicMall(readMall()));
+    sendMallCatalog(req, res);
     return;
   }
   if (parts[0] === 'ops' && parts[1] === 'mall' && method === 'POST') {
