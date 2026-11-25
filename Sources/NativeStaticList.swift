@@ -261,6 +261,7 @@ where Item.ID: Hashable {
         collection.alwaysBounceVertical = true
         collection.alwaysBounceHorizontal = false
         collection.isDirectionalLockEnabled = true
+        collection.decelerationRate = .normal
         collection.showsVerticalScrollIndicator = true
         collection.contentInsetAdjustmentBehavior = .never
         collection.keyboardDismissMode = .interactive
@@ -1108,7 +1109,7 @@ where Item.ID: Hashable {
             }
             let y = scrollView.contentOffset.y
             ChatScrollHandle.shared.noteScroll(offsetY: y, active: active)
-            if abs(y - lastReportedOffsetY) >= 16 {
+            if abs(y - lastReportedOffsetY) >= 24 {
                 lastReportedOffsetY = y
                 onScrollOffset?(y)
                 if let visible = collection?.indexPathsForVisibleItems {
