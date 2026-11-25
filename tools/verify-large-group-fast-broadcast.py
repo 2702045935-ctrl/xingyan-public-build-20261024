@@ -56,6 +56,8 @@ require(
 require(
     "strictDeliverySummary(active)" in LOAD
     and "auditStoredHistory(base, users[0])" in LOAD
+    and "arg('p99-budget-ms', '1000')" in LOAD
+    and "stage.p99Ms <= p99BudgetMs" in LOAD
     and "orderViolations" in LOAD
     and "clientIdDuplicates" in LOAD,
     "large-data capacity tests must gate duplicates, loss and ordering",

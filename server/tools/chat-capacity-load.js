@@ -818,6 +818,7 @@ async function main() {
     .map((value) => value.trim())
     .filter(Boolean);
   const reconnectFraction = Math.min(0.2, Math.max(0, Number(arg('reconnect', '0.1'))));
+  const p99BudgetMs = Math.max(100, Number(arg('p99-budget-ms', '1000')));
   const holdMs = Math.max(0, Number(arg('hold-ms', '0')));
   const holdSampleMs = Math.max(1000, Number(arg('hold-sample-ms', '30000')));
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xingyan-capacity-load-'));
@@ -1079,6 +1080,7 @@ async function main() {
         delivered,
         deliveryRate: expected ? Number((delivered / expected).toFixed(6)) : 0,
         p99Ms: Math.max(...p99s),
+        p99BudgetMs,
         broadcasts,
         reconnectBroadcast,
         strict,
@@ -1086,7 +1088,7 @@ async function main() {
         serverMemoryBeforeMb: memoryBefore,
         serverMemoryAfterMb: processMemoryMb(child.pid)
       };
-      stage.pass = stage.deliveryRate >= 0.999 && stage.p99Ms <= 2000
+      stage.pass = stage.deliveryRate >= 0.999 && stage.p99Ms <= p99BudgetMs
         && stage.connections === target && (!strict || strict.pass)
         && (!stored || stored.pass);
       results.push(stage);

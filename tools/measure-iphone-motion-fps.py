@@ -22,7 +22,7 @@ def main() -> int:
     parser.add_argument("--y", type=float, required=True)
     parser.add_argument("--to-x", type=float, required=True)
     parser.add_argument("--to-y", type=float, required=True)
-    parser.add_argument("--repeat", type=int, default=10)
+    parser.add_argument("--repeat", type=int, default=20)
     parser.add_argument("--minimum-fps", type=int, default=50)
     args = parser.parse_args()
 
@@ -108,8 +108,10 @@ def main() -> int:
         if start + 0.25 <= stamp <= end - 0.05:
             samples.append(int(item["fps"]))
 
-    if not samples:
-        raise SystemExit("motion FPS verification failed: no samples during motion")
+    if len(samples) < 2:
+        raise SystemExit(
+            "motion FPS verification failed: fewer than two samples during motion"
+        )
     minimum = min(samples)
     average = sum(samples) / len(samples)
     print(json.dumps({
