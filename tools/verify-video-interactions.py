@@ -62,6 +62,10 @@ require(
     "struct SendingVideoBubble: View" in MEDIA
     and "var cover: UIImage?" in MEDIA
     and "var progress: Double" in MEDIA
+    and "Circle()\n                    .stroke(Color.white.opacity(0.30), lineWidth: 4)" in MEDIA
+    and ".trim(from: 0, to: max(0.04, min(1, progress)))" in MEDIA
+    and "if progress > 0.01" in MEDIA
+    and 'Image(systemName: "play.fill")' in MEDIA
     and "SendingVideoBubble(cover: sendingPreview, progress: sendProgress)" in (
         ROOT / "Sources" / "ChatDetailView.swift"
     ).read_text(encoding="utf-8")
@@ -70,7 +74,7 @@ require(
     and "progress: sendingFileProgress ?? 0" in (
         ROOT / "Sources" / "ChatDetailView.swift"
     ).read_text(encoding="utf-8"),
-    "pending media and files must use the compact 11/21 progress cards",
+    "pending media must keep the 11/21 circular progress card and files the compact card",
 )
 
 print("video-interactions: passed")

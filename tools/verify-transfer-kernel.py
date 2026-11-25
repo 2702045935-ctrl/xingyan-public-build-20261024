@@ -90,8 +90,8 @@ require(
     and "progress: sendingFileProgress ?? 0" in CHAT
     and "struct SendingVideoBubble: View" in MEDIA
     and "struct SendingFileBubble: View" in MEDIA
-    and 'Text(Tr("上传中"))' in MEDIA
-    and "geo.size.width * value" in MEDIA
+    and 'Tr("上传中")' in MEDIA
+    and "geo.size.width * CGFloat(value)" in MEDIA
     and ".progressViewStyle(.circular)" not in MEDIA
     and "var phase:" not in MEDIA
     and "onRetry:" not in MEDIA

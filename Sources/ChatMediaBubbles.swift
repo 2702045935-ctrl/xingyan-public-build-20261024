@@ -744,7 +744,6 @@ struct SendingVideoBubble: View {
     }
 
     var body: some View {
-        let value = min(1, max(0, progress))
         ZStack {
             if let c = cover {
                 Image(uiImage: c)
@@ -753,33 +752,30 @@ struct SendingVideoBubble: View {
             } else {
                 Color.dyn(0xDDDDDD, 0x333333)
             }
-            Color.black.opacity(0.38)
+            Color.black.opacity(0.42)
 
-            VStack(alignment: .leading, spacing: 7) {
-                Spacer(minLength: 0)
-                HStack(spacing: 6) {
-                    Text(Tr("上传中"))
-                    Spacer(minLength: 4)
-                    Text("\(Int((value * 100).rounded()))%")
+            ZStack {
+                Circle()
+                    .stroke(Color.white.opacity(0.30), lineWidth: 4)
+                    .frame(width: 54, height: 54)
+
+                Circle()
+                    .trim(from: 0, to: max(0.04, min(1, progress)))
+                    .stroke(Color.white,
+                            style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: 54, height: 54)
+                if progress > 0.01 {
+                    Text("\(Int(min(1, progress) * 100))%")
+                        .font(pfStyled(size: 13.5, weight: .semibold))
+                        .foregroundColor(.white)
                         .monospacedDigit()
+                } else {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 15))
+                        .foregroundColor(.white.opacity(0.95))
                 }
-                .font(pfStyled(size: 10.5, weight: .semibold))
-                .foregroundColor(.white)
-
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color.white.opacity(0.26))
-                        Capsule()
-                            .fill(Color.white)
-                            .frame(width: max(0, geo.size.width * value))
-                    }
-                }
-                .frame(height: 3)
             }
-            .padding(.horizontal, 10)
-            .padding(.bottom, 9)
-            .animation(.linear(duration: 0.12), value: value)
         }
         .frame(width: size.width, height: size.height)
         .clipShape(RoundedRectangle(
