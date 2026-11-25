@@ -89,7 +89,7 @@ require(
 require(
     "static let avatarSize: CGFloat = 48" in CHATS
     and "static let avatarGap: CGFloat = 13" in CHATS
-    and "max(73, (73 + (combinedScale - 1) * 34).rounded())" in ROW
+    and "max(72, (72 + (combinedScale - 1) * 34).rounded())" in ROW
     and "weight: .medium, textStyle: .headline" in ROW,
     "conversation rows must use the tighter WeChat avatar grid and lighter title weight",
 )

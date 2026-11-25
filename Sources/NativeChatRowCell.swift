@@ -21,7 +21,7 @@ enum NativeChatRowMetrics {
     }
 
     static var rowHeight: CGFloat {
-        max(73, (73 + (combinedScale - 1) * 34).rounded())
+        max(72, (72 + (combinedScale - 1) * 34).rounded())
     }
 
     static func invalidateScaleCache() {
@@ -226,7 +226,7 @@ final class NativeChatRowCell: UITableViewCell {
         let resolvedTitleHeight = max(titleHeight, ceil(titleLabel.font.lineHeight))
         let previewHeight = max(19, ceil(previewLabel.font.lineHeight))
         let timeHeight = max(18, ceil(timeLabel.font.lineHeight))
-        let titlePreviewGap: CGFloat = 3
+        let titlePreviewGap: CGFloat = 2
         let contentHeight = resolvedTitleHeight + titlePreviewGap + previewHeight
         let contentTop = max(5, (bounds.height - contentHeight) / 2)
         let unread = configuration?.unread ?? 0
@@ -237,13 +237,18 @@ final class NativeChatRowCell: UITableViewCell {
                 ? 8
                 : (unread > 99 ? 28 : (unread > 9 ? 23 : 18)) * badgeScale)
         let unreadHeight = max(18, ceil(unreadLabel.font.lineHeight) + 6)
+        let previewReserve = unread > 0 ? unreadWidth + 10 : 0
+        let previewWidth = max(
+            1,
+            bounds.width - textX - rowTrailing - previewReserve
+        )
         titleLabel.frame = CGRect(x: textX,
                                   y: contentTop,
                                   width: titleWidth,
                                   height: resolvedTitleHeight)
         previewLabel.frame = CGRect(x: textX,
                                     y: contentTop + resolvedTitleHeight + titlePreviewGap,
-                                    width: titleWidth,
+                                    width: previewWidth,
                                     height: previewHeight)
         timeLabel.frame = CGRect(x: bounds.width - rowTrailing - timeSlotWidth,
                                  y: contentTop + (resolvedTitleHeight - timeHeight) / 2 - 3,

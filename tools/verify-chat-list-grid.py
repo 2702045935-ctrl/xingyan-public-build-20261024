@@ -27,10 +27,16 @@ require(
 require(
     "bounds.width - textX - rowTrailing - timeSlotWidth - timeSlotGap" in NATIVE
     and "width: titleWidth" in NATIVE
-    and "previewReserve" not in NATIVE
+    and "let previewReserve = unread > 0 ? unreadWidth + 10 : 0" in NATIVE
+    and "width: previewWidth" in NATIVE
     and "cachedTimeWidth" not in NATIVE
     and "timeLabel.adjustsFontSizeToFitWidth = true" in NATIVE,
-    "time must not resize the title or preview columns",
+    "time must not resize the title; only unread must shorten the preview",
+)
+require(
+    "max(72, (72 + (combinedScale - 1) * 34).rounded())" in NATIVE
+    and "let titlePreviewGap: CGFloat = 2" in NATIVE,
+    "conversation rows must match the measured 72pt row and tighter line rhythm",
 )
 require(
     "private func chatListMetaSlot" in CHATS
