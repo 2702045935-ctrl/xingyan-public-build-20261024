@@ -152,6 +152,7 @@ final class NativeChatRowCell: UITableViewCell {
     private let titleLabel = UILabel()
     private let levelLabel = PaddingLabel(insets: UIEdgeInsets(top: 1, left: 4, bottom: 1, right: 4))
     private let memberLabel = PaddingLabel(insets: UIEdgeInsets(top: 1, left: 4, bottom: 1, right: 4))
+    private let titleRow = UIStackView()
     private let previewLabel = UILabel()
     private let timeLabel = UILabel()
     private let unreadLabel = PaddingLabel(insets: .zero)
@@ -161,15 +162,15 @@ final class NativeChatRowCell: UITableViewCell {
     private var configuration: NativeChatRowConfiguration?
     private var avatarSignature = ""
     private var accessibilitySignature = ""
-    private var cachedTimeSignature = ""
-    private var cachedTimeWidth: CGFloat = 0
     private var openGuardUntil: TimeInterval = 0
+    private var timeMinWidthConstraint: NSLayoutConstraint?
+    private var previewTrailingConstraint: NSLayoutConstraint?
+    private var unreadWidthConstraint: NSLayoutConstraint?
 
     private let rowLeading: CGFloat = 16
     private let avatarSize: CGFloat = 48
     private let avatarGap: CGFloat = 12
     private let rowTrailing: CGFloat = 17
-    private let timeSlotGap: CGFloat = 8
     private let dividerLeading: CGFloat = 77
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -200,91 +201,6 @@ final class NativeChatRowCell: UITableViewCell {
         avatarView.invalidate()
         avatarSignature = ""
         accessibilitySignature = ""
-        cachedTimeSignature = ""
-        cachedTimeWidth = 0
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        foreground.frame = bounds
-        pressOverlay.frame = foreground.bounds
-        avatarView.frame = CGRect(x: rowLeading, y: (bounds.height - avatarSize) / 2,
-                                  width: avatarSize, height: avatarSize)
-        let textX = rowLeading + avatarSize + avatarGap
-        let timeText = configuration?.time ?? ""
-        let timeSignature = "\(timeText)|\(timeLabel.font.pointSize)"
-        if timeSignature != cachedTimeSignature {
-            let measuredTime = ceil((timeText as NSString).size(
-                withAttributes: [.font: timeLabel.font as Any]
-            ).width)
-            let timeScale = min(1.35, timeLabel.font.pointSize / 13)
-            cachedTimeWidth = min(96, max(34 * timeScale, measuredTime + 2))
-            cachedTimeSignature = timeSignature
-        }
-        let timeWidth = cachedTimeWidth
-        let titleWidth = max(
-            1,
-            bounds.width - textX - rowTrailing - timeWidth - timeSlotGap
-        )
-        let titleHeight: CGFloat = 22
-        levelLabel.sizeToFit()
-        memberLabel.sizeToFit()
-        let badgeWidth = (
-            levelLabel.isHidden ? 0 : levelLabel.bounds.width + 4
-        ) + (
-            memberLabel.isHidden ? 0 : memberLabel.bounds.width + 4
-        )
-        let titleTextWidth = max(1, titleWidth - min(72, badgeWidth))
-        titleLabel.frame = CGRect(x: 0, y: 0,
-                                  width: titleTextWidth, height: titleHeight)
-        let resolvedTitleHeight = max(titleHeight, ceil(titleLabel.font.lineHeight))
-        let previewHeight = max(19, ceil(previewLabel.font.lineHeight))
-        let timeHeight = max(18, ceil(timeLabel.font.lineHeight))
-        let titlePreviewGap: CGFloat = 2
-        let contentHeight = resolvedTitleHeight + titlePreviewGap + previewHeight
-        let contentTop = max(
-            5,
-            (bounds.height - contentHeight) / 2 - (2.0 / 3.0)
-        )
-        let unread = configuration?.unread ?? 0
-        let badgeScale = min(1.4, max(1, unreadLabel.font.pointSize / 10))
-        let unreadWidth: CGFloat = configuration?.isManuallyUnread == true
-            ? 16
-            : (configuration?.unreadMuted == true
-                ? 8
-                : (unread > 99 ? 28 : (unread > 9 ? 23 : 18)) * badgeScale)
-        let unreadHeight = max(18, ceil(unreadLabel.font.lineHeight) + 6)
-        let previewReserve = unread > 0 ? unreadWidth + 10 : 0
-        let previewWidth = max(
-            1,
-            bounds.width - textX - rowTrailing - previewReserve
-        )
-        titleLabel.frame = CGRect(x: textX,
-                                  y: contentTop,
-                                  width: titleWidth,
-                                  height: resolvedTitleHeight)
-        previewLabel.frame = CGRect(x: textX,
-                                    y: contentTop + resolvedTitleHeight + titlePreviewGap,
-                                    width: previewWidth,
-                                    height: previewHeight)
-        timeLabel.frame = CGRect(x: bounds.width - rowTrailing - timeWidth,
-                                 y: contentTop + (resolvedTitleHeight - timeHeight) / 2 - 3,
-                                 width: timeWidth, height: timeHeight)
-        unreadLabel.sizeToFit()
-        unreadLabel.frame = CGRect(x: bounds.width - rowTrailing - unreadWidth,
-                                   y: previewLabel.frame.midY - unreadHeight / 2,
-                                   width: unreadWidth,
-                                   height: unreadHeight)
-        unreadLabel.layer.cornerRadius = configuration?.unreadMuted == true
-            ? min(4, unreadHeight / 2)
-            : unreadHeight / 2
-        unreadBell.frame = CGRect(x: bounds.width - rowTrailing - 16,
-                                  y: previewLabel.frame.midY - 8,
-                                  width: 16,
-                                  height: 16)
-        layoutTitleBadges()
-        divider.frame = CGRect(x: dividerLeading, y: bounds.height - 0.5,
-                               width: bounds.width - dividerLeading, height: 0.5)
     }
 
     func configure(_ configuration: NativeChatRowConfiguration) {
@@ -305,6 +221,8 @@ final class NativeChatRowCell: UITableViewCell {
         timeLabel.font = NativeChatRowMetrics.font(12,
                                                   weight: .regular,
                                                   textStyle: .footnote)
+        let timeScale = min(1.35, timeLabel.font.pointSize / 13)
+        timeMinWidthConstraint?.constant = 34 * timeScale
         previewLabel.attributedText = styledPreview(configuration)
         timeLabel.text = configuration.time
         timeLabel.textColor = configuration.timeColor
@@ -337,6 +255,16 @@ final class NativeChatRowCell: UITableViewCell {
             unreadLabel.clipsToBounds = true
             unreadLabel.textAlignment = .center
         }
+        let unread = configuration.unread
+        let badgeScale = min(1.4, max(1, unreadLabel.font.pointSize / 10))
+        let unreadWidth: CGFloat = configuration.isManuallyUnread
+            ? 16
+            : (configuration.unreadMuted
+                ? 8
+                : (unread > 99 ? 28 : (unread > 9 ? 23 : 18)) * badgeScale)
+        unreadWidthConstraint?.constant = unread > 0 ? unreadWidth : 0
+        previewTrailingConstraint?.constant = rowTrailing
+            + (unread > 0 ? unreadWidth + 10 : 0)
 
         levelLabel.isHidden = configuration.levelText.isEmpty
         levelLabel.font = NativeChatRowMetrics.font(8.5, weight: .semibold,
@@ -488,8 +416,18 @@ final class NativeChatRowCell: UITableViewCell {
         foreground.isOpaque = true
         contentView.isUserInteractionEnabled = false
         contentView.addSubview(foreground)
+        let textGuide = UILayoutGuide()
+        foreground.addLayoutGuide(textGuide)
+
+        titleRow.axis = .horizontal
+        titleRow.alignment = .center
+        titleRow.spacing = 5
+        titleRow.addArrangedSubview(titleLabel)
+        titleRow.addArrangedSubview(levelLabel)
+        titleRow.addArrangedSubview(memberLabel)
+
         foreground.addSubview(avatarView)
-        foreground.addSubview(titleLabel)
+        foreground.addSubview(titleRow)
         foreground.addSubview(previewLabel)
         foreground.addSubview(timeLabel)
         foreground.addSubview(unreadLabel)
@@ -499,14 +437,104 @@ final class NativeChatRowCell: UITableViewCell {
         pressOverlay.backgroundColor = .clear
         foreground.addSubview(pressOverlay)
 
+        [
+            foreground,
+            avatarView,
+            titleRow,
+            titleLabel,
+            levelLabel,
+            memberLabel,
+            previewLabel,
+            timeLabel,
+            unreadLabel,
+            unreadBell,
+            divider,
+            pressOverlay
+        ].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
+
+        let timeMinWidth = timeLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 34)
+        timeMinWidthConstraint = timeMinWidth
+        let unreadWidth = unreadLabel.widthAnchor.constraint(equalToConstant: 18)
+        unreadWidthConstraint = unreadWidth
+        let previewTrailing = previewLabel.trailingAnchor.constraint(
+            equalTo: foreground.trailingAnchor,
+            constant: -rowTrailing
+        )
+        previewTrailingConstraint = previewTrailing
+
+        NSLayoutConstraint.activate([
+            foreground.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            foreground.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            foreground.topAnchor.constraint(equalTo: contentView.topAnchor),
+            foreground.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+
+            avatarView.leadingAnchor.constraint(equalTo: foreground.leadingAnchor,
+                                               constant: rowLeading),
+            avatarView.centerYAnchor.constraint(equalTo: foreground.centerYAnchor),
+            avatarView.widthAnchor.constraint(equalToConstant: avatarSize),
+            avatarView.heightAnchor.constraint(equalToConstant: avatarSize),
+
+            titleRow.leadingAnchor.constraint(equalTo: avatarView.trailingAnchor,
+                                              constant: avatarGap),
+            titleRow.trailingAnchor.constraint(equalTo: timeLabel.leadingAnchor,
+                                               constant: -8),
+            titleRow.topAnchor.constraint(equalTo: textGuide.topAnchor),
+            titleRow.heightAnchor.constraint(greaterThanOrEqualToConstant: 22),
+
+            previewLabel.leadingAnchor.constraint(equalTo: titleRow.leadingAnchor),
+            previewLabel.topAnchor.constraint(equalTo: titleRow.bottomAnchor,
+                                              constant: 2),
+            previewLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 19),
+            previewTrailing,
+
+            textGuide.bottomAnchor.constraint(equalTo: previewLabel.bottomAnchor),
+            textGuide.centerYAnchor.constraint(equalTo: foreground.centerYAnchor,
+                                               constant: -2.0 / 3.0),
+
+            timeLabel.trailingAnchor.constraint(equalTo: foreground.trailingAnchor,
+                                                constant: -rowTrailing),
+            timeLabel.firstBaselineAnchor.constraint(equalTo: titleLabel.firstBaselineAnchor),
+            timeLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 18),
+            timeMinWidth,
+
+            unreadLabel.trailingAnchor.constraint(equalTo: foreground.trailingAnchor,
+                                                  constant: -rowTrailing),
+            unreadLabel.centerYAnchor.constraint(equalTo: previewLabel.centerYAnchor),
+            unreadLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 18),
+            unreadWidth,
+
+            unreadBell.trailingAnchor.constraint(equalTo: foreground.trailingAnchor,
+                                                 constant: -rowTrailing),
+            unreadBell.centerYAnchor.constraint(equalTo: previewLabel.centerYAnchor),
+            unreadBell.widthAnchor.constraint(equalToConstant: 16),
+            unreadBell.heightAnchor.constraint(equalToConstant: 16),
+
+            divider.leadingAnchor.constraint(equalTo: foreground.leadingAnchor,
+                                             constant: dividerLeading),
+            divider.trailingAnchor.constraint(equalTo: foreground.trailingAnchor),
+            divider.bottomAnchor.constraint(equalTo: foreground.bottomAnchor),
+            divider.heightAnchor.constraint(equalToConstant: 0.5),
+
+            pressOverlay.leadingAnchor.constraint(equalTo: foreground.leadingAnchor),
+            pressOverlay.trailingAnchor.constraint(equalTo: foreground.trailingAnchor),
+            pressOverlay.topAnchor.constraint(equalTo: foreground.topAnchor),
+            pressOverlay.bottomAnchor.constraint(equalTo: foreground.bottomAnchor)
+        ])
+
         titleLabel.font = .systemFont(ofSize: 17, weight: .semibold)
         titleLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.numberOfLines = 1
+        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        levelLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        memberLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         previewLabel.font = .systemFont(ofSize: 14, weight: .regular)
         previewLabel.lineBreakMode = .byTruncatingTail
+        previewLabel.numberOfLines = 1
         timeLabel.font = .systemFont(ofSize: 13, weight: .regular)
         timeLabel.textAlignment = .right
-        timeLabel.adjustsFontSizeToFitWidth = true
-        timeLabel.minimumScaleFactor = 0.75
+        timeLabel.lineBreakMode = .byClipping
+        timeLabel.setContentHuggingPriority(.required, for: .horizontal)
+        timeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         unreadLabel.textAlignment = .center
         unreadBell.isHidden = true
         unreadLabel.font = .systemFont(ofSize: 10, weight: .bold)
@@ -521,23 +549,6 @@ final class NativeChatRowCell: UITableViewCell {
         memberLabel.textColor = .white
         memberLabel.layer.cornerRadius = 4
         memberLabel.clipsToBounds = true
-    }
-
-    private func layoutTitleBadges() {
-        let baseWidth = min(titleLabel.intrinsicContentSize.width,
-                            max(1, titleLabel.bounds.width))
-        var x = titleLabel.frame.maxX - titleLabel.bounds.width + baseWidth + 5
-        if !levelLabel.isHidden {
-            levelLabel.sizeToFit()
-            levelLabel.frame.origin = CGPoint(x: x, y: titleLabel.frame.midY - levelLabel.bounds.height / 2)
-            foreground.addSubview(levelLabel)
-            x = levelLabel.frame.maxX + 4
-        }
-        if !memberLabel.isHidden {
-            memberLabel.sizeToFit()
-            memberLabel.frame.origin = CGPoint(x: x, y: titleLabel.frame.midY - memberLabel.bounds.height / 2)
-            foreground.addSubview(memberLabel)
-        }
     }
 
     func setTouchPressed(_ pressed: Bool) {
