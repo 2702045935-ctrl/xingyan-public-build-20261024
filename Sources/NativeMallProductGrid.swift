@@ -409,19 +409,47 @@ final class NativeMallGridCoordinator: NSObject,
 private final class NativeMallHostingSupplementaryView: UICollectionReusableView {
     static let reuseID = "NativeMallHostingSupplementaryView"
     private var revision: String?
+    private var hosting: UIHostingController<AnyView>?
 
     func configure(_ content: AnyView?, revision: String) {
-        guard self.revision != revision else { return }
+        guard self.revision != revision || hosting == nil else { return }
         self.revision = revision
         guard let content else {
-            contentConfiguration = nil
+            hosting?.view.removeFromSuperview()
+            hosting = nil
             return
         }
-        contentConfiguration = UIHostingConfiguration {
-            content
+        if let hosting {
+            hosting.rootView = content
+        } else {
+            let controller = UIHostingController(rootView: content)
+            controller.view.backgroundColor = .clear
+            controller.view.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(controller.view)
+            NSLayoutConstraint.activate([
+                controller.view.leadingAnchor.constraint(equalTo: leadingAnchor),
+                controller.view.trailingAnchor.constraint(equalTo: trailingAnchor),
+                controller.view.topAnchor.constraint(equalTo: topAnchor),
+                controller.view.bottomAnchor.constraint(equalTo: bottomAnchor)
+            ])
+            hosting = controller
         }
-        .margins(.all, 0)
-        .background(.clear)
+        setNeedsLayout()
+    }
+
+    override func preferredLayoutAttributesFitting(
+        _ layoutAttributes: UICollectionViewLayoutAttributes
+    ) -> UICollectionViewLayoutAttributes {
+        setNeedsLayout()
+        layoutIfNeeded()
+        let fitting = systemLayoutSizeFitting(
+            CGSize(width: layoutAttributes.frame.width, height: 0),
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        )
+        var attributes = layoutAttributes
+        attributes.frame.size.height = max(1, ceil(fitting.height))
+        return attributes
     }
 }
 
