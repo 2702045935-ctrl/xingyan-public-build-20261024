@@ -109,6 +109,7 @@ where Item.ID: Hashable {
         }
         NativeChatListScrollRegistry.shared.chats = table
         table.delegate = context.coordinator
+        table.prefetchDataSource = context.coordinator
         table.register(NativeChatRowCell.self,
                        forCellReuseIdentifier: NativeChatCellIdentifier.nativeRow)
         table.register(UITableViewCell.self,
@@ -176,7 +177,9 @@ where Item.ID: Hashable {
         context.coordinator.apply(items, animated: false)
     }
 
-    final class Coordinator: NSObject, UITableViewDelegate {
+    final class Coordinator: NSObject,
+                             UITableViewDelegate,
+                             UITableViewDataSourcePrefetching {
         var lookup: [Item.ID: Item] = [:]
         var row: (Item) -> Row
         var height: (Item) -> CGFloat
@@ -619,6 +622,19 @@ where Item.ID: Hashable {
             }
             configuration.onOpen()
         }
+
+        func tableView(_ tableView: UITableView,
+                       prefetchRowsAt indexPaths: [IndexPath]) {
+            for indexPath in indexPaths {
+                guard let id = dataSource?.itemIdentifier(for: indexPath),
+                      let entry = lookup[id],
+                      let configuration = nativeRow?(entry) else { continue }
+                NativeChatAvatarPrefetcher.prefetch(configuration)
+            }
+        }
+
+        func tableView(_ tableView: UITableView,
+                       cancelPrefetchingForRowsAt indexPaths: [IndexPath]) {}
 
         func tableView(_ tableView: UITableView,
                        didHighlightRowAt indexPath: IndexPath) {

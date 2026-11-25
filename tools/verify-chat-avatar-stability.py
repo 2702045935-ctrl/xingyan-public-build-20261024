@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
 TEXT_ROW = (ROOT / "Sources" / "NativeChatTextRowCell.swift").read_text(encoding="utf-8")
 MEDIA_ROW = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(encoding="utf-8")
+CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
 APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
@@ -86,6 +87,16 @@ require(
     and "if next.showsAvatar {\n            avatar.configure(" in TEXT_ROW
     and "if next.showsAvatar {\n            avatar.configure(" in MEDIA_ROW,
     "collapsed native message runs must not start avatar I/O while scrolling",
+)
+require(
+    "UITableViewDataSourcePrefetching" in CHAT_LIST
+    and "table.prefetchDataSource = context.coordinator" in CHAT_LIST
+    and "prefetchRowsAt indexPaths: [IndexPath]" in CHAT_LIST
+    and "NativeChatAvatarPrefetcher.prefetch(configuration)" in CHAT_LIST
+    and "private final class NativeChatAvatarPrefetchLoader" in SOURCE
+    and "RemoteImage.downsampled($0, maxSide: 150)" in SOURCE
+    and "Task.detached(priority: .utility)" in SOURCE,
+    "real conversation avatars must be decoded in the background before rows scroll in",
 )
 require(
     'if let path = app.contact(for: senderId)?.avatarPath, !path.isEmpty { return path }'

@@ -65,16 +65,19 @@ async def run(args: argparse.Namespace) -> None:
     try:
         async with UniversalHIDServiceService(provider) as touch:
             await asyncio.sleep(TOUCH_AUTH_SETTLE_SECONDS)
-            await send_touch(
-                touch,
-                (args.x, args.y),
-                (args.to_x, args.to_y),
-                args.width,
-                args.height,
-                args.duration,
-                args.steps,
-                args.hold,
-            )
+            for _ in range(max(1, args.repeat)):
+                await send_touch(
+                    touch,
+                    (args.x, args.y),
+                    (args.to_x, args.to_y),
+                    args.width,
+                    args.height,
+                    args.duration,
+                    args.steps,
+                    args.hold,
+                )
+                if args.gap > 0:
+                    await asyncio.sleep(args.gap)
     finally:
         await provider.close()
 
@@ -91,6 +94,8 @@ def main() -> None:
     parser.add_argument("--duration", type=float, default=0.08)
     parser.add_argument("--steps", type=int, default=4)
     parser.add_argument("--hold", type=float, default=0.12)
+    parser.add_argument("--repeat", type=int, default=1)
+    parser.add_argument("--gap", type=float, default=0.08)
     args = parser.parse_args()
     if args.to_x is None:
         args.to_x = args.x

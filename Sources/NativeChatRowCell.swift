@@ -75,6 +75,71 @@ struct NativeChatRowConfiguration {
     var isPinned: Bool
 }
 
+private final class NativeChatAvatarPrefetchLoader {
+    static let shared = NativeChatAvatarPrefetchLoader()
+
+    private let lock = NSLock()
+    private var inFlight = Set<String>()
+
+    func prefetch(paths: [String]) {
+        for raw in paths {
+            let path = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !path.isEmpty else { continue }
+            let key = ImageCacheKey.stablePath(path)
+            guard ImageStore.shared.get(key + "#150") == nil,
+                  ImageStore.shared.get(key) == nil else { continue }
+            lock.lock()
+            guard inFlight.insert(key).inserted else {
+                lock.unlock()
+                continue
+            }
+            lock.unlock()
+
+            Task(priority: .utility) {
+                var data = await Task.detached(priority: .utility) {
+                    ImageStore.shared.diskRead(key)
+                        ?? ImageStore.shared.diskRead(path)
+                }.value
+                if data == nil, let url = API.shared.assetURL(path) {
+                    data = try? await API.shared.imageData(url)
+                }
+                let image = await Task.detached(priority: .utility) {
+                    data.flatMap {
+                        RemoteImage.downsampled($0, maxSide: 150)
+                            ?? UIImage(data: $0)
+                    }
+                }.value
+                if let image {
+                    ImageStore.shared.putAvatar(key + "#150", image)
+                    ImageStore.shared.putAvatar(key, image)
+                }
+                self.lock.lock()
+                self.inFlight.remove(key)
+                self.lock.unlock()
+            }
+        }
+    }
+}
+
+enum NativeChatAvatarPrefetcher {
+    static func prefetch(_ configuration: NativeChatRowConfiguration) {
+        NativeChatAvatarPrefetchLoader.shared.prefetch(paths: configuration.avatarPaths)
+        if configuration.avatarIsGroup,
+           configuration.avatarPaths.filter({ !$0.isEmpty }).count < 4 {
+            let chatId = configuration.chatId
+            let memberIds = configuration.groupMemberIds
+            Task { @MainActor in
+                NativeGroupAvatarCache.shared.paths(
+                    chatId: chatId,
+                    memberIds: memberIds
+                ) { paths in
+                    NativeChatAvatarPrefetchLoader.shared.prefetch(paths: paths)
+                }
+            }
+        }
+    }
+}
+
 final class NativeChatRowCell: UITableViewCell {
     private static let previewAccentInk = UIColor(hex: 0xFA5151)
 
