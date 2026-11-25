@@ -2,9 +2,9 @@ import SwiftUI
 
 enum ChatMessageSurface {
     static let cardRadius: CGFloat = WhatsAppChatLayout.cornerRadius
-    static let innerRadius: CGFloat = 6
+    static let innerRadius: CGFloat = WhatsAppChatLayout.innerRadius
     static let mediaRadius: CGFloat = WhatsAppChatLayout.cornerRadius
-    static let gridRadius: CGFloat = 5
+    static let gridRadius: CGFloat = WhatsAppChatLayout.mediaTileRadius
 
     static var cardFill: Color {
         Color.dyn(0xFFFFFF, 0x1C1C1E)

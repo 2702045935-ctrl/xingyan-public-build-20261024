@@ -91,7 +91,8 @@ require(
 require(
     "static let cardRadius: CGFloat = WhatsAppChatLayout.cornerRadius" in CARDS
     and "static let mediaRadius: CGFloat = WhatsAppChatLayout.cornerRadius" in CARDS
-    and "static let gridRadius: CGFloat = 5" in CARDS
+    and "static let innerRadius: CGFloat = WhatsAppChatLayout.innerRadius" in CARDS
+    and "static let gridRadius: CGFloat = WhatsAppChatLayout.mediaTileRadius" in CARDS
     and ".fill(ChatMessageSurface.cardFill)" in CARDS
     and ".stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)" in CARDS
     and "if ChatTheme.usesGlass {" not in CARDS
@@ -112,7 +113,11 @@ require(
     "native bubble materials must use the same opaque no-overlay 11/22 style",
 )
 require(
-    "static let cornerRadius: CGFloat = 8" in LAYOUT
+    "static let cornerRadius: CGFloat = 16" in LAYOUT
+    and "static let innerRadius: CGFloat = 12" in LAYOUT
+    and "static let mediaTileRadius: CGFloat = 12" in LAYOUT
+    and "static let overlayRadius: CGFloat = 9" in LAYOUT
+    and "static func resolvedCornerRadius(for size: CGSize" in LAYOUT
     and "let out: CGFloat = 0" in CHAT
     and "tail ? WhatsAppChatLayout.tailDepth : 0" not in CHAT
     and "showTail: false" in CHAT
@@ -122,6 +127,8 @@ require(
 )
 require(
     "ChatMessageSurface.mediaRadius" in CHAT
+    and MEDIA.count("ChatMessageSurface.mediaRadius") >= 3
+    and "RoundedRectangle(cornerRadius: 6, style: .continuous)" not in MEDIA
     and ".background(BubbleFill(mine: mine, tail: showTail))" in CHAT
     and ".clipShape(BubbleShape(mine: mine, tail: showTail))" in CHAT
     and "var mine: Bool? = nil" in CARDS
@@ -129,6 +136,13 @@ require(
         ROOT / "Sources" / "ChatMediaBubbles.swift"
     ).read_text(encoding="utf-8"),
     "chat cards and file cards must reuse the shared bubble shell",
+)
+require(
+    "imageView.layer.cornerRadius = WhatsAppChatLayout.resolvedCornerRadius(" in MEDIA_ROW
+    and "preferred: WhatsAppChatLayout.cornerRadius" in MEDIA_ROW
+    and "preferred: WhatsAppChatLayout.mediaTileRadius" in MEDIA_ROW
+    and "senderLabel.layer.cornerRadius = WhatsAppChatLayout.overlayRadius" in MEDIA_ROW,
+    "native image, mosaic and video surfaces must share one rounded media system",
 )
 require(
     "width: 258" in MEDIA

@@ -71,7 +71,7 @@ final class NativeChatBubbleBackground: UIView {
         )
         let path = UIBezierPath(
             roundedRect: body,
-            cornerRadius: WhatsAppChatLayout.cornerRadius
+            cornerRadius: WhatsAppChatLayout.resolvedCornerRadius(for: body.size)
         )
         if showTail {
             // Match BubbleShape exactly: the WhatsApp tail spans y=6...15.

@@ -49,7 +49,7 @@ require(
     and "var bubbleGlass: Bool" not in MEDIA_ROW
     and "var glass = false" not in TEXT_ROW
     and "bubble.glass" not in MEDIA_ROW
-    and "cornerRadius: WhatsAppChatLayout.cornerRadius" in TEXT_ROW
+    and "WhatsAppChatLayout.resolvedCornerRadius(for: body.size)" in TEXT_ROW
     and "context.drawLinearGradient(" not in TEXT_ROW
     and "ChatSurfaceMaterial.uiBubble(" not in TEXT_ROW
     and "path.lineWidth = 0.8" not in TEXT_ROW,

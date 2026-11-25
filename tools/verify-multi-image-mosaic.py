@@ -36,7 +36,8 @@ require(
     "MultiImageMosaic.visibleCount(for: paths.count)" in NATIVE
     and "MultiImageMosaic.frames(count: paths.count, in: body)" in NATIVE
     and "badgeLabel.text = \"+\\(paths.count - visible)\"" in NATIVE
-    and "view.layer.cornerRadius = min(12" in NATIVE
+    and "WhatsAppChatLayout.resolvedCornerRadius(" in NATIVE
+    and "preferred: WhatsAppChatLayout.mediaTileRadius" in NATIVE
     and "containerSize(for: paths.count, width: 229)" in NATIVE,
     "native media rows must use the same mosaic geometry without per-row blur",
 )

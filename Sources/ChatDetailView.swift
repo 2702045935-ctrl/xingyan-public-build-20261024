@@ -9142,9 +9142,11 @@ struct MessageRow: View {
                 .padding(.vertical, 8)
                 .background(
                     ZStack {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: WhatsAppChatLayout.cornerRadius,
+                                         style: .continuous)
                             .fill(.ultraThinMaterial)
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: WhatsAppChatLayout.cornerRadius,
+                                         style: .continuous)
                             .fill(senderNameUsesLightInk
                                   ? Color.black.opacity(0.40)
                                   : Color.white.opacity(0.76))
@@ -9445,11 +9447,13 @@ struct MessageRow: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 6)
             .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                RoundedRectangle(cornerRadius: ChatMessageSurface.innerRadius,
+                                 style: .continuous)
                     .fill(quoteSurface)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                RoundedRectangle(cornerRadius: ChatMessageSurface.innerRadius,
+                                 style: .continuous)
                     .stroke(quoteBorder, lineWidth: 0.5)
             }
 
@@ -9702,7 +9706,8 @@ struct MessageRow: View {
         .frame(width: min(maxBubbleWidth, UIConfig.num("transferCardW", 240)),
                alignment: .leading)
         .background(card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: WhatsAppChatLayout.cornerRadius,
+                                    style: .continuous))
     }
 
     @ViewBuilder
@@ -9716,7 +9721,9 @@ struct MessageRow: View {
                 .foregroundColor(ChatTheme.secondary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
-                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(ChatTheme.separator))
+                .background(RoundedRectangle(cornerRadius: WhatsAppChatLayout.cornerRadius,
+                                             style: .continuous)
+                    .fill(ChatTheme.separator))
         }
     }
 
@@ -10096,7 +10103,7 @@ struct MessageRow: View {
                 count: total,
                 in: CGRect(origin: .zero, size: size)
             )
-            let outerRadius: CGFloat = total == 1 ? 12 : 18
+            let outerRadius = ChatMessageSurface.mediaRadius
 
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: outerRadius, style: .continuous)
@@ -10105,7 +10112,10 @@ struct MessageRow: View {
                 ForEach(0..<visible, id: \.self) { index in
                     if index < paths.count, index < frames.count {
                         let frame = frames[index]
-                        let tileRadius = min(12, min(frame.width, frame.height) * 0.18)
+                        let tileRadius = WhatsAppChatLayout.resolvedCornerRadius(
+                            for: frame.size,
+                            preferred: ChatMessageSurface.gridRadius
+                        )
                         Button {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             onOpenImage?(paths[index])
@@ -10133,7 +10143,10 @@ struct MessageRow: View {
                     }
                     .frame(width: last.width, height: last.height)
                     .clipShape(RoundedRectangle(
-                        cornerRadius: min(12, min(last.width, last.height) * 0.18),
+                        cornerRadius: WhatsAppChatLayout.resolvedCornerRadius(
+                            for: last.size,
+                            preferred: ChatMessageSurface.gridRadius
+                        ),
                         style: .continuous
                     ))
                     .offset(x: last.minX, y: last.minY)

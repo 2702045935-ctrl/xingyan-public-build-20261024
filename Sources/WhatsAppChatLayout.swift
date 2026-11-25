@@ -1,8 +1,11 @@
 import UIKit
 
 enum WhatsAppChatLayout {
-    static let version = 3
-    static let cornerRadius: CGFloat = 8
+    static let version = 4
+    static let cornerRadius: CGFloat = 16
+    static let innerRadius: CGFloat = 12
+    static let mediaTileRadius: CGFloat = 12
+    static let overlayRadius: CGFloat = 9
     static let tailDepth: CGFloat = 5
     static let tailHeight: CGFloat = 9
     static let tailCenterY: CGFloat = 10.5
@@ -33,6 +36,11 @@ enum WhatsAppChatLayout {
             (time as NSString).size(withAttributes: [.font: metadataFont]).width
         )
         return textWidth + (tickCount > 0 ? 15 : 0)
+    }
+
+    static func resolvedCornerRadius(for size: CGSize,
+                                     preferred: CGFloat = cornerRadius) -> CGFloat {
+        min(preferred, max(0, min(size.width, size.height) / 2))
     }
 }
 

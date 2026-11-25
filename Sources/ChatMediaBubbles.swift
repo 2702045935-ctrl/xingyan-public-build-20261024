@@ -207,7 +207,10 @@ struct VideoBubble: View {
                 if info.seconds > 0 { timeBadge }
             }
             .frame(width: size.width, height: size.height)
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .clipShape(RoundedRectangle(
+                cornerRadius: ChatMessageSurface.mediaRadius,
+                style: .continuous
+            ))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -273,7 +276,10 @@ struct LivePhotoBubble: View {
                     .padding(7)
             }
             .frame(width: 150, height: 200)
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .clipShape(RoundedRectangle(
+                cornerRadius: ChatMessageSurface.mediaRadius,
+                style: .continuous
+            ))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -776,7 +782,10 @@ struct SendingVideoBubble: View {
             .animation(.linear(duration: 0.12), value: value)
         }
         .frame(width: size.width, height: size.height)
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .clipShape(RoundedRectangle(
+            cornerRadius: ChatMessageSurface.mediaRadius,
+            style: .continuous
+        ))
     }
 }
 
@@ -804,9 +813,11 @@ struct SendingFileBubble: View {
                         .minimumScaleFactor(0.65)
                 }
                 .frame(width: 40, height: 40)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: ChatMessageSurface.innerRadius,
+                                             style: .continuous)
                     .fill(look.color.opacity(0.13)))
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: ChatMessageSurface.innerRadius,
+                                          style: .continuous)
                     .stroke(look.color.opacity(0.18), lineWidth: 0.6))
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -846,10 +857,12 @@ struct SendingFileBubble: View {
         .padding(.vertical, 11)
         .frame(width: 218)
         .background {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                             style: .continuous)
                 .fill(C.cardBg)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                     style: .continuous)
                         .stroke(C.hairline.opacity(0.78), lineWidth: 0.6)
                 }
                 .shadow(color: Color.black.opacity(0.10),
