@@ -21,10 +21,13 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "uploadSession" not in API
-    and 'base + "/api/upload/raw"' in API
-    and API.count('base + "/api/upload/raw"') >= 3,
-    "small media uploads must retain the proven raw endpoint",
+    "private let uploadSession: URLSession" in API
+    and 'directUploadBase = "https://43.242.194.89:8443"' in API
+    and "private var rawUploadBases: [String]" in API
+    and 'root + "/api/upload/raw"' in API
+    and "uploadCfg.httpMaximumConnectionsPerHost = 8" in API
+    and "uploadCfg.networkServiceType = .responsiveData" in API,
+    "large uploads must use the direct Cell ingress with the public fallback",
 )
 require(
     "fileSize >= 4 * 1024 * 1024" not in API
@@ -38,17 +41,16 @@ require(
     "chat uploads must keep the faster raw path while the resumable kernel remains diagnostic",
 )
 require(
-    "req.httpBody = data\n        let (d, resp) = try await session.data(for: req)"
-    in API
-    and "session.upload(\n            for: req,\n            fromFile: file,\n            delegate: delegate"
-    in API
-    and "(d, resp) = try await session.upload(\n                for: req,\n                from: data,\n                delegate: delegate"
-    in API,
-    "binary and file uploads must use the original 11/21 URLSession modes",
+    "uploadSession.upload(" in API
+    and "fromFile: file" in API
+    and "private func uploadRaw(source: RawUploadSource" in API
+    and "if retryable && index + 1 < roots.count { continue }" in API
+    and "let retryable = Self.isConnectivity(error)" in API,
+    "data and file uploads must use dedicated upload sessions with fallback",
 )
 require(
     "private func uploadRawJPEG(" in API
-    and 'req.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")' in API
+    and 'mime: "image/jpeg"' in API
     and 'req.setValue("1", forHTTPHeaderField: "x-chris-compressed")' in API
     and '"/api/upload"' in API,
     "images must try raw JPEG first and retain the 11/21 base64 fallback",
