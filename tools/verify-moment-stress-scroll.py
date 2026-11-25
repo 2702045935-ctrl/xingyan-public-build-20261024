@@ -42,6 +42,12 @@ require(
     "Moments prefetched pages must commit only after the active scroll stops",
 )
 require(
+    "private var momentPrefetchLead: Int" in VIEW
+    and "MomentStressFixture.isActive ? Self.stressMomentPageSize : 12" in VIEW
+    and "index >= source.count - momentPrefetchLead" in VIEW,
+    "Moments stress must arm a full page of prefetch runway before the tail",
+)
+require(
     "momentPaging.moments = await Self.generateStressMoments(" in VIEW
     and "private static func generateStressMoments(range: Range<Int>) async -> [Moment]" in VIEW
     and "Task.detached(priority: .userInitiated)" in VIEW

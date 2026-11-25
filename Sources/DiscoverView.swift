@@ -2228,6 +2228,10 @@ struct MomentsView: View {
         }
     }
 
+    private var momentPrefetchLead: Int {
+        MomentStressFixture.isActive ? Self.stressMomentPageSize : 12
+    }
+
     private var momentList: some View {
         return LazyVStack(spacing: 0) {
             Color.clear
@@ -2273,7 +2277,8 @@ struct MomentsView: View {
                 }
                 momentRow(moment)
                     .onAppear {
-                        guard hasMoreMoments, index >= source.count - 12 else { return }
+                        guard hasMoreMoments,
+                              index >= source.count - momentPrefetchLead else { return }
                         Task { await loadMoreMoments() }
                     }
             }
