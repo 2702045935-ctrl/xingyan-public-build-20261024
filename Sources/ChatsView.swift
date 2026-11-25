@@ -1306,7 +1306,6 @@ struct ChatsView: View {
     @State private var showScan = false
 
     @State private var showPayCode = false
-    @State private var showAccounts = false
     @State private var openRow: String?
 
     @State private var showSearch = false
@@ -1690,7 +1689,11 @@ struct ChatsView: View {
 
             HStack(spacing: 8) {
                 Button {
-                    showAccounts = true
+                    UISelectionFeedbackGenerator().selectionChanged()
+                    NotificationCenter.default.post(
+                        name: .chrisOpenAccountSidebar,
+                        object: nil
+                    )
                 } label: {
                     Avatar(path: app.me?.avatarPath ?? "",
                            size: 40, radius: 20)
@@ -1701,7 +1704,7 @@ struct ChatsView: View {
                         .frame(width: 44, height: 44)
                 }
                 .buttonStyle(ChatChromeIconPressStyle())
-                .accessibilityLabel(Tr("切换账号"))
+                .accessibilityLabel(Tr("打开账户侧边栏"))
 
                 if app.offline {
                     Text(Tr("离线"))
@@ -3164,13 +3167,6 @@ struct ChatsView: View {
                 }
             }
             .environmentObject(app)
-        }
-
-        .sheet(isPresented: $showAccounts) {
-            NavigationStack {
-                SwitchAccountView()
-                    .environmentObject(app)
-            }
         }
 
         .sheet(isPresented: $showFloorCity) {
