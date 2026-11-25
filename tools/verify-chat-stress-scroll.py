@@ -324,8 +324,11 @@ require(
     ).read_text(encoding="utf-8")
     and "private static let stressMomentWindow = 100_000" in (
         ROOT / "Sources" / "DiscoverView.swift"
+    ).read_text(encoding="utf-8")
+    and "private static let stressMomentPageSize = 120" in (
+        ROOT / "Sources" / "DiscoverView.swift"
     ).read_text(encoding="utf-8"),
-    "Moments must paint 10000 rows initially and grow all the way through 100000",
+    "Moments must paint 10000 rows initially, grow through 100000 and prefetch 120 at a time",
 )
 require(
     "private static let hardCap = 300_000" in CONFIG,

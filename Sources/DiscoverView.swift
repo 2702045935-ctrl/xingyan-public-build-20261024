@@ -1358,7 +1358,7 @@ struct MomentsView: View {
     private static let momentPageSize = 30
     private static let stressMomentInitialWindow = 10_000
     private static let stressMomentWindow = 100_000
-    private static let stressMomentPageSize = 20
+    private static let stressMomentPageSize = 120
     private static let monthDayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
