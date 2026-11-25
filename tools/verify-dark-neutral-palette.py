@@ -49,5 +49,15 @@ require(
     and "let themed = C.pageBg" in TAB,
     "dark navigation and tab surfaces must ignore legacy remote black overrides",
 )
+require(
+    "let normalIcon = UIColor(OrbitTheme.secondary)" in TAB
+    and "let selectedIcon = UIColor(OrbitTheme.jade)" in TAB
+    and "appearance.inlineLayoutAppearance" in TAB
+    and "appearance.compactInlineLayoutAppearance" in TAB
+    and ".withRenderingMode(.alwaysTemplate)" in TAB
+    and "UIColor(OrbitTheme.jade),\n                                           renderingMode: .alwaysOriginal"
+    not in TAB,
+    "tab icons must share one template tint hierarchy in every layout",
+)
 
 print("dark-neutral-palette: passed")

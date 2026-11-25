@@ -248,8 +248,7 @@ struct NativeTabBar: UIViewRepresentable {
                          selectedImage: Self.worldIconWithOrbit()),
             UITabBarItem(title: C.tabText3, image: UIImage(systemName: "person.crop.circle"),
                          selectedImage: UIImage(systemName: "person.crop.circle.fill")?
-                            .withTintColor(UIColor(OrbitTheme.jade),
-                                           renderingMode: .alwaysOriginal))
+                            .withRenderingMode(.alwaysTemplate))
         ]
         applyColors(bar)
         refresh(bar)
@@ -357,10 +356,18 @@ struct NativeTabBar: UIViewRepresentable {
             .foregroundColor: UIColor(OrbitTheme.jade),
             .font: pfUIFont(10.5, .semibold)
         ]
-        appearance.stackedLayoutAppearance.normal.iconColor = UIColor(OrbitTheme.secondary)
-        appearance.stackedLayoutAppearance.normal.titleTextAttributes = normalTitle
-        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(OrbitTheme.jade)
-        appearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedTitle
+        let normalIcon = UIColor(OrbitTheme.secondary)
+        let selectedIcon = UIColor(OrbitTheme.jade)
+        for itemAppearance in [
+            appearance.stackedLayoutAppearance,
+            appearance.inlineLayoutAppearance,
+            appearance.compactInlineLayoutAppearance
+        ] {
+            itemAppearance.normal.iconColor = normalIcon
+            itemAppearance.normal.titleTextAttributes = normalTitle
+            itemAppearance.selected.iconColor = selectedIcon
+            itemAppearance.selected.titleTextAttributes = selectedTitle
+        }
         appearance.stackedLayoutAppearance.normal.badgeBackgroundColor = .systemRed
         appearance.stackedLayoutAppearance.selected.badgeBackgroundColor = .systemRed
         appearance.inlineLayoutAppearance.normal.badgeBackgroundColor = .systemRed
@@ -411,7 +418,7 @@ struct NativeTabBar: UIViewRepresentable {
         private let systemMyImage = UIImage(systemName: "person.crop.circle")?
             .withRenderingMode(.alwaysTemplate)
         private let systemMySelected = UIImage(systemName: "person.crop.circle.fill")?
-            .withTintColor(UIColor(OrbitTheme.jade), renderingMode: .alwaysOriginal)
+            .withRenderingMode(.alwaysTemplate)
 
         init(selection: Binding<Int>) {
             self.selection = selection
