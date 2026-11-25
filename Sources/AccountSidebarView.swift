@@ -56,6 +56,23 @@ struct AccountSidebarOverlay: View {
     let onOpenProfile: () -> Void
 
     @GestureState private var dragTranslation: CGFloat = 0
+    @State private var showRailAccounts = false
+
+    private var railAccounts: [SavedAccount] {
+        var rows: [SavedAccount] = []
+        if let me = app.me {
+            rows.append(SavedAccount(
+                username: me.username ?? me.id,
+                nickname: me.name,
+                avatar: me.avatarPath ?? me.avatar ?? ""
+            ))
+        }
+        var seen = Set(rows.map(\.username))
+        for account in app.accounts where seen.insert(account.username).inserted {
+            rows.append(account)
+        }
+        return rows
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -104,6 +121,17 @@ struct AccountSidebarOverlay: View {
                             }
                         }
                 )
+
+                AccountSidebarAvatarRail(
+                    accounts: railAccounts,
+                    onSelect: openRailAccounts
+                )
+                .frame(width: AccountSidebarMetrics.minimumTrailingReveal)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .opacity(isOpen ? 1 : 0)
+                .offset(x: isOpen ? 0 : AccountSidebarMetrics.minimumTrailingReveal)
+                .scaleEffect(isOpen ? 1 : 0.96, anchor: .trailing)
+                .zIndex(3)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -111,6 +139,12 @@ struct AccountSidebarOverlay: View {
         .allowsHitTesting(isOpen)
         .accessibilityHidden(!isOpen)
         .animation(.spring(response: 0.26, dampingFraction: 0.88), value: isOpen)
+        .sheet(isPresented: $showRailAccounts) {
+            NavigationStack {
+                SwitchAccountView()
+                    .environmentObject(app)
+            }
+        }
     }
 
     private func close() {
@@ -124,6 +158,79 @@ struct AccountSidebarOverlay: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
             onOpenProfile()
         }
+    }
+
+    private func openRailAccounts() {
+        UISelectionFeedbackGenerator().selectionChanged()
+        close()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+            showRailAccounts = true
+        }
+    }
+}
+
+private struct AccountSidebarAvatarRail: View {
+    @Environment(\.colorScheme) private var scheme
+
+    let accounts: [SavedAccount]
+    let onSelect: () -> Void
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 8) {
+                ForEach(accounts) { account in
+                    Button(action: onSelect) {
+                        Avatar(
+                            path: account.avatar,
+                            size: 34,
+                            radius: 17,
+                            circle: true
+                        )
+                        .frame(width: 46, height: 46)
+                        .overlay(alignment: .bottomTrailing) {
+                            Circle()
+                                .fill(Color(hex: 0x25D366))
+                                .frame(width: 8, height: 8)
+                                .overlay(Circle().stroke(
+                                    scheme == .dark ? Color(hex: 0x1A1A1A) : .white,
+                                    lineWidth: 1.5
+                                ))
+                                .offset(x: -5, y: -5)
+                        }
+                        .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(account.nickname)
+                }
+            }
+            .padding(.vertical, 10)
+        }
+        .background {
+            ZStack {
+                Rectangle().fill(.thinMaterial)
+                Rectangle().fill(
+                    LinearGradient(
+                        colors: [
+                            Color(hex: 0x25D366).opacity(scheme == .dark ? 0.16 : 0.10),
+                            Color.clear
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            }
+            Rectangle().fill(
+                scheme == .dark
+                    ? Color.black.opacity(0.22)
+                    : Color.white.opacity(0.38)
+            )
+        }
+        .overlay(alignment: .leading) {
+            Rectangle()
+                .fill(Color.primary.opacity(scheme == .dark ? 0.10 : 0.06))
+                .frame(width: 0.5)
+        }
+        .accessibilityHidden(accounts.isEmpty)
     }
 }
 
@@ -152,8 +259,25 @@ private struct AccountSidebarPanel: View {
     private var danger: Color { Color(hex: 0xE75454) }
     private var panelTint: Color {
         scheme == .dark
-            ? Color(hex: 0x111416).opacity(0.94)
-            : Color(hex: 0xF7F8FA).opacity(0.94)
+            ? Color(hex: 0x111814).opacity(0.62)
+            : Color(hex: 0xF7FAF8).opacity(0.66)
+    }
+    private var panelColorGlow: LinearGradient {
+        LinearGradient(
+            colors: scheme == .dark
+                ? [
+                    accent.opacity(0.16),
+                    Color.clear,
+                    Color.black.opacity(0.12)
+                ]
+                : [
+                    accent.opacity(0.12),
+                    Color.white.opacity(0.06),
+                    Color(hex: 0xF3F7F4).opacity(0.16)
+                ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     private var accountLine: String {
@@ -227,7 +351,8 @@ private struct AccountSidebarPanel: View {
         .padding(.bottom, max(4, L.safeBottom))
         .background {
             ZStack {
-                Rectangle().fill(.ultraThinMaterial)
+                Rectangle().fill(.thinMaterial)
+                Rectangle().fill(panelColorGlow)
                 panelTint
             }
         }

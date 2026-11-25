@@ -151,7 +151,8 @@ struct VideoShareSheet: View {
             .buttonStyle(.plain)
             .padding(.top, 8)
         }
-        .background(ShareSheetTheme.page(scheme).ignoresSafeArea())
+        .background(ShareSheetTheme.pageBackdrop(scheme).ignoresSafeArea())
+        .shareSheetTranslucentBackground()
         .presentationDragIndicator(.hidden)
         .presentationDetents([.fraction(0.76), .large])
     }

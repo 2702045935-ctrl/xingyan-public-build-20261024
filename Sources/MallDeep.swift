@@ -727,7 +727,8 @@ struct DDShareSheet: View {
             .buttonStyle(.plain)
             .padding(.top, 18)
         }
-        .background(ShareSheetTheme.page(scheme).ignoresSafeArea())
+        .background(ShareSheetTheme.pageBackdrop(scheme).ignoresSafeArea())
+        .shareSheetTranslucentBackground()
         .presentationDragIndicator(.hidden)
         .presentationDetents([.fraction(0.72), .large])
         .sheet(isPresented: $showForward) {

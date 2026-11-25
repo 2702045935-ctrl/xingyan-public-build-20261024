@@ -61,26 +61,12 @@ struct ShareBrandIcon: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                ZStack {
-                    Ellipse()
-                        .fill(Color.white.opacity(0.96))
-                        .frame(width: size * 0.55, height: size * 0.40)
-                        .offset(x: -size * 0.07, y: -size * 0.08)
-                    Ellipse()
-                        .fill(Color.white.opacity(0.90))
-                        .frame(width: size * 0.44, height: size * 0.32)
-                        .offset(x: size * 0.14, y: size * 0.15)
-                    HStack(spacing: size * 0.075) {
-                        Circle().fill(Color(hex: 0x07B84D)).frame(width: size * 0.055)
-                        Circle().fill(Color(hex: 0x07B84D)).frame(width: size * 0.055)
-                    }
-                    .offset(x: -size * 0.07, y: -size * 0.08)
-                    HStack(spacing: size * 0.06) {
-                        Circle().fill(Color(hex: 0x07B84D)).frame(width: size * 0.046)
-                        Circle().fill(Color(hex: 0x07B84D)).frame(width: size * 0.046)
-                    }
-                    .offset(x: size * 0.14, y: size * 0.15)
-                }
+                SVGIcon(
+                    markup: ShareBrandArtwork.wechat,
+                    size: size * 0.64,
+                    color: .white,
+                    direct: true
+                )
             case .qq:
                 RoundedRectangle(cornerRadius: size * 0.23, style: .continuous)
                     .fill(
@@ -90,26 +76,12 @@ struct ShareBrandIcon: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                ZStack {
-                    Ellipse()
-                        .fill(Color.white)
-                        .frame(width: size * 0.48, height: size * 0.58)
-                        .offset(y: size * 0.04)
-                    HStack(spacing: size * 0.12) {
-                        Circle().fill(Color(hex: 0x20242B)).frame(width: size * 0.06)
-                        Circle().fill(Color(hex: 0x20242B)).frame(width: size * 0.06)
-                    }
-                    .offset(y: -size * 0.07)
-                    Capsule()
-                        .fill(Color(hex: 0xFF9F22))
-                        .frame(width: size * 0.15, height: size * 0.055)
-                        .offset(y: size * 0.04)
-                    Capsule()
-                        .fill(Color(hex: 0xEB3F43))
-                        .frame(width: size * 0.38, height: size * 0.055)
-                        .rotationEffect(.degrees(-7))
-                        .offset(y: size * 0.14)
-                }
+                SVGIcon(
+                    markup: ShareBrandArtwork.qq,
+                    size: size * 0.62,
+                    color: .white,
+                    direct: true
+                )
             case .xiaohongshu:
                 RoundedRectangle(cornerRadius: size * 0.23, style: .continuous)
                     .fill(
@@ -119,29 +91,35 @@ struct ShareBrandIcon: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                VStack(spacing: size * 0.025) {
-                    Text("小红书")
-                        .font(.system(size: size * 0.205, weight: .bold,
-                                      design: .rounded))
-                    Text("RED")
-                        .font(.system(size: size * 0.075, weight: .heavy))
-                        .tracking(size * 0.024)
-                }
-                .foregroundStyle(.white)
+                SVGIcon(
+                    markup: ShareBrandArtwork.xiaohongshu,
+                    size: size * 0.70,
+                    color: .white,
+                    direct: true
+                )
             case .douyin:
                 RoundedRectangle(cornerRadius: size * 0.23, style: .continuous)
                     .fill(Color(hex: 0x101014))
-                Image(systemName: "music.note")
-                    .font(.system(size: size * 0.48, weight: .black))
-                    .foregroundStyle(Color(hex: 0x25F4EE))
-                    .offset(x: -size * 0.045, y: size * 0.018)
-                Image(systemName: "music.note")
-                    .font(.system(size: size * 0.48, weight: .black))
-                    .foregroundStyle(Color(hex: 0xFE2C55))
-                    .offset(x: size * 0.045, y: -size * 0.018)
-                Image(systemName: "music.note")
-                    .font(.system(size: size * 0.48, weight: .black))
-                    .foregroundStyle(.white)
+                SVGIcon(
+                    markup: ShareBrandArtwork.douyin,
+                    size: size * 0.58,
+                    color: Color(hex: 0x25F4EE),
+                    direct: true
+                )
+                .offset(x: -size * 0.018, y: size * 0.014)
+                SVGIcon(
+                    markup: ShareBrandArtwork.douyin,
+                    size: size * 0.58,
+                    color: Color(hex: 0xFE2C55),
+                    direct: true
+                )
+                .offset(x: size * 0.018, y: -size * 0.014)
+                SVGIcon(
+                    markup: ShareBrandArtwork.douyin,
+                    size: size * 0.58,
+                    color: .white,
+                    direct: true
+                )
             }
         }
         .frame(width: size, height: size)
@@ -164,29 +142,35 @@ struct ShareBrandRail: View {
                 .font(pf(12, .semibold))
                 .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 8) {
-                    ForEach(ShareBrand.allCases) { brand in
-                        Button {
-                            UISelectionFeedbackGenerator().selectionChanged()
-                            onTap(brand)
-                        } label: {
-                            VStack(spacing: 7) {
-                                ShareBrandIcon(brand: brand, size: 54)
-                                    .shadow(color: Color.black.opacity(scheme == .dark ? 0.28 : 0.10),
-                                            radius: 8, y: 4)
-                                Text(Tr(brand.label))
-                                    .font(pf(11.5, .medium))
-                                    .foregroundStyle(ShareSheetTheme.ink(scheme))
-                                    .lineLimit(1)
-                            }
-                            .frame(width: 72)
-                            .contentShape(Rectangle())
+            HStack(alignment: .top, spacing: 0) {
+                ForEach(ShareBrand.allCases) { brand in
+                    Button {
+                        UISelectionFeedbackGenerator().selectionChanged()
+                        onTap(brand)
+                    } label: {
+                        VStack(spacing: 7) {
+                            ShareBrandIcon(brand: brand, size: 50)
+                                .shadow(color: Color.black.opacity(scheme == .dark ? 0.28 : 0.10),
+                                        radius: 8, y: 4)
+                            Text(Tr(brand.label))
+                                .font(pf(11.5, .medium))
+                                .foregroundStyle(ShareSheetTheme.ink(scheme))
+                                .lineLimit(1)
                         }
-                        .buttonStyle(ShareBrandPressStyle())
-                        .accessibilityLabel(Tr("分享到") + Tr(brand.label))
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(ShareBrandPressStyle())
+                    .accessibilityLabel(Tr("分享到") + Tr(brand.label))
                 }
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 12)
+            .background {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(.thinMaterial)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(ShareSheetTheme.card(scheme).opacity(scheme == .dark ? 0.52 : 0.60))
             }
         }
     }
@@ -220,6 +204,16 @@ enum ShareSheetTheme {
         scheme == .dark ? Color(hex: 0x111113) : Color(hex: 0xF7F7F8)
     }
 
+    @ViewBuilder
+    static func pageBackdrop(_ scheme: ColorScheme) -> some View {
+        ZStack {
+            Rectangle()
+                .fill(.regularMaterial)
+            Rectangle()
+                .fill(page(scheme).opacity(scheme == .dark ? 0.48 : 0.54))
+        }
+    }
+
     static func card(_ scheme: ColorScheme) -> Color {
         scheme == .dark ? Color(hex: 0x1D1D20) : .white
     }
@@ -230,6 +224,18 @@ enum ShareSheetTheme {
 
     static func secondaryInk(_ scheme: ColorScheme) -> Color {
         scheme == .dark ? Color(hex: 0x99999F) : Color(hex: 0x707077)
+    }
+}
+
+extension View {
+    @ViewBuilder
+    func shareSheetTranslucentBackground() -> some View {
+        if #available(iOS 16.4, *) {
+            presentationBackground(.clear)
+                .presentationCornerRadius(30)
+        } else {
+            self
+        }
     }
 }
 
@@ -244,7 +250,12 @@ struct SharePreviewCard<Content: View>: View {
     var body: some View {
         content
             .padding(12)
-            .background(ShareSheetTheme.card(scheme))
+            .background {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(.regularMaterial)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(ShareSheetTheme.card(scheme).opacity(scheme == .dark ? 0.54 : 0.64))
+            }
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -313,7 +324,7 @@ struct ShareActionTile: View {
                         .lineLimit(1)
                 }
             }
-            .frame(width: 72)
+            .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -327,6 +338,7 @@ struct ShareSheet: View {
     @Environment(\.colorScheme) private var scheme
     @State private var copied = false
     @State private var saved = false
+    @State private var fetchedLinkTitle: String?
 
     private var image: UIImage? {
         for item in items {
@@ -368,11 +380,30 @@ struct ShareSheet: View {
         for item in items {
             if let text = item as? String,
                !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return text
+                return readableShareText(text)
             }
-            if let url = item as? URL { return url.lastPathComponent }
+            if let url = item as? URL {
+                if ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
+                    return fetchedLinkTitle ?? Tr("网页内容")
+                }
+                return url.lastPathComponent
+            }
         }
         return Tr("来自星言的内容")
+    }
+
+    private func readableShareText(_ raw: String) -> String {
+        let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: text),
+              ["http", "https"].contains(url.scheme?.lowercased() ?? "") else {
+            return text
+        }
+        return fetchedLinkTitle ?? Tr("网页内容")
+    }
+
+    private func readableHost(_ url: URL) -> String? {
+        guard let host = url.host, !host.isEmpty else { return nil }
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
     }
 
     private var previewTitle: String {
@@ -416,35 +447,38 @@ struct ShareSheet: View {
             }
             cancelButton
         }
-        .background(ShareSheetTheme.page(scheme).ignoresSafeArea())
-        .presentationDragIndicator(.hidden)
+        .background(ShareSheetTheme.pageBackdrop(scheme).ignoresSafeArea())
+        .shareSheetTranslucentBackground()
+        .presentationDragIndicator(.visible)
         .presentationDetents([.fraction(0.76), .large])
+        .task(id: shareURL?.absoluteString) {
+            await loadLinkMetadata()
+        }
     }
 
     private var header: some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(Tr("分享到"))
-                    .font(pf(20, .bold))
-                    .foregroundStyle(ShareSheetTheme.ink(scheme))
-                Text(Tr("把内容发送到聊天、朋友或更多应用"))
-                    .font(pf(11.5))
-                    .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
+        ZStack {
+            Text(Tr("分享到"))
+                .font(pf(17, .semibold))
+                .foregroundStyle(ShareSheetTheme.ink(scheme))
+                .frame(maxWidth: .infinity)
+
+            HStack {
+                Spacer(minLength: 0)
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
+                        .frame(width: 34, height: 34)
+                        .background(ShareSheetTheme.card(scheme), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Tr("关闭"))
             }
-            Spacer(minLength: 0)
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
-                    .frame(width: 34, height: 34)
-                    .background(ShareSheetTheme.card(scheme), in: Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Tr("关闭"))
         }
         .padding(.horizontal, 18)
-        .padding(.top, 18)
-        .padding(.bottom, 14)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
     }
 
     private var preview: some View {
@@ -485,7 +519,7 @@ struct ShareSheet: View {
                         .font(pf(14.5, .semibold))
                         .foregroundStyle(ShareSheetTheme.ink(scheme))
                         .lineLimit(3)
-                    Text(shareURL?.host ?? Tr("来自星言"))
+                    Text(shareURL.flatMap(readableHost) ?? Tr("来自星言"))
                         .font(pf(10.5))
                         .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
                         .lineLimit(1)
@@ -559,6 +593,14 @@ struct ShareSheet: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 12)
+        .background {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.thinMaterial)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(ShareSheetTheme.card(scheme).opacity(scheme == .dark ? 0.52 : 0.60))
+        }
     }
 
     private var brandRail: some View {
@@ -634,9 +676,13 @@ struct ShareSheet: View {
                 .foregroundStyle(ShareSheetTheme.ink(scheme))
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .background(ShareSheetTheme.card(scheme))
+                .background(
+                    ShareSheetTheme.card(scheme),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                )
         }
         .buttonStyle(MenuPressStyle())
+        .padding(.horizontal, 16)
         .padding(.top, 8)
     }
 
@@ -660,6 +706,75 @@ struct ShareSheet: View {
                                         width: 1, height: 1)
         }
         presenter.present(controller, animated: true)
+    }
+
+    @MainActor
+    private func loadLinkMetadata() async {
+        fetchedLinkTitle = nil
+        guard let url = shareURL,
+              ["http", "https"].contains(url.scheme?.lowercased() ?? "") else {
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 4
+        request.setValue(
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+            forHTTPHeaderField: "User-Agent"
+        )
+        request.setValue("text/html,application/xhtml+xml", forHTTPHeaderField: "Accept")
+
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              let http = response as? HTTPURLResponse,
+              (200..<400).contains(http.statusCode),
+              let html = String(
+                data: data.prefix(768_000),
+                encoding: .utf8
+              ),
+              !Task.isCancelled,
+              let title = linkTitle(from: html) else {
+            return
+        }
+        withAnimation(.easeOut(duration: 0.16)) {
+            fetchedLinkTitle = title
+        }
+    }
+
+    private func linkTitle(from html: String) -> String? {
+        let patterns = [
+            #"<meta[^>]+(?:property|name)\s*=\s*[\"']og:title[\"'][^>]+content\s*=\s*[\"']([^\"']+)[\"']"#,
+            #"<meta[^>]+content\s*=\s*[\"']([^\"']+)[\"'][^>]+(?:property|name)\s*=\s*[\"']og:title[\"']"#,
+            #"<title[^>]*>(.*?)</title>"#,
+        ]
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(
+                pattern: pattern,
+                options: [.caseInsensitive, .dotMatchesLineSeparators]
+            ) else { continue }
+            let source = html as NSString
+            guard let match = regex.firstMatch(
+                in: html,
+                range: NSRange(location: 0, length: source.length)
+            ),
+                  match.numberOfRanges > 1 else { continue }
+            let raw = source.substring(with: match.range(at: 1))
+                .replacingOccurrences(of: "<[^>]+>", with: " ",
+                                      options: .regularExpression)
+                .replacingOccurrences(of: "&amp;", with: "&")
+                .replacingOccurrences(of: "&quot;", with: "\"")
+                .replacingOccurrences(of: "&#39;", with: "'")
+                .replacingOccurrences(of: "&lt;", with: "<")
+                .replacingOccurrences(of: "&gt;", with: ">")
+                .replacingOccurrences(of: "&nbsp;", with: " ")
+                .replacingOccurrences(of: #"\s+"#, with: " ",
+                                      options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !raw.isEmpty,
+                  !raw.lowercased().hasPrefix("http"),
+                  raw.count <= 160 else { continue }
+            return raw
+        }
+        return nil
     }
 }
 

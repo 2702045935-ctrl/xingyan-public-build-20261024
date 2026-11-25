@@ -49,6 +49,25 @@ require(
     "the drawer must support scrim dismissal and a restrained swipe-close gesture",
 )
 require(
+    "struct AccountSidebarAvatarRail: View" in SIDEBAR
+    and "accounts: railAccounts" in SIDEBAR
+    and ".frame(width: AccountSidebarMetrics.minimumTrailingReveal)" in SIDEBAR
+    and ".offset(x: isOpen ? 0 : AccountSidebarMetrics.minimumTrailingReveal)" in SIDEBAR
+    and ".scaleEffect(isOpen ? 1 : 0.96, anchor: .trailing)" in SIDEBAR
+    and "Rectangle().fill(.thinMaterial)" in SIDEBAR
+    and "ForEach(accounts)" in SIDEBAR,
+    "the exposed trailing edge must cover conversation metadata with an avatar rail",
+)
+require(
+    "Color(hex: 0x111814).opacity(0.62)" in SIDEBAR
+    and "Color(hex: 0xF7FAF8).opacity(0.66)" in SIDEBAR
+    and "private var panelColorGlow: LinearGradient" in SIDEBAR
+    and "accent.opacity(0.16)" in SIDEBAR
+    and "Color.black.opacity(0.22)" in SIDEBAR
+    and "Color.white.opacity(0.38)" in SIDEBAR,
+    "sidebar material must remain visibly frosted and color-tinted",
+)
+require(
     "struct AccountSidebarPressStyle: ButtonStyle" in SIDEBAR
     and "configuration.isPressed" in SIDEBAR
     and "Color.primary.opacity(" in SIDEBAR
