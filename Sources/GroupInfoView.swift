@@ -1,5 +1,14 @@
 import SwiftUI
 
+private struct GroupMembersPageResult {
+    var members: [User]
+    var ownerId: String
+    var createdAt: String
+    var memberCount: Int
+    var nextCursor: Int
+    var hasMore: Bool
+}
+
 struct GroupInfoView: View {
     @ObservedObject private var lang = LangStore.shared
     let chat: Chat
@@ -100,18 +109,7 @@ struct GroupInfoView: View {
             pinned = live.pinned == true
             muted = live.muted == true
             muteAll = live.muteAll == true
-            if let r = try? await API.shared.chatMembersPage(
-                chatId: chat.id,
-                limit: 100,
-                cursor: 0
-            ) {
-                members = r.members
-                memberCount = r.memberCount
-                memberNextCursor = r.nextCursor
-                membersHasMore = r.hasMore
-                ownerId = r.ownerId
-                createdAt = r.createdAt
-            }
+            await loadInitialMembers()
             announce = chatAnnounceFromList()
             loading = false
         }
@@ -212,6 +210,69 @@ struct GroupInfoView: View {
                     onOk: { if kickMode == "kick" { kick() } else { muteMember() } },
                     onCancel: { kickTarget = nil })
             }
+        }
+    }
+
+    private func loadInitialMembers() async {
+        let cachedMembers = (chat.memberIds ?? []).compactMap {
+            app.contact(for: $0)
+        }
+        if !cachedMembers.isEmpty {
+            members = cachedMembers
+            memberCount = max(chat.memberCount ?? 0, cachedMembers.count)
+        }
+        loading = members.isEmpty
+
+        let page = await memberPageWithTimeout(seconds: 5)
+        if let page {
+            members = page.members
+            memberCount = page.memberCount
+            memberNextCursor = page.nextCursor
+            membersHasMore = page.hasMore
+            ownerId = page.ownerId
+            createdAt = page.createdAt
+            loading = false
+            return
+        }
+
+        // The legacy endpoint has no pagination query and can still recover the
+        // first member set when a proxy/server path rejects the cursor form.
+        loading = false
+        if let legacy = try? await API.shared.chatMembers(chatId: chat.id) {
+            members = legacy.members
+            memberCount = max(members.count, chat.memberCount ?? 0)
+            ownerId = legacy.ownerId
+            createdAt = legacy.createdAt
+            membersHasMore = false
+        }
+    }
+
+    private func memberPageWithTimeout(seconds: Double) async -> GroupMembersPageResult? {
+        await withTaskGroup(of: GroupMembersPageResult?.self) { group in
+            group.addTask {
+                guard let r = try? await API.shared.chatMembersPage(
+                    chatId: chat.id,
+                    limit: 100,
+                    cursor: 0
+                ) else { return nil }
+                return GroupMembersPageResult(
+                    members: r.members,
+                    ownerId: r.ownerId,
+                    createdAt: r.createdAt,
+                    memberCount: r.memberCount,
+                    nextCursor: r.nextCursor,
+                    hasMore: r.hasMore
+                )
+            }
+            group.addTask {
+                try? await Task.sleep(
+                    nanoseconds: UInt64(max(0.1, seconds) * 1_000_000_000)
+                )
+                return nil
+            }
+            let result = await group.next() ?? nil
+            group.cancelAll()
+            return result
         }
     }
 

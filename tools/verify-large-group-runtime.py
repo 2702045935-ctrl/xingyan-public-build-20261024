@@ -72,7 +72,7 @@ require(
     "the client API must request paginated group members",
 )
 require(
-    "limit: 100,\n                cursor: 0" in GROUP
+    "limit: 100,\n                    cursor: 0" in GROUP
     and "private func loadMoreMembers() async" in GROUP
     and "cursor: previousCursor" in GROUP
     and "hasMore = page.hasMore" in GROUP
@@ -85,6 +85,17 @@ require(
     and "private func retryMoreMembers()" in GROUP
     and 'Text(Tr("加载失败，点击重试"))' in GROUP,
     "group info must load bounded pages instead of requesting all members",
+)
+require(
+    "private struct GroupMembersPageResult" in GROUP
+    and "private func loadInitialMembers() async" in GROUP
+    and "(chat.memberIds ?? []).compactMap" in GROUP
+    and "app.contact(for: $0)" in GROUP
+    and "await memberPageWithTimeout(seconds: 5)" in GROUP
+    and "private func memberPageWithTimeout" in GROUP
+    and "try? await API.shared.chatMembers(chatId: chat.id)" in GROUP
+    and "loading = false" in GROUP,
+    "group info must paint cached members and bound the initial loading state",
 )
 require(
     "python3 tools/verify-large-group-runtime.py" in WORKFLOW,
