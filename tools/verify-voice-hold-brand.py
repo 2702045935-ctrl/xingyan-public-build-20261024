@@ -38,6 +38,14 @@ require(
     "voice bubbles must not render the sender name inside the bubble",
 )
 require(
+    'API.shared.uploadBinary(\n                    data,\n                    mime: "audio/mp4"\n                )'
+    in CHAT
+    and "API.shared.rawUpload(payload)" not in CHAT
+    and "data:audio/mp4;base64," not in CHAT
+    and '!["image", "images", "video", "livephoto", "transfer", "audio"]' in CHAT,
+    "voice uploads must use the direct binary path and omit message timestamps",
+)
+require(
     "python3 tools/verify-voice-hold-brand.py" in WORKFLOW,
     "voice hold and brand regression must run in the iOS gate",
 )
