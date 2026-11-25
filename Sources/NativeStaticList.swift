@@ -700,6 +700,11 @@ where Item.ID: Hashable {
                 }
             }
             let nextIDs = Set(nextOrder)
+            let removedFromWindow = Set(order).subtracting(nextIDs)
+            for id in removedFromWindow {
+                heights.removeValue(forKey: id)
+                warmHosts.removeValue(forKey: id)
+            }
             var nextSignatures = signatures.filter { nextIDs.contains($0.key) }
             if isPrepending, !order.isEmpty {
                 let known = Set(order)

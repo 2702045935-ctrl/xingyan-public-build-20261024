@@ -94,6 +94,12 @@ require(
     "scroll state changes must not diff the full history window unless message data changed",
 )
 require(
+    "let removedFromWindow = Set(order).subtracting(nextIDs)" in NATIVE
+    and "heights.removeValue(forKey: id)" in NATIVE
+    and "warmHosts.removeValue(forKey: id)" in NATIVE,
+    "rotating the active history window must evict obsolete row measurements and hosts",
+)
+require(
     "private func recoverVisibleWindowIfNeeded" in NATIVE
     and "collection.scrollToItem(" in NATIVE
     and "collection.collectionViewLayout.invalidateLayout()" in NATIVE,
