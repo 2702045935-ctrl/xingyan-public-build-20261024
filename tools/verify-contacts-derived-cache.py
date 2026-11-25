@@ -4,6 +4,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTACTS = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
+CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
+APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -30,6 +32,15 @@ require(
     and ".onChange(of: keyword) { _ in\n            rebuildDirectory()" in CONTACTS
     and "await app.loadContacts()\n            rebuildDirectory()" in CONTACTS,
     "the snapshot must refresh only when source data or search changes",
+)
+require(
+    "func prefetchAvatars(_ paths: [String]" in CORE
+    and "ImageStore.shared.diskRead(key)" in CORE
+    and "ImageStore.shared.putAvatar(key, image)" in CORE
+    and "private func prefetchContactAvatars(_ rows: [User])" in APP
+    and "prefetchContactAvatars(cachedContacts)" in APP
+    and "prefetchContactAvatars(friends)" in APP,
+    "cached contact avatars must be warmed from disk before first paint",
 )
 
 print("contacts-derived-cache: passed")

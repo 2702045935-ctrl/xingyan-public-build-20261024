@@ -35,6 +35,7 @@ final class AppState: ObservableObject {
         if let cached, !cached.id.isEmpty {
             chats = LocalStore.cachedChatList(userId: cached.id)
             contacts = Self.cachedContacts(userId: cached.id)
+            prefetchContactAvatars(contacts)
         }
         if ContactStressFixture.isActive {
             contacts = ContactStressFixture.contacts
@@ -1043,7 +1044,12 @@ final class AppState: ObservableObject {
         let cachedContacts = Self.cachedContacts(userId: user.id)
         if !cachedContacts.isEmpty {
             contacts = cachedContacts
+            prefetchContactAvatars(cachedContacts)
         }
+    }
+
+    private func prefetchContactAvatars(_ rows: [User]) {
+        ImageStore.shared.prefetchAvatars(rows.prefix(64).map(\.avatarPath))
     }
 
     private var didInitialBoot = false
@@ -1191,6 +1197,7 @@ final class AppState: ObservableObject {
             let sameLook = contacts.count == friends.count
                 && zip(contacts, friends).allSatisfy { $0.avatarPath == $1.avatarPath && $0.name == $1.name }
             if !(sameOrder && sameLook) { contacts = friends }
+            prefetchContactAvatars(friends)
             friendRequests = r.incoming.count
         }
 

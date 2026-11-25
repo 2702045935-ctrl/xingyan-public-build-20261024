@@ -990,6 +990,32 @@ final class ImageStore {
         }
     }
 
+    /// Warm the first screen of avatars from the existing disk cache before
+    /// the contact list appears. This never performs network I/O and leaves
+    /// rows without a cached image on the normal RemoteImage loading path.
+    func prefetchAvatars(_ paths: [String],
+                         maxSide: CGFloat = 120,
+                         limit: Int = 64) {
+        guard limit > 0 else { return }
+        var seen = Set<String>()
+        let keys = paths.compactMap { path -> String? in
+            let stable = ImageCacheKey.stablePath(path)
+            guard !stable.isEmpty, seen.insert(stable).inserted else { return nil }
+            return stable
+        }.prefix(limit)
+        guard !keys.isEmpty else { return }
+
+        Task.detached(priority: .utility) { [keys = Array(keys)] in
+            for key in keys {
+                if ImageStore.shared.get(key) != nil { continue }
+                guard let data = ImageStore.shared.diskRead(key),
+                      let image = RemoteImage.downsampled(data, maxSide: maxSide)
+                else { continue }
+                ImageStore.shared.putAvatar(key, image)
+            }
+        }
+    }
+
     func clear() {
         lock.lock(); defer { lock.unlock() }
         cache.removeAll(keepingCapacity: false)
