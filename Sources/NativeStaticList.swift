@@ -771,11 +771,13 @@ where Item.ID: Hashable {
             let idsToPrepare = isPrepending
                 ? Array(Set(changed).union(nextOrder.filter { !knownOld.contains($0) }))
                 : nextOrder
-            premeasure(idsToPrepare, nativeOnly: moving)
             if moving {
-                queueDeferredHeights(
-                    idsToPrepare.filter { heights[$0] == nil }
-                )
+                // Visible rows resolve their height through sizeForItemAt.
+                // Measuring the whole incoming page here duplicates that work
+                // on the main thread and blocks the scroll transaction.
+                queueDeferredHeights(idsToPrepare)
+            } else {
+                premeasure(idsToPrepare)
             }
             let warmIDs: [Item.ID]
             if isPrepending {

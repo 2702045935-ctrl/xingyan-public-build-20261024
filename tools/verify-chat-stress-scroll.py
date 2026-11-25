@@ -26,6 +26,17 @@ require(
     "prepending must reuse unchanged row signatures and remeasure only the boundary",
 )
 require(
+    "if moving {\n"
+    "                // Visible rows resolve their height through sizeForItemAt.\n"
+    "                // Measuring the whole incoming page here duplicates that work\n"
+    "                // on the main thread and blocks the scroll transaction.\n"
+    "                queueDeferredHeights(idsToPrepare)\n"
+    "            } else {\n"
+    "                premeasure(idsToPrepare)\n"
+    "            }" in LIST,
+    "moving history updates must not premeasure an entire page on the main thread",
+)
+require(
     "scroll.bounds.height * 12.0" in CHAT
     and "consumeOlderRunway(requireActiveMotion: true, offsetY: y)" in CHAT,
     "group history must use a viewport-relative prefetch runway",
