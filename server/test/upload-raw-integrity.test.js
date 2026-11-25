@@ -113,6 +113,29 @@ async function main() {
     assert.equal(downloaded.length, payload.length);
     assert.ok(downloaded.equals(payload), '上传后下载内容不一致');
 
+    for (const megabytes of [5, 20]) {
+      const benchmarkPayload = crypto.randomBytes(megabytes * 1024 * 1024);
+      const startedAt = performance.now();
+      const benchmarkUpload = await fetch(base + '/api/upload/raw', {
+        method: 'POST',
+        headers: {
+          Cookie: cookie,
+          'Content-Type': 'application/octet-stream',
+          'x-chris-compressed': '1'
+        },
+        body: benchmarkPayload
+      });
+      const benchmarkMs = Math.round(performance.now() - startedAt);
+      const benchmarkBody = await benchmarkUpload.json();
+      assert.equal(benchmarkUpload.status, 200, JSON.stringify(benchmarkBody));
+      assert.equal(benchmarkBody.data.bytes, benchmarkPayload.length);
+      assert.ok(
+        benchmarkMs < 2000,
+        `${megabytes}MB 上传处理耗时 ${benchmarkMs}ms，未达到秒级门禁`
+      );
+      console.log(`upload-raw ${megabytes}MB: ${benchmarkMs}ms`);
+    }
+
     const empty = await fetch(base + '/api/upload/raw', {
       method: 'POST',
       headers: { Cookie: cookie, 'Content-Type': 'application/octet-stream' },
