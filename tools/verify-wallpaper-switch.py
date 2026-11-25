@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SHEET = (ROOT / "Sources" / "ChatBackgroundSheet.swift").read_text(encoding="utf-8")
 CROP = (ROOT / "Sources" / "WallpaperSystem.swift").read_text(encoding="utf-8")
+PICKER = (ROOT / "Sources" / "Pickers.swift").read_text(encoding="utf-8")
 EFFECT = (ROOT / "Sources" / "ChatWallpaperEffect.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
@@ -23,9 +24,13 @@ block = SHEET[start:end]
 require(
     "composingImage = image" in block
     and "showingComposer = true" in block
+    and "onPreviewPick: beginComposingPreview" in SHEET
+    and "let previewSide = min(decodeSide, 1600)" in PICKER
+    and "originalImage: composingSource" in SHEET
+    and "let source = originalImage ?? image" in CROP
     and "downsampledWallpaper" not in block
     and "Task.detached" not in block,
-    "photo selection must open crop immediately without a second decode wait",
+    "photo selection must open crop from a lightweight preview while the full source finishes decoding",
 )
 require(
     "@State private var applying = false" in CROP

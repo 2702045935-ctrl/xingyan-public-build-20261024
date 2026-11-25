@@ -199,6 +199,8 @@ struct ChatBackgroundSheet: View {
     @State private var picking = false
     @State private var busy = false
     @State private var composingImage: UIImage?
+    @State private var composingSource: UIImage?
+    @State private var wallpaperSelectionActive = false
     @State private var showingComposer = false
     @State private var previewReady = false
 
@@ -379,7 +381,10 @@ struct ChatBackgroundSheet: View {
             }
         }
         .sheet(isPresented: $picking) {
-            PhotoPicker(maxSide: chatWallpaperDecodeSide()) { image in
+            PhotoPicker(
+                maxSide: chatWallpaperDecodeSide(),
+                onPreviewPick: beginComposingPreview
+            ) { image in
                 beginComposing(image)
             }
         }
@@ -387,13 +392,18 @@ struct ChatBackgroundSheet: View {
             if let image = composingImage {
                 WallpaperCropView(
                     image: image,
+                    originalImage: composingSource,
                     onCancel: {
                         showingComposer = false
                         composingImage = nil
+                        composingSource = nil
+                        wallpaperSelectionActive = false
                     },
                     onApply: { rendered in
                         showingComposer = false
                         composingImage = nil
+                        composingSource = nil
+                        wallpaperSelectionActive = false
                         upload(rendered)
                     }
                 )
@@ -602,7 +612,10 @@ struct ChatBackgroundSheet: View {
         .toolbar(.hidden, for: .navigationBar)
         .preferredColorScheme(scheme)
         .sheet(isPresented: $picking) {
-            PhotoPicker(maxSide: chatWallpaperDecodeSide()) { image in
+            PhotoPicker(
+                maxSide: chatWallpaperDecodeSide(),
+                onPreviewPick: beginComposingPreview
+            ) { image in
                 beginComposing(image)
             }
         }
@@ -610,13 +623,18 @@ struct ChatBackgroundSheet: View {
             if let image = composingImage {
                 WallpaperCropView(
                     image: image,
+                    originalImage: composingSource,
                     onCancel: {
                         showingComposer = false
                         composingImage = nil
+                        composingSource = nil
+                        wallpaperSelectionActive = false
                     },
                     onApply: { rendered in
                         showingComposer = false
                         composingImage = nil
+                        composingSource = nil
+                        wallpaperSelectionActive = false
                         upload(rendered)
                     }
                 )
@@ -997,6 +1015,18 @@ struct ChatBackgroundSheet: View {
 
     private func beginComposing(_ image: UIImage) {
         picking = false
+        guard wallpaperSelectionActive else { return }
+        composingSource = image
+        guard !showingComposer else { return }
+        composingImage = image
+        showingComposer = true
+        busy = false
+    }
+
+    private func beginComposingPreview(_ image: UIImage) {
+        picking = false
+        wallpaperSelectionActive = true
+        guard composingImage == nil, !showingComposer else { return }
         composingImage = image
         showingComposer = true
         busy = false

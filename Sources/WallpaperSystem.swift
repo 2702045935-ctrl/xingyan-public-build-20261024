@@ -3,6 +3,7 @@ import UIKit
 
 struct WallpaperCropView: View {
     let image: UIImage
+    var originalImage: UIImage? = nil
     let onCancel: () -> Void
     let onApply: (UIImage) -> Void
 
@@ -208,7 +209,7 @@ struct WallpaperCropView: View {
     private func applyCrop(viewport: CGSize) {
         guard !applying else { return }
         applying = true
-        let source = image
+        let source = originalImage ?? image
         let cropZoom = zoom
         let cropOffset = offset
         Task {

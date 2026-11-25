@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 
 struct PhotoPicker: UIViewControllerRepresentable {
     var maxSide: CGFloat = 2048
+    var onPreviewPick: ((UIImage) -> Void)? = nil
     var onPick: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -21,14 +22,20 @@ struct PhotoPicker: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) { }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(maxSide: maxSide, onPick: onPick)
+        Coordinator(maxSide: maxSide,
+                    onPreviewPick: onPreviewPick,
+                    onPick: onPick)
     }
 
     final class Coordinator: NSObject, PHPickerViewControllerDelegate {
         let maxSide: CGFloat
+        let onPreviewPick: ((UIImage) -> Void)?
         let onPick: (UIImage) -> Void
-        init(maxSide: CGFloat, onPick: @escaping (UIImage) -> Void) {
+        init(maxSide: CGFloat,
+             onPreviewPick: ((UIImage) -> Void)?,
+             onPick: @escaping (UIImage) -> Void) {
             self.maxSide = maxSide
+            self.onPreviewPick = onPreviewPick
             self.onPick = onPick
         }
 
@@ -40,11 +47,18 @@ struct PhotoPicker: UIViewControllerRepresentable {
                 DispatchQueue.main.async { self.onPick(image) }
             }
             let decodeSide = maxSide
+            let previewSide = min(decodeSide, 1600)
             provider.loadDataRepresentation(
                 forTypeIdentifier: UTType.image.identifier
             ) { data, _ in
                 if let data {
                     DispatchQueue.global(qos: .userInitiated).async {
+                        if let preview = RemoteImage.downsampled(
+                            data,
+                            maxSide: previewSide
+                        ), let onPreviewPick = self.onPreviewPick {
+                            DispatchQueue.main.async { onPreviewPick(preview) }
+                        }
                         deliver(RemoteImage.downsampled(data, maxSide: decodeSide))
                     }
                     return

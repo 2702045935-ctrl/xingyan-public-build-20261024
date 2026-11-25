@@ -7,6 +7,9 @@ SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
 API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 MEDIA = (ROOT / "Sources" / "ChatMediaBubbles.swift").read_text(encoding="utf-8")
+MEDIA_ROW = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(
+    encoding="utf-8"
+)
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -81,6 +84,16 @@ require(
     and "sealUploadInPlace(name)" in SERVER
     and "receiveEncryptedRaw" not in SERVER,
     "the server upload path must match the 11/21 receive, validate and encrypt flow",
+)
+require(
+    "private let fileTapButton = UIButton(type: .custom)" in MEDIA_ROW
+    and "fileTapButton.addTarget(self, action: #selector(tapped), for: .touchUpInside)" in MEDIA_ROW
+    and "fileTapButton.isHidden = false" in MEDIA_ROW
+    and "fileTapButton.frame = body" in MEDIA_ROW
+    and "if let model, case .file = model.kind { return false }" in MEDIA_ROW
+    and "private func openFile(_ body: String)" in CHAT
+    and "filePreview = FilePreviewData" in CHAT,
+    "uploaded file cards must expose a native button that opens the local or downloaded file preview",
 )
 require(
     "node server/test/transfer-kernel.test.js" in WORKFLOW,

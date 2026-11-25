@@ -123,8 +123,10 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
     private let badgeLabel = UILabel()
     private let playView = UIImageView(image: UIImage(systemName: "play.fill"))
     private let durationLabel = UILabel()
+    private let fileTapButton = UIButton(type: .custom)
     private var tapRecognizer: UITapGestureRecognizer?
     private var longPressRecognizer: UILongPressGestureRecognizer?
+    private var fileLongPressRecognizer: UILongPressGestureRecognizer?
     private var avatarRecognizer: UITapGestureRecognizer?
 
     override init(frame: CGRect) {
@@ -155,6 +157,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         addSubview(durationLabel)
         addSubview(senderLabel)
         addSubview(metadata)
+        addSubview(fileTapButton)
 
         senderLabel.font = pfUIFont(12.5, .semibold)
         senderLabel.numberOfLines = 1
@@ -199,6 +202,10 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         durationLabel.layer.cornerRadius = 8
         durationLabel.layer.cornerCurve = .continuous
         durationLabel.clipsToBounds = true
+        fileTapButton.backgroundColor = .clear
+        fileTapButton.isHidden = true
+        fileTapButton.accessibilityTraits = .button
+        fileTapButton.addTarget(self, action: #selector(tapped), for: .touchUpInside)
     }
 
     func configure(_ next: NativeChatMediaRowModel) {
@@ -244,6 +251,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         playView.isHidden = true
         durationLabel.isHidden = true
         fileActionIcon.isHidden = true
+        fileTapButton.isHidden = true
 
         switch next.kind {
         case .image(let path, _):
@@ -282,6 +290,8 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             fileIcon.layer.cornerCurve = .continuous
             fileActionIcon.isHidden = false
             fileActionIcon.tintColor = Self.fileTint(name: name)
+            fileTapButton.isHidden = false
+            fileTapButton.accessibilityLabel = name
         }
         setNeedsLayout()
     }
@@ -314,6 +324,17 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             avatar.addGestureRecognizer(tap)
             avatarRecognizer = tap
         }
+        if fileLongPressRecognizer == nil {
+            let long = UILongPressGestureRecognizer(
+                target: self,
+                action: #selector(longPressed(_:))
+            )
+            long.minimumPressDuration = 0.42
+            long.cancelsTouchesInView = false
+            long.delaysTouchesBegan = false
+            fileTapButton.addGestureRecognizer(long)
+            fileLongPressRecognizer = long
+        }
         self.tapAction = onTap
         self.longPressAction = onLongPress
         avatarAction = onAvatar
@@ -338,6 +359,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
                            shouldReceive touch: UITouch) -> Bool {
+        if let model, case .file = model.kind { return false }
         bubble.frame.contains(touch.location(in: self))
     }
 
@@ -382,6 +404,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             width: max(1, bubbleWidth - tailInset),
             height: bubbleHeight
         )
+        fileTapButton.frame = body
         let overlaySender: Bool
         switch model.kind {
         case .file:
