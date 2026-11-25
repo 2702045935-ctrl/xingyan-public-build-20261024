@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 
 struct PhotoPicker: UIViewControllerRepresentable {
     var maxSide: CGFloat = 2048
+    var dismissAnimated: Bool = true
     var onPreviewPick: ((UIImage) -> Void)? = nil
     var onPick: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -23,31 +24,35 @@ struct PhotoPicker: UIViewControllerRepresentable {
 
     func makeCoordinator() -> Coordinator {
         Coordinator(maxSide: maxSide,
+                    dismissAnimated: dismissAnimated,
                     onPreviewPick: onPreviewPick,
                     onPick: onPick)
     }
 
     final class Coordinator: NSObject, PHPickerViewControllerDelegate {
         let maxSide: CGFloat
+        let dismissAnimated: Bool
         let onPreviewPick: ((UIImage) -> Void)?
         let onPick: (UIImage) -> Void
         init(maxSide: CGFloat,
+             dismissAnimated: Bool,
              onPreviewPick: ((UIImage) -> Void)?,
              onPick: @escaping (UIImage) -> Void) {
             self.maxSide = maxSide
+            self.dismissAnimated = dismissAnimated
             self.onPreviewPick = onPreviewPick
             self.onPick = onPick
         }
 
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-            picker.dismiss(animated: true)
+            picker.dismiss(animated: dismissAnimated)
             guard let provider = results.first?.itemProvider else { return }
             let deliver: (UIImage?) -> Void = { image in
                 guard let image else { return }
                 DispatchQueue.main.async { self.onPick(image) }
             }
             let decodeSide = maxSide
-            let previewSide = min(decodeSide, 1600)
+            let previewSide = min(decodeSide, 1280)
             provider.loadDataRepresentation(
                 forTypeIdentifier: UTType.image.identifier
             ) { data, _ in
@@ -59,7 +64,11 @@ struct PhotoPicker: UIViewControllerRepresentable {
                         ), let onPreviewPick = self.onPreviewPick {
                             DispatchQueue.main.async { onPreviewPick(preview) }
                         }
-                        deliver(RemoteImage.downsampled(data, maxSide: decodeSide))
+                        DispatchQueue.global(qos: .utility).asyncAfter(
+                            deadline: .now() + 0.18
+                        ) {
+                            deliver(RemoteImage.downsampled(data, maxSide: decodeSide))
+                        }
                     }
                     return
                 }

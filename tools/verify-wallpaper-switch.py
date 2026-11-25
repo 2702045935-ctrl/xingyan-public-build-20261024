@@ -25,7 +25,10 @@ require(
     "composingImage = image" in block
     and "showingComposer = true" in block
     and "onPreviewPick: beginComposingPreview" in SHEET
-    and "let previewSide = min(decodeSide, 1600)" in PICKER
+    and "dismissAnimated: false" in SHEET
+    and "let previewSide = min(decodeSide, 1280)" in PICKER
+    and "picker.dismiss(animated: dismissAnimated)" in PICKER
+    and "DispatchQueue.global(qos: .utility).asyncAfter" in PICKER
     and "originalImage: composingSource" in SHEET
     and "let source = originalImage ?? image" in CROP
     and "downsampledWallpaper" not in block
@@ -60,14 +63,15 @@ require(
         ROOT / "Sources" / "Core.swift"
     ).read_text(encoding="utf-8")
     and "ImageStore.shared.getWallpaper(path)" in EFFECT
-    and "ChatWallpaperEffectImage(path: path, effect: effect)" in SHEET,
+    and "let poster = cachedWallpaperPoster(path)" in SHEET
+    and "placeholderImage: poster" in SHEET,
     "wallpaper previews must reuse the chat page cache before high-resolution rendering",
 )
 require(
-    "@State private var previewReady = false" in SHEET
-    and "if previewReady {\n                    backgroundPreview" in SHEET
-    and "DispatchQueue.main.asyncAfter(deadline: .now() + 0.06)" in SHEET,
-    "the settings sheet must mount immediately and defer only the expensive preview artwork",
+    "previewReady" not in SHEET
+    and "VStack(spacing: 18) {\n                backgroundPreview" in SHEET
+    and "maxSide: chatWallpaperDecodeSide()" in SHEET,
+    "the wallpaper preview must mount from cache on the first frame",
 )
 require(
     "var placeholder: Color? = nil" in (
