@@ -8,6 +8,7 @@ MOMENTS = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 INDICATOR = (ROOT / "Sources" / "PrefetchWaitingIndicator.swift").read_text(
     encoding="utf-8"
 )
+CONTACTS = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -34,6 +35,15 @@ require(
     "chat prefetch waiting must use the native circular activity indicator",
 )
 require(
+    "case newerWaiting" in CHAT
+    and "native-newer-waiting" in CHAT
+    and "newerPrefetchWaiting = newerPrefetch.isEmpty" in CHAT
+    and "newerPrefetchWaiting = false" in CHAT
+    and "hasher.combine(newerPrefetchWaiting)" in CHAT
+    and 'label: Tr("正在加载新消息…")' in CHAT,
+    "chat must show waiting only when newer history has no prepared page",
+)
+require(
     "PrefetchWaitingIndicator(\n"
     "                    waiting: loadingMore,\n"
     "                    label: \"正在加载…\"\n"
@@ -49,6 +59,23 @@ require(
     and ".animation(.easeOut(duration: 0.16), value: visible)" in INDICATOR
     and ".accessibilityHidden(!visible)" in INDICATOR,
     "prefetch waiting must use a delayed, animated native system spinner",
+)
+require(
+    "ProgressView()\n"
+    "                    .progressViewStyle(.circular)\n"
+    "                    .controlSize(.regular)" in MOMENTS
+    and "timelineDateLoading" in MOMENTS,
+    "Moments date history loading must use the native circular indicator",
+)
+require(
+    "@State private var initialLoading = false" in CONTACTS
+    and "initialLoading = app.contacts.isEmpty" in CONTACTS
+    and "initialLoading = false" in CONTACTS
+    and "PrefetchWaitingIndicator(\n"
+    "                                        waiting: true,\n"
+    "                                        label: Tr(\"正在加载联系人…\")\n"
+    "                                    )" in CONTACTS,
+    "contacts must show a native waiter only for a first load with no cache",
 )
 require(
     "python3 tools/verify-prefetch-waiting.py" in WORKFLOW,

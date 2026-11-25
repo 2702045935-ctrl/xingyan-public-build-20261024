@@ -176,6 +176,7 @@ struct ContactsView: View {
     @State private var showScan = false
     @State private var showPhoneContacts = false
     @State private var phoneSelectedUser: User?
+    @State private var initialLoading = false
 
     @State private var showSearch = false
     @State private var navScrolled: CGFloat = 0
@@ -377,7 +378,13 @@ private var funcs: [(String, String, Color, String)] {
                                     }
                                 }
 
-                                if filteredIsEmpty {
+                                if initialLoading && keyword.isEmpty {
+                                    PrefetchWaitingIndicator(
+                                        waiting: true,
+                                        label: Tr("正在加载联系人…")
+                                    )
+                                    .frame(height: 56)
+                                } else if filteredIsEmpty {
                                     VStack(spacing: 5) {
                                         Text(keyword.isEmpty
                                              ? Tr("还没有联系人")
@@ -524,8 +531,10 @@ private var funcs: [(String, String, Color, String)] {
         }
         .task {
             rebuildDirectory()
+            initialLoading = app.contacts.isEmpty
             await app.loadContacts()
             rebuildDirectory()
+            initialLoading = false
 
             if let ids = try? await API.shared.starredFriends() { starIds = ids }
 

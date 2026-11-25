@@ -2533,10 +2533,19 @@ struct MomentsView: View {
 
     private func timelineDateEmptyState(_ date: Date) -> some View {
         VStack(spacing: 10) {
-            Image(systemName: timelineDateLoading
-                  ? "clock.arrow.circlepath" : "calendar.badge.exclamationmark")
-                .font(.system(size: 29, weight: .light))
-                .foregroundStyle(C.subLabel.opacity(0.86))
+            if timelineDateLoading {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .controlSize(.regular)
+                    .tint(C.subLabel)
+                    .frame(width: 29, height: 29)
+                    .transition(.opacity)
+            } else {
+                Image(systemName: "calendar.badge.exclamationmark")
+                    .font(.system(size: 29, weight: .light))
+                    .foregroundStyle(C.subLabel.opacity(0.86))
+                    .transition(.opacity)
+            }
             Text(Self.yearMonthDayFormatter.string(from: date))
                 .font(pf(15, .semibold))
                 .foregroundStyle(C.label)
@@ -2563,6 +2572,7 @@ struct MomentsView: View {
         }
         .frame(maxWidth: .infinity, minHeight: 250)
         .padding(.horizontal, 30)
+        .animation(.easeOut(duration: 0.16), value: timelineDateLoading)
     }
 
     private func applyTimelineDate(_ date: Date) {

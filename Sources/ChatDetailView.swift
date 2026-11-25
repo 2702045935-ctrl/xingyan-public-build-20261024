@@ -288,6 +288,7 @@ private struct DeliveryFailureCopy {
 private enum NativeGroupItemKind: Equatable {
     case securityNotice
     case older
+    case newerWaiting
     case timestamp(Message)
     case message(Message)
     case outbox(PendingMsg)
@@ -1013,6 +1014,7 @@ struct ChatDetailView: View {
     @State private var loading = true
     @State private var initialCacheReady = false
     @State private var olderPrefetchWaiting = false
+    @State private var newerPrefetchWaiting = false
     @State private var initialRetryTask: Task<Void, Never>?
     @State private var initialScrollReady = false
     @State private var initialOpenSettling = false
@@ -3720,6 +3722,10 @@ struct ChatDetailView: View {
         if sendingFileProgress != nil && !sendingFileName.isEmpty {
             items.append(NativeGroupItem(id: "native-sending-file", kind: .sendingFile))
         }
+        if newerPrefetchWaiting {
+            items.append(NativeGroupItem(id: "native-newer-waiting",
+                                         kind: .newerWaiting))
+        }
         items.append(NativeGroupItem(id: "__bottom", kind: .bottom))
         items.append(NativeGroupItem(id: "native-spacer", kind: .spacer))
         return items
@@ -3730,6 +3736,7 @@ struct ChatDetailView: View {
         hasher.combine(historyRuntime.revision)
         hasher.combine(hasOlder)
         hasher.combine(olderPrefetchWaiting)
+        hasher.combine(newerPrefetchWaiting)
         hasher.combine(selectMode)
         hasher.combine(hiddenMessageIds.count)
         hasher.combine(sendingMedia.count)
@@ -3779,6 +3786,8 @@ struct ChatDetailView: View {
             return "security-notice"
         case .older:
             return "older:\(hasOlder):\(olderPrefetchWaiting)"
+        case .newerWaiting:
+            return "newer-waiting:\(newerPrefetchWaiting)"
         case .timestamp(let message):
             return [
                 "timestamp",
@@ -4152,6 +4161,12 @@ struct ChatDetailView: View {
                 label: Tr("正在加载更早消息…")
             )
 
+        case .newerWaiting:
+            PrefetchWaitingIndicator(
+                waiting: newerPrefetchWaiting,
+                label: Tr("正在加载新消息…")
+            )
+
         case .timestamp(let message):
             timeLine(message)
                 .padding(.horizontal, L.msgPad)
@@ -4390,9 +4405,11 @@ struct ChatDetailView: View {
         let cursor = historyRuntime.newestLoadedSeq
         guard cursor > 0 else { return }
         loadingNewer = true
+        newerPrefetchWaiting = newerPrefetch.isEmpty
         var loadedUsefulPage = false
         defer {
             loadingNewer = false
+            newerPrefetchWaiting = false
             if loadedUsefulPage,
                ChatScrollHandle.shared.moving
                 || ChatScrollHandle.shared.newerRunwayIntentActive {
