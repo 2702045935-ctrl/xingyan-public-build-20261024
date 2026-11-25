@@ -25028,6 +25028,7 @@ async function handleApi(req, res, pathname, query) {
      （base64 会多传 33%，一条 5MB 视频要多跑 1.7MB 流量 → 手机上就是多等十几秒） */
   if (parts[0] === 'upload' && parts[1] === 'raw' && method === 'POST') {
     const clientSaidCompressed = String(req.headers['x-chris-compressed'] || '').trim() === '1';   // CHRIS_UPLOAD_SKIP_SHRINK_V1
+    const clientCompressed = clientSaidCompressed;
     if (!uploadRateAllow(user.id)) {
       return fail(res, 429, '上传太频繁了，歇一会儿再传');
     }
@@ -25041,8 +25042,9 @@ async function handleApi(req, res, pathname, query) {
     const outPath = path.join(UPLOAD_DIR, name);
     const MAX = 60 * 1024 * 1024;
     let size = 0, tooBig = false;
+    const isVideoUpload = ctype.indexOf('video/') === 0;
     const streamEncrypted = ctype.indexOf('image/') !== 0
-      && ctype.indexOf('video/') !== 0;
+      && (!isVideoUpload || clientCompressed);
     const ws2 = fs.createWriteStream(outPath);
     let uploadCipher = null;
     if (streamEncrypted) {
@@ -25106,12 +25108,10 @@ async function handleApi(req, res, pathname, query) {
        以前「传多大存多大」—— 聊天里一条 10MB 的视频，对方手机上要转十几秒才出画面。 */
     /* App 端已经自己压好的视频（带 x-chris-compressed: 1）就别再压一遍：
        服务端再压一遍 = 用户白等十几秒 + 画质再掉一层。2026-09-25 */
-    const clientCompressed = String(req.headers['x-chris-compressed'] || '').trim() === '1';
     /* 客户端已导出且规格安全的聊天视频直接落盘，避免每次发送都阻塞在 ffmpeg。
        高码率、超长或尺寸过大的视频仍走原来的转码兜底。 */
-    const video = ctype.indexOf('video/') === 0;
-    const videoCanPass = clientCompressed && videoCanSkipServerShrink(outPath, size);
-    const videoTooBig = video && size > 2 * 1024 * 1024 && !videoCanPass;
+    const video = isVideoUpload;
+    const videoTooBig = video && !streamEncrypted && size > 2 * 1024 * 1024;
     if (videoTooBig) {
       const before = size;
       try {
