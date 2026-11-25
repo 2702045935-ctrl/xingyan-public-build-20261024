@@ -161,13 +161,14 @@ final class NativeChatRowCell: UITableViewCell {
     private var configuration: NativeChatRowConfiguration?
     private var avatarSignature = ""
     private var accessibilitySignature = ""
+    private var cachedTimeSignature = ""
+    private var cachedTimeWidth: CGFloat = 0
     private var openGuardUntil: TimeInterval = 0
 
     private let rowLeading: CGFloat = 16
     private let avatarSize: CGFloat = 48
-    private let avatarGap: CGFloat = 13
-    private let rowTrailing: CGFloat = 20
-    private let timeSlotWidth: CGFloat = 68
+    private let avatarGap: CGFloat = 12
+    private let rowTrailing: CGFloat = 17
     private let timeSlotGap: CGFloat = 8
     private let dividerLeading: CGFloat = 77
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -199,6 +200,8 @@ final class NativeChatRowCell: UITableViewCell {
         avatarView.invalidate()
         avatarSignature = ""
         accessibilitySignature = ""
+        cachedTimeSignature = ""
+        cachedTimeWidth = 0
     }
 
     override func layoutSubviews() {
@@ -208,9 +211,20 @@ final class NativeChatRowCell: UITableViewCell {
         avatarView.frame = CGRect(x: rowLeading, y: (bounds.height - avatarSize) / 2,
                                   width: avatarSize, height: avatarSize)
         let textX = rowLeading + avatarSize + avatarGap
+        let timeText = configuration?.time ?? ""
+        let timeSignature = "\(timeText)|\(timeLabel.font.pointSize)"
+        if timeSignature != cachedTimeSignature {
+            let measuredTime = ceil((timeText as NSString).size(
+                withAttributes: [.font: timeLabel.font as Any]
+            ).width)
+            let timeScale = min(1.35, timeLabel.font.pointSize / 13)
+            cachedTimeWidth = min(96, max(34 * timeScale, measuredTime + 2))
+            cachedTimeSignature = timeSignature
+        }
+        let timeWidth = cachedTimeWidth
         let titleWidth = max(
             1,
-            bounds.width - textX - rowTrailing - timeSlotWidth - timeSlotGap
+            bounds.width - textX - rowTrailing - timeWidth - timeSlotGap
         )
         let titleHeight: CGFloat = 22
         levelLabel.sizeToFit()
@@ -228,7 +242,10 @@ final class NativeChatRowCell: UITableViewCell {
         let timeHeight = max(18, ceil(timeLabel.font.lineHeight))
         let titlePreviewGap: CGFloat = 2
         let contentHeight = resolvedTitleHeight + titlePreviewGap + previewHeight
-        let contentTop = max(5, (bounds.height - contentHeight) / 2)
+        let contentTop = max(
+            5,
+            (bounds.height - contentHeight) / 2 - (2.0 / 3.0)
+        )
         let unread = configuration?.unread ?? 0
         let badgeScale = min(1.4, max(1, unreadLabel.font.pointSize / 10))
         let unreadWidth: CGFloat = configuration?.isManuallyUnread == true
@@ -250,9 +267,9 @@ final class NativeChatRowCell: UITableViewCell {
                                     y: contentTop + resolvedTitleHeight + titlePreviewGap,
                                     width: previewWidth,
                                     height: previewHeight)
-        timeLabel.frame = CGRect(x: bounds.width - rowTrailing - timeSlotWidth,
+        timeLabel.frame = CGRect(x: bounds.width - rowTrailing - timeWidth,
                                  y: contentTop + (resolvedTitleHeight - timeHeight) / 2 - 3,
-                                 width: timeSlotWidth, height: timeHeight)
+                                 width: timeWidth, height: timeHeight)
         unreadLabel.sizeToFit()
         unreadLabel.frame = CGRect(x: bounds.width - rowTrailing - unreadWidth,
                                    y: previewLabel.frame.midY - unreadHeight / 2,

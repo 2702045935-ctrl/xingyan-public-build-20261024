@@ -16,33 +16,33 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "static let trailing: CGFloat = 20" in CHATS
-    and "static let timeSlotWidth: CGFloat = 68" in CHATS
-    and "static let timeSlotGap: CGFloat = 8" in CHATS
-    and "private let rowTrailing: CGFloat = 20" in NATIVE
-    and "private let timeSlotWidth: CGFloat = 68" in NATIVE
+    "static let trailing: CGFloat = 17" in CHATS
+    and "static let minimumTimeWidth: CGFloat = 52" in CHATS
+    and "private let rowTrailing: CGFloat = 17" in NATIVE
     and "private let timeSlotGap: CGFloat = 8" in NATIVE,
-    "native and SwiftUI conversation rows must share the fixed metadata grid",
+    "native and SwiftUI conversation rows must share the adaptive metadata grid",
 )
 require(
-    "bounds.width - textX - rowTrailing - timeSlotWidth - timeSlotGap" in NATIVE
+    "bounds.width - textX - rowTrailing - timeWidth - timeSlotGap" in NATIVE
+    and "cachedTimeWidth" in NATIVE
     and "width: titleWidth" in NATIVE
     and "let previewReserve = unread > 0 ? unreadWidth + 10 : 0" in NATIVE
     and "width: previewWidth" in NATIVE
-    and "cachedTimeWidth" not in NATIVE
     and "timeLabel.adjustsFontSizeToFitWidth = true" in NATIVE,
-    "time must not resize the title; only unread must shorten the preview",
+    "time must use its measured width; only unread may shorten the preview",
 )
 require(
     "max(72, (72 + (combinedScale - 1) * 34).rounded())" in NATIVE
-    and "let titlePreviewGap: CGFloat = 2" in NATIVE,
+    and "let titlePreviewGap: CGFloat = 2" in NATIVE
+    and "private let avatarGap: CGFloat = 12" in NATIVE
+    and "(bounds.height - contentHeight) / 2 - (2.0 / 3.0)" in NATIVE,
     "conversation rows must match the measured 72pt row and tighter line rhythm",
 )
 require(
     "private func chatListMetaSlot" in CHATS
     and CHATS.count("chatListMetaSlot {") >= 3
-    and ".frame(width: ChatListVisual.timeSlotWidth, alignment: .trailing)" in CHATS,
-    "special conversation rows must reserve the same trailing metadata slot",
+    and ".frame(minWidth: ChatListVisual.minimumTimeWidth, alignment: .trailing)" in CHATS,
+    "special conversation rows must use the adaptive trailing metadata slot",
 )
 require(
     "python3 tools/verify-chat-list-grid.py" in WORKFLOW,

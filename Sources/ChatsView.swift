@@ -6,11 +6,10 @@ private enum ChatListVisual {
     static var rowHeight: CGFloat { NativeChatRowMetrics.rowHeight }
     static let rowLeading: CGFloat = 16
     static let headerLeading: CGFloat = 12
-    static let trailing: CGFloat = 20
-    static let timeSlotWidth: CGFloat = 68
-    static let timeSlotGap: CGFloat = 8
+    static let trailing: CGFloat = 17
+    static let minimumTimeWidth: CGFloat = 52
     static let avatarSize: CGFloat = 48
-    static let avatarGap: CGFloat = 13
+    static let avatarGap: CGFloat = 12
     static let dividerLeading: CGFloat = 77
 
     static let ink = Color.dyn(0x1A1A1A, 0xEBEBF0)
@@ -396,7 +395,7 @@ struct ChatRow: View, Equatable {
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 unreadAvatarBadge
             }
-            .frame(width: ChatListVisual.timeSlotWidth, alignment: .trailing)
+            .frame(minWidth: ChatListVisual.minimumTimeWidth, alignment: .trailing)
         }
     }
 
@@ -1678,14 +1677,14 @@ struct ChatsView: View {
     ) -> some View {
         if app.me?.ops == true {
             Color.clear
-                .frame(width: ChatListVisual.timeSlotWidth)
+                .frame(width: ChatListVisual.minimumTimeWidth)
         } else {
             content()
                 .font(pfStyled(size: 12, weight: .regular))
                 .foregroundStyle(ChatListVisual.timeInk)
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
-                .frame(width: ChatListVisual.timeSlotWidth, alignment: .trailing)
+                .frame(minWidth: ChatListVisual.minimumTimeWidth, alignment: .trailing)
         }
     }
 
