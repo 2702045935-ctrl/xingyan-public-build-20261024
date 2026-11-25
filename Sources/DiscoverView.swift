@@ -2715,17 +2715,39 @@ struct MomentsView: View {
 
     private var publishSheet: some View {
         VStack(spacing: 0) {
-
-            NavBar(title: Tr("发表"), back: { closeComposer() }) {
-                Button { publish() } label: {
-                    Text(uploading ? Tr("发布中…") : Tr("发表"))
-                        .font(pf(17, .semibold))
-                        .foregroundColor(canPublish ? C.green : C.subLabel)
+            HStack(spacing: 0) {
+                Button {
+                    closeComposer()
+                } label: {
+                    Text(Tr("取消"))
+                        .font(pfStyled(size: 16.5, weight: .regular))
+                        .foregroundStyle(C.label)
                         .frame(height: L.navH)
-                        .padding(.trailing, 16)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                Spacer(minLength: 12)
+
+                Button { publish() } label: {
+                    Text(uploading ? Tr("发表中…") : Tr("发表"))
+                        .font(pfStyled(size: 16.5, weight: .semibold))
+                        .foregroundColor(canPublish
+                                         ? Color(hex: 0x07C160)
+                                         : C.subLabel.opacity(0.62))
+                        .frame(height: L.navH)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .disabled(!canPublish)
+            }
+            .padding(.horizontal, 16)
+            .frame(height: L.navH)
+            .background(composerSurface)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(composerRule)
+                    .frame(height: 0.5)
             }
 
             if !publishError.isEmpty {
@@ -2741,7 +2763,7 @@ struct MomentsView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 11)
-                .background(Color.dyn(0xFFF2F2, 0x2A1518))
+                .background(Color.dyn(0xFFF5F5, 0x241719))
                 .overlay(alignment: .bottom) {
                     Rectangle()
                         .fill(C.hairline)
@@ -2749,72 +2771,84 @@ struct MomentsView: View {
                 }
             }
 
+            if uploading {
+                VStack(spacing: 7) {
+                    ProgressView(value: publishProgress)
+                        .progressViewStyle(.linear)
+                        .tint(Color(hex: 0x07C160))
+                    HStack(spacing: 6) {
+                        Text(publishStatus.isEmpty ? Tr("正在发表…") : publishStatus)
+                            .font(pfStyled(size: 12, weight: .regular))
+                            .foregroundStyle(C.subLabel)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        Text("\(Int(min(1, max(0, publishProgress)) * 100))%")
+                            .font(pfStyled(size: 12, weight: .medium))
+                            .foregroundStyle(C.subLabel)
+                            .monospacedDigit()
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 9)
+                .background(composerSurface)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(composerRule)
+                        .frame(height: 0.5)
+                }
+            }
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-
-                    if uploading {
-                        HStack(spacing: 10) {
-                            ProgressView(value: publishProgress)
-                                .tint(C.green)
-                                .frame(width: 72)
-                            Text(publishStatus.isEmpty ? Tr("正在发表…") : publishStatus)
-                                .font(pf(12.5, .medium))
-                                .foregroundColor(C.subLabel)
-                                .lineLimit(1)
-                            Spacer(minLength: 0)
-                        }
-                        .padding(.horizontal, 16)
-                        .frame(height: 38)
-                        .background(C.cardBg)
-                        .padding(.bottom, 8)
-                    }
-
                     ZStack(alignment: .topLeading) {
                         if draft.isEmpty {
                             Text(Tr("这一刻的想法…"))
-                                .font(pf(17))
+                                .font(pfStyled(size: 17, weight: .regular))
                                 .foregroundColor(C.subLabel)
-                                .padding(.top, 8)
-                                .padding(.leading, 5)
+                                .padding(.top, 10)
+                                .padding(.leading, 0)
                                 .allowsHitTesting(false)
                         }
                         TextEditor(text: $draft)
-                            .font(pf(17))
-                            .frame(minHeight: 104)
+                            .font(pfStyled(size: 17, weight: .regular))
+                            .foregroundColor(C.label)
+                            .frame(minHeight: 112)
                             .scrollContentBackground(.hidden)
                     }
-                    .padding(.horizontal, 12)
-                    .background(C.cardBg)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 6)
+                    .background(composerSurface)
 
                     composerGrid
                         .padding(.horizontal, 16)
-                        .padding(.top, 14)
+                        .padding(.top, 10)
 
                     VStack(spacing: 0) {
-                        HairLine(inset: 16)
-                        composerRow(icon: "location", title: Tr("所在位置"),
+                        Rectangle()
+                            .fill(composerRule)
+                            .frame(height: 0.5)
+                        composerRow(icon: "location.fill", title: Tr("所在位置"),
                                     value: draftLocation.isEmpty ? Tr("不显示位置") : draftLocation) {
                             showLocation = true
                         }
-                        HairLine(inset: 16)
-                        composerRow(icon: "eye", title: Tr("谁可以看"), value: visibilityName) {
-                            showVisibility = true
-                        }
-                        HairLine(inset: 16)
                         composerRow(icon: "at", title: Tr("提醒谁看"),
                                     value: remindIds.isEmpty ? "" : "\(remindIds.count) 个人") {
                             pickMode = "at"
                             showPick = true
                         }
+                        composerRow(icon: "eye", title: Tr("谁可以看"), value: visibilityName) {
+                            showVisibility = true
+                        }
                     }
-                    .background(C.cardBg)
-                    .padding(.top, 18)
+                    .background(composerSurface)
+                    .padding(.top, 16)
                 }
-                .padding(.bottom, 30)
+                .padding(.bottom, max(28, L.safeBottom + 18))
             }
+            .scrollDismissesKeyboard(.interactively)
         }
 
-        .background(C.pageBg.ignoresSafeArea(edges: .bottom))
+        .background(composerSurface.ignoresSafeArea())
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
         .toolbar(.hidden, for: .navigationBar)
@@ -2864,8 +2898,16 @@ struct MomentsView: View {
                        || !picked.isEmpty || pickedVideo != nil)
     }
 
+    private var composerSurface: Color {
+        Color.dyn(0xFFFFFF, 0x111111)
+    }
+
+    private var composerRule: Color {
+        Color.dyn(0xE7E7E7, 0x2A2A2A)
+    }
+
     private var composerGrid: some View {
-        let gap: CGFloat = 6
+        let gap: CGFloat = 5
         let side = (L.width - 32 - gap * 2) / 3
         return LazyVGrid(columns: Array(repeating: GridItem(.fixed(side), spacing: gap), count: 3),
                          alignment: .leading, spacing: gap) {
@@ -2910,7 +2952,7 @@ struct MomentsView: View {
                     }
                     .frame(width: side, height: side)
                     .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
                     if !uploading {
                         Button {
                             pickedVideo = nil
@@ -2937,7 +2979,7 @@ struct MomentsView: View {
                         .scaledToFill()
                         .frame(width: side, height: side)
                         .clipped()
-                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
                         .contentShape(Rectangle())
                         .onDrag {
                             dragIndex = i
@@ -2961,11 +3003,11 @@ struct MomentsView: View {
             if picked.count < 9 && pickedVideo == nil {
 
                 ZStack {
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(C.searchBg)
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(Color.dyn(0xF2F2F2, 0x252525))
                     Image(systemName: "plus")
-                        .font(.system(size: 26, weight: .light))
-                        .foregroundColor(C.subLabel)
+                        .font(.system(size: 29, weight: .ultraLight))
+                        .foregroundColor(Color.dyn(0xB2B2B2, 0x6F6F6F))
                 }
                 .frame(width: side, height: side)
                 .contentShape(Rectangle())
@@ -2981,23 +3023,36 @@ struct MomentsView: View {
     private func composerRow(icon: String, title: String, value: String,
                              tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 15))
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundColor(Color.dyn(0x666666, 0xA0A0A0))
+                    .frame(width: 24)
+                Text(title)
+                    .font(pfStyled(size: 16, weight: .regular))
                     .foregroundColor(C.label)
-                    .frame(width: 20)
-                Text(title).font(pf(16)).foregroundColor(C.label)
                 Spacer(minLength: 8)
                 if !value.isEmpty {
-                    Text(value).font(pf(15)).foregroundColor(C.subLabel).lineLimit(1)
+                    Text(value)
+                        .font(pfStyled(size: 14.5, weight: .regular))
+                        .foregroundColor(C.subLabel)
+                        .lineLimit(1)
                 }
-                Chevron(size: 9, line: 1.6)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color.dyn(0xC3C3C3, 0x5F5F5F))
             }
             .padding(.horizontal, 16)
-            .frame(height: 50)
+            .frame(height: 56)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(composerRule)
+                .frame(height: 0.5)
+                .padding(.leading, 52)
+        }
     }
 
     private var visibilityName: String {
