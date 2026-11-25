@@ -4,6 +4,9 @@ permissions:
   contents: read
 
 on:
+  push:
+    branches:
+      - codex/mall-native-performance-20261126
   workflow_dispatch:
     inputs:
       tag:
@@ -17,10 +20,11 @@ jobs:
       - name: Download encrypted release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag || 'ipa-20261125-233400' }}
         run: |
           set -euo pipefail
           mkdir -p bridge
-          gh release download "${{ inputs.tag }}" \
+          gh release download "$TAG" \
             --repo "${{ github.repository }}" \
             --dir bridge \
             --pattern 'Luchat.ipa.enc*'
@@ -42,7 +46,7 @@ jobs:
       - name: Upload authenticated artifact
         uses: actions/upload-artifact@v4
         with:
-          name: decrypted-ipa-${{ inputs.tag }}
+          name: decrypted-ipa-bridge
           path: bridge/Luchat.ipa
           if-no-files-found: error
           retention-days: 1
