@@ -21,14 +21,16 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    'static let directUploadBase = "https://43.242.194.89:5443"' in API
+    'static let directUploadBases = [' in API
+    and '"https://43.242.194.89:5443"' in API
+    and '"https://43.242.194.89:8443"' in API
     and "private let uploadSession: URLSession" in API
-    and API.count('URL(string: API.directUploadBase + "/api/upload/raw")') >= 3
-    and "uploadSession.data(for: req)" in API
-    and API.count("uploadSession.upload") >= 3
-    and "directUploadBases" not in API
-    and "rawUploadBases" not in API,
-    "all uploads must use the 10/20 direct origin without proxy fallback chains",
+    and "private func uploadRaw(source: RawUploadSource" in API
+    and "var roots = API.directUploadBases" in API
+    and "roots.append(base)" in API
+    and "min(timeout, index == 0 ? 2 : 3)" in API
+    and API.count("uploadSession.upload") >= 4,
+    "uploads must prefer the 10/20 direct origin with bounded fallback",
 )
 require(
     "fileSize >= 4 * 1024 * 1024" not in API
@@ -42,17 +44,17 @@ require(
     "chat uploads must keep the faster raw path while the resumable kernel remains diagnostic",
 )
 require(
-    "req.httpBody = data\n        let (d, resp) = try await uploadSession.data(for: req)"
-    in API
-    and "uploadSession.upload(\n            for: req,\n            fromFile: file,\n            delegate: delegate"
-    in API
-    and "(d, resp) = try await uploadSession.upload(\n                for: req,\n                from: data,\n                delegate: delegate"
-    in API,
-    "binary and file uploads must use the dedicated direct upload session",
+    "case .data(let data):" in API
+    and "case .file(let file):" in API
+    and "fromFile: file,\n                            delegate: delegate" in API
+    and "from: data,\n                            delegate: delegate" in API
+    and "if API.isConnectivity(error), index + 1 < roots.count" in API,
+    "the shared upload transport must stream data and files through direct endpoints",
 )
 require(
     "private func uploadRawJPEG(" in API
-    and 'req.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")' in API
+    and 'mime: "image/jpeg"' in API
+    and "compressed: true" in API
     and 'req.setValue("1", forHTTPHeaderField: "x-chris-compressed")' in API
     and '"/api/upload"' in API,
     "images must try raw JPEG first and retain the 11/21 base64 fallback",

@@ -1811,10 +1811,13 @@ final class API {
     static let publicIngressServer = "mail.xingyanmail.site:443"
     static let publicIngressPath = "/xy"
     private static let legacyDirectServer = "43.242.194.89:8443"
-    /// Uploads use the same direct origin path as the 10/20 fast build.
-    /// The public ingress adds a reverse-proxy hop that is unsuitable for
-    /// large request bodies.
-    static let directUploadBase = "https://43.242.194.89:5443"
+    /// Uploads prefer the same direct origin path as the 10/20 fast build.
+    /// Two direct ports tolerate carrier filtering; the public ingress is only
+    /// a last-resort availability path and is never tried while direct works.
+    static let directUploadBases = [
+        "https://43.242.194.89:5443",
+        "https://43.242.194.89:8443"
+    ]
 
     private(set) var token: String = ""
 
@@ -5755,48 +5758,25 @@ private struct StarredPayload: Decodable {
     }
 
     func uploadBinary(_ data: Data, mime: String) async throws -> String {
-        guard let url = URL(string: API.directUploadBase + "/api/upload/raw") else {
-            throw APIError.message("服务器地址不正确")
-        }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.timeoutInterval = 180
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue(mime, forHTTPHeaderField: "Content-Type")
-        req.httpBody = data
-        let (d, resp) = try await uploadSession.data(for: req)
-        guard let http = resp as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败，请检查网络后再试")
-        }
-        return try Self.rawUploadURL(from: d)
+        try await uploadRaw(
+            source: .data(data),
+            mime: mime,
+            compressed: false,
+            timeout: 180,
+            onProgress: nil
+        )
     }
 
     func uploadBinaryFile(_ file: URL, mime: String,
                           skipTranscode: Bool = false,
                           onProgress: @escaping (Double) -> Void) async throws -> String {
-        guard let url = URL(string: API.directUploadBase + "/api/upload/raw") else {
-            throw APIError.message("服务器地址不正确")
-        }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.timeoutInterval = 600
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue(mime, forHTTPHeaderField: "Content-Type")
-        if skipTranscode {
-            req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
-        }
-        let delegate = UploadProgressDelegate(onProgress)
-        let (d, resp) = try await uploadSession.upload(
-            for: req,
-            fromFile: file,
-            delegate: delegate
+        try await uploadRaw(
+            source: .file(file),
+            mime: mime,
+            compressed: skipTranscode,
+            timeout: 600,
+            onProgress: onProgress
         )
-        guard let http = resp as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败，请检查网络后再试")
-        }
-        return try Self.rawUploadURL(from: d)
     }
 
     func uploadOriginal(image: UIImage) async throws -> String {
@@ -5835,33 +5815,103 @@ private struct StarredPayload: Decodable {
 
     private func uploadRawJPEG(_ data: Data,
                                onProgress: ((Double) -> Void)? = nil) async throws -> String {
-        guard let url = URL(string: API.directUploadBase + "/api/upload/raw") else {
-            throw APIError.message("服务器地址不正确")
+        try await uploadRaw(
+            source: .data(data),
+            mime: "image/jpeg",
+            compressed: true,
+            timeout: 120,
+            onProgress: onProgress
+        )
+    }
+
+    private enum RawUploadSource {
+        case data(Data)
+        case file(URL)
+    }
+
+    private func uploadRaw(source: RawUploadSource,
+                           mime: String,
+                           compressed: Bool,
+                           timeout: TimeInterval,
+                           onProgress: ((Double) -> Void)?) async throws -> String {
+        var roots = API.directUploadBases
+        if !base.isEmpty, !roots.contains(base) {
+            roots.append(base)
         }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.timeoutInterval = 120
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
-        req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
-        let delegate = onProgress.map(UploadProgressDelegate.init)
-        let d: Data
-        let resp: URLResponse
-        if let delegate {
-            (d, resp) = try await uploadSession.upload(
-                for: req,
-                from: data,
-                delegate: delegate
-            )
-        } else {
-            (d, resp) = try await uploadSession.upload(for: req, from: data)
+        var lastError: Error?
+
+        for (index, root) in roots.enumerated() {
+            guard let url = URL(string: root + "/api/upload/raw") else { continue }
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            // Direct ports get a tight first-byte budget. A blocked carrier
+            // route falls through in seconds instead of stalling the old path.
+            req.timeoutInterval = index < API.directUploadBases.count
+                ? min(timeout, index == 0 ? 2 : 3)
+                : timeout
+            req.networkServiceType = .responsiveData
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            req.setValue(mime, forHTTPHeaderField: "Content-Type")
+            req.setValue("application/json", forHTTPHeaderField: "Accept")
+            if compressed {
+                req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
+            }
+
+            let delegate = onProgress.map(UploadProgressDelegate.init)
+            do {
+                let responseData: Data
+                let response: URLResponse
+                switch source {
+                case .data(let data):
+                    if let delegate {
+                        (responseData, response) = try await uploadSession.upload(
+                            for: req,
+                            from: data,
+                            delegate: delegate
+                        )
+                    } else {
+                        (responseData, response) = try await uploadSession.upload(
+                            for: req,
+                            from: data
+                        )
+                    }
+                case .file(let file):
+                    if let delegate {
+                        (responseData, response) = try await uploadSession.upload(
+                            for: req,
+                            fromFile: file,
+                            delegate: delegate
+                        )
+                    } else {
+                        (responseData, response) = try await uploadSession.upload(
+                            for: req,
+                            fromFile: file
+                        )
+                    }
+                }
+
+                guard let http = response as? HTTPURLResponse else {
+                    throw APIError.message("上传返回异常")
+                }
+                guard (200...299).contains(http.statusCode) else {
+                    let retryable = http.statusCode == 408
+                        || http.statusCode == 425
+                        || http.statusCode == 429
+                        || http.statusCode >= 500
+                    if retryable, index + 1 < roots.count { continue }
+                    throw APIError.message("上传失败，请检查网络后再试")
+                }
+                onProgress?(1)
+                return try Self.rawUploadURL(from: responseData)
+            } catch {
+                lastError = error
+                if API.isConnectivity(error), index + 1 < roots.count {
+                    continue
+                }
+                throw error
+            }
         }
-        guard let http = resp as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败，请检查网络后再试")
-        }
-        onProgress?(1)
-        return try Self.rawUploadURL(from: d)
+        throw lastError ?? APIError.message("服务器地址不正确")
     }
 
     private static func rawUploadURL(from d: Data) throws -> String {
