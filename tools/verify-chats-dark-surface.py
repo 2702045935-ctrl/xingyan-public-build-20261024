@@ -15,10 +15,10 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "chatsIsDark ? Color(hex: 0x0A0A0A) : C.chatsPageBg" in CHATS
+    "chatsIsDark\n            ? Color(hex: 0x0A0A0A)\n            : UIConfig.fixedLight(\"chatsPageBg\", 0xFFFFFF)" in CHATS
     and "if isDark { return Color(hex: 0x0A0A0A) }" in CHATS
     and "let rowBg: UIColor = isDark ? UIColor(hex: 0x0A0A0A) : UIColor.white" in CHATS,
-    "dark chat canvas must match the latest WhatsApp near-black surface",
+    "chat canvas must resolve explicit dark and light surfaces without environment delay",
 )
 require(
     "showsDivider: true" in CHATS

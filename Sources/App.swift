@@ -372,6 +372,23 @@ final class AppState: ObservableObject {
         // transition. Every account, sheet and native surface must resolve the
         // new semantic colors in the same update instead of lagging behind a
         // timed veil animation.
+        let windowStyle: UIUserInterfaceStyle
+        switch v {
+        case "light":
+            windowStyle = .light
+        case "dark":
+            windowStyle = .dark
+        default:
+            windowStyle = .unspecified
+        }
+        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+            for window in scene.windows where window.overrideUserInterfaceStyle != windowStyle {
+                // preferredColorScheme propagates through SwiftUI on the next
+                // transaction. Setting the owning window first makes dynamic
+                // UIKit colors and the native chats table change together.
+                window.overrideUserInterfaceStyle = windowStyle
+            }
+        }
         appearance = v
         UserDefaults.standard.set(v, forKey: "chris.appearance")
         appearanceVeilOpacity = 0

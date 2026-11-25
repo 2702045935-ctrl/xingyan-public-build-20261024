@@ -818,7 +818,14 @@ struct SwipeChatRow: View {
 
     private var rowWidth: CGFloat { max(1, L.width - max(0, horizontalInset) * 2) }
     private var isDark: Bool {
-        scheme == .dark || app.appearance == "dark"
+        switch app.appearance {
+        case "dark":
+            return true
+        case "light":
+            return false
+        default:
+            return scheme == .dark
+        }
     }
     private var pinStretch: CGFloat {
         max(0, offset - fullW)
@@ -1238,15 +1245,27 @@ struct ChatsView: View {
     private var chatsCardInset: CGFloat { max(8, UIConfig.num("chatsOrbitInset", 12)) }
     private var chatsCardRadius: CGFloat { max(16, UIConfig.num("chatsOrbitRadius", 22)) }
     private var chatsIsDark: Bool {
-        scheme == .dark || app.appearance == "dark"
+        // Explicit appearance is the source of truth. SwiftUI can deliver the
+        // preferred color scheme environment one transaction later; OR-ing it
+        // here made dark -> light conversations remain dark for an extra frame.
+        switch app.appearance {
+        case "dark":
+            return true
+        case "light":
+            return false
+        default:
+            return scheme == .dark
+        }
     }
     private var chatsPageFill: Color {
         // WhatsApp's current dark canvas and native row share one near-black
         // surface. Search and cards keep their raised tone.
-        chatsIsDark ? Color(hex: 0x0A0A0A) : C.chatsPageBg
+        chatsIsDark
+            ? Color(hex: 0x0A0A0A)
+            : UIConfig.fixedLight("chatsPageBg", 0xFFFFFF)
     }
     private var chatsRule: Color {
-        ChatListVisual.rule
+        chatsIsDark ? Color(hex: 0x232326) : Color(hex: 0xE9EDEF)
     }
     private var chatsSearchFill: Color {
         chatsIsDark

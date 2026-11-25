@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
 SIDEBAR = (ROOT / "Sources" / "AccountSidebarView.swift").read_text(encoding="utf-8")
 ACCOUNTS = (ROOT / "Sources" / "SwitchAccountView.swift").read_text(encoding="utf-8")
+CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
+NATIVE_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -28,8 +30,27 @@ require(
     "appearance state must commit immediately without a timed pre-switch delay",
 )
 require(
+    "window.overrideUserInterfaceStyle = windowStyle" in theme_switch
+    and "for case let scene as UIWindowScene in UIApplication.shared.connectedScenes"
+    in theme_switch,
+    "the owning windows must adopt an explicit appearance in the same update",
+)
+require(
     ".systemAnimation(.easeInOut(duration: 0.38), value: app.appearance)" not in APP,
     "the root view must not interpolate every surface during a theme switch",
+)
+require(
+    "scheme == .dark || app.appearance == \"dark\"" not in CHATS
+    and "switch app.appearance" in CHATS
+    and "UIConfig.fixedLight(\"chatsPageBg\", 0xFFFFFF)" in CHATS,
+    "explicit conversation appearance must take priority over delayed environment updates",
+)
+require(
+    "table.overrideUserInterfaceStyle = dark ? .dark : .light" in NATIVE_LIST
+    and "controller.tableView.overrideUserInterfaceStyle = dark ? .dark : .light"
+    in NATIVE_LIST
+    and "UIView.performWithoutAnimation" in NATIVE_LIST,
+    "the native chats table must repaint visible rows without an implicit animation",
 )
 require(
     "@Environment(\\.colorScheme) private var scheme" in SIDEBAR

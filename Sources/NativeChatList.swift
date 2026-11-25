@@ -87,6 +87,7 @@ where Item.ID: Hashable {
         controller.view.backgroundColor = .clear
         let table = controller.tableView!
         table.backgroundColor = .clear
+        table.overrideUserInterfaceStyle = dark ? .dark : .light
         table.alpha = 0
         table.separatorStyle = .none
         table.rowHeight = UITableView.automaticDimension
@@ -165,9 +166,12 @@ where Item.ID: Hashable {
         context.coordinator.row = row
         context.coordinator.height = height
         context.coordinator.nativeRow = nativeRow
+        controller.tableView.overrideUserInterfaceStyle = dark ? .dark : .light
         if context.coordinator.dark != dark {
             context.coordinator.dark = dark
-            context.coordinator.refreshVisibleRowsAfterThemeChange()
+            UIView.performWithoutAnimation {
+                context.coordinator.refreshVisibleRowsAfterThemeChange()
+            }
         }
         if context.coordinator.itemsRevision != revision {
             context.coordinator.itemsRevision = revision
