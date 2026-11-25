@@ -10095,74 +10095,121 @@ struct MessageRow: View {
     @ViewBuilder
     private func albumGridBubble(_ paths: [String]) -> some View {
         let total = paths.count
+        let gap: CGFloat = 2.5
         let width: CGFloat = 229
 
         if total == 0 {
             EmptyView()
-        } else {
-            let visible = MultiImageMosaic.visibleCount(for: total)
-            let size = MultiImageMosaic.containerSize(for: total, width: width)
-            let frames = MultiImageMosaic.frames(
-                count: total,
-                in: CGRect(origin: .zero, size: size)
-            )
-            let outerRadius = ChatMessageSurface.mediaRadius
-
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: outerRadius, style: .continuous)
-                    .fill(Color.black.opacity(mine ? 0.18 : 0.10))
-
-                ForEach(0..<visible, id: \.self) { index in
-                    if index < paths.count, index < frames.count {
-                        let frame = frames[index]
-                        let tileRadius = WhatsAppChatLayout.resolvedCornerRadius(
-                            for: frame.size,
-                            preferred: ChatMessageSurface.gridRadius
-                        )
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            onOpenImage?(paths[index])
-                        } label: {
-                            RemoteImage(path: paths[index], maxSide: 1200)
-                                .frame(width: frame.width, height: frame.height)
-                                .clipped()
-                                .clipShape(RoundedRectangle(cornerRadius: tileRadius,
-                                                            style: .continuous))
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .offset(x: frame.minX, y: frame.minY)
-                        .accessibilityLabel(Tr("预览图片") + " \(index + 1)")
+        } else if total == 1 {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                onOpenImage?(paths[0])
+            } label: {
+                RemoteImage(path: paths[0], maxSide: 1200)
+                    .frame(width: width, height: 188)
+                    .clipped()
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+            .shadow(color: Color.black.opacity(0.14), radius: 7, x: 0, y: 2)
+        } else if total == 2 {
+            let tileWidth = (width - gap) / 2
+            HStack(spacing: gap) {
+                ForEach(Array(paths.enumerated()), id: \.offset) { index, path in
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        onOpenImage?(path)
+                    } label: {
+                        RemoteImage(path: path, maxSide: 900)
+                            .frame(width: tileWidth, height: 172)
+                            .clipped()
+                            .contentShape(Rectangle())
                     }
-                }
-
-                if total > visible, let last = frames.last {
-                    ZStack {
-                        Color.black.opacity(0.34)
-                        Text("+\(total - visible)")
-                            .font(.system(size: 20, weight: .semibold, design: .rounded))
-                            .foregroundColor(.white)
-                            .monospacedDigit()
-                    }
-                    .frame(width: last.width, height: last.height)
-                    .clipShape(RoundedRectangle(
-                        cornerRadius: WhatsAppChatLayout.resolvedCornerRadius(
-                            for: last.size,
-                            preferred: ChatMessageSurface.gridRadius
-                        ),
-                        style: .continuous
-                    ))
-                    .offset(x: last.minX, y: last.minY)
-                    .allowsHitTesting(false)
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Tr("预览图片") + " \(index + 1)")
                 }
             }
-            .frame(width: size.width, height: size.height)
-            .clipShape(RoundedRectangle(cornerRadius: outerRadius,
-                                        style: .continuous))
+            .frame(width: width)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: outerRadius, style: .continuous)
-                    .stroke(Color.white.opacity(0.06),
-                            lineWidth: 0.7)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                    .allowsHitTesting(false)
+            }
+            .padding(4)
+            .background {
+                GlassBackground(
+                    shape: RoundedRectangle(cornerRadius: 18, style: .continuous),
+                    shadow: true
+                )
+            }
+        } else {
+            let strip = Array(paths.dropFirst().prefix(3))
+            let tileWidth = (width - CGFloat(strip.count - 1) * gap)
+                / CGFloat(max(1, strip.count))
+
+            VStack(spacing: gap) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onOpenImage?(paths[0])
+                } label: {
+                    RemoteImage(path: paths[0], maxSide: 1200)
+                        .frame(width: width, height: 156)
+                        .clipped()
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Tr("预览图片") + " 1")
+
+                HStack(spacing: gap) {
+                    ForEach(Array(strip.enumerated()), id: \.offset) { offset, path in
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            onOpenImage?(path)
+                        } label: {
+                            ZStack(alignment: .bottomTrailing) {
+                                RemoteImage(path: path, maxSide: 900)
+                                    .frame(width: tileWidth, height: 76)
+                                    .clipped()
+
+                                if offset == strip.count - 1 && total > strip.count + 1 {
+                                    Text("+\(total - strip.count - 1)")
+                                        .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 8)
+                                        .frame(height: 25)
+                                        .background {
+                                            GlassBackground(
+                                                shape: Capsule(style: .continuous),
+                                                opacity: 0.84,
+                                                tint: Color.black.opacity(0.30)
+                                            )
+                                        }
+                                        .padding(6)
+                                }
+                            }
+                            .frame(width: tileWidth, height: 76)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Tr("预览图片") + " \(offset + 2)")
+                    }
+                }
+            }
+            .frame(width: width)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                    .allowsHitTesting(false)
+            }
+            .padding(4)
+            .background {
+                GlassBackground(
+                    shape: RoundedRectangle(cornerRadius: 18, style: .continuous),
+                    shadow: true
+                )
             }
         }
     }
@@ -10340,18 +10387,16 @@ struct ImageBubble: View {
                 }
             }
             .frame(width: size.width, height: size.height)
-            .clipShape(RoundedRectangle(cornerRadius: stickerLook
-                                        ? 8
-                                        : ChatMessageSurface.mediaRadius,
+            .clipShape(RoundedRectangle(cornerRadius: stickerLook ? 8 : 5,
                                         style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: stickerLook
-                                 ? 8
-                                 : ChatMessageSurface.mediaRadius,
+                RoundedRectangle(cornerRadius: stickerLook ? 8 : 5,
                                  style: .continuous)
                     .stroke(Color.black.opacity(stickerLook ? 0 : 0.10),
                             lineWidth: 0.6)
             )
+            .shadow(color: stickerLook ? .clear : Color.black.opacity(0.16),
+                    radius: 7, x: 0, y: 3)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

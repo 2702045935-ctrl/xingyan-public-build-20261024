@@ -258,7 +258,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         case .images(let paths):
             imageView.isHidden = false
             imageView.configure(path: paths.first ?? "", maxPixel: 720)
-            let visible = MultiImageMosaic.visibleCount(for: paths.count)
+            let visible = min(4, paths.count)
             for (index, view) in extraImageViews.enumerated()
                 where index + 1 < visible {
                 view.isHidden = false
@@ -460,10 +460,18 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             layoutImageGrid(paths: paths, in: body)
         } else {
             imageView.frame = body
-            imageView.layer.cornerRadius = WhatsAppChatLayout.resolvedCornerRadius(
-                for: body.size,
-                preferred: WhatsAppChatLayout.cornerRadius
-            )
+            switch model.kind {
+            case .image:
+                imageView.layer.cornerRadius = 5
+                imageView.layer.shadowColor = UIColor.black.cgColor
+                imageView.layer.shadowOpacity = 0.16
+                imageView.layer.shadowRadius = 7
+                imageView.layer.shadowOffset = CGSize(width: 0, height: 3)
+            case .video:
+                imageView.layer.cornerRadius = 6
+            default:
+                imageView.layer.cornerRadius = WhatsAppChatLayout.cornerRadius
+            }
         }
 
         let playSide: CGFloat = 44
@@ -518,8 +526,39 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
 
     private func layoutImageGrid(paths: [String], in body: CGRect) {
         let views = [imageView] + extraImageViews
-        let visible = MultiImageMosaic.visibleCount(for: paths.count)
-        let frames = MultiImageMosaic.frames(count: paths.count, in: body)
+        let gap: CGFloat = 2.5
+        let frames: [CGRect]
+        if paths.count <= 1 {
+            frames = [body]
+        } else if paths.count == 2 {
+            let tileWidth = floor((body.width - gap) / 2)
+            frames = [
+                CGRect(x: body.minX, y: body.minY,
+                       width: tileWidth, height: body.height),
+                CGRect(x: body.minX + tileWidth + gap, y: body.minY,
+                       width: tileWidth, height: body.height)
+            ]
+        } else {
+            let stripCount = min(3, paths.count - 1)
+            let tileWidth = floor(
+                (body.width - CGFloat(stripCount - 1) * gap)
+                    / CGFloat(stripCount)
+            )
+            var next = [
+                CGRect(x: body.minX, y: body.minY,
+                       width: body.width, height: 156)
+            ]
+            for index in 0..<stripCount {
+                next.append(CGRect(
+                    x: body.minX + CGFloat(index) * (tileWidth + gap),
+                    y: body.minY + 156 + gap,
+                    width: tileWidth,
+                    height: 76
+                ))
+            }
+            frames = next
+        }
+        let visible = min(views.count, frames.count)
         for (index, view) in views.enumerated() {
             guard index < visible, index < frames.count else {
                 view.isHidden = true
@@ -528,28 +567,66 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             view.isHidden = false
             let frame = frames[index]
             view.frame = frame
-            view.layer.cornerRadius = WhatsAppChatLayout.resolvedCornerRadius(
-                for: frame.size,
-                preferred: WhatsAppChatLayout.mediaTileRadius
-            )
+            view.layer.cornerRadius = 0
             view.layer.cornerCurve = .continuous
             view.clipsToBounds = true
         }
 
-        if paths.count > visible, let last = frames.last {
+        if paths.count > 2, let first = views.first, let main = frames.first {
+            first.layer.cornerRadius = 14
+            first.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            _ = main
+            let bottomCount = min(3, paths.count - 1)
+            for index in 0..<bottomCount {
+                let view = views[index + 1]
+                view.layer.cornerRadius = 14
+                if index == 0 {
+                    view.layer.maskedCorners = [.layerMinXMaxYCorner]
+                } else if index == bottomCount - 1 {
+                    view.layer.maskedCorners = [.layerMaxXMaxYCorner]
+                } else {
+                    view.layer.cornerRadius = 0
+                    view.layer.maskedCorners = []
+                }
+            }
+        } else if paths.count == 2 {
+            views[0].layer.cornerRadius = 14
+            views[0].layer.maskedCorners = [.layerMinXMinYCorner, .layerMinXMaxYCorner]
+            views[1].layer.cornerRadius = 14
+            views[1].layer.maskedCorners = [.layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+        } else if let only = views.first {
+            only.layer.cornerRadius = 17
+            only.layer.maskedCorners = [
+                .layerMinXMinYCorner, .layerMaxXMinYCorner,
+                .layerMinXMaxYCorner, .layerMaxXMaxYCorner
+            ]
+            only.layer.shadowColor = UIColor.black.cgColor
+            only.layer.shadowOpacity = 0.14
+            only.layer.shadowRadius = 7
+            only.layer.shadowOffset = CGSize(width: 0, height: 2)
+        }
+
+        let stripCount = min(3, max(0, paths.count - 1))
+        if paths.count > stripCount + 1, let last = frames.last {
             badgeLabel.isHidden = false
-            badgeLabel.text = "+\(paths.count - visible)"
-            badgeLabel.font = pfUIFont(20, .semibold)
+            badgeLabel.text = "+\(paths.count - stripCount - 1)"
+            badgeLabel.font = pfUIFont(12.5, .semibold)
             badgeLabel.textColor = .white
             badgeLabel.textAlignment = .center
-            badgeLabel.backgroundColor = UIColor.black.withAlphaComponent(0.34)
-            badgeLabel.layer.cornerRadius = WhatsAppChatLayout.resolvedCornerRadius(
-                for: last.size,
-                preferred: WhatsAppChatLayout.mediaTileRadius
-            )
+            badgeLabel.backgroundColor = UIColor.black.withAlphaComponent(0.30)
+            badgeLabel.layer.cornerRadius = 12.5
             badgeLabel.layer.cornerCurve = .continuous
             badgeLabel.clipsToBounds = true
-            badgeLabel.frame = last
+            let badgeWidth = min(last.width - 12,
+                                 max(34, ceil((badgeLabel.text! as NSString).size(
+                                    withAttributes: [.font: badgeLabel.font as Any]
+                                 ).width) + 16))
+            badgeLabel.frame = CGRect(
+                x: last.maxX - 6 - badgeWidth,
+                y: last.maxY - 6 - 25,
+                width: badgeWidth,
+                height: 25
+            )
         } else {
             badgeLabel.isHidden = true
         }
@@ -599,9 +676,9 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
                 ? 120
                 : ImageBubble.thumb(pixel).height
         case .images(let paths):
-            return MultiImageMosaic
-                .containerSize(for: paths.count, width: 229)
-                .height
+            if paths.count <= 1 { return 188 }
+            if paths.count == 2 { return 172 }
+            return 234.5
         case .video(_, _, let w, let h):
             return videoBubbleSize(w: w, h: h).height
         case .file:

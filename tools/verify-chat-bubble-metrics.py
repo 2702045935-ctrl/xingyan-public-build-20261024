@@ -127,8 +127,7 @@ require(
 )
 require(
     "ChatMessageSurface.mediaRadius" in CHAT
-    and MEDIA.count("ChatMessageSurface.mediaRadius") >= 3
-    and "RoundedRectangle(cornerRadius: 6, style: .continuous)" not in MEDIA
+    and MEDIA.count("RoundedRectangle(cornerRadius: 6, style: .continuous)") >= 3
     and ".background(BubbleFill(mine: mine, tail: showTail))" in CHAT
     and ".clipShape(BubbleShape(mine: mine, tail: showTail))" in CHAT
     and "var mine: Bool? = nil" in CARDS
@@ -138,11 +137,13 @@ require(
     "chat cards and file cards must reuse the shared bubble shell",
 )
 require(
-    "imageView.layer.cornerRadius = WhatsAppChatLayout.resolvedCornerRadius(" in MEDIA_ROW
-    and "preferred: WhatsAppChatLayout.cornerRadius" in MEDIA_ROW
-    and "preferred: WhatsAppChatLayout.mediaTileRadius" in MEDIA_ROW
+    "imageView.layer.cornerRadius = 5" in MEDIA_ROW
+    and "imageView.layer.cornerRadius = 6" in MEDIA_ROW
+    and "let gap: CGFloat = 2.5" in MEDIA_ROW
+    and "height: 156" in MEDIA_ROW
+    and "height: 76" in MEDIA_ROW
     and "senderLabel.layer.cornerRadius = WhatsAppChatLayout.overlayRadius" in MEDIA_ROW,
-    "native image, mosaic and video surfaces must share one rounded media system",
+    "native image, video and mosaic surfaces must keep the 11/20 geometry",
 )
 require(
     "width: 258" in MEDIA
@@ -199,9 +200,11 @@ require(
 require(
     "private let extraImageViews" in MEDIA_ROW
     and "layoutImageGrid(paths: paths, in: body)" in MEDIA_ROW
-    and "MultiImageMosaic.frames(count: paths.count, in: body)" in MEDIA_ROW
-    and "MultiImageMosaic.visibleCount(for: paths.count)" in MEDIA_ROW,
-    "native multi-image messages must render the shared adaptive mosaic",
+    and "let gap: CGFloat = 2.5" in MEDIA_ROW
+    and "height: 156" in MEDIA_ROW
+    and "height: 76" in MEDIA_ROW
+    and "return 234.5" in MEDIA_ROW,
+    "native multi-image messages must match the 11/20 container",
 )
 require(
     "ImageBubble.thumb(pixel)" in MEDIA_ROW

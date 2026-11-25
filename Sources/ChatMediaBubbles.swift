@@ -207,10 +207,7 @@ struct VideoBubble: View {
                 if info.seconds > 0 { timeBadge }
             }
             .frame(width: size.width, height: size.height)
-            .clipShape(RoundedRectangle(
-                cornerRadius: ChatMessageSurface.mediaRadius,
-                style: .continuous
-            ))
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -276,10 +273,7 @@ struct LivePhotoBubble: View {
                     .padding(7)
             }
             .frame(width: 150, height: 200)
-            .clipShape(RoundedRectangle(
-                cornerRadius: ChatMessageSurface.mediaRadius,
-                style: .continuous
-            ))
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -778,10 +772,7 @@ struct SendingVideoBubble: View {
             }
         }
         .frame(width: size.width, height: size.height)
-        .clipShape(RoundedRectangle(
-            cornerRadius: ChatMessageSurface.mediaRadius,
-            style: .continuous
-        ))
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 }
 

@@ -15,31 +15,26 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "static let gap: CGFloat = 3" in MOSAIC
-    and "if total <= 4 { return max(0, total) }" in MOSAIC
-    and "return 3\n    }" in MOSAIC
-    and "if total == 2" in MOSAIC
-    and "let heroW = floor(innerW * 0.64)" in MOSAIC
-    and "let leftW = floor((bounds.width - gap) / 2)" in MOSAIC
-    and "let topH = floor((bounds.height - gap) / 2)" in MOSAIC,
-    "the shared mosaic must use two-up, hero, and 2x2 compositions",
+    "let gap: CGFloat = 2.5" in CHAT
+    and ".frame(width: width, height: 188)" in CHAT
+    and "RoundedRectangle(cornerRadius: 17" in CHAT
+    and "let tileWidth = (width - gap) / 2" in CHAT
+    and ".frame(width: tileWidth, height: 172)" in CHAT
+    and "let strip = Array(paths.dropFirst().prefix(3))" in CHAT
+    and ".frame(width: width, height: 156)" in CHAT
+    and ".frame(width: tileWidth, height: 76)" in CHAT
+    and 'Text("+\\(total - strip.count - 1)")' in CHAT,
+    "SwiftUI image and multi-image containers must match the 11/20 geometry",
 )
 require(
-    "MultiImageMosaic.visibleCount(for: total)" in CHAT
-    and "MultiImageMosaic.frames(" in CHAT
-    and 'Text("+\\(total - visible)")' in CHAT
-    and "RemoteImage(path: paths[index], maxSide: 1200)" in CHAT
-    and "RoundedRectangle(cornerRadius: outerRadius" in CHAT,
-    "SwiftUI multi-image messages must render the shared adaptive mosaic",
-)
-require(
-    "MultiImageMosaic.visibleCount(for: paths.count)" in NATIVE
-    and "MultiImageMosaic.frames(count: paths.count, in: body)" in NATIVE
-    and "badgeLabel.text = \"+\\(paths.count - visible)\"" in NATIVE
-    and "WhatsAppChatLayout.resolvedCornerRadius(" in NATIVE
-    and "preferred: WhatsAppChatLayout.mediaTileRadius" in NATIVE
-    and "containerSize(for: paths.count, width: 229)" in NATIVE,
-    "native media rows must use the same mosaic geometry without per-row blur",
+    "let gap: CGFloat = 2.5" in NATIVE
+    and "height: 156" in NATIVE
+    and "height: 76" in NATIVE
+    and "if paths.count <= 1 { return 188 }" in NATIVE
+    and "if paths.count == 2 { return 172 }" in NATIVE
+    and "return 234.5" in NATIVE
+    and 'badgeLabel.text = "+\\(paths.count - stripCount - 1)"' in NATIVE,
+    "native single and multi-image rows must match the 11/20 containers",
 )
 require(
     "python3 tools/verify-multi-image-mosaic.py" in WORKFLOW,
