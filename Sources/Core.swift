@@ -2230,7 +2230,10 @@ enum TimeFmt {
             let seconds = max(0, Date().timeIntervalSince(d))
             if seconds < 60 { return Tr("刚刚") }
             if seconds < 3_600 {
-                return "\(max(1, Int(seconds / 60))) " + Tr("分钟前")
+                let minutes = max(1, Int(seconds / 60))
+                if Lang.isEnglish { return "\(minutes) min ago" }
+                if Lang.isRussian { return "\(minutes) мин назад" }
+                return "\(minutes)分钟前"
             }
             return fClock.string(from: d)
         }

@@ -19,7 +19,7 @@ require(
     "static func listConversation(_ s: String?) -> String" in CORE
     and "if seconds < 60 { return Tr(\"刚刚\") }" in CORE
     and "if seconds < 3_600" in CORE
-    and 'Tr("分钟前")' in CORE
+    and "return \"\\(minutes)分钟前\"" in CORE
     and "return fClock.string(from: d)" in CORE,
     "conversation time must use just-now and minute labels before the clock",
 )
