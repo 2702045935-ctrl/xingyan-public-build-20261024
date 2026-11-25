@@ -7086,6 +7086,22 @@ struct ChatDetailView: View {
         sendMedia(.images(images), live: false, original: false)
     }
 
+    /// 附件发送完成后，上传态和正式消息必须在同一事务里交接。
+    /// 分成两次状态写入会让旧 SwiftUI 上传气泡和确认后的原生气泡同时出现一帧。
+    private func commitSentAttachment(_ message: Message) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            sendingMedia = ""
+            sendingPreview = nil
+            sendProgress = 0
+            sendingFileName = ""
+            sendingFileBytes = 0
+            sendingFileProgress = nil
+            appendVisibleMessage(message)
+        }
+    }
+
     private func sendMedia(_ p: MediaSendSheet.Payload, live: Bool, original: Bool) {
         switch p {
         case .image(let img, let nativeCamera):
@@ -7113,7 +7129,7 @@ struct ChatDetailView: View {
                     let tUp = Date()
                     if let m = try await API.shared.send(chatId: chat.id, kind: "image", content: url,
                                                          imgW: px.w, imgH: px.h) {
-                        appendVisibleMessage(m)
+                        commitSentAttachment(m)
                     }
                     let tSend = Date()
                     Task { await API.shared.callDiag("发图(+) 压+传=\(Int(tUp.timeIntervalSince(t0) * 1000))ms"
@@ -7194,7 +7210,7 @@ struct ChatDetailView: View {
                         CrashCatcher.note("发图", "合成一条相册消息（\(urls.count) 张）")
                         let body = "{\"paths\":" + Self.jsonStringArray(urls) + "}"
                         if let m = try await API.shared.send(chatId: chat.id, kind: "images", content: body) {
-                            appendVisibleMessage(m)
+                            commitSentAttachment(m)
                         }
                     } else {
                         CrashCatcher.note("发图", "\(urls.count) 张，分开一条一条发")
@@ -7202,7 +7218,7 @@ struct ChatDetailView: View {
                             let d: (w: Int, h: Int) = i < dims.count ? dims[i] : (w: 0, h: 0)
                             if let m = try await API.shared.send(chatId: chat.id, kind: "image", content: u,
                                                                  imgW: d.w, imgH: d.h) {
-                                appendVisibleMessage(m)
+                                commitSentAttachment(m)
                             }
                         }
                     }
@@ -7271,7 +7287,7 @@ struct ChatDetailView: View {
                 }
                 let json = (try? JSONSerialization.data(withJSONObject: body)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
                 if let m = try? await API.shared.send(chatId: chat.id, kind: "video", content: json) {
-                    appendVisibleMessage(m)
+                    commitSentAttachment(m)
                 }
                 uploading = false
                 sendingMedia = ""
@@ -7312,7 +7328,7 @@ struct ChatDetailView: View {
                     let body: [String: Any] = ["image": iurl, "video": vurl]
                     let json = (try? JSONSerialization.data(withJSONObject: body)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
                     if let m = try await API.shared.send(chatId: chat.id, kind: "livephoto", content: json) {
-                        appendVisibleMessage(m)
+                        commitSentAttachment(m)
                     }
                 } catch { app.show((error as? APIError)?.errorDescription ?? "实况发送失败") }
                 uploading = false
@@ -7622,7 +7638,7 @@ struct ChatDetailView: View {
                 throw APIError.message("文件信息生成失败")
             }
             if let message = try await API.shared.send(chatId: chat.id, kind: "file", content: content) {
-                appendVisibleMessage(message)
+                commitSentAttachment(message)
             }
             sendingFileProgress = nil
             sendingFileName = ""

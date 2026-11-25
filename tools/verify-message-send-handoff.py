@@ -96,8 +96,9 @@ require(
     "confirmed sends and exit/re-entry must merge the current chat page into the in-memory cache",
 )
 require(
-    CHAT.count("appendVisibleMessage(m)") >= 5
-    and "appendVisibleMessage(message)" in CHAT
+    CHAT.count("appendVisibleMessage(m)") + CHAT.count("commitSentAttachment(m)") >= 5
+    and ("appendVisibleMessage(message)" in CHAT
+         or "commitSentAttachment(message)" in CHAT)
     and "await app.loadChats()" in CHAT,
     "the 11/21 media flow must append confirmed bubbles and refresh the list",
 )
@@ -145,6 +146,31 @@ require(
     and "withTransaction(sendTransaction)" in CHAT
     and "DispatchQueue.main.async {\n            app.previewOutgoingMessage" in CHAT,
     "plain pending text must use the native row first and defer list-preview work one frame",
+)
+
+commit_start = CHAT.index("private func commitSentAttachment")
+commit_end = CHAT.index("private func sendMedia", commit_start)
+commit = CHAT[commit_start:commit_end]
+commit_clear = commit.index('sendingMedia = ""')
+commit_append = commit.index("appendVisibleMessage(message)")
+require(
+    "transaction.disablesAnimations = true" in commit
+    and "withTransaction(transaction)" in commit
+    and commit_clear < commit_append
+    and 'sendingFileProgress = nil' in commit
+    and "sendingPreview = nil" in commit,
+    "attachment confirmation must retire every transient bubble before inserting the real row",
+)
+media_start = CHAT.index("private func sendMedia")
+media_end = CHAT.index("private func seedLocalImage", media_start)
+file_start = CHAT.index("private func uploadAndSendFile")
+file_end = CHAT.index("private func openFile", file_start)
+require(
+    "appendVisibleMessage(m)" not in CHAT[media_start:media_end]
+    and "appendVisibleMessage(message)" not in CHAT[file_start:file_end]
+    and CHAT.count("commitSentAttachment(m)") >= 5
+    and "commitSentAttachment(message)" in CHAT[file_start:file_end],
+    "image, album, video, live-photo and file sends must all use the atomic handoff",
 )
 
 print("message-send-handoff: passed")
