@@ -50,7 +50,7 @@ require(
 )
 require(
     "lastReportedOffsetY" in LIST
-    and ">= 16" in LIST
+    and ">= 24" in LIST
     and "panGestureRecognizer.delaysTouchesBegan = false" in LIST
     and "long.cancelsTouchesInView = false" in TEXT_ROWS,
     "scroll tracking must stay direct and avoid per-pixel SwiftUI callbacks",
