@@ -172,6 +172,7 @@ final class NativeStaticListController {
 struct NativeStaticList<Item: Identifiable & Equatable, Row: View>: UIViewControllerRepresentable
 where Item.ID: Hashable {
     let items: [Item]
+    let revision: Int
     let controller: NativeStaticListController?
     let onScrollViewReady: ((UIScrollView) -> Void)?
     let onScrollStateChange: ((Bool) -> Void)?
@@ -190,6 +191,7 @@ where Item.ID: Hashable {
     @ViewBuilder let row: (Item) -> Row
 
     init(items: [Item],
+         revision: Int = 0,
          controller: NativeStaticListController? = nil,
          onScrollViewReady: ((UIScrollView) -> Void)? = nil,
          onScrollStateChange: ((Bool) -> Void)? = nil,
@@ -207,6 +209,7 @@ where Item.ID: Hashable {
          onPrefetchEnd: (() -> Void)? = nil,
          @ViewBuilder row: @escaping (Item) -> Row) {
         self.items = items
+        self.revision = revision
         self.controller = controller
         self.onScrollViewReady = onScrollViewReady
         self.onScrollStateChange = onScrollStateChange
@@ -322,6 +325,7 @@ where Item.ID: Hashable {
         context.coordinator.collection = collection
         context.coordinator.attachController()
         context.coordinator.attachScroll(collection)
+        context.coordinator.itemsRevision = revision
         context.coordinator.apply(items, animated: false)
         context.coordinator.installVirtualIndicatorIfNeeded(
             on: controller.view,
@@ -356,13 +360,17 @@ where Item.ID: Hashable {
                 collection: collection
             )
         }
-        context.coordinator.apply(items, animated: false)
+        if context.coordinator.itemsRevision != revision {
+            context.coordinator.itemsRevision = revision
+            context.coordinator.apply(items, animated: false)
+        }
     }
 
     final class Coordinator: NSObject,
                              UICollectionViewDelegateFlowLayout,
                              UICollectionViewDataSourcePrefetching {
         var lookup: [Item.ID: Item] = [:]
+        var itemsRevision = -1
         var row: (Item) -> Row
         var signature: (Item) -> String
         var nativeEligible: ((Item) -> Bool)?

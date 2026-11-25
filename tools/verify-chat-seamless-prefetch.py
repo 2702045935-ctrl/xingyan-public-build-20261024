@@ -87,6 +87,13 @@ require(
     "scroll-time prefetch must keep height and indicator work off the per-frame hot path",
 )
 require(
+    "let revision: Int" in NATIVE
+    and "context.coordinator.itemsRevision != revision" in NATIVE
+    and "historyRuntime.revision &+= 1" in CHAT
+    and "revision: nativeMessageListRevision" in CHAT,
+    "scroll state changes must not diff the full history window unless message data changed",
+)
+require(
     "private func recoverVisibleWindowIfNeeded" in NATIVE
     and "collection.scrollToItem(" in NATIVE
     and "collection.collectionViewLayout.invalidateLayout()" in NATIVE,

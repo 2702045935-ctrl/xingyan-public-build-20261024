@@ -148,6 +148,7 @@ private struct TypingPeer: Equatable {
 }
 
 private final class ChatHistoryRuntime {
+    var revision = 0
     var loadingOlder = false
     var lastScrollRunwayCheck = 0.0
     var oldestLoadedSeq = 0
@@ -3524,6 +3525,7 @@ struct ChatDetailView: View {
     private var nativeMessageList: some View {
         NativeStaticList(
             items: nativeGroupItems,
+            revision: nativeMessageListRevision,
             controller: nativeMessageController,
             onScrollViewReady: { scrollView in
                 ChatScrollHandle.shared.scroll = scrollView
@@ -3720,6 +3722,24 @@ struct ChatDetailView: View {
         items.append(NativeGroupItem(id: "__bottom", kind: .bottom))
         items.append(NativeGroupItem(id: "native-spacer", kind: .spacer))
         return items
+    }
+
+    private var nativeMessageListRevision: Int {
+        var hasher = Hasher()
+        hasher.combine(historyRuntime.revision)
+        hasher.combine(hasOlder)
+        hasher.combine(selectMode)
+        hasher.combine(hiddenMessageIds.count)
+        hasher.combine(sendingMedia.count)
+        hasher.combine(Int((sendProgress * 500).rounded()))
+        hasher.combine(sendingFileName)
+        hasher.combine(Int(((sendingFileProgress ?? 0) * 500).rounded()))
+        for pending in visiblePendingMessages {
+            hasher.combine(pending.id)
+            hasher.combine(pending.failed)
+            hasher.combine(pending.content)
+        }
+        return hasher.finalize()
     }
 
     /// A server-confirmed own message keeps the optimistic row's collection
@@ -5295,6 +5315,7 @@ struct ChatDetailView: View {
         msgIndex = m
         historyRuntime.oldestLoadedSeq = oldest
         historyRuntime.newestLoadedSeq = newest
+        historyRuntime.revision &+= 1
     }
 
     private func isRunStart(_ message: Message) -> Bool {
