@@ -538,6 +538,8 @@ final class AppState: ObservableObject {
                 hideChatLocally(ev.chatId)
             }
 
+            let cid = ev.chatId
+            let isOpenChat = !cid.isEmpty && openChat?.id == cid
             if let incoming = ev.chat {
                 if isDismissedGroup(incoming) {
                     hideChatLocally(incoming.id)
@@ -554,13 +556,12 @@ final class AppState: ObservableObject {
                 collectAdminSticker(from: message)
                 applyRealtimeMessage(message, chatId: ev.chatId)
             }
-            let cid = ev.chatId
             let immediate = ev.chat ?? (cid.isEmpty
                 ? nil
                 : chats.first(where: { $0.id == cid }))
-            if immediate != nil {
+            if immediate != nil, !isOpenChat {
                 notifyIncomingRow(immediate)
-            } else {
+            } else if immediate == nil {
                 coalesce { [weak self] in
                     await self?.loadChats()
                     guard let self else { return }
@@ -660,6 +661,7 @@ final class AppState: ObservableObject {
             coalesce { [weak self] in
                 await self?.refreshUI(force: true)
                 await self?.loadChats()
+                await self?.refreshDotCounts()
                 await self?.syncRecentMessages(chatCount: 20, limit: 50)
                 await self?.syncDeviceChats()
                 await self?.syncMessageEvents()
@@ -1067,7 +1069,9 @@ final class AppState: ObservableObject {
         dotTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refreshDotCounts()
-                try? await Task.sleep(nanoseconds: 12_000_000_000)
+                let active = UIApplication.shared.applicationState == .active
+                let delay: UInt64 = active ? 3_000_000_000 : 15_000_000_000
+                try? await Task.sleep(nanoseconds: delay)
             }
         }
     }
@@ -2271,13 +2275,17 @@ final class AppState: ObservableObject {
         locallyHiddenUnread.removeValue(forKey: incoming.id)
         var rows = chats
         let previous = rows.first(where: { $0.id == incoming.id })
+        let chatIsOpen = openChat?.id == incoming.id
         var updated = incoming
         if let index = rows.firstIndex(where: { $0.id == incoming.id }) {
             let current = rows[index]
             let currentMid = current.lastMessage?.id ?? ""
             let incomingMid = incoming.lastMessage?.id ?? ""
             var merged = mergeServerChat(incoming, local: current)
-            if let sender = incoming.lastMessage?.senderId, sender != me?.id,
+            if chatIsOpen {
+                merged.unread = 0
+                merged.flagged = false
+            } else if let sender = incoming.lastMessage?.senderId, sender != me?.id,
                !incomingMid.isEmpty, incomingMid != currentMid,
                incoming.unreadCount <= current.unreadCount {
                 merged.unread = current.unreadCount + 1
@@ -2291,9 +2299,13 @@ final class AppState: ObservableObject {
                 optimisticAt[incoming.id] = Date()
             }
         } else {
-            rows.insert(incoming, at: 0)
+            if chatIsOpen {
+                updated.unread = 0
+                updated.flagged = false
+            }
+            rows.insert(updated, at: 0)
             if let sender = incoming.lastMessage?.senderId, sender != me?.id {
-                optimisticChats[incoming.id] = incoming
+                optimisticChats[incoming.id] = updated
                 optimisticAt[incoming.id] = Date()
             }
         }
@@ -2343,7 +2355,8 @@ final class AppState: ObservableObject {
         guard shouldAdvance else { return }
 
         var row = before
-        if countUnread, !sameMessage, message.senderId != me?.id {
+        if countUnread, !sameMessage, message.senderId != me?.id,
+           openChat?.id != id {
             row.unread = row.unreadCount + 1
         }
         var preview = Self.realtimePreview(message)
@@ -2503,13 +2516,9 @@ final class AppState: ObservableObject {
     var unreadForIcon: Int {
         if let authoritativeUnreadTotal {
             let hiddenUnread = locallyHiddenUnread.values.reduce(0, +)
-            let systemBotUnread = chats.reduce(0) { total, chat in
-                guard chat.botRank == 0, chat.muted != true else { return total }
-                return total + max(0, chat.unreadCount)
-            }
             return min(
                 999,
-                max(0, authoritativeUnreadTotal - hiddenUnread - systemBotUnread)
+                max(0, authoritativeUnreadTotal - hiddenUnread)
             )
         }
         var n = 0

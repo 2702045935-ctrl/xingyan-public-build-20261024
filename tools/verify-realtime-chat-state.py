@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
 REALTIME = (ROOT / "Sources" / "Realtime.swift").read_text(encoding="utf-8")
+LOCAL_NOTIFY = (ROOT / "Sources" / "LocalNotify.swift").read_text(encoding="utf-8")
 SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
 MENTION_INDEX = (ROOT / "server" / "lib" / "mention-index.js").read_text(
     encoding="utf-8"
@@ -53,6 +54,28 @@ require(
     and "guard acceptsChatSnapshot(chatGeneration) else { return }" in APP
     and APP.count("invalidateChatSnapshots()") >= 7,
     "older conversation-list responses must not overwrite a newer live state",
+)
+require(
+    "let delay: UInt64 = active ? 3_000_000_000 : 15_000_000_000" in APP
+    and "await self?.refreshDotCounts()\n                await self?.syncRecentMessages"
+    in APP,
+    "foreground badge recovery must be fast and run immediately after realtime reconnect",
+)
+require(
+    "let chatIsOpen = openChat?.id == incoming.id" in APP
+    and "if chatIsOpen {\n                merged.unread = 0" in APP
+    and "openChat?.id != id" in APP
+    and "if immediate != nil, !isOpenChat" in APP,
+    "messages for the visible conversation must never flash an unread badge or notification",
+)
+require(
+    "max(0, authoritativeUnreadTotal - hiddenUnread)" in APP
+    and "authoritativeUnreadTotal - hiddenUnread - systemBotUnread" not in APP,
+    "the server badge total must be authoritative without subtracting excluded chats twice",
+)
+require(
+    "let iconBadge = max(0, min(999, badge))" in LOCAL_NOTIFY,
+    "a zero badge must clear instead of being forced back to one",
 )
 require(
     "const index = (summaryContext && summaryContext.mentionIndex)" in SERVER

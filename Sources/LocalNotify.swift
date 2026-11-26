@@ -74,7 +74,7 @@ enum LocalNotify {
         guard !mutedNow() else { return }
         if settings.sound { playMessageSound() }
         if settings.vibrate { AudioServicesPlaySystemSound(kSystemSoundID_Vibrate) }
-        let iconBadge = max(1, min(999, badge))
+        let iconBadge = max(0, min(999, badge))
         DispatchQueue.main.async {
             UIApplication.shared.applicationIconBadgeNumber = iconBadge
         }
