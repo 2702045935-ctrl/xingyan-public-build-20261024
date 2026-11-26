@@ -2702,6 +2702,7 @@ struct ChatsView: View {
             groupMemberIds: chat.memberIds ?? [],
             avatarIsGroup: mosaic,
             showOnline: !isGroup && peer?.online == true || groupHasOnline,
+            musicListening: false,
             moodIcon: chat.moodIcon ?? "",
             unread: chat.unreadCount,
             unreadMuted: chat.muted == true,
