@@ -336,6 +336,11 @@ struct AppearanceView: View {
 
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background {
+            AppearanceAmbientBackdrop()
+                .ignoresSafeArea()
+        }
         .navigationTitle(Tr("外观与显示"))
         .navigationBarTitleDisplayMode(.large)
         .hidesTabBar()
@@ -366,6 +371,124 @@ struct AppearanceView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(title)
         .accessibilityValue(selected ? Tr("已选择") : "")
+    }
+}
+
+private struct AppearanceAmbientBackdrop: View {
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @State private var drifting = false
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                Color(uiColor: .systemGroupedBackground)
+
+                LinearGradient(
+                    colors: scheme == .dark
+                        ? [
+                            Color(hex: 0x0B1214),
+                            Color(hex: 0x0D1113),
+                            Color(hex: 0x080A0B)
+                        ]
+                        : [
+                            Color(hex: 0xF2F7F7),
+                            Color(hex: 0xF5F6F8),
+                            Color(hex: 0xEEF2F4)
+                        ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+
+                if !reduceTransparency {
+                    Ellipse()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color(hex: 0x7CB9AE).opacity(scheme == .dark ? 0.20 : 0.16),
+                                    Color.clear
+                                ],
+                                center: .center,
+                                startRadius: 2,
+                                endRadius: proxy.size.width * 0.56
+                            )
+                        )
+                        .frame(width: proxy.size.width * 0.92,
+                               height: proxy.size.height * 0.42)
+                        .blur(radius: 34)
+                        .offset(
+                            x: drifting ? proxy.size.width * 0.13 : -proxy.size.width * 0.20,
+                            y: drifting ? -proxy.size.height * 0.20 : -proxy.size.height * 0.08
+                        )
+                        .scaleEffect(drifting ? 1.08 : 0.94)
+
+                    Ellipse()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color(hex: 0x7EA8CE).opacity(scheme == .dark ? 0.15 : 0.10),
+                                    Color.clear
+                                ],
+                                center: .center,
+                                startRadius: 2,
+                                endRadius: proxy.size.width * 0.50
+                            )
+                        )
+                        .frame(width: proxy.size.width * 0.82,
+                               height: proxy.size.height * 0.36)
+                        .blur(radius: 42)
+                        .offset(
+                            x: drifting ? -proxy.size.width * 0.14 : proxy.size.width * 0.18,
+                            y: drifting ? proxy.size.height * 0.28 : proxy.size.height * 0.14
+                        )
+                        .scaleEffect(drifting ? 0.96 : 1.06)
+
+                    Ellipse()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color(hex: 0xC9BBA8).opacity(scheme == .dark ? 0.07 : 0.075),
+                                    Color.clear
+                                ],
+                                center: .center,
+                                startRadius: 2,
+                                endRadius: proxy.size.width * 0.46
+                            )
+                        )
+                        .frame(width: proxy.size.width * 0.70,
+                               height: proxy.size.height * 0.28)
+                        .blur(radius: 50)
+                        .offset(
+                            x: drifting ? -proxy.size.width * 0.26 : -proxy.size.width * 0.04,
+                            y: drifting ? -proxy.size.height * 0.32 : -proxy.size.height * 0.20
+                        )
+                }
+
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(scheme == .dark ? 0.018 : 0.16),
+                        Color.clear,
+                        Color.black.opacity(scheme == .dark ? 0.18 : 0.018)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .clipped()
+            .onAppear {
+                guard !reduceMotion, !reduceTransparency else { return }
+                withAnimation(
+                    .easeInOut(duration: 14)
+                        .repeatForever(autoreverses: true)
+                ) {
+                    drifting = true
+                }
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 

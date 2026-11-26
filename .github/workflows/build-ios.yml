@@ -120,6 +120,7 @@ jobs:
           python3 tools/verify-media-glass-controls.py
           python3 tools/verify-call-record-material.py
           python3 tools/verify-call-system-ui.py
+          python3 tools/verify-appearance-ambient.py
           python3 tools/verify-profile-info-system.py
           python3 tools/verify-group-preview.py
           python3 tools/verify-contacts-whatsapp.py
