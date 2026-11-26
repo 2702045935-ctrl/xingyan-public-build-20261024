@@ -247,7 +247,7 @@ struct ContactsView: View {
     }
     private func contactsFont(_ size: CGFloat,
                               _ weight: Font.Weight = .regular) -> Font {
-        pfStyled(size: size * contactsAccessibilityScale, weight)
+        pfStyled(size: size * contactsAccessibilityScale, weight: weight)
     }
     private let contactsAccent = Color(hex: 0x25D366)
 
