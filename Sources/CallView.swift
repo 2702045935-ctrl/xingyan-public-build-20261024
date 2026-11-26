@@ -237,7 +237,13 @@ struct CallView: View {
             .foregroundColor(.white)
             .padding(.horizontal, 12)
             .frame(height: 34)
-            .background(Capsule().fill(Color.black.opacity(0.55)))
+            .background {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .overlay(Capsule().fill(Color.black.opacity(0.28)))
+                    .overlay(Capsule().stroke(Color.white.opacity(0.22),
+                                               lineWidth: 0.7))
+            }
             .padding(.horizontal, 14)
             .padding(.top, 6)
             .contentShape(Rectangle())
@@ -266,40 +272,54 @@ struct CallView: View {
 
     private var avatarLayer: some View {
         VStack(spacing: 0) {
+            Spacer().frame(height: max(58, 176 - L.safeTop))
 
-            Spacer().frame(height: max(30, 132 - L.safeTop))
-            Avatar(path: call.peerAvatar, size: 70, radius: 10)
-            Text(call.peerName)
-                .font(pfExact(17, .medium))
-                .foregroundColor(.white)
-                .padding(.top, 12)
-            Text(statusText)
-                .font(pfExact(13.5))
-                .foregroundColor(.white.opacity(0.7))
-                .padding(.top, 5)
-                .opacity(call.phase == .outgoing ? 0 : 1)
-            if call.phase == .outgoing {
-
-                if let err = call.errorText, !err.isEmpty {
-                    Text(err)
-                        .font(pfExact(15, .medium))
-                        .foregroundColor(.white.opacity(0.9))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                        .padding(.top, 6)
-                } else {
-
-                    MarqueeText(text: "正在等待对方接受邀请…")
-                        .padding(.top, 6)
+            Avatar(path: call.peerAvatar, size: 112, radius: 56, circle: true)
+                .overlay {
+                    Circle()
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.44),
+                                    Color.white.opacity(0.08),
+                                    Color.black.opacity(0.20)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 0.9
+                        )
                 }
-            }
-            if !hintText.isEmpty {
-                Text(hintText)
-                    .font(pfExact(15))
-                    .foregroundColor(.white.opacity(0.55))
+                .shadow(color: .black.opacity(0.34), radius: 24, y: 10)
+
+            Text(call.peerName)
+                .font(pfExact(29, .semibold))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.76)
+                .padding(.top, 20)
+
+            Text(statusText)
+                .font(pfExact(15.5, .medium))
+                .foregroundColor(.white.opacity(0.66))
+                .padding(.top, 7)
+
+            if let err = call.errorText, !err.isEmpty, call.phase == .outgoing {
+                Text(err)
+                    .font(pfExact(14, .medium))
+                    .foregroundColor(Color(hex: 0xFFB4AB))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
-                    .padding(.top, 142)
+                    .padding(.top, 10)
+            }
+
+            if !hintText.isEmpty {
+                Text(hintText)
+                    .font(pfExact(14))
+                    .foregroundColor(.white.opacity(0.58))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                    .padding(.top, 28)
             }
             Spacer(minLength: 0)
         }
@@ -405,11 +425,17 @@ struct CallView: View {
     private func topPill(symbol: String, on: Bool, hint: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 18, weight: .medium))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(on ? .black : .white)
-                .frame(width: 30, height: 52)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(on ? Color.white : Color.black.opacity(0.28)))
+                .frame(width: 44, height: 44)
+                .background {
+                    ZStack {
+                        Circle().fill(.ultraThinMaterial)
+                        Circle().fill(on ? Color.white : Color.black.opacity(0.24))
+                        Circle().stroke(Color.white.opacity(0.34), lineWidth: 0.7)
+                    }
+                }
+                .shadow(color: .black.opacity(0.18), radius: 7, y: 3)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(hint))
@@ -426,13 +452,13 @@ struct CallView: View {
                 ForEach(call.roster) { m in
                     VStack(spacing: 6) {
                         ZStack {
-                            Avatar(path: m.avatar, size: 62, radius: 12)
+                            Avatar(path: m.avatar, size: 64, radius: 32, circle: true)
 
                             if speakOn(m) {
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(C.green, lineWidth: 2.5)
-                                    .frame(width: 68, height: 68)
-                                    .shadow(color: C.green.opacity(0.65), radius: 8)
+                                Circle()
+                                    .stroke(C.green.opacity(0.92), lineWidth: 2)
+                                    .frame(width: 72, height: 72)
+                                    .shadow(color: C.green.opacity(0.48), radius: 8)
                             }
                             if m.muted {
                                 Image(systemName: "mic.slash.fill")
@@ -467,17 +493,17 @@ struct CallView: View {
     private var statusText: String {
         if call.isGroupCall {
             switch call.phase {
-            case .incoming:   return "邀请你加入群语音通话…"
-            case .outgoing:   return "正在邀请群成员…"
-            case .connecting: return "正在接通…"
+            case .incoming:   return Tr("群组来电")
+            case .outgoing:   return Tr("正在呼叫…")
+            case .connecting: return Tr("正在接通…")
             case .active:     return timeText
             case .idle:       return ""
             }
         }
         switch call.phase {
-        case .incoming:   return call.isVideo ? "邀请你视频通话…" : "邀请你语音通话…"
-        case .outgoing:   return "正在等待对方接受邀请…"
-        case .connecting: return "正在接通…"
+        case .incoming:   return call.isVideo ? Tr("视频来电") : Tr("语音来电")
+        case .outgoing:   return Tr("正在呼叫…")
+        case .connecting: return Tr("正在接通…")
         case .active:     return timeText
         case .idle:       return ""
         }
@@ -503,64 +529,76 @@ struct CallView: View {
     private var bottomBar: some View {
         Group {
             if call.phase == .incoming {
-                VStack(spacing: 16) {
-                    HStack(spacing: 51) {
-                        roundKey(label: "拒绝", bg: Color(hex: 0xFA5151)) { call.reject() }
-                        roundKey(label: "接听", bg: Color(hex: 0x19A47A), ink: .white,
-                                 action: {
-                                     if call.isGroupCall { call.acceptGroupCall() } else { call.accept() }
-                                 }) {
-                            Image(systemName: "phone.fill")
-                                .font(.system(size: 27, weight: .medium))
+                VStack(spacing: 17) {
+                    HStack(spacing: 76) {
+                        systemCallAction(symbol: "phone.down.fill",
+                                         label: Tr("拒绝"),
+                                         tint: Color(hex: 0xFF453A)) {
+                            call.reject()
+                        }
+                        systemCallAction(symbol: "phone.fill",
+                                         label: Tr("接听"),
+                                         tint: Color(hex: 0x30D158)) {
+                            if call.isGroupCall { call.acceptGroupCall() } else { call.accept() }
                         }
                     }
 
                     Button { showReplies = true } label: {
                         Text(Tr("拒绝并回复"))
-                            .font(pf(14))
-                            .foregroundColor(.white.opacity(0.9))
-                            .padding(.horizontal, 16).frame(height: 34)
-                            .background(Capsule().fill(Color.white.opacity(0.16)))
+                            .font(pf(13.5, .medium))
+                            .foregroundColor(.white.opacity(0.88))
+                            .padding(.horizontal, 17)
+                            .frame(height: 34)
+                            .background {
+                                Capsule()
+                                    .fill(.ultraThinMaterial)
+                                    .overlay(Capsule().fill(Color.black.opacity(0.12)))
+                                    .overlay(Capsule().stroke(Color.white.opacity(0.28),
+                                                               lineWidth: 0.7))
+                            }
                     }
                     .buttonStyle(.plain)
 
                     if call.isVideo && !call.isGroupCall {
                         Button { call.accept(asAudio: true) } label: {
                             Text(Tr("语音接听"))
-                                .font(pf(15, .medium))
-                                .foregroundColor(.white.opacity(0.92))
-                                .padding(.horizontal, 18)
+                                .font(pf(13.5, .medium))
+                                .foregroundColor(.white.opacity(0.88))
+                                .padding(.horizontal, 17)
                                 .frame(height: 34)
-                                .background(Capsule().fill(Color.white.opacity(0.16)))
+                                .background {
+                                    Capsule()
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(Capsule().fill(Color.black.opacity(0.12)))
+                                        .overlay(Capsule().stroke(Color.white.opacity(0.28),
+                                                                   lineWidth: 0.7))
+                                }
                         }
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.bottom, 54)
+                .padding(.bottom, 46)
             } else if call.isVideo {
-
-                VStack(spacing: 16) {
-                    HStack(spacing: 0) {
+                VStack(spacing: 18) {
+                    HStack(spacing: 32) {
                         if call.phase == .active {
                             micKey
-                            Spacer(minLength: 0)
                             speakerKey
-                        } else {
-                            HStack(spacing: 0) {
-                                micKey
-                                Spacer(minLength: 0)
-                                flipKey
-                                Spacer(minLength: 0)
+                            if !call.isGroupCall {
                                 cameraKey
                             }
+                        } else {
+                            micKey
+                            flipKey
+                            cameraKey
                         }
                     }
-                    .padding(.horizontal, call.phase == .active ? 48 : 16)
+
                     hangupKey
+
                     if call.phase == .active && !call.isGroupCall {
                         Button { call.switchVideo() } label: { switchLabel }
                             .buttonStyle(.plain)
-                            .padding(.top, 10)
                     }
 
                     if call.phase == .active {
@@ -570,55 +608,64 @@ struct CallView: View {
                                 .foregroundColor(.white.opacity(0.9))
                                 .padding(.horizontal, 16)
                                 .frame(height: 32)
-                                .background(Capsule().fill(Color.white.opacity(call.blurBackground ? 0.34 : 0.16)))
+                                .background {
+                                    Capsule()
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(Capsule().fill(Color.white.opacity(
+                                            call.blurBackground ? 0.22 : 0.05
+                                        )))
+                                        .overlay(Capsule().stroke(Color.white.opacity(0.28),
+                                                                   lineWidth: 0.7))
+                                }
                         }
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.bottom, 40)
+                .padding(.bottom, 38)
             } else {
-                if call.phase == .active {
-
-                    VStack(spacing: 14) {
-                        HStack(spacing: 51) {
-                            micKey
-                            hangupKey
+                VStack(spacing: 18) {
+                    HStack(spacing: 42) {
+                        micKey
+                        if call.phase == .active {
                             speakerKey
                         }
-
-                        if !call.isGroupCall {
-                            Button { call.switchVideo() } label: { switchLabel }
-                                .buttonStyle(.plain)
-                        }
                     }
-                    .padding(.bottom, 54)
-                } else {
 
-                    HStack(spacing: 72) {
-                        micKey
-                        hangupKey
+                    hangupKey
+
+                    if call.phase == .active && !call.isGroupCall {
+                        Button { call.switchVideo() } label: { switchLabel }
+                            .buttonStyle(.plain)
                     }
-                    .padding(.bottom, 54)
                 }
+                .padding(.bottom, 46)
             }
         }
     }
 
     private var switchLabel: some View {
         Text(call.isVideo ? Tr("切换为语音通话") : Tr("切换为视频通话"))
-            .font(pf(14))
-            .foregroundColor(.white.opacity(0.9))
+            .font(pf(13.5, .medium))
+            .foregroundColor(.white.opacity(0.88))
             .padding(.horizontal, 16)
             .frame(height: 32)
-            .background(Capsule().fill(Color.white.opacity(0.16)))
+            .background {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .overlay(Capsule().fill(Color.black.opacity(0.12)))
+                    .overlay(Capsule().stroke(Color.white.opacity(0.26),
+                                               lineWidth: 0.7))
+            }
     }
 
     private var micKey: some View {
-        roundKey(key: call.muted ? "ui.callMicOff" : "ui.callMic",
-                 symbol: call.muted ? "mic.slash.fill" : "mic.fill",
-                 builtin: call.muted ? I.callMicOff : I.callMic,
-                 label: call.muted ? "麦克风已关" : "麦克风已开",
-                 engaged: call.muted) { call.toggleMute() }
+        systemControl(
+            symbol: call.muted ? "mic.slash.fill" : "mic.fill",
+            label: call.muted ? Tr("麦克风已关") : Tr("麦克风"),
+            engaged: call.muted
+        ) {
+            call.toggleMute()
+        }
     }
 
     private var micBanner: some View {
@@ -652,18 +699,30 @@ struct CallView: View {
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 10)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(Color(hex: 0xE08A10).opacity(0.95)))
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color(hex: 0xE08A10).opacity(0.24))
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.white.opacity(0.28), lineWidth: 0.7)
+                }
+        }
         .padding(.horizontal, 16)
         .padding(.bottom, 10)
     }
 
     private var speakerKey: some View {
-        roundKey(key: call.speakerOn ? "ui.callSpeaker" : "ui.callSpeakerOff",
-                 symbol: call.speakerOn ? "speaker.wave.2.fill" : "speaker.slash.fill",
-                 builtin: call.speakerOn ? I.callSpeaker : I.callSpeakerOff,
-                 label: call.speakerOn ? "扬声器已开" : "扬声器已关",
-                 engaged: call.speakerOn) { call.toggleSpeaker() }
+        systemControl(
+            symbol: call.speakerOn ? "speaker.wave.2.fill" : "speaker.slash.fill",
+            label: Tr("扬声器"),
+            engaged: call.speakerOn
+        ) {
+            call.toggleSpeaker()
+        }
 
             .onLongPressGesture(minimumDuration: 0.35) {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -673,93 +732,139 @@ struct CallView: View {
     }
 
     private var hangupKey: some View {
-        roundKey(label: call.phase == .active ? "挂断" : "取消",
-                 bg: Color(hex: 0xFA5151)) { call.hangup() }
+        systemCallAction(
+            symbol: "phone.down.fill",
+            label: call.phase == .active ? Tr("挂断") : Tr("取消"),
+            tint: Color(hex: 0xFF453A)
+        ) {
+            call.hangup()
+        }
     }
 
     private var flipKey: some View {
-        roundKey(label: "翻转",
-                 bg: Color.white.opacity(0.18),
-                 ink: .white,
-                 action: { call.flipCamera() }) {
-            Image(systemName: "arrow.triangle.2.circlepath.camera")
-                .font(.system(size: 26, weight: .medium))
+        systemControl(
+            symbol: "arrow.triangle.2.circlepath.camera",
+            label: Tr("翻转")
+        ) {
+            call.flipCamera()
         }
     }
 
     private var cameraKey: some View {
-        roundKey(label: call.cameraOff ? "摄像头已关" : "摄像头已开",
-                 bg: call.cameraOff ? Color.white : Color.white.opacity(0.18),
-                 ink: call.cameraOff ? .black : .white,
-                 action: { call.toggleCamera() }) {
-            Image(systemName: call.cameraOff ? "video.slash.fill" : "video.fill")
-                .font(.system(size: 26, weight: .medium))
+        systemControl(
+            symbol: call.cameraOff ? "video.slash.fill" : "video.fill",
+            label: Tr("摄像头"),
+            engaged: call.cameraOff
+        ) {
+            call.toggleCamera()
         }
     }
 
-    private func roundKey(key: String, symbol: String, builtin: String,
-                          label: String, engaged: Bool,
-                          action: @escaping () -> Void) -> some View {
-        let ink: Color = engaged ? .black : .white
-        return
-        roundKey(label: label,
-                 bg: engaged ? Color.white : Color.white.opacity(0.18),
-                 ink: ink,
-                 action: action) {
-            CallIcon(key: key, symbol: symbol, builtin: builtin, size: 30, color: ink)
-        }
-    }
-
-    private func roundKey(label: String, bg: Color,
-                          action: @escaping () -> Void) -> some View {
-        roundKey(label: label, bg: bg, ink: .white, action: action) {
-            CallIcon(key: "ui.callHangup", symbol: "phone.down.fill", builtin: I.callHangup, size: 72)
-        }
-    }
-
-    private func roundKey<Icon: View>(label: String, bg: Color, ink: Color,
-                                      action: @escaping () -> Void,
-                                      @ViewBuilder icon: () -> Icon) -> some View {
-        VStack(spacing: 14) {
+    private func systemControl(symbol: String, label: String,
+                               engaged: Bool = false,
+                               action: @escaping () -> Void) -> some View {
+        VStack(spacing: 9) {
             Button(action: action) {
-                icon()
-                    .foregroundColor(ink)
-                    .frame(width: 72, height: 72)
-                    .background(Circle().fill(bg))
+                Image(systemName: symbol)
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundColor(engaged ? .black : .white)
+                    .frame(width: 64, height: 64)
+                    .background {
+                        ZStack {
+                            Circle().fill(.ultraThinMaterial)
+                            Circle().fill(engaged
+                                          ? Color.white
+                                          : Color.black.opacity(0.22))
+                            Circle().stroke(Color.white.opacity(0.34),
+                                            lineWidth: 0.7)
+                        }
+                    }
+                    .shadow(color: .black.opacity(0.18), radius: 9, y: 4)
+                    .contentShape(Circle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(label)
+
             Text(label)
-                .font(pfExact(14))
-                .foregroundColor(.white.opacity(0.92))
+                .font(pfExact(12.5, .medium))
+                .foregroundColor(.white.opacity(0.76))
+                .lineLimit(1)
+        }
+    }
+
+    private func systemCallAction(symbol: String, label: String,
+                                  tint: Color,
+                                  action: @escaping () -> Void) -> some View {
+        VStack(spacing: 10) {
+            Button(action: action) {
+                Image(systemName: symbol)
+                    .font(.system(size: 25, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 72, height: 72)
+                    .background {
+                        Circle().fill(
+                            LinearGradient(
+                                colors: [tint.opacity(0.96), tint.opacity(0.80)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .overlay(Circle().fill(Color.white.opacity(0.08)))
+                        .overlay(Circle().stroke(Color.white.opacity(0.24),
+                                                 lineWidth: 0.8))
+                    }
+                    .shadow(color: tint.opacity(0.32), radius: 13, y: 6)
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(label)
+
+            Text(label)
+                .font(pfExact(12.5, .medium))
+                .foregroundColor(.white.opacity(0.78))
         }
     }
 
     private var topBar: some View {
-        HStack {
+        HStack(spacing: 10) {
             Button {
                 call.minimize()
             } label: {
-                CallIcon(key: "ui.callMinimize", symbol: "rectangle.inset.bottomright.filled",
-                         builtin: I.callMinimize, size: 20)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+                Image(systemName: "rectangle.inset.bottomright.filled")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 42, height: 42)
+                    .background { callTopGlass }
             }
             .buttonStyle(.plain)
-            .padding(.leading, 16)
+            .padding(.leading, 14)
+            .accessibilityLabel(Tr("最小化通话"))
 
             Spacer()
 
             Button {
                 showInvite = true
             } label: {
-                CallIcon(key: "ui.callAdd", symbol: "plus", builtin: I.callAdd, size: 17)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+                Image(systemName: "person.badge.plus")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 42, height: 42)
+                    .background { callTopGlass }
             }
             .buttonStyle(.plain)
-            .padding(.trailing, 6)
+            .padding(.trailing, 14)
+            .accessibilityLabel(Tr("邀请好友加入通话"))
         }
-        .padding(.top, 19)
+        .padding(.top, 16)
+    }
+
+    private var callTopGlass: some View {
+        ZStack {
+            Circle().fill(.ultraThinMaterial)
+            Circle().fill(Color.black.opacity(0.22))
+            Circle().stroke(Color.white.opacity(0.32), lineWidth: 0.7)
+        }
+        .shadow(color: .black.opacity(0.18), radius: 7, y: 3)
     }
 
     private var miniBarOld: some View {
