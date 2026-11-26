@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CARDS = (ROOT / "Sources" / "CardsView.swift").read_text(encoding="utf-8")
 PAY = (ROOT / "Sources" / "PaymentUI.swift").read_text(encoding="utf-8")
 PAY_SHEET = (ROOT / "Sources" / "XingyanPay.swift").read_text(encoding="utf-8")
+WALLET = (ROOT / "Sources" / "WalletView.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -39,6 +40,14 @@ require(
     and "Color.dyn(0x000000, 0xFFFFFF)" in PAY
     and "Color.dyn(0xFFFFFF, 0x000000)" in PAY,
     "Star Pay home must use Apple Wallet's high-contrast compact pay action",
+)
+require(
+    "private var walletHero: some View" in WALLET
+    and "StarPayPhysicalCardSurface(radius: 22)" in WALLET
+    and 'PaySectionLabel(text: walletGroupTitle(index))' in WALLET
+    and "private func walletGroupTitle(_ index: Int) -> String" in WALLET
+    and 'Text(Tr("可用余额"))' in WALLET,
+    "wallet home must present the preserved payment card above clearly grouped Apple Pay account sections",
 )
 require(
     "private var appleWalletHeader" in PAY

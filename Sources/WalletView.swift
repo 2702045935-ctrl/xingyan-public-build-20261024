@@ -93,8 +93,18 @@ struct WalletView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    ForEach(groups) { g in
-                        card(g).padding(.top, g.id == groups.first?.id ? 0 : 18)
+
+                    walletHero
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 20)
+
+                    ForEach(Array(groups.enumerated()), id: \.element.id) { index, g in
+                        VStack(alignment: .leading, spacing: 9) {
+                            PaySectionLabel(text: walletGroupTitle(index))
+                            card(g)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, index == 0 ? 0 : 18)
                     }
                     Color.clear.frame(height: 24)
                 }
@@ -136,9 +146,82 @@ struct WalletView: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
         .background(PayVisual.card)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private var walletHero: some View {
+        Button {
+            run("balance", Tr("零钱"))
+        } label: {
+            ZStack(alignment: .topLeading) {
+                StarPayPhysicalCardSurface(radius: 22)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 8) {
+                        Text("星")
+                            .font(pf(13, .bold))
+                            .foregroundColor(Color(hex: 0x2D2417))
+                            .frame(width: 25, height: 25)
+                            .background(
+                                Circle().fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color(hex: 0xFFE7B0),
+                                            Color(hex: 0xD9A94A)
+                                        ],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                            )
+                        Text(XYPay.cardLine)
+                            .font(pf(14, .medium))
+                            .foregroundColor(.white.opacity(0.92))
+                        Spacer(minLength: 0)
+                        StarPayChip(width: 32)
+                        Image(systemName: "wave.3.right")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white.opacity(0.62))
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Text(Tr("可用余额"))
+                        .font(pf(11.5, .medium))
+                        .foregroundColor(.white.opacity(0.58))
+
+                    Text(moneyFmt(app.me?.balance ?? 0))
+                        .font(pfMoney(34, .semibold))
+                        .foregroundColor(.white)
+                        .minimumScaleFactor(0.72)
+                        .lineLimit(1)
+                        .padding(.top, 3)
+
+                    HStack {
+                        Text(app.me?.nickname ?? app.me?.username ?? "")
+                            .font(pf(11.5))
+                            .foregroundColor(.white.opacity(0.64))
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        Text("•••• " + XYPay.tail(app.me?.id ?? "xingyan"))
+                            .font(pf(11.5, .medium))
+                            .foregroundColor(.white.opacity(0.58))
+                    }
+                    .padding(.top, 12)
+                }
+                .padding(18)
+            }
+            .frame(height: 188)
+            .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func walletGroupTitle(_ index: Int) -> String {
+        if index == 0 { return Tr("账户") }
+        if index == 1 { return Tr("服务") }
+        return Tr("更多")
     }
 
     private func row(_ it: WalletItem) -> some View {
@@ -184,7 +267,7 @@ struct WalletView: View {
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundColor(PayVisual.secondaryInk.opacity(0.55))
             }
-            .padding(.horizontal, 2)
+            .padding(.horizontal, 16)
             .frame(height: max(56, min(64, s.row)))
             .contentShape(Rectangle())
         }

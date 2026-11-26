@@ -1647,6 +1647,7 @@ enum L10n {
         "呼出": "Outgoing",
         "呼入": "Incoming",
         "重拨": "Call again",
+        "账户": "Accounts",
         "群组来电": "Group call",
         "正在呼叫…": "Calling…",
         "视频来电": "Video call",
