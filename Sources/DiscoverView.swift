@@ -190,7 +190,14 @@ private enum WorldVisual {
     static var scanInk: Color { social[1] }
     static var chevronInk: Color { Color.dyn(0xA2A2A7, 0x6E6E73) }
 
-    static func colors(for action: String?, label: String = "") -> [Color] {
+    static func colors(for color: String?,
+                       action: String?,
+                       label: String = "") -> [Color] {
+        if let raw = color?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !raw.isEmpty {
+            let custom = Color(hexString: raw, fallback: 0x4A90D9)
+            return [custom, custom.opacity(0.82)]
+        }
         let key = (action ?? "").lowercased()
         let title = label.lowercased()
         if ["shop", "mall", "order", "payment"].contains(where: {
@@ -504,7 +511,11 @@ struct DiscoverView: View {
     }
 
     private func worldFlatRow(_ item: DiscoverItem) -> some View {
-        let colors = WorldVisual.colors(for: item.action, label: item.label)
+        let colors = WorldVisual.colors(
+            for: item.color,
+            action: item.action,
+            label: item.label
+        )
         let artwork = worldArtworkPath(item)
 
         return Button {
