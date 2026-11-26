@@ -5321,9 +5321,13 @@ private struct StarredPayload: Decodable {
     }
 
     func favorites() async -> [[String: Any]] {
+        await favoritesResult() ?? []
+    }
+
+    func favoritesResult() async -> [[String: Any]]? {
         guard let any = try? await request("GET", "/api/favorites"),
               let dict = any as? [String: Any],
-              let list = dict["favorites"] as? [[String: Any]] else { return [] }
+              let list = dict["favorites"] as? [[String: Any]] else { return nil }
         return list
     }
 

@@ -224,48 +224,50 @@ struct ChatThemePickerView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
+            List {
+                Section {
                     themePreview(selected)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(Tr("选择主题"))
-                            .font(.title3.weight(.semibold))
-                        Text(Tr("选择主题后，聊天背景会恢复为该主题的默认背景，同时改变上下遮罩、收发气泡和输入区。"))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    VStack(spacing: 0) {
-                        ForEach(Array(ChatAppearancePreset.allCases.enumerated()), id: \.element.id) { index, preset in
-                            Button {
-                                withAnimation(.easeOut(duration: 0.18)) {
-                                    previewPreset = preset
-                                    store.set(preset, chatId: chatId)
-                                }
-                                UISelectionFeedbackGenerator().selectionChanged()
-                            } label: {
-                                themeRow(preset, isSelected: selected == preset)
+                Section {
+                    ForEach(Array(ChatAppearancePreset.allCases.enumerated()),
+                            id: \.element.id) { index, preset in
+                        Button {
+                            withAnimation(.easeOut(duration: 0.18)) {
+                                previewPreset = preset
+                                store.set(preset, chatId: chatId)
                             }
-                            .buttonStyle(.plain)
+                            UISelectionFeedbackGenerator().selectionChanged()
+                        } label: {
+                            themeRow(preset, isSelected: selected == preset)
+                        }
+                        .buttonStyle(.plain)
 
-                            if index < ChatAppearancePreset.allCases.count - 1 {
-                                Divider().padding(.leading, 72)
-                            }
+                        if index < ChatAppearancePreset.allCases.count - 1 {
+                            Divider().padding(.leading, 74)
                         }
                     }
-                    .background(Color(uiColor: .secondarySystemGroupedBackground),
-                                in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(Color.primary.opacity(0.06), lineWidth: 0.6)
-                    }
+                } header: {
+                    Text(Tr("主题"))
+                } footer: {
+                    Text(Tr("选择主题后，聊天背景会恢复为该主题的默认背景，同时改变上下遮罩、收发气泡和输入区。"))
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 12)
-                .padding(.bottom, max(24, L.safeBottom + 12))
+
+                Section {
+                    Label(
+                        Tr("主题会跟随系统深浅色自动调整。"),
+                        systemImage: "circle.lefthalf.filled"
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                }
             }
-            .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle(Tr("聊天主题"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -422,18 +424,14 @@ struct ChatThemePickerView: View {
             }
             .padding(18)
         }
-        .frame(width: 214, height: 408)
-        .overlay(alignment: .top) {
-            Capsule()
-                .fill(Color.black.opacity(0.88))
-                .frame(width: 66, height: 18)
-                .padding(.top, 8)
-        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 214)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(Color.black.opacity(0.82), lineWidth: 5)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 0.6)
         }
-        .shadow(color: Color.black.opacity(0.10), radius: 18, y: 8)
+        .shadow(color: Color.black.opacity(0.06), radius: 10, y: 4)
     }
 
     private func themeRow(_ preset: ChatAppearancePreset,
@@ -493,15 +491,15 @@ struct ChatThemePickerView: View {
                 }
                 .padding(6)
             }
-            .frame(width: 54, height: 86)
-            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .frame(width: 50, height: 68)
+            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .stroke(
                         isSelected
                             ? Color.accentColor.opacity(0.82)
-                            : Color.black.opacity(0.72),
-                        lineWidth: isSelected ? 2 : 1.8
+                            : Color.primary.opacity(0.13),
+                        lineWidth: isSelected ? 1.6 : 0.6
                     )
             }
             .shadow(
@@ -526,7 +524,7 @@ struct ChatThemePickerView: View {
                 .foregroundStyle(isSelected ? Color.accentColor : Color.secondary.opacity(0.35))
         }
         .padding(.horizontal, 14)
-        .frame(minHeight: 96)
+        .frame(minHeight: 78)
         .contentShape(Rectangle())
     }
 }

@@ -159,12 +159,12 @@ struct FavoritesView: View {
             .padding(.vertical, 28)
         } else if shown.isEmpty {
             VStack(spacing: 9) {
-                Image(systemName: "tray")
+                Image(systemName: "star")
                     .font(.system(size: 30))
                     .foregroundStyle(.secondary)
-                Text(Tr("暂无备忘录"))
+                Text(Tr("暂无收藏"))
                     .font(pfStyled(size: 17, weight: .semibold))
-                Text(Tr("聊天里收藏的内容和你写的备忘录会出现在这里"))
+                Text(Tr("聊天里收藏的内容会出现在这里"))
                     .font(pfStyled(size: 15))
                     .foregroundStyle(.secondary)
             }
@@ -212,7 +212,7 @@ struct FavoritesView: View {
             favoriteListContent
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(Tr("备忘录"))
+        .navigationTitle(Tr("收藏"))
         .navigationBarTitleDisplayMode(.large)
         .searchable(text: $q, placement: .navigationBarDrawer(displayMode: .always),
                     prompt: Text(Tr("搜索")))

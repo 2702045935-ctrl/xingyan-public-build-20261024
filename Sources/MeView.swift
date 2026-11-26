@@ -263,7 +263,7 @@ struct MeView: View {
                 } else if key == "service" {
                     ServiceView()
                 } else if key == "favorites" {
-                    FavoritesView()
+                    NotesWorkspaceView()
                 } else if key == "stickers" {
                     StickerView()
                 } else if key == "works" {
