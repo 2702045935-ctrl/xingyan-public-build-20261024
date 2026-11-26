@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
+KERNEL = (ROOT / "Sources" / "ChatUnreadKernel.swift").read_text(encoding="utf-8")
 API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
 SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
 
@@ -50,15 +51,15 @@ require(
     "realtime chat changes must preserve the server total and apply only their own delta",
 )
 require(
-    "for c in chats where c.muted != true && c.botRank != 0" in APP
+    "guard chat.muted != true, chat.botRank != 0 else { return total }" in KERNEL
     and "if (Number(c.botRank) === 0) return;" in SERVER,
     "hidden assistant chats must not create a badge without a visible row",
 )
 require(
     "private var locallyHiddenUnread: [String: Int] = [:]" in APP
     and "locallyHiddenUnread[chatId] = hidden?.muted == true" in APP
-    and "let hiddenUnread = locallyHiddenUnread.values.reduce(0, +)" in APP
-    and "authoritativeUnreadTotal - hiddenUnread" in APP,
+    and "locallyHiddenUnread: locallyHiddenUnread.values.reduce(0, +)" in APP
+    and "authoritativeTotal - max(0, locallyHiddenUnread)" in KERNEL,
     "locally hidden conversations must not leave an untraceable badge count",
 )
 require(
