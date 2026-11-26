@@ -11,10 +11,43 @@ private enum NativeChatCellIdentifier {
     static let hostingRow = "NativeChatHostingCell"
 }
 
-private func nativeChatSwipeText(_ zh: String, _ en: String, _ ru: String) -> String {
+func nativeChatSwipeText(_ zh: String, _ en: String, _ ru: String) -> String {
     if Lang.isRussian { return ru }
     if Lang.isEnglish { return en }
     return zh
+}
+
+func presentNativeChatDeleteConfirmation(from view: UIView?,
+                                         onConfirm: @escaping () -> Void) {
+    guard let view,
+          var presenter = view.window?.rootViewController else { return }
+    while let presented = presenter.presentedViewController {
+        presenter = presented
+    }
+    let alert = UIAlertController(
+        title: nativeChatSwipeText(
+            "删除这个会话？",
+            "Delete this conversation?",
+            "Удалить этот чат?"
+        ),
+        message: nativeChatSwipeText(
+            "删除后，这个会话会从你的列表中移除。",
+            "This conversation will be removed from your chat list.",
+            "Этот чат будет удален из вашего списка."
+        ),
+        preferredStyle: .alert
+    )
+    alert.addAction(UIAlertAction(
+        title: nativeChatSwipeText("取消", "Cancel", "Отмена"),
+        style: .cancel
+    ))
+    alert.addAction(UIAlertAction(
+        title: nativeChatSwipeText("确认删除", "Delete", "Удалить"),
+        style: .destructive
+    ) { _ in
+        onConfirm()
+    })
+    presenter.present(alert, animated: true)
 }
 
 /// 会话页使用 UITableView 的系统 edit action。UITableView 的滑动识别比
@@ -22,20 +55,25 @@ private func nativeChatSwipeText(_ zh: String, _ en: String, _ ru: String) -> St
 struct NativeChatList<Item: Identifiable & Equatable, Row: View>: UIViewControllerRepresentable
 where Item.ID: Hashable {
     let items: [Item]
+    let revision: Int
+    let dark: Bool
     let height: (Item) -> CGFloat
     let nativeRow: ((Item) -> NativeChatRowConfiguration?)?
     let onScrollStateChange: (Bool) -> Void
     let onOffsetChange: (CGFloat) -> Void
     let onZoneChange: (Int) -> Void
+    let onApproachingStart: () -> Void
     let onApproachingEnd: () -> Void
     let onRefresh: () -> Void
     let allowInsertionDuringScroll: Bool
     @ViewBuilder let row: (Item) -> Row
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onScrollStateChange: onScrollStateChange,
+        Coordinator(dark: dark,
+                    onScrollStateChange: onScrollStateChange,
                     onOffsetChange: onOffsetChange,
                     onZoneChange: onZoneChange,
+                    onApproachingStart: onApproachingStart,
                     onApproachingEnd: onApproachingEnd,
                     onRefresh: onRefresh,
                     allowInsertionDuringScroll: allowInsertionDuringScroll,
@@ -49,6 +87,8 @@ where Item.ID: Hashable {
         controller.view.backgroundColor = .clear
         let table = controller.tableView!
         table.backgroundColor = .clear
+        table.overrideUserInterfaceStyle = dark ? .dark : .light
+        table.alpha = 0
         table.separatorStyle = .none
         table.rowHeight = UITableView.automaticDimension
         table.estimatedRowHeight = 72
@@ -58,19 +98,21 @@ where Item.ID: Hashable {
         table.contentInsetAdjustmentBehavior = .never
         table.keyboardDismissMode = .interactive
         table.delaysContentTouches = false
-        table.overrideUserInterfaceStyle = dark ? .dark : .light
         table.canCancelContentTouches = true
         table.scrollsToTop = true
+        table.panGestureRecognizer.delaysTouchesBegan = false
+        table.panGestureRecognizer.maximumNumberOfTouches = 1
         table.allowsSelection = true
         table.allowsMultipleSelection = false
         table.sectionHeaderTopPadding = 0
         if #available(iOS 26.0, *) {
             table.topEdgeEffect.style = .hard
-            table.topEdgeEffect.isHidden = false
+            table.topEdgeEffect.isHidden = true
             table.bottomEdgeEffect.isHidden = true
         }
         NativeChatListScrollRegistry.shared.chats = table
         table.delegate = context.coordinator
+        table.prefetchDataSource = context.coordinator
         table.register(NativeChatRowCell.self,
                        forCellReuseIdentifier: NativeChatCellIdentifier.nativeRow)
         table.register(UITableViewCell.self,
@@ -108,6 +150,7 @@ where Item.ID: Hashable {
         }
         context.coordinator.dataSource = dataSource
         context.coordinator.table = table
+        context.coordinator.itemsRevision = revision
         context.coordinator.apply(items, animated: false)
 
         let refresh = UIRefreshControl()
@@ -120,36 +163,47 @@ where Item.ID: Hashable {
 
     func updateUIViewController(_ controller: UITableViewController,
                                 context: Context) {
-        let style: UIUserInterfaceStyle = dark ? .dark : .light
-        if controller.tableView.overrideUserInterfaceStyle != style {
-            let offset = controller.tableView.contentOffset
-            UIView.performWithoutAnimation {
-                controller.tableView.overrideUserInterfaceStyle = dark ? .dark : .light
-                controller.tableView.reloadData()
-                controller.tableView.layoutIfNeeded()
-                controller.tableView.setContentOffset(offset, animated: false)
-            }
-        }
         context.coordinator.row = row
         context.coordinator.height = height
         context.coordinator.nativeRow = nativeRow
+        controller.tableView.overrideUserInterfaceStyle = dark ? .dark : .light
+        if context.coordinator.dark != dark {
+            context.coordinator.dark = dark
+            UIView.performWithoutAnimation {
+                context.coordinator.refreshVisibleRowsAfterThemeChange()
+            }
+        }
+        if context.coordinator.itemsRevision != revision {
+            context.coordinator.itemsRevision = revision
+            context.coordinator.apply(items, animated: false)
+        }
         context.coordinator.onScrollStateChange = onScrollStateChange
         context.coordinator.onOffsetChange = onOffsetChange
         context.coordinator.onZoneChange = onZoneChange
+        context.coordinator.onApproachingStart = onApproachingStart
         context.coordinator.onApproachingEnd = onApproachingEnd
         context.coordinator.onRefresh = onRefresh
         context.coordinator.allowInsertionDuringScroll = allowInsertionDuringScroll
-        context.coordinator.apply(items, animated: false)
+        if #available(iOS 26.0, *) {
+            controller.tableView.topEdgeEffect.style = .hard
+            controller.tableView.topEdgeEffect.isHidden = true
+            controller.tableView.bottomEdgeEffect.isHidden = true
+        }
     }
 
-    final class Coordinator: NSObject, UITableViewDelegate {
+    final class Coordinator: NSObject,
+                             UITableViewDelegate,
+                             UITableViewDataSourcePrefetching {
+        var dark: Bool
         var lookup: [Item.ID: Item] = [:]
         var row: (Item) -> Row
         var height: (Item) -> CGFloat
         var nativeRow: ((Item) -> NativeChatRowConfiguration?)?
+        var itemsRevision = -1
         var onScrollStateChange: (Bool) -> Void
         var onOffsetChange: (CGFloat) -> Void
         var onZoneChange: (Int) -> Void
+        var onApproachingStart: () -> Void
         var onApproachingEnd: () -> Void
         var onRefresh: () -> Void
         var allowInsertionDuringScroll: Bool
@@ -160,24 +214,31 @@ where Item.ID: Hashable {
         private var pendingZone = 0
         private var zoneFlushScheduled = false
         private var lastScrollActive = false
+        private var lastReportedOffsetY = CGFloat.greatestFiniteMagnitude
         private var pendingItems: [Item]?
         private var applyGeneration = 0
         private var endRequestInFlight = false
+        private var startRequestInFlight = false
         private var appliedItemCount = 0
+        private var hasCompletedInitialApply = false
         private var layoutObservers: [NSObjectProtocol] = []
 
-        init(onScrollStateChange: @escaping (Bool) -> Void,
+        init(dark: Bool,
+             onScrollStateChange: @escaping (Bool) -> Void,
              onOffsetChange: @escaping (CGFloat) -> Void,
              onZoneChange: @escaping (Int) -> Void,
+             onApproachingStart: @escaping () -> Void,
              onApproachingEnd: @escaping () -> Void,
              onRefresh: @escaping () -> Void,
              allowInsertionDuringScroll: Bool,
              height: @escaping (Item) -> CGFloat,
              nativeRow: ((Item) -> NativeChatRowConfiguration?)?,
              row: @escaping (Item) -> Row) {
+            self.dark = dark
             self.onScrollStateChange = onScrollStateChange
             self.onOffsetChange = onOffsetChange
             self.onZoneChange = onZoneChange
+            self.onApproachingStart = onApproachingStart
             self.onApproachingEnd = onApproachingEnd
             self.onRefresh = onRefresh
             self.allowInsertionDuringScroll = allowInsertionDuringScroll
@@ -196,6 +257,13 @@ where Item.ID: Hashable {
                     self?.refreshMetrics()
                 })
             }
+            layoutObservers.append(center.addObserver(
+                forName: UIApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.refreshAfterForeground()
+            })
         }
 
         deinit {
@@ -203,64 +271,115 @@ where Item.ID: Hashable {
             layoutObservers.forEach { center.removeObserver($0) }
         }
 
+        private func refreshAfterForeground() {
+            guard let table, let dataSource else { return }
+            DispatchQueue.main.async { [weak self, weak table] in
+                guard let self, let table, self.table === table else { return }
+                self.flushPendingItems()
+                table.layoutIfNeeded()
+                let previousOffset = table.contentOffset
+                let visible = table.indexPathsForVisibleRows ?? []
+                var snapshot = dataSource.snapshot()
+                let ids = visible.isEmpty
+                    ? snapshot.itemIdentifiers
+                    : visible.compactMap { dataSource.itemIdentifier(for: $0) }
+                guard !ids.isEmpty else { return }
+                snapshot.reloadItems(ids)
+                dataSource.apply(snapshot, animatingDifferences: false) {
+                    table.layoutIfNeeded()
+                    table.setContentOffset(previousOffset, animated: false)
+                }
+            }
+        }
+
         func apply(_ next: [Item], animated: Bool) {
             guard let dataSource, let table else { return }
+            var next = next
+            let nextIDs = next.map(\.id)
+            if Set(nextIDs).count != nextIDs.count {
+                var seen = Set<Item.ID>()
+                next = next.filter { seen.insert($0.id).inserted }
+            }
+            let isScrolling = table.isDragging || table.isTracking || table.isDecelerating
+            if !order.isEmpty, isScrolling {
+                let oldCount = order.count
+                let sameBoundaries = next.count >= oldCount
+                    && next.first?.id == order.first
+                    && next[oldCount - 1].id == order[oldCount - 1]
+                if allowInsertionDuringScroll,
+                   next.count == oldCount,
+                   prependWindowDuringScroll(next) {
+                    return
+                }
+                if allowInsertionDuringScroll,
+                   next.count == oldCount,
+                   slideWindowDuringScroll(next) {
+                    return
+                }
+                if next.count == oldCount {
+                    /* 滚动期间不为未变化的 13k+ 行做全量相等比较。
+                       可见行状态变化在手指停止后统一 flush。 */
+                    pendingItems = next
+                    return
+                }
+                if allowInsertionDuringScroll,
+                   next.count > oldCount,
+                   sameBoundaries,
+                   appendPureTail(next, from: oldCount, keepPending: true) {
+                    return
+                }
+                pendingItems = next
+                return
+            }
             let nextOrder = next.map(\.id)
             let isPureAppend = !order.isEmpty
                 && next.count > order.count
                 && next.prefix(order.count).allSatisfy { lookup[$0.id] == $0 }
-            if !order.isEmpty,
-               table.isDragging || table.isTracking || table.isDecelerating {
-                let unchanged = nextOrder == order
-                    && next.allSatisfy { lookup[$0.id] == $0 }
-                if !unchanged,
-                   !(allowInsertionDuringScroll && isPureAppend) {
-                    pendingItems = next
-                    return
-                }
-            }
             if isPureAppend {
-                let added = Array(next[order.count...])
-                let addedIDs = added.map(\.id)
-                let previousOffset = table.contentOffset
-                for item in added { lookup[item.id] = item }
-                order.append(contentsOf: addedIDs)
-                appliedItemCount = order.count
-                endRequestInFlight = false
-                pendingItems = nil
-                applyGeneration += 1
-                let generation = applyGeneration
-                var snapshot = dataSource.snapshot()
-                snapshot.appendItems(addedIDs, toSection: 0)
-                dataSource.apply(snapshot, animatingDifferences: false) {
-                    guard generation == self.applyGeneration,
-                          self.table === table,
-                          !table.isTracking,
-                          !table.isDragging,
-                          !table.isDecelerating else { return }
-                    table.layoutIfNeeded()
-                    let minimumY = -table.adjustedContentInset.top
-                    let maximumY = max(
-                        minimumY,
-                        table.contentSize.height - table.bounds.height
-                            + table.adjustedContentInset.bottom
-                    )
-                    var target = previousOffset
-                    target.y = min(max(target.y, minimumY), maximumY)
-                    table.setContentOffset(target, animated: false)
-                }
+                _ = appendPureTail(next, from: order.count, keepPending: false)
                 return
             }
-            let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
+            let nextLookup = Dictionary(
+                next.map { ($0.id, $0) },
+                uniquingKeysWith: { _, latest in latest }
+            )
             if nextOrder == order && next.allSatisfy({ lookup[$0.id] == $0 }) {
                 pendingItems = nil
                 return
+            }
+            var commonPrefix = 0
+            while commonPrefix < order.count,
+                  commonPrefix < nextOrder.count,
+                  order[commonPrefix] == nextOrder[commonPrefix] {
+                commonPrefix += 1
+            }
+            let offsetAdjustment: CGFloat
+            if commonPrefix < order.count,
+               commonPrefix < nextOrder.count,
+               let oldIDPosition = nextOrder.firstIndex(of: order[commonPrefix]),
+               oldIDPosition > commonPrefix {
+                offsetAdjustment = nextOrder[commonPrefix..<oldIDPosition].reduce(CGFloat(0)) {
+                    partial, id in
+                    partial + (nextLookup[id].map { height($0) } ?? 0)
+                }
+            } else if commonPrefix < order.count,
+                      commonPrefix < nextOrder.count,
+                      let newIDPosition = order.firstIndex(of: nextOrder[commonPrefix]),
+                      newIDPosition > commonPrefix {
+                offsetAdjustment = -order[commonPrefix..<newIDPosition].reduce(CGFloat(0)) {
+                    partial, id in
+                    partial + (lookup[id].map { height($0) } ?? 0)
+                }
+            } else {
+                offsetAdjustment = 0
             }
             let reload = next.compactMap { item -> Item.ID? in
                 guard let old = lookup[item.id] else { return nil }
                 return old == item ? nil : item.id
             }
             let previousOffset = table.contentOffset
+            let minimumYBeforeApply = -table.adjustedContentInset.top
+            let keepsTopAnchor = previousOffset.y <= minimumYBeforeApply + 2
             applyGeneration += 1
             let generation = applyGeneration
             lookup = nextLookup
@@ -272,18 +391,19 @@ where Item.ID: Hashable {
                 snapshot.reloadItems(reload)
             }
             order = nextOrder
-            if appliedItemCount != nextOrder.count {
-                appliedItemCount = nextOrder.count
-                endRequestInFlight = false
-            }
+            appliedItemCount = nextOrder.count
+            endRequestInFlight = false
             pendingItems = nil
-            dataSource.apply(snapshot, animatingDifferences: animated) {
+            dataSource.apply(snapshot, animatingDifferences: animated) { [weak self, weak table] in
+                guard let self, let table else { return }
                 guard generation == self.applyGeneration,
-                      self.table === table,
-                      !table.isTracking,
+                      self.table === table else { return }
+                table.layoutIfNeeded()
+                self.revealInitialTableIfNeeded(table)
+                self.prefetchEndRunwayIfNeeded(table)
+                guard !table.isTracking,
                       !table.isDragging,
                       !table.isDecelerating else { return }
-                table.layoutIfNeeded()
                 let minimumY = -table.adjustedContentInset.top
                 let maximumY = max(
                     minimumY,
@@ -291,8 +411,178 @@ where Item.ID: Hashable {
                         + table.adjustedContentInset.bottom
                 )
                 var target = previousOffset
+                target.y += offsetAdjustment
+                if keepsTopAnchor { target.y = minimumY }
                 target.y = min(max(target.y, minimumY), maximumY)
                 table.setContentOffset(target, animated: false)
+            }
+        }
+
+        @discardableResult
+        private func appendPureTail(_ next: [Item],
+                                    from start: Int,
+                                    keepPending: Bool) -> Bool {
+            guard start >= 0, start < next.count,
+                  let dataSource, let table else { return false }
+            let added = Array(next[start...])
+            let addedIDs = added.map(\.id)
+            let previousOffset = table.contentOffset
+            let minimumYBeforeApply = -table.adjustedContentInset.top
+            let keepsTopAnchor = previousOffset.y <= minimumYBeforeApply + 2
+            for item in added { lookup[item.id] = item }
+            order.append(contentsOf: addedIDs)
+            appliedItemCount = order.count
+            endRequestInFlight = false
+            pendingItems = keepPending ? next : nil
+            applyGeneration += 1
+            let generation = applyGeneration
+            var snapshot = dataSource.snapshot()
+            snapshot.appendItems(addedIDs, toSection: 0)
+            dataSource.apply(snapshot, animatingDifferences: false) { [weak self, weak table] in
+                guard let self, let table else { return }
+                guard generation == self.applyGeneration,
+                      self.table === table else { return }
+                table.layoutIfNeeded()
+                self.revealInitialTableIfNeeded(table)
+                self.prefetchEndRunwayIfNeeded(table)
+                guard !table.isTracking,
+                      !table.isDragging,
+                      !table.isDecelerating else { return }
+                let minimumY = -table.adjustedContentInset.top
+                let maximumY = max(
+                    minimumY,
+                    table.contentSize.height - table.bounds.height
+                        + table.adjustedContentInset.bottom
+                )
+                var target = previousOffset
+                target.y = keepsTopAnchor ? minimumY : previousOffset.y
+                target.y = min(max(target.y, minimumY), maximumY)
+                table.setContentOffset(target, animated: false)
+            }
+            return true
+        }
+
+        @discardableResult
+        private func prependWindowDuringScroll(_ next: [Item]) -> Bool {
+            guard next.count == order.count,
+                  let oldFirst = order.first,
+                  let insertedCount = next.firstIndex(where: { $0.id == oldFirst }),
+                  insertedCount > 0,
+                  let dataSource,
+                  let table else { return false }
+
+            let nextOrder = next.map(\.id)
+            let retainedCount = nextOrder.count - insertedCount
+            guard retainedCount > 0,
+                  nextOrder[insertedCount...].elementsEqual(order.prefix(retainedCount))
+            else { return false }
+
+            let added = Array(next.prefix(insertedCount))
+            let addedIDs = added.map(\.id)
+            let removedIDs = Array(order.suffix(insertedCount))
+            let retainedFirst = nextOrder[insertedCount]
+            let visibleRow = table.indexPathsForVisibleRows?.min()
+            let visibleID = visibleRow.flatMap { dataSource.itemIdentifier(for: $0) }
+            let visibleDelta = visibleRow.map {
+                table.rectForRow(at: $0).minY - table.contentOffset.y
+            }
+            let previousOffset = table.contentOffset
+            for id in removedIDs { lookup.removeValue(forKey: id) }
+            for item in added { lookup[item.id] = item }
+            order = nextOrder
+            appliedItemCount = order.count
+            endRequestInFlight = false
+            pendingItems = nil
+            applyGeneration += 1
+            let generation = applyGeneration
+
+            var snapshot = dataSource.snapshot()
+            snapshot.insertItems(addedIDs, beforeItemWithIdentifier: retainedFirst)
+            snapshot.deleteItems(removedIDs)
+            dataSource.apply(snapshot, animatingDifferences: false) {
+                [weak self, weak table] in
+                guard let self, let table,
+                      generation == self.applyGeneration,
+                      self.table === table else { return }
+                table.layoutIfNeeded()
+                self.revealInitialTableIfNeeded(table)
+                self.prefetchEndRunwayIfNeeded(table)
+                if let visibleID, let indexPath = dataSource.indexPath(for: visibleID),
+                   let delta = visibleDelta {
+                    let targetY = table.rectForRow(at: indexPath).minY - delta
+                    table.setContentOffset(
+                        CGPoint(x: previousOffset.x, y: targetY),
+                        animated: false
+                    )
+                }
+            }
+            return true
+        }
+
+        @discardableResult
+        private func slideWindowDuringScroll(_ next: [Item]) -> Bool {
+            guard next.count == order.count,
+                  let nextFirst = next.first?.id,
+                  nextFirst != order.first,
+                  let removedCount = order.firstIndex(of: nextFirst),
+                  removedCount > 0,
+                  let dataSource,
+                  let table else { return false }
+
+            let nextOrder = next.map(\.id)
+            let retained = order[removedCount...]
+            guard nextOrder.count >= retained.count,
+                  nextOrder.prefix(retained.count).elementsEqual(retained) else {
+                return false
+            }
+            let removedIDs = Array(order.prefix(removedCount))
+            let addedIDs = Array(nextOrder.suffix(removedCount))
+            let added = Array(next.suffix(removedCount))
+            guard !addedIDs.isEmpty else { return false }
+
+            let visibleRow = table.indexPathsForVisibleRows?.min()
+            let visibleID = visibleRow.flatMap { dataSource.itemIdentifier(for: $0) }
+            let visibleDelta = visibleRow.map {
+                table.rectForRow(at: $0).minY - table.contentOffset.y
+            }
+            let previousOffset = table.contentOffset
+            for id in removedIDs { lookup.removeValue(forKey: id) }
+            for item in added { lookup[item.id] = item }
+            order = nextOrder
+            appliedItemCount = order.count
+            endRequestInFlight = false
+            pendingItems = nil
+            applyGeneration += 1
+            let generation = applyGeneration
+
+            var snapshot = dataSource.snapshot()
+            snapshot.deleteItems(removedIDs)
+            snapshot.appendItems(addedIDs, toSection: 0)
+            dataSource.apply(snapshot, animatingDifferences: false) {
+                [weak self, weak table] in
+                guard let self, let table,
+                      generation == self.applyGeneration,
+                      self.table === table else { return }
+                table.layoutIfNeeded()
+                self.revealInitialTableIfNeeded(table)
+                self.prefetchEndRunwayIfNeeded(table)
+                if let visibleID, let indexPath = dataSource.indexPath(for: visibleID),
+                   let delta = visibleDelta {
+                    let targetY = table.rectForRow(at: indexPath).minY - delta
+                    table.setContentOffset(
+                        CGPoint(x: previousOffset.x, y: targetY),
+                        animated: false
+                    )
+                }
+            }
+            return true
+        }
+
+        private func revealInitialTableIfNeeded(_ table: UITableView) {
+            guard !hasCompletedInitialApply else { return }
+            hasCompletedInitialApply = true
+            UIView.performWithoutAnimation {
+                table.alpha = 1
             }
         }
 
@@ -318,20 +608,28 @@ where Item.ID: Hashable {
                                || scrollView.isTracking
                                || scrollView.isDecelerating)
             let y = scrollView.contentOffset.y
-            onOffsetChange(max(0, y))
+            if abs(y - lastReportedOffsetY) >= 12 {
+                lastReportedOffsetY = y
+                onOffsetChange(max(0, y))
+            }
             let remaining = scrollView.contentSize.height
                 - scrollView.bounds.height
                 - y
                 + scrollView.adjustedContentInset.bottom
-            if !endRequestInFlight,
+            let fromTop = y + scrollView.adjustedContentInset.top
+            /* 会话列表按“一页跑道”提前补下一页。触发点保持两屏半左右，
+               让 320 行夹具在用户接近尾部前完成追加；endRequestInFlight
+               保证同一时间最多只有一个下一页请求，不会插两页。 */
+            if !startRequestInFlight,
                !order.isEmpty,
                (scrollView.isDragging || scrollView.isDecelerating),
-               remaining < 900 {
-                endRequestInFlight = true
+               fromTop < max(1_600, scrollView.bounds.height * 1.5) {
+                startRequestInFlight = true
                 DispatchQueue.main.async { [weak self] in
-                    self?.onApproachingEnd()
+                    self?.onApproachingStart()
                 }
             }
+            prefetchEndRunwayIfNeeded(scrollView)
             let zone: Int
             if y < 1 { zone = 0 }
             else if y <= 8 { zone = 1 }
@@ -349,7 +647,28 @@ where Item.ID: Hashable {
             }
         }
 
+        private func prefetchEndRunwayIfNeeded(_ scrollView: UIScrollView) {
+            guard !endRequestInFlight, !order.isEmpty else { return }
+            let remaining = scrollView.contentSize.height
+                - scrollView.bounds.height
+                - scrollView.contentOffset.y
+                + scrollView.adjustedContentInset.bottom
+            let prefetchLead = max(4_200, scrollView.bounds.height * 3.5)
+            guard remaining < prefetchLead else { return }
+            endRequestInFlight = true
+            DispatchQueue.main.async { [weak self] in
+                self?.onApproachingEnd()
+            }
+        }
+
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+            lastReportedOffsetY = scrollView.contentOffset.y
+            // A no-op end request can leave this latch set when the caller is
+            // processing a stale SwiftUI snapshot. Every new physical gesture
+            // must get one fresh runway opportunity; otherwise the list stops
+            // permanently at an arbitrary loaded boundary.
+            endRequestInFlight = false
+            startRequestInFlight = false
             publishScrollState(true)
             applyGeneration += 1
             NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
@@ -360,12 +679,16 @@ where Item.ID: Hashable {
             if decelerate {
                 publishScrollState(true)
             } else {
+                endRequestInFlight = false
+                startRequestInFlight = false
                 publishScrollState(false)
                 flushPendingItems()
             }
         }
 
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+            endRequestInFlight = false
+            startRequestInFlight = false
             publishScrollState(false)
             flushPendingItems()
         }
@@ -382,6 +705,19 @@ where Item.ID: Hashable {
             }
             configuration.onOpen()
         }
+
+        func tableView(_ tableView: UITableView,
+                       prefetchRowsAt indexPaths: [IndexPath]) {
+            for indexPath in indexPaths {
+                guard let id = dataSource?.itemIdentifier(for: indexPath),
+                      let entry = lookup[id],
+                      let configuration = nativeRow?(entry) else { continue }
+                NativeChatAvatarPrefetcher.prefetch(configuration)
+            }
+        }
+
+        func tableView(_ tableView: UITableView,
+                       cancelPrefetchingForRowsAt indexPaths: [IndexPath]) {}
 
         func tableView(_ tableView: UITableView,
                        didHighlightRowAt indexPath: IndexPath) {
@@ -406,8 +742,10 @@ where Item.ID: Hashable {
             let deleteAction = UIContextualAction(
                 style: .destructive,
                 title: nativeChatSwipeText("删除", "Delete", "Удалить")
-            ) { _, _, complete in
-                configuration.onDelete()
+            ) { [weak tableView] _, _, complete in
+                presentNativeChatDeleteConfirmation(from: tableView) {
+                    configuration.onDelete()
+                }
                 complete(true)
             }
             deleteAction.image = UIImage(systemName: "trash.fill")
@@ -458,12 +796,40 @@ where Item.ID: Hashable {
         private func refreshMetrics() {
             guard let table, let dataSource else { return }
             NativeChatRowMetrics.invalidateScaleCache()
-            table.beginUpdates()
-            table.endUpdates()
+            let previousOffset = table.contentOffset
             var snapshot = dataSource.snapshot()
             guard !snapshot.itemIdentifiers.isEmpty else { return }
             snapshot.reloadItems(snapshot.itemIdentifiers)
-            dataSource.apply(snapshot, animatingDifferences: false)
+            dataSource.apply(snapshot, animatingDifferences: false) {
+                table.layoutIfNeeded()
+                table.setContentOffset(previousOffset, animated: false)
+            }
+        }
+
+        fileprivate func refreshVisibleRowsAfterThemeChange() {
+            guard let table, let dataSource else { return }
+            for indexPath in table.indexPathsForVisibleRows ?? [] {
+                guard let id = dataSource.itemIdentifier(for: indexPath),
+                      let entry = lookup[id],
+                      let cell = table.cellForRow(at: indexPath) else {
+                    continue
+                }
+                if let nativeCell = cell as? NativeChatRowCell,
+                   let configuration = nativeRow?(entry) {
+                    // Reconfigure in place. Submitting a UITableView reload here
+                    // can race the snapshot/prefetch transaction.
+                    nativeCell.configure(configuration)
+                } else {
+                    cell.backgroundColor = .clear
+                    cell.contentView.backgroundColor = .clear
+                    cell.contentConfiguration = UIHostingConfiguration {
+                        row(entry)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .margins(.all, 0)
+                    .background(.clear)
+                }
+            }
         }
 
         private func flushPendingItems() {
