@@ -9,6 +9,8 @@ CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
 NAV = (ROOT / "Sources" / "NavGlass.swift").read_text(encoding="utf-8")
 MAIN_TAB = (ROOT / "Sources" / "MainTab.swift").read_text(encoding="utf-8")
+CONTACTS = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
+DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -24,6 +26,17 @@ require(ROW.count("private static func previewTokenColor") == 1
 require("unreadLabel.backgroundColor = .systemRed" in ROW
         and "systemBlue" not in CHATS,
         "unread counts must use the single red badge language")
+require(
+    "chatsIsDark\n            ? Color(hex: 0x0D0F11)\n            : C.pageBg" in CHATS
+    and "scheme == .dark ? C.contactsBg\n            : C.pageBg" in CONTACTS
+    and "scheme == .dark ? C.discoverBg\n            : C.pageBg" in DISCOVER,
+    "light primary pages must inherit the configured page canvas",
+)
+require(
+    "chatsIsDark\n            ? Color(hex: 0x15181B)\n            : Color.white" in CHATS
+    and "Color(hex: 0xE2E4E6)" in CHATS,
+    "the light search field must stay distinct from the page canvas",
+)
 for key, light, dark in (
     ("pageBg", "0xFFFFFF", "0x0D0F11"),
     ("navBg", "0xFFFFFF", "0x0D0F11"),

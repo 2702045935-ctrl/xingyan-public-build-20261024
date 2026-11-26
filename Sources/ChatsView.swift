@@ -1283,11 +1283,9 @@ struct ChatsView: View {
         }
     }
     private var chatsPageFill: Color {
-        // One graphite canvas keeps rows stable while raised search and cards
-        // remain visibly above it.
         chatsIsDark
             ? Color(hex: 0x0D0F11)
-            : UIConfig.fixedLight("chatsPageBg", 0xFFFFFF)
+            : C.pageBg
     }
     private var chatsRule: Color {
         chatsIsDark ? Color(hex: 0x282C30) : Color(hex: 0xE9EDEF)
@@ -1295,10 +1293,10 @@ struct ChatsView: View {
     private var chatsSearchFill: Color {
         chatsIsDark
             ? Color(hex: 0x15181B)
-            : Color(hex: 0xF0F2F5)
+            : Color.white
     }
     private var chatsSearchBorder: Color {
-        chatsIsDark ? Color.white.opacity(0.045) : Color.clear
+        chatsIsDark ? Color.white.opacity(0.045) : Color(hex: 0xE2E4E6)
     }
     private var chatsSearchInk: Color {
         chatsIsDark ? Color(hex: 0x6E7378) : Color(hex: 0x8A8A8A)

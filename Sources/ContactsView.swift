@@ -205,7 +205,7 @@ struct ContactsView: View {
     private var listHeadH: CGFloat { max(0, contactsHeaderHeight - 23) }
     private var contactsCanvas: Color {
         scheme == .dark ? C.contactsBg
-            : (UIConfig.colorIfSet("contactsBg") ?? .white)
+            : C.pageBg
     }
     private var contactsRule: Color {
         scheme == .dark ? C.hairline

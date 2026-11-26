@@ -419,7 +419,7 @@ struct DiscoverView: View {
 
     private var worldCanvas: Color {
         scheme == .dark ? C.discoverBg
-            : (UIConfig.colorIfSet("discoverBg") ?? worldAndMeCanvasColor())
+            : C.pageBg
     }
 
     private var worldPageBackground: some View {
