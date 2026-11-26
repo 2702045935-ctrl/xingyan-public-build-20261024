@@ -125,6 +125,9 @@ require(
     and "sealUploadInPlaceStreaming" not in SERVER
     and "fs.readFileSync(outPath)" in SERVER
     and "fs.writeFileSync(outPath, final2)" in SERVER
+    and "const videoCanPass = clientCompressed;" in SERVER
+    and "const videoTooBig = video && size > 2 * 1024 * 1024 && !videoCanPass;" in SERVER
+    and "videoCanPass = clientCompressed && videoCanSkipServerShrink" not in SERVER
     and "const tmpIn = path.join(os.tmpdir()" in SERVER
     and "sealUploadInPlace(name)" in SERVER
     and "parts[0] === 'transfer'" not in SERVER,

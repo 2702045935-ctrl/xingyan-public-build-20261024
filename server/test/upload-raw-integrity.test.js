@@ -136,6 +136,25 @@ async function main() {
       console.log(`upload-raw ${megabytes}MB: ${benchmarkMs}ms`);
     }
 
+    const videoPayload = crypto.randomBytes(5 * 1024 * 1024);
+    const videoStartedAt = performance.now();
+    const videoUpload = await fetch(base + '/api/upload/raw', {
+      method: 'POST',
+      headers: {
+        Cookie: cookie,
+        'Content-Type': 'video/mp4',
+        'x-chris-compressed': '1'
+      },
+      body: videoPayload
+    });
+    const videoMs = Math.round(performance.now() - videoStartedAt);
+    const videoBody = await videoUpload.json();
+    assert.equal(videoUpload.status, 200, JSON.stringify(videoBody));
+    assert.equal(videoBody.data.bytes, videoPayload.length);
+    assert.ok(videoMs < 2000,
+      `客户端已压缩的 5MB 视频仍被服务器同步处理 ${videoMs}ms`);
+    console.log(`upload-raw compressed-video 5MB: ${videoMs}ms`);
+
     const empty = await fetch(base + '/api/upload/raw', {
       method: 'POST',
       headers: { Cookie: cookie, 'Content-Type': 'application/octet-stream' },

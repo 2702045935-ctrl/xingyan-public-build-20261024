@@ -24959,7 +24959,10 @@ async function handleApi(req, res, pathname, query) {
     /* 客户端已导出且规格安全的聊天视频直接落盘，避免每次发送都阻塞在 ffmpeg。
        高码率、超长或尺寸过大的视频仍走原来的转码兜底。 */
     const video = ctype.indexOf('video/') === 0;
-    const videoCanPass = clientCompressed && videoCanSkipServerShrink(outPath, size);
+    /* x-chris-compressed is an explicit client contract: the media was already
+       exported for chat. Probing and synchronously transcoding after a completed
+       upload leaves the UI stuck at 100%; trust the contract and store now. */
+    const videoCanPass = clientCompressed;
     const videoTooBig = video && size > 2 * 1024 * 1024 && !videoCanPass;
     if (videoTooBig) {
       const before = size;
