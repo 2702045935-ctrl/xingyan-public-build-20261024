@@ -350,9 +350,15 @@ final class NativeMallGridCoordinator: NSObject,
                 - (collectionView.layoutAttributesForItem(at: $0)?.frame.minY ?? 0)
         }
 
-        let oldLookup = Dictionary(uniqueKeysWithValues: old.map { ($0.id, $0) })
+        let oldLookup = Dictionary(
+            old.map { ($0.id, $0) },
+            uniquingKeysWith: { _, latest in latest }
+        )
         products = next
-        lookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
+        lookup = Dictionary(
+            next.map { ($0.id, $0) },
+            uniquingKeysWith: { _, latest in latest }
+        )
         var snapshot = NSDiffableDataSourceSnapshot<Int, String>()
         snapshot.appendSections([0])
         snapshot.appendItems(nextIDs, toSection: 0)

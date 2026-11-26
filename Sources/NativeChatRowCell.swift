@@ -976,7 +976,10 @@ private final class NativeGroupAvatarCache {
             guard let result = try? await API.shared.chatMembers(chatId: chatId) else {
                 return ids.map { _ in "" }
             }
-            let byId = Dictionary(uniqueKeysWithValues: result.members.map { ($0.id, $0) })
+            let byId = Dictionary(
+                result.members.map { ($0.id, $0) },
+                uniquingKeysWith: { _, latest in latest }
+            )
             let ordered = ids.count >= 4
                 ? ids
                 : Array(result.members.prefix(4)).map(\.id)

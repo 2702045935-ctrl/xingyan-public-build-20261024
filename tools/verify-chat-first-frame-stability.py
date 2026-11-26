@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
 DEFERRED = (ROOT / "Sources" / "ChatDeferred.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
@@ -63,6 +64,13 @@ require(
     and "private var messageList: some View" not in CHAT
     and "initiallyPinnedToBottom: true" in CHAT,
     "all chats must use the single native message-list surface",
+)
+require(
+    "uniquingKeysWith: { _, latest in latest }" in APP
+    and "uniquingKeysWith: { _, latest in latest }" in CHAT
+    and "Dictionary(uniqueKeysWithValues: messages.map" not in CHAT
+    and "Dictionary(uniqueKeysWithValues: chats.map" not in APP,
+    "duplicate realtime ids must not abort while opening a chat",
 )
 require(
     "private var nativeRowLayoutKey: String" in CHAT

@@ -5741,8 +5741,8 @@ private struct StarredPayload: Decodable {
     func uploadBinary(_ data: Data, mime: String) async throws -> String {
         let publicBase = "https://" + API.publicIngressServer
         let endpoints = [
-            (base: API.directUploadBases[0], path: "/api/upload/raw"),
-            (base: publicBase, path: API.publicIngressPath + "/api/upload/raw")
+            (base: publicBase, path: API.publicIngressPath + "/api/upload/raw"),
+            (base: API.directUploadBases[0], path: "/api/upload/raw")
         ]
         var lastError: Error = APIError.message("上传失败，请检查网络后再试")
         for endpoint in endpoints {
@@ -5772,8 +5772,8 @@ private struct StarredPayload: Decodable {
                           onProgress: @escaping (Double) -> Void) async throws -> String {
         let publicBase = "https://" + API.publicIngressServer
         let endpoints = [
-            (base: API.directUploadBases[0], path: "/api/upload/raw"),
-            (base: publicBase, path: API.publicIngressPath + "/api/upload/raw")
+            (base: publicBase, path: API.publicIngressPath + "/api/upload/raw"),
+            (base: API.directUploadBases[0], path: "/api/upload/raw")
         ]
         var lastError: Error = APIError.message("上传失败，请检查网络后再试")
         for endpoint in endpoints {
@@ -5824,9 +5824,6 @@ private struct StarredPayload: Decodable {
         guard let data = data else {
             throw APIError.message("图片处理失败")
         }
-        if let url = try? await uploadRawJPEG(data, onProgress: onProgress) {
-            return url
-        }
         let publicBase = "https://" + API.publicIngressServer
         let publicRawPath = API.publicIngressPath + "/api/upload/raw"
         if let url = try? await uploadRawJPEG(
@@ -5837,6 +5834,9 @@ private struct StarredPayload: Decodable {
         ) {
             return url
         }
+        if let url = try? await uploadRawJPEG(data, onProgress: onProgress) {
+            return url
+        }
         onProgress?(0.15)
         let b64 = data.base64EncodedString()
         let body: [String: Any] = [
@@ -5845,13 +5845,13 @@ private struct StarredPayload: Decodable {
         ]
         let payload: UploadPayload
         do {
-            payload = try await postDirectUpload(body)
-        } catch {
             payload = try await postDirectUpload(
                 body,
                 base: publicBase,
                 path: API.publicIngressPath + "/api/upload"
             )
+        } catch {
+            payload = try await postDirectUpload(body)
         }
         guard let path = payload.url else { throw APIError.message("上传失败") }
         onProgress?(1)

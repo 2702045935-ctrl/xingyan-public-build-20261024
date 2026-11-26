@@ -7871,7 +7871,10 @@ struct ChatDetailView: View {
         }
 
         guard !older.isEmpty else { return }
-        var mergedById = Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0) })
+        var mergedById = Dictionary(
+            messages.map { ($0.id, $0) },
+            uniquingKeysWith: { _, latest in latest }
+        )
         for message in older { mergedById[message.id] = message }
         let merged = mergedById.values.sorted(by: messageSortsBefore)
         messages = visibleMessages(merged)

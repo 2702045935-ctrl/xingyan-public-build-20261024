@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 433890,
-      "sha256": "b143cca902fca712c086961cdded28010129b3313fd3182d537a2747e4d29c70"
+      "size": 433945,
+      "sha256": "8a908da22e6ccedab85ec1c5fdfc47368acf5cf8fa6f9c213385396aaf49f2a8"
     },
     {
       "path": "Sources/ChatDeferred.swift",
@@ -25,6 +25,21 @@
       "path": "Sources/NativeChatMediaRowCell.swift",
       "size": 25075,
       "sha256": "a02a9a8be15c6a53e08310b7c0429f1dfe1e37aff28366eeafa12a71f0e5fa42"
+    },
+    {
+      "path": "Sources/NativeChatRowCell.swift",
+      "size": 42333,
+      "sha256": "50aafbe5675786f95c2d4c1de7b7bf0d22d81afd21262eaf32a4b2e6bfa68dc7"
+    },
+    {
+      "path": "Sources/NativeChatList.swift",
+      "size": 33781,
+      "sha256": "4919a2cea590630f465a6164470c9d16c0f9164fb7f7bc62fd6c03160257e96f"
+    },
+    {
+      "path": "Sources/NativeStaticList.swift",
+      "size": 57040,
+      "sha256": "bc8b65f289452905c8bb6eceb01992c94dcf7e393d6e0a922ce1bb56fea6bdc5"
     }
   ]
 }

@@ -654,7 +654,10 @@ where Item.ID: Hashable {
                     order[index] == item.id && lookup[item.id] == item
                 }
             if !isPureAppend, !order.isEmpty {
-                let nextByID = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
+                let nextByID = Dictionary(
+                    next.map { ($0.id, $0) },
+                    uniquingKeysWith: { _, latest in latest }
+                )
                 var commonTail = 0
                 while commonTail < min(order.count, nextOrder.count),
                       order[order.count - 1 - commonTail]
@@ -749,7 +752,10 @@ where Item.ID: Hashable {
                     return
                 }
             }
-            let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
+            let nextLookup = Dictionary(
+                next.map { ($0.id, $0) },
+                uniquingKeysWith: { _, latest in latest }
+            )
             let changed = nextOrder.filter { signatures[$0] != nextSignatures[$0] }
             for id in changed {
                 heights[id] = nil

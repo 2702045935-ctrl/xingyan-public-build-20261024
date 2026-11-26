@@ -45,10 +45,12 @@ final class RecommendationEventStore {
         stats[itemId] = stat
 
         if stats.count > 4_000 {
-            stats = Dictionary(uniqueKeysWithValues:
+            stats = Dictionary(
                 stats.sorted { $0.value.lastAt > $1.value.lastAt }
                     .prefix(3_000)
-                    .map { ($0.key, $0.value) })
+                    .map { ($0.key, $0.value) },
+                uniquingKeysWith: { _, latest in latest }
+            )
         }
         persist()
     }

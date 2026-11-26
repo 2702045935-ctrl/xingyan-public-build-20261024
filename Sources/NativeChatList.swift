@@ -334,7 +334,10 @@ where Item.ID: Hashable {
                 _ = appendPureTail(next, from: order.count, keepPending: false)
                 return
             }
-            let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
+            let nextLookup = Dictionary(
+                next.map { ($0.id, $0) },
+                uniquingKeysWith: { _, latest in latest }
+            )
             if nextOrder == order && next.allSatisfy({ lookup[$0.id] == $0 }) {
                 pendingItems = nil
                 return

@@ -1074,14 +1074,20 @@ final class AppState: ObservableObject {
         let epoch = accountEpoch
         guard isCurrentAccount(epoch), let d = await API.shared.badgeCounts() else { return }
         guard isCurrentAccount(epoch) else { return }
-        let previousById = Dictionary(uniqueKeysWithValues: chats.map { ($0.id, $0) })
+        let previousById = Dictionary(
+            chats.map { ($0.id, $0) },
+            uniquingKeysWith: { _, latest in latest }
+        )
         if d.friendRequests != friendRequests {
             friendRequests = d.friendRequests
             await loadContacts()
         }
         if d.momentUnread != momentsUnread { momentsUnread = d.momentUnread }
         if !d.recentChats.isEmpty {
-            let serverRows = Dictionary(uniqueKeysWithValues: d.recentChats.map { ($0.id, $0) })
+            let serverRows = Dictionary(
+                d.recentChats.map { ($0.id, $0) },
+                uniquingKeysWith: { _, latest in latest }
+            )
             let recent = mergeServerChats(d.recentChats).map { row -> Chat in
                 guard let server = serverRows[row.id],
                       let localMessageId = row.lastMessage?.id,
@@ -1456,7 +1462,10 @@ final class AppState: ObservableObject {
 
     func loadChats() async {
         let epoch = accountEpoch
-        let previousById = Dictionary(uniqueKeysWithValues: chats.map { ($0.id, $0) })
+        let previousById = Dictionary(
+            chats.map { ($0.id, $0) },
+            uniquingKeysWith: { _, latest in latest }
+        )
         let chatGeneration = beginChatSnapshot()
         let showInitialLoading = chats.isEmpty && !loadingChats
         if showInitialLoading { loadingChats = true }
