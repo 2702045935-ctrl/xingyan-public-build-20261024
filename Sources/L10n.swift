@@ -1643,7 +1643,7 @@ enum L10n {
         "已退回": "Returned",
         "对方确认后到账": "Arrives after the recipient confirms",
         "点击查看并确认收款": "Tap to review and accept",
-        "款项已原路退回": "Returned to the original payment method",
+        "款项已退回付款方": "Returned to the payer",
         "聊天主题": "Chat Theme",
         "选择主题": "Choose Theme",
         "主题会跟随系统深浅色自动调整。": "Themes adapt automatically to system light and dark appearance.",

@@ -6109,6 +6109,7 @@ private struct StarredPayload: Decodable {
         var expiresAt: Double?
         var receivedAt: String?
         var refundedAt: String?
+        var refundedBy: String?
     }
 
     struct TransferReceipt: Decodable {

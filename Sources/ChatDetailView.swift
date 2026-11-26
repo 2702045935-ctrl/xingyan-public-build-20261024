@@ -1070,6 +1070,23 @@ struct ChatDetailView: View {
         appendVisibleMessage(message)
     }
 
+    private func applyTransferRealtimeUpdate(_ event: PushEvent) {
+        guard let payment = event.transfer, !event.messageId.isEmpty else {
+            Task { await load(initial: false) }
+            return
+        }
+        guard let index = messages.firstIndex(where: { $0.id == event.messageId }) else {
+            Task { await load(initial: false) }
+            return
+        }
+        guard let data = try? JSONEncoder().encode(payment),
+              let body = String(data: data, encoding: .utf8),
+              messages[index].content != body else { return }
+        messages[index].content = body
+        rebuildIndex()
+        schedulePersist()
+    }
+
     private func actionTitle(_ m: Message) -> String {
         let t = m.kindName == "text" ? m.body : "[" + ((m.kindName == "image" || m.kindName == "images") ? "图片" : m.kindName) + "]"
         return String(t.prefix(40))
@@ -2813,6 +2830,10 @@ struct ChatDetailView: View {
 
             if ev.type == "burn", ev.chatId == chat.id, !ev.burnIds.isEmpty {
                 burnAway(ev.burnIds)
+            }
+
+            if ev.type == "transfer", ev.chatId == chat.id {
+                applyTransferRealtimeUpdate(ev)
             }
 
             if ev.type == "recall", ev.chatId == chat.id, !ev.messageId.isEmpty {
@@ -8425,10 +8446,10 @@ struct MessageRow: View {
             : (pending ? PayVisual.warning : PayVisual.secondaryInk)
         let statusText = received ? Tr("已收款")
             : (pending ? Tr("待确认") : Tr("已退回"))
-        let hint = received ? Tr("已存入零钱")
+        let hint = received ? Tr("已到账")
             : (pending
                ? (mine ? Tr("对方确认后到账") : Tr("点击查看并确认收款"))
-               : Tr("款项已原路退回"))
+               : Tr("款项已退回付款方"))
         let surface = Color.dyn(0xFFFFFF, 0x1C1C1E)
         let inset = Color.dyn(0xF2F2F7, 0x2C2C2E)
 

@@ -33,6 +33,21 @@ struct TransferInfo {
         refundedBy = (o["refundedBy"] as? String) ?? ""
     }
 
+    init(payment: API.TransferPayment) {
+        id = payment.id
+        amount = payment.amount ?? 0
+        note = payment.note ?? ""
+        status = payment.status ?? "pending"
+        method = payment.method ?? "balance"
+        fromId = payment.fromId ?? ""
+        toId = payment.toId ?? ""
+        createdAt = payment.createdAt ?? ""
+        expiresAt = payment.expiresAt ?? 0
+        receivedAt = payment.receivedAt ?? ""
+        refundedAt = payment.refundedAt ?? ""
+        refundedBy = payment.refundedBy ?? ""
+    }
+
     var methodName: String { method == "card" ? "建设银行储蓄卡(2125)" : "零钱" }
 
     var refundClosed: Bool {
@@ -105,7 +120,7 @@ struct BillDetailView: View {
             let left = t.leftText.hasSuffix("内") ? String(t.leftText.dropLast()) : t.leftText
             return mine ? "\(left)内对方未收款，将退还给你。" : "\(left)内未收款，将退还对方。"
         }
-        if t.status == "received" { return "钱已存入" + (mine ? "对方" : "你的") + "零钱余额。" }
+        if t.status == "received" { return "款项已到账。" }
         return "超过 24 小时未收款，钱已原路退回。"
     }
 
@@ -151,6 +166,14 @@ struct BillDetailView: View {
         .hidesTabBar()
 
         .task { await refreshTransfer() }
+
+        .onReceive(Realtime.shared.$event) { event in
+            guard event.type == "transfer",
+                  event.chatId == chat.id,
+                  let payment = event.transfer,
+                  payment.id == info.id else { return }
+            live = TransferInfo(payment: payment)
+        }
 
         .sheet(isPresented: $showReceipt) {
             BillReceiptView(chat: chat, info: t)

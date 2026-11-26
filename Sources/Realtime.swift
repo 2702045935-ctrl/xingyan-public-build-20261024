@@ -36,6 +36,7 @@ struct PushEvent: Equatable {
     var transferFromId = ""
     var transferStatus = ""
     var transferAmount: Double? = nil
+    var transfer: API.TransferPayment? = nil
     var callId = ""
     var callAction = ""
     var callMedia = ""
@@ -463,10 +464,18 @@ final class Realtime: ObservableObject {
         if let n = obj["notice"] as? [String: Any] { ev.momentNotice = MomentNotice(json: n) }
         if let n = obj["friendRequests"] as? Int { ev.friendRequests = n }
         if let t = obj["transfer"] as? [String: Any] {
-            ev.transferFromId = (t["fromId"] as? String) ?? ""
-            ev.transferStatus = (t["status"] as? String) ?? ""
-            if let a = t["amount"] as? Double { ev.transferAmount = a }
-            else if let a = t["amount"] as? Int { ev.transferAmount = Double(a) }
+            if let data = try? JSONSerialization.data(withJSONObject: t),
+               let payment = try? JSONDecoder().decode(API.TransferPayment.self, from: data) {
+                ev.transfer = payment
+                ev.transferFromId = payment.fromId ?? ""
+                ev.transferStatus = payment.status ?? ""
+                ev.transferAmount = payment.amount
+            } else {
+                ev.transferFromId = (t["fromId"] as? String) ?? ""
+                ev.transferStatus = (t["status"] as? String) ?? ""
+                if let a = t["amount"] as? Double { ev.transferAmount = a }
+                else if let a = t["amount"] as? Int { ev.transferAmount = Double(a) }
+            }
         }
 
         ev.callId = (obj["callId"] as? String) ?? ""
