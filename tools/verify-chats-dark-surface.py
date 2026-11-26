@@ -72,16 +72,16 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x8C8C8C : 0x999999)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x6E6E6E : 0xB2B2B2)" in CHATS
-    and "static let conversationPreviewInk = Color.dyn(0x999999, 0x8C8C8C)" in CHATS
-    and "static let timeInk = Color.dyn(0xB2B2B2, 0x6E6E6E)" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0xA1A2A6 : 0x999999)" in CHATS
+    and "let timeColor = UIColor(hex: isDark ? 0x7A7C80 : 0xB2B2B2)" in CHATS
+    and "static let conversationPreviewInk = Color.dyn(0x999999, 0xA1A2A6)" in CHATS
+    and "static let timeInk = Color.dyn(0xB2B2B2, 0x7A7C80)" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
     and "UIColor(hex: isDark ? 0xEBEBF0 : 0x191919)" in CHATS,
     "chat-list title, preview and time must use WeCom's neutral dark hierarchy",
 )
 require(
-    0xEBEBF0 > 0x8C8C8C > 0x6E6E6E,
+    0xEBEBF0 > 0xA1A2A6 > 0x7A7C80,
     "dark title, preview and time must remain strictly ordered with time weakest",
 )
 require(
