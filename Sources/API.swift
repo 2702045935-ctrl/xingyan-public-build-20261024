@@ -1807,9 +1807,6 @@ final class API {
     let session: URLSession
     private let uploadSession: URLSession
     private let trustDelegate = SecureURLSessionDelegate()
-    private let uploadRouteLock = NSLock()
-    private var cachedDirectUploadBases: [String] = []
-    private var cachedDirectUploadAt = Date.distantPast
 
     static let publicIngressServer = "mail.xingyanmail.site:443"
     static let publicIngressPath = "/xy"
@@ -5837,7 +5834,7 @@ private struct StarredPayload: Decodable {
                            compressed: Bool,
                            timeout: TimeInterval,
                            onProgress: ((Double) -> Void)?) async throws -> String {
-        var roots = await reachableDirectUploadBases()
+        var roots = API.directUploadBases
         // Never fall back to the public ingress for uploads. In production it
         // is an order of magnitude slower and silently turns a fast transfer
         // into a minute-long stall. Custom non-public test servers may still
@@ -5846,9 +5843,6 @@ private struct StarredPayload: Decodable {
            !base.isEmpty,
            !roots.contains(base) {
             roots.append(base)
-        }
-        guard !roots.isEmpty else {
-            throw APIError.message("上传直连线路不可用，请切换网络后重试")
         }
         var lastError: Error?
 
@@ -5917,11 +5911,6 @@ private struct StarredPayload: Decodable {
                 return try Self.rawUploadURL(from: responseData)
             } catch {
                 lastError = error
-                if API.directUploadBases.contains(root) {
-                    uploadRouteLock.lock()
-                    cachedDirectUploadAt = .distantPast
-                    uploadRouteLock.unlock()
-                }
                 if API.isConnectivity(error), index + 1 < roots.count {
                     continue
                 }
@@ -5929,55 +5918,6 @@ private struct StarredPayload: Decodable {
             }
         }
         throw lastError ?? APIError.message("服务器地址不正确")
-    }
-
-    private func reachableDirectUploadBases() async -> [String] {
-        let roots = API.directUploadBases
-        guard !roots.isEmpty else { return [] }
-        uploadRouteLock.lock()
-        let cached = cachedDirectUploadBases
-        let cacheAge = Date().timeIntervalSince(cachedDirectUploadAt)
-        uploadRouteLock.unlock()
-        if cacheAge < (cached.isEmpty ? 15 : 120) {
-            return cached
-        }
-        let probeSession = session
-        let reachable = await withTaskGroup(
-            of: (Int, String, Bool).self,
-            returning: [(Int, String)].self
-        ) { group in
-            for (index, root) in roots.enumerated() {
-                group.addTask { [token, probeSession] in
-                    guard let url = URL(string: root + "/api/version") else {
-                        return (index, root, false)
-                    }
-                    var request = URLRequest(url: url)
-                    request.httpMethod = "GET"
-                    request.timeoutInterval = 6
-                    request.networkServiceType = .responsiveData
-                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                    request.setValue("application/json", forHTTPHeaderField: "Accept")
-                    do {
-                        let (_, response) = try await probeSession.data(for: request)
-                        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-                        return (index, root, (200...299).contains(status))
-                    } catch {
-                        return (index, root, false)
-                    }
-                }
-            }
-            var hits: [(Int, String)] = []
-            for await (index, root, ok) in group where ok {
-                hits.append((index, root))
-            }
-            return hits.sorted { $0.0 < $1.0 }.map { ($0.0, $0.1) }
-        }
-        let result = reachable.map(\.1)
-        uploadRouteLock.lock()
-        cachedDirectUploadBases = result
-        cachedDirectUploadAt = Date()
-        uploadRouteLock.unlock()
-        return result
     }
 
     private static func rawUploadURL(from d: Data) throws -> String {

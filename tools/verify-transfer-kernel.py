@@ -26,21 +26,13 @@ require(
     and '"https://43.242.194.89:8443"' in API
     and "private let uploadSession: URLSession" in API
     and "private func uploadRaw(source: RawUploadSource" in API
-    and "var roots = await reachableDirectUploadBases()" in API
+    and "var roots = API.directUploadBases" in API
     and "roots.append(base)" in API
     and "server != API.publicIngressServer" in API
-    and "上传直连线路不可用，请切换网络后重试" in API
-    and "request.timeoutInterval = 6" in API
     and "req.timeoutInterval = timeout" in API
     and "min(timeout, index == 0 ? 2 : 3)" not in API
     and API.count("uploadSession.upload") >= 4,
-    "a fast health probe must select the direct origin before a full-timeout upload",
-)
-require(
-    "private var cachedDirectUploadBases: [String]" in API
-    and "if cacheAge < (cached.isEmpty ? 15 : 120)" in API
-    and "cachedDirectUploadAt = .distantPast" in API,
-    "direct upload routing must be cached and invalidated on transport failure",
+    "uploads must use the 11/20 direct path without a public-ingress fallback",
 )
 require(
     "fileSize >= 4 * 1024 * 1024" not in API
