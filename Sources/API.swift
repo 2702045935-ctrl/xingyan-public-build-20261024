@@ -1708,17 +1708,18 @@ enum ServerTrustPolicy {
             return false
         }
 
-        guard let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate] else {
-            return false
-        }
-
-        return chain.contains { certificate in
+        let count = SecTrustGetCertificateCount(trust)
+        for index in 0..<max(0, count) {
+            guard let certificate = SecTrustGetCertificateAtIndex(trust, index) else {
+                continue
+            }
             let data = SecCertificateCopyData(certificate) as Data
             let digest = SHA256.hash(data: data)
                 .map { String(format: "%02x", $0) }
                 .joined()
-            return pinnedCertificate.contains(digest)
+            if pinnedCertificate.contains(digest) { return true }
         }
+        return false
     }
 }
 

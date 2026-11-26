@@ -38,6 +38,11 @@ check(
     "the direct Cell endpoint must retain certificate pinning",
 )
 check(
+    "SecTrustGetCertificateCount(trust)" in API
+    and "SecTrustGetCertificateAtIndex(trust, index)" in API,
+    "direct certificate pinning must inspect every certificate on iOS 27",
+)
+check(
     API.count("direct: true") >= 4
     and 'request("POST", "/api/moments", body: body, direct: true)' in API,
     "chat sends and Moments publishing must use the recorded direct write path",
