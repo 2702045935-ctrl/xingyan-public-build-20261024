@@ -497,7 +497,7 @@ where Item.ID: Hashable {
             let generation = applyGeneration
 
             var snapshot = dataSource.snapshot()
-            snapshot.insertItems(addedIDs, beforeItemWithIdentifier: retainedFirst)
+            snapshot.insertItems(addedIDs, beforeItem: retainedFirst)
             snapshot.deleteItems(removedIDs)
             dataSource.apply(snapshot, animatingDifferences: false) {
                 [weak self, weak table] in

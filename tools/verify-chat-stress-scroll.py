@@ -100,7 +100,7 @@ require(
 )
 require(
     "prependWindowDuringScroll(next)" in NATIVE_CHAT_LIST
-    and "snapshot.insertItems(addedIDs, beforeItemWithIdentifier: retainedFirst)"
+    and "snapshot.insertItems(addedIDs, beforeItem: retainedFirst)"
     in NATIVE_CHAT_LIST
     and "snapshot.deleteItems(removedIDs)" in NATIVE_CHAT_LIST,
     "upward conversation runway pages must commit without ending the gesture",
