@@ -27,23 +27,16 @@ require(
     "the title unread count must stay inline with compact header spacing",
 )
 require(
-    "private var chatHeaderMenu: some View" in CHATS
-    and "ForEach(ChatFilter.allCases)" in CHATS
-    and "chooseFilter(item)" in CHATS,
-    "the title must expose every conversation category and change the active filter",
+    "private var chatHeaderMenu" not in CHATS
+    and "manualChatSync" not in CHATS
+    and "contentTransition(.numericText())" in CHATS,
+    "the WeChat-style title must be a passive status label, not an expandable menu",
 )
 require(
-    "showSearch = true" in CHATS
-    and "scrollChatsToTop()" in CHATS
-    and "NativeChatListScrollRegistry.shared.chats" in CHATS,
-    "the title menu must open search and scroll the native conversation list to the top",
-)
-require(
-    "private var chatHeaderIsSyncing: Bool" in CHATS
-    and "manualChatSync" in CHATS
-    and "await app.syncRecentMessages(chatCount: 20, limit: 50)" in CHATS
-    and "await app.syncDeviceChats()" in CHATS,
-    "the title must reflect sync state and reuse the existing conversation sync pipeline",
+    'if app.syncing {\n            return "\\(chatListBrandTitle)（\\(Tr("同步中"))）"' in CHATS
+    and "if app.offline {" in CHATS
+    and "return unreadTotal > 0 ?" in CHATS,
+    "the title must switch automatically between unread, syncing, and disconnected states",
 )
 
 print("chat-top-title: passed")
