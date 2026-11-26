@@ -1839,6 +1839,7 @@ enum L10n {
         "监护状态": "Guardian status",
         "这是当前字号下的正文预览，修改后会立即应用到 App。": "This is a body-text preview at the current size. Changes apply immediately.",
         "纯色壁纸始终可用，并会跟随深浅模式使用相应层级。": "Solid colors are always available and adapt to light and dark mode.",
+        "正在加载世界…": "Loading World…",
 
     ]
 }

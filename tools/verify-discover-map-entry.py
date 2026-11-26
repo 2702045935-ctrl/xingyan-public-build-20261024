@@ -31,8 +31,11 @@ check(
     "the world entry must render immediately as a builtin item",
 )
 check(
-    "items = DiscoverItem.builtin" in DISCOVER,
-    "the first world frame must render before the network catalog returns",
+    "private static let launchCachedItems: [DiscoverItem]" in DISCOVER
+    and "FeatureManifestStore.cachedItems()" in DISCOVER
+    and "if !loaded {\n                            worldLoadingState" in DISCOVER
+    and "items = DiscoverItem.builtin" in DISCOVER,
+    "the world page must use verified cache first and a neutral loading state otherwise",
 )
 check(
     "private struct WorldTopIconPressStyle" in DISCOVER

@@ -282,6 +282,8 @@ private struct WorldPresentedRoute: Identifiable {
 }
 
 struct DiscoverView: View {
+    private static let launchCachedItems: [DiscoverItem] =
+        FeatureManifestStore.cachedItems() ?? []
 
     @Environment(\.colorScheme) private var scheme
     @ObservedObject private var lang = LangStore.shared
@@ -290,8 +292,8 @@ struct DiscoverView: View {
     @EnvironmentObject var app: AppState
     @State private var path = NavigationPath()
 
-    @State private var items: [DiscoverItem] = []
-    @State private var loaded = false
+    @State private var items: [DiscoverItem] = DiscoverView.launchCachedItems
+    @State private var loaded = !DiscoverView.launchCachedItems.isEmpty
     @State private var worldArtwork: [String: String] = [:]
 
     @State private var showScan = false
@@ -669,33 +671,37 @@ struct DiscoverView: View {
                     LazyVStack(spacing: 0) {
                         Color.clear.frame(height: discoverHeaderHeight)
 
-                        if let hero = worldHeroItem {
-                            worldSectionHeader(Tr("动态"))
-                            worldUpdatesRow(hero)
-                            Color.clear.frame(height: 8)
-                        }
-
-                        if worldShopItem != nil || !worldEntryGroups.isEmpty {
-                            worldSectionHeader(Tr("探索"))
-
-                            if let shop = worldShopItem {
-                                worldShopRow(shop)
+                        if !loaded {
+                            worldLoadingState
+                        } else {
+                            if let hero = worldHeroItem {
+                                worldSectionHeader(Tr("动态"))
+                                worldUpdatesRow(hero)
                                 Color.clear.frame(height: 8)
                             }
 
-                            ForEach(worldEntryGroups) { group in
-                                worldSectionHeader(group.title)
-                                VStack(spacing: 0) {
-                                    ForEach(group.items) { item in
-                                        worldFlatRow(item)
-                                    }
+                            if worldShopItem != nil || !worldEntryGroups.isEmpty {
+                                worldSectionHeader(Tr("探索"))
+
+                                if let shop = worldShopItem {
+                                    worldShopRow(shop)
+                                    Color.clear.frame(height: 8)
                                 }
-                                Color.clear.frame(height: 8)
-                            }
-                        }
 
-                        Color.clear
-                            .frame(height: max(24, L.safeBottom + L.tabH + 12))
+                                ForEach(worldEntryGroups) { group in
+                                    worldSectionHeader(group.title)
+                                    VStack(spacing: 0) {
+                                        ForEach(group.items) { item in
+                                            worldFlatRow(item)
+                                        }
+                                    }
+                                    Color.clear.frame(height: 8)
+                                }
+                            }
+
+                            Color.clear
+                                .frame(height: max(24, L.safeBottom + L.tabH + 12))
+                        }
                     }
                     .background {
                         NativeTopScrollObserver { y in
@@ -792,7 +798,7 @@ struct DiscoverView: View {
             if !off { Task { await loadItems() } }
         }
         .task {
-            if !loaded { await loadItems() }
+            await loadItems()
             if worldArtwork.isEmpty { await loadWorldArtwork() }
         }
         .fullScreenCover(isPresented: $showScan) {
@@ -846,6 +852,18 @@ struct DiscoverView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, 34)
         .background(worldCanvas.ignoresSafeArea())
+    }
+
+    private var worldLoadingState: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .controlSize(.regular)
+            Text(Tr("正在加载世界…"))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: 180)
     }
 
     private var grouped: [[DiscoverItem]] {
@@ -1289,24 +1307,32 @@ struct DiscoverView: View {
     }
 
     private func loadItems() async {
-        if items.isEmpty {
-            items = DiscoverItem.builtin
-            loaded = true
-        }
-        if let cached = FeatureManifestStore.cachedItems(),
+        if items.isEmpty,
+           let cached = FeatureManifestStore.cachedItems(),
            !cached.isEmpty {
             items = cached
             loaded = true
         }
+
+        let resolved: [DiscoverItem]?
         if let data = try? await API.shared.signedFeatureManifest(),
            let list = try? FeatureManifestStore.verifyAndCache(data),
            !list.isEmpty {
-            items = list
-            loaded = true
+            resolved = list
         } else if let list = try? await API.shared.discover(),
                   !list.isEmpty {
-            items = list
-            loaded = true
+            resolved = list
+        } else {
+            resolved = nil
+        }
+
+        if let resolved {
+            var transaction = Transaction()
+            transaction.animation = nil
+            withTransaction(transaction) {
+                items = resolved
+                loaded = true
+            }
         } else if items.isEmpty {
             items = DiscoverItem.builtin
             loaded = true
