@@ -5838,8 +5838,17 @@ private struct StarredPayload: Decodable {
                            timeout: TimeInterval,
                            onProgress: ((Double) -> Void)?) async throws -> String {
         var roots = await reachableDirectUploadBases()
-        if !base.isEmpty, !roots.contains(base) {
+        // Never fall back to the public ingress for uploads. In production it
+        // is an order of magnitude slower and silently turns a fast transfer
+        // into a minute-long stall. Custom non-public test servers may still
+        // use their own local base.
+        if server != API.publicIngressServer,
+           !base.isEmpty,
+           !roots.contains(base) {
             roots.append(base)
+        }
+        guard !roots.isEmpty else {
+            throw APIError.message("上传直连线路不可用，请切换网络后重试")
         }
         var lastError: Error?
 

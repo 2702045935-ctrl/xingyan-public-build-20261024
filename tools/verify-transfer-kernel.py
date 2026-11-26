@@ -28,6 +28,8 @@ require(
     and "private func uploadRaw(source: RawUploadSource" in API
     and "var roots = await reachableDirectUploadBases()" in API
     and "roots.append(base)" in API
+    and "server != API.publicIngressServer" in API
+    and "上传直连线路不可用，请切换网络后重试" in API
     and "request.timeoutInterval = 6" in API
     and "req.timeoutInterval = timeout" in API
     and "min(timeout, index == 0 ? 2 : 3)" not in API
