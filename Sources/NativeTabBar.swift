@@ -312,10 +312,9 @@ struct NativeTabBar: UIViewRepresentable {
             appearance.backgroundColor = UIColor(themed)
             bar.isOpaque = true
         } else {
-            appearance.configureWithDefaultBackground()
-            if #unavailable(iOS 26.0) {
-                appearance.backgroundEffect = UIBlurEffect(style: .systemChromeMaterial)
-            }
+            appearance.configureWithTransparentBackground()
+            appearance.backgroundEffect = tabBarGlassEffect()
+            appearance.backgroundColor = .clear
             bar.isOpaque = false
         }
         let normalTitle: [NSAttributedString.Key: Any] = [
@@ -369,6 +368,18 @@ struct NativeTabBar: UIViewRepresentable {
         bar.scrollEdgeAppearance = appearance
         bar.isTranslucent = !reduceTransparency
         (bar as? CompactDotTabBar)?.clearsNativeBackdrop = false
+    }
+
+    private func tabBarGlassEffect() -> UIVisualEffect {
+        if #available(iOS 26.0, *) {
+            let effect = UIGlassEffect(style: .regular)
+            effect.isInteractive = false
+            effect.tintColor = UIColor.white.withAlphaComponent(
+                scheme == .dark ? 0.018 : 0.045
+            )
+            return effect
+        }
+        return UIBlurEffect(style: .systemChromeMaterial)
     }
 
     private func refresh(_ bar: UITabBar) {
