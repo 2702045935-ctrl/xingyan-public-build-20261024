@@ -3021,7 +3021,7 @@ struct PhotoPager: View {
                 .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(.white)
                 .frame(width: 38, height: 38)
-                .background { NativeGlassCircleBackground() }
+                .background { MediaViewerGlassCircleBackground() }
                 .frame(width: 44, height: 44)
                 .contentShape(Circle())
         }

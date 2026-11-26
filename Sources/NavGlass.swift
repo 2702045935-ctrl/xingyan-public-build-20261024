@@ -559,6 +559,92 @@ struct NativeGlassCircleBackground: View {
     }
 }
 
+struct MediaViewerGlassCircleBackground: View {
+    private let shape = Circle()
+
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        ZStack {
+            if reduceTransparency {
+                shape.fill(Color.dyn(0x4D5157, 0x34383D))
+            } else {
+                #if compiler(>=6.2)
+                if #available(iOS 26.0, *) {
+                    Color.clear
+                        .glassEffect(
+                            .regular
+                                .tint(Color.black.opacity(scheme == .dark ? 0.12 : 0.18))
+                                .interactive(),
+                            in: shape
+                        )
+                } else {
+                    frostedFallback
+                }
+                #else
+                frostedFallback
+                #endif
+            }
+
+            if !reduceTransparency {
+                shape.fill(Color.black.opacity(scheme == .dark ? 0.12 : 0.20))
+
+                RadialGradient(
+                    colors: [
+                        Color.white.opacity(scheme == .dark ? 0.24 : 0.32),
+                        Color.white.opacity(0.055),
+                        Color.clear
+                    ],
+                    center: UnitPoint(x: 0.24, y: 0.12),
+                    startRadius: 0,
+                    endRadius: 34
+                )
+                .clipShape(shape)
+
+                shape.fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.18),
+                            Color.clear,
+                            Color.black.opacity(0.10)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+                shape.stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.66),
+                            Color.white.opacity(0.18),
+                            Color.black.opacity(0.18)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.8
+                )
+
+                shape
+                    .inset(by: 1.35)
+                    .stroke(Color.white.opacity(0.13), lineWidth: 0.45)
+            }
+        }
+        .shadow(color: Color.black.opacity(scheme == .dark ? 0.32 : 0.22),
+                radius: 10, y: 4)
+        .allowsHitTesting(false)
+    }
+
+    private var frostedFallback: some View {
+        ZStack {
+            shape.fill(.ultraThinMaterial)
+            shape.fill(Color.black.opacity(scheme == .dark ? 0.16 : 0.24))
+        }
+    }
+}
+
 struct NativeGlassPlusButton: View {
     let action: () -> Void
 

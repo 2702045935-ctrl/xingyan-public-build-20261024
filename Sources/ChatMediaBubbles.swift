@@ -349,7 +349,7 @@ struct VideoPlayerSheet: View {
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .background { NativeGlassCircleBackground() }
+                .background { MediaViewerGlassCircleBackground() }
                 .transition(.scale(scale: 0.86).combined(with: .opacity))
                 .accessibilityLabel(Text(playing ? Tr("暂停") : Tr("播放")))
             }
@@ -414,7 +414,7 @@ struct VideoPlayerSheet: View {
                         .foregroundColor(.white)
                         .frame(width: 44, height: 44)
                         .contentShape(Circle())
-                        .background { NativeGlassCircleBackground() }
+                        .background { MediaViewerGlassCircleBackground() }
                         .highPriorityGesture(TapGesture().onEnded { dismiss() })
                         .accessibilityAddTraits(.isButton)
                         .accessibilityLabel(Tr("关闭"))
@@ -425,7 +425,7 @@ struct VideoPlayerSheet: View {
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(width: 40, height: 40)
-                            .background { NativeGlassCircleBackground() }
+                            .background { MediaViewerGlassCircleBackground() }
                     }
                     .buttonStyle(.plain)
                     .opacity(pip.possible || pip.active ? 1 : 0.4)
@@ -627,7 +627,7 @@ struct VideoPlayerSheet: View {
                     .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.white)
                     .frame(width: 46, height: 46)
-                    .background { NativeGlassCircleBackground() }
+                    .background { MediaViewerGlassCircleBackground() }
                 Text(Tr(title))
                     .font(pf(12))
                     .foregroundColor(.white.opacity(0.92))
