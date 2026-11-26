@@ -1807,6 +1807,9 @@ final class API {
     let session: URLSession
     private let uploadSession: URLSession
     private let trustDelegate = SecureURLSessionDelegate()
+    private let uploadRouteLock = NSLock()
+    private var cachedDirectUploadBases: [String] = []
+    private var cachedDirectUploadAt = Date.distantPast
 
     static let publicIngressServer = "mail.xingyanmail.site:443"
     static let publicIngressPath = "/xy"
@@ -5834,7 +5837,7 @@ private struct StarredPayload: Decodable {
                            compressed: Bool,
                            timeout: TimeInterval,
                            onProgress: ((Double) -> Void)?) async throws -> String {
-        var roots = API.directUploadBases
+        var roots = await reachableDirectUploadBases()
         if !base.isEmpty, !roots.contains(base) {
             roots.append(base)
         }
@@ -5844,11 +5847,11 @@ private struct StarredPayload: Decodable {
             guard let url = URL(string: root + "/api/upload/raw") else { continue }
             var req = URLRequest(url: url)
             req.httpMethod = "POST"
-            // Direct ports get a tight first-byte budget. A blocked carrier
-            // route falls through in seconds instead of stalling the old path.
-            req.timeoutInterval = index < API.directUploadBases.count
-                ? min(timeout, index == 0 ? 2 : 3)
-                : timeout
+            // Health probes use a short budget; the real upload keeps the full
+            // transfer timeout. A 2-second request timeout cancels mobile
+            // connections before TLS finishes and silently falls back to the
+            // very slow public ingress.
+            req.timeoutInterval = timeout
             req.networkServiceType = .responsiveData
             req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             req.setValue(mime, forHTTPHeaderField: "Content-Type")
@@ -5905,6 +5908,11 @@ private struct StarredPayload: Decodable {
                 return try Self.rawUploadURL(from: responseData)
             } catch {
                 lastError = error
+                if API.directUploadBases.contains(root) {
+                    uploadRouteLock.lock()
+                    cachedDirectUploadAt = .distantPast
+                    uploadRouteLock.unlock()
+                }
                 if API.isConnectivity(error), index + 1 < roots.count {
                     continue
                 }
@@ -5912,6 +5920,55 @@ private struct StarredPayload: Decodable {
             }
         }
         throw lastError ?? APIError.message("服务器地址不正确")
+    }
+
+    private func reachableDirectUploadBases() async -> [String] {
+        let roots = API.directUploadBases
+        guard !roots.isEmpty else { return [] }
+        uploadRouteLock.lock()
+        let cached = cachedDirectUploadBases
+        let cacheAge = Date().timeIntervalSince(cachedDirectUploadAt)
+        uploadRouteLock.unlock()
+        if cacheAge < (cached.isEmpty ? 15 : 120) {
+            return cached
+        }
+        let probeSession = session
+        let reachable = await withTaskGroup(
+            of: (Int, String, Bool).self,
+            returning: [(Int, String)].self
+        ) { group in
+            for (index, root) in roots.enumerated() {
+                group.addTask { [token, probeSession] in
+                    guard let url = URL(string: root + "/api/version") else {
+                        return (index, root, false)
+                    }
+                    var request = URLRequest(url: url)
+                    request.httpMethod = "GET"
+                    request.timeoutInterval = 6
+                    request.networkServiceType = .responsiveData
+                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                    request.setValue("application/json", forHTTPHeaderField: "Accept")
+                    do {
+                        let (_, response) = try await probeSession.data(for: request)
+                        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                        return (index, root, (200...299).contains(status))
+                    } catch {
+                        return (index, root, false)
+                    }
+                }
+            }
+            var hits: [(Int, String)] = []
+            for await (index, root, ok) in group where ok {
+                hits.append((index, root))
+            }
+            return hits.sorted { $0.0 < $1.0 }.map { ($0.0, $0.1) }
+        }
+        let result = reachable.map(\.1)
+        uploadRouteLock.lock()
+        cachedDirectUploadBases = result
+        cachedDirectUploadAt = Date()
+        uploadRouteLock.unlock()
+        return result
     }
 
     private static func rawUploadURL(from d: Data) throws -> String {

@@ -54,6 +54,13 @@ require(
     "the fallback badge total must keep the same muted-session rule as the server",
 )
 require(
+    "private var locallyHiddenUnread: [String: Int] = [:]" in APP
+    and "locallyHiddenUnread[chatId] = hidden?.muted == true" in APP
+    and "let hiddenUnread = locallyHiddenUnread.values.reduce(0, +)" in APP
+    and "authoritativeUnreadTotal - hiddenUnread" in APP,
+    "locally hidden conversations must not leave an untraceable badge count",
+)
+require(
     "type: 'read',\n      chatId: chat.id,\n      userId: user.id,\n      seq: lastSeq" in SERVER,
     "cross-device read events must identify the reading user",
 )

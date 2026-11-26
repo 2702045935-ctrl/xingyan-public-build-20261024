@@ -968,13 +968,46 @@ struct ChatDetailView: View {
                 .suffix(Self.initialMessageSeed)
         )
         let draft = ChatDraftStore.shared.text(for: chat.id)
+        let queued = LocalPersistence.loadOutbox(chat.id)
+        let friendBlocked = queued.contains {
+            $0.kind == "text"
+                && (($0.failureReason ?? "").contains("还不是他")
+                    || ($0.failureReason ?? "").contains("还不是她")
+                    || ($0.failureReason ?? "").contains("朋友验证"))
+        }
+        let unavailable = queued.contains {
+            let reason = $0.failureReason ?? ""
+            return reason.contains("会话不存在")
+                || reason.contains("群聊已解散")
+                || reason.contains("你不在这个会话里")
+        }
+        let retainedOutbox = queued.filter { pending in
+            guard friendBlocked || unavailable,
+                  let reason = pending.failureReason else { return true }
+            return !(reason.contains("还不是他")
+                || reason.contains("还不是她")
+                || reason.contains("朋友验证")
+                || reason.contains("会话不存在")
+                || reason.contains("群聊已解散")
+                || reason.contains("你不在这个会话里"))
+        }
+        let restored = draft.isEmpty
+            ? queued.first(where: {
+                $0.kind == "text"
+                    && (($0.failureReason ?? "").contains("还不是他")
+                        || ($0.failureReason ?? "").contains("还不是她")
+                        || ($0.failureReason ?? "").contains("朋友验证"))
+            })?.content ?? ""
+            : draft
         _messages = State(initialValue: seed)
         _loading = State(initialValue: seed.isEmpty)
         _initialCacheReady = State(initialValue: !seed.isEmpty)
         _hiddenMessageIds = State(initialValue: hidden)
-        _outbox = State(initialValue: LocalPersistence.loadOutbox(chat.id))
-        _input = State(initialValue: draft)
-        _lastInputSnapshot = State(initialValue: draft)
+        _outbox = State(initialValue: retainedOutbox)
+        _input = State(initialValue: restored)
+        _lastInputSnapshot = State(initialValue: restored)
+        _peerMessageBlocked = State(initialValue: friendBlocked)
+        _chatUnavailable = State(initialValue: unavailable)
     }
 
     @EnvironmentObject var app: AppState
@@ -1085,6 +1118,7 @@ struct ChatDetailView: View {
     @State private var peerBanned = false
     @State private var peerBanReason = ""
     @State private var peerBlockedByMe = false
+    @State private var peerMessageBlocked = false
 
     @State private var announcePage = ""
     @State private var showAnnouncePage = false
@@ -5570,6 +5604,7 @@ struct ChatDetailView: View {
     private var isFriendPeer: Bool {
         guard !isGroup, !peerId.isEmpty else { return true }
         if (chat.bot ?? "").isEmpty == false || (chat.oaId ?? "").isEmpty == false { return true }
+        if peerMessageBlocked { return false }
         if app.contacts.isEmpty { return true }
         if app.contacts.contains(where: { $0.id == peerId }) { return true }
         if serverPeerRelation == "friend" || serverPeerRelation == "self" { return true }
@@ -5594,6 +5629,7 @@ struct ChatDetailView: View {
             return
         }
         serverPeerRelation = user.relation
+        peerMessageBlocked = false
         peerBanned = user.banned == true
         peerBanReason = user.banReason?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if let meta = try? await API.shared.friendMeta(userId: peerId) {
@@ -5709,6 +5745,8 @@ struct ChatDetailView: View {
                     if let user = result.friend ?? app.contact(for: peerId) {
                         app.applyFriendAccepted(user)
                     }
+                    peerMessageBlocked = false
+                    serverPeerRelation = "friend"
                     await app.loadChats()
                     app.show(Tr("你们已经是朋友了"))
                 } else {
@@ -6883,9 +6921,27 @@ struct ChatDetailView: View {
                 }
             } catch {
                 let reason = (error as? APIError)?.errorDescription ?? "发送失败"
-                if reason.contains("群聊已解散") || reason.contains("你不在这个会话里") {
+                if reason.contains("群聊已解散")
+                    || reason.contains("你不在这个会话里")
+                    || reason.contains("会话不存在") {
                     outbox.removeAll { $0.id == p.id }
                     chatUnavailable = true
+                    LocalPersistence.saveOutbox(chat.id, [])
+                    app.show(reason)
+                    Task { await app.loadChats() }
+                    break
+                } else if p.kind == "text",
+                          (reason.contains("还不是他")
+                            || reason.contains("还不是她")
+                            || reason.contains("朋友验证")) {
+                    // The server has definitively ended the stranger-message
+                    // allowance. Stop presenting an active composer that can
+                    // only fail again; switch to the friend-verification card.
+                    peerMessageBlocked = true
+                    peerRelationChecked = true
+                    serverPeerRelation = "none"
+                    outbox.removeAll { $0.id == p.id }
+                    if input.isEmpty { input = p.content }
                     LocalPersistence.saveOutbox(chat.id, [])
                     app.show(reason)
                     break

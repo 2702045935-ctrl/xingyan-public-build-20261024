@@ -22,6 +22,7 @@ final class AppState: ObservableObject {
     private var locallyHiddenAt: [String: Date] = [:]
     private var locallyHiddenLastMessage: [String: String] = [:]
     private var locallyHiddenLastMessageAt: [String: Date] = [:]
+    private var locallyHiddenUnread: [String: Int] = [:]
     /// 刚读过的会话会短暂挡住分片旧快照，避免服务端尚未追上阅读游标时红点闪回。
     private var locallyReadAt: [String: Date] = [:]
     private var suspiciousChatDropCount = 0
@@ -465,6 +466,7 @@ final class AppState: ObservableObject {
         locallyHiddenAt.removeAll()
         locallyHiddenLastMessage.removeAll()
         locallyHiddenLastMessageAt.removeAll()
+        locallyHiddenUnread.removeAll()
         suspiciousChatDropCount = 0
         prefetched.removeAll()
         chats = []
@@ -1857,6 +1859,9 @@ final class AppState: ObservableObject {
         locallyHiddenLastMessageAt[chatId] = TimeFmt.date(
             hidden?.lastMessage?.createdAt ?? hidden?.updatedAt ?? ""
         )
+        locallyHiddenUnread[chatId] = hidden?.muted == true
+            ? 0
+            : max(0, hidden?.unreadCount ?? 0)
         optimisticChats[chatId] = nil
         optimisticAt[chatId] = nil
         chats.removeAll { $0.id == chatId }
@@ -1869,6 +1874,7 @@ final class AppState: ObservableObject {
         locallyHiddenAt.removeValue(forKey: chatId)
         locallyHiddenLastMessage.removeValue(forKey: chatId)
         locallyHiddenLastMessageAt.removeValue(forKey: chatId)
+        locallyHiddenUnread.removeValue(forKey: chatId)
     }
 
     private func hiddenChatHasNewerActivity(_ chat: Chat) -> Bool {
@@ -1902,6 +1908,7 @@ final class AppState: ObservableObject {
         locallyHiddenAt.removeValue(forKey: chat.id)
         locallyHiddenLastMessage.removeValue(forKey: chat.id)
         locallyHiddenLastMessageAt.removeValue(forKey: chat.id)
+        locallyHiddenUnread.removeValue(forKey: chat.id)
         let before = chats.first(where: { $0.id == chat.id })
         var row = before ?? chat
         var advancedSummary = false
@@ -2261,6 +2268,7 @@ final class AppState: ObservableObject {
         locallyHiddenAt.removeValue(forKey: incoming.id)
         locallyHiddenLastMessage.removeValue(forKey: incoming.id)
         locallyHiddenLastMessageAt.removeValue(forKey: incoming.id)
+        locallyHiddenUnread.removeValue(forKey: incoming.id)
         var rows = chats
         let previous = rows.first(where: { $0.id == incoming.id })
         var updated = incoming
@@ -2494,7 +2502,8 @@ final class AppState: ObservableObject {
 
     var unreadForIcon: Int {
         if let authoritativeUnreadTotal {
-            return min(999, max(0, authoritativeUnreadTotal))
+            let hiddenUnread = locallyHiddenUnread.values.reduce(0, +)
+            return min(999, max(0, authoritativeUnreadTotal - hiddenUnread))
         }
         var n = 0
         for c in chats where c.muted != true { n += c.unreadCount }
@@ -2564,6 +2573,7 @@ final class AppState: ObservableObject {
             locallyHiddenAt.removeAll()
             locallyHiddenLastMessage.removeAll()
             locallyHiddenLastMessageAt.removeAll()
+            locallyHiddenUnread.removeAll()
             contacts = []
             moments = []
             showSavedLogin = false
@@ -2583,6 +2593,7 @@ final class AppState: ObservableObject {
         locallyHiddenAt.removeAll()
         locallyHiddenLastMessage.removeAll()
         locallyHiddenLastMessageAt.removeAll()
+        locallyHiddenUnread.removeAll()
         contacts = []
         moments = []
         showSavedLogin = true

@@ -48,7 +48,27 @@ require(
     "rapid sends must drain newly appended outbox items without another trigger",
 )
 require(
-    "await app.loadChats()" not in flush_block
+    "if peerMessageBlocked { return false }" in CHAT
+    and "peerMessageBlocked = true" in CHAT
+    and "serverPeerRelation = \"none\"" in CHAT
+    and "reason.contains(\"朋友验证\")" in flush_block
+    and "if input.isEmpty { input = p.content }" in flush_block,
+    "a friend-verification rejection must replace the composer and restore the draft",
+)
+require(
+    "reason.contains(\"会话不存在\")" in flush_block
+    and "chatUnavailable = true" in flush_block
+    and "Task { await app.loadChats() }" in flush_block,
+    "a missing conversation must unblock the retry loop and refresh the list",
+)
+require(
+    "let friendBlocked = queued.contains" in CHAT
+    and "_peerMessageBlocked = State(initialValue: friendBlocked)" in CHAT
+    and "let retainedOutbox = queued.filter" in CHAT,
+    "an already persisted friend rejection must not resurrect an unusable composer",
+)
+require(
+    "                    await app.loadChats()\n" not in flush_block
     and "scheduleChatListRefreshAfterSend()" in flush_block,
     "sending must not block acknowledgement on a full conversation-list refresh",
 )
