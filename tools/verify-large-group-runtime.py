@@ -28,7 +28,8 @@ require(
 require(
     "function fanoutChatMessage(chat, message, sender, clientId)" in SERVER
     and "function onlineMembersOfChat(chat, online)" in SERVER
-    and "const recipients = onlineMembersOfChat(chat, online);" in SERVER
+    and "const recipients = onlineMembersOfChat(chat, deliveryOnline);" in SERVER
+    and "const deliveryOnline = deliveryPresenceSet();" in SERVER
     and "for (const id of recipients)" in SERVER
     and "fanoutChatMessage(chat, message, user, clientId);" in SERVER,
     "message fanout must personalize summaries only for currently online members",

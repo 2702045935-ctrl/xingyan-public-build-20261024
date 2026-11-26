@@ -48,9 +48,10 @@ require(
     "identical WebSocket payloads must reuse one encoded frame",
 )
 require(
-    "if immediate != nil" in APP
-    and "notifyIncomingRow(immediate)" in APP
-    and "self.notifyIncomingRow(cid.isEmpty" in APP,
+    "let applied = applyRealtimeDelivery(" in APP
+    and "if !applied {" in APP
+    and "private func applyRealtimeDelivery(" in APP
+    and "notifyIncomingRow(immediate)" not in APP,
     "message events with a realtime summary must not reload the complete chat list",
 )
 require(
