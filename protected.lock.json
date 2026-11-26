@@ -58,8 +58,8 @@
     },
     {
       "path": "Sources/NativeChatRowCell.swift",
-      "size": 33466,
-      "sha256": "f27beaace81f62d3b872475f94cd89aaf92eecbd7d7154361fcceb02a16926e1"
+      "size": 42333,
+      "sha256": "50aafbe5675786f95c2d4c1de7b7bf0d22d81afd21262eaf32a4b2e6bfa68dc7"
     },
     {
       "path": "Sources/WeChatMessageCards.swift",
