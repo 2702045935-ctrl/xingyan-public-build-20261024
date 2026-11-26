@@ -34,6 +34,18 @@ check(
     "the direct Cell endpoint must retain certificate pinning",
 )
 check(
+    "API.publicIngressPath + \"/api/upload/raw\"" in API
+    and "API.publicIngressPath + \"/api/upload\"" in API,
+    "image uploads must retain a public-ingress fallback when direct connectivity is unavailable",
+)
+check(
+    "let up = try? await API.shared.uploadImageForSend(" not in
+    (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
+    and "图片上传不完整，请重试" in
+    (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8"),
+    "Moments publishing must never silently convert a failed image upload into a text-only post",
+)
+check(
     "API.shared.realtimePathPrefix" in REALTIME,
     "realtime WebSocket URLs must preserve the trusted ingress path",
 )

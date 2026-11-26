@@ -3493,23 +3493,34 @@ struct MomentsView: View {
             var sizes: [String: [Int]] = [:]
 
             var mResults: [(idx: Int, url: String, w: Int, h: Int, data: Data)] = []
+            var uploadFailures: [String] = []
             let total = max(1, picked.count)
             var completed = 0
-            await withTaskGroup(of: (Int, String, Int, Int, Data).self) { group in
+            await withTaskGroup(of: (Int, String, Int, Int, Data, String?).self) { group in
                 var nextIdx = 0
                 func addUpload(_ i: Int) {
                     let img = picked[i]
                     let w = Int(img.size.width.rounded()), h = Int(img.size.height.rounded())
                     group.addTask {
-                        let up = try? await API.shared.uploadImageForSend(
-                            img, original: false, maxSide: 1080, quality: 0.70
-                        )
-                        return (i, up?.url ?? "", w, h, up?.data ?? Data())
+                        do {
+                            let up = try await API.shared.uploadImageForSend(
+                                img, original: false, maxSide: 1080, quality: 0.70
+                            )
+                            guard !up.url.isEmpty else {
+                                return (i, "", w, h, Data(), "图片上传失败")
+                            }
+                            return (i, up.url, w, h, up.data, nil)
+                        } catch {
+                            let message = (error as? APIError)?.errorDescription
+                                ?? error.localizedDescription
+                            return (i, "", w, h, Data(), message)
+                        }
                     }
                 }
                 while nextIdx < min(6, picked.count) { addUpload(nextIdx); nextIdx += 1 }
                 for await r in group {
                     if !r.1.isEmpty { mResults.append((idx: r.0, url: r.1, w: r.2, h: r.3, data: r.4)) }
+                    if let failure = r.5, !failure.isEmpty { uploadFailures.append(failure) }
                     completed += 1
                     let progress = 0.05 + Double(completed) / Double(total) * 0.72
                     await MainActor.run {
@@ -3518,6 +3529,24 @@ struct MomentsView: View {
                     }
                     if nextIdx < picked.count { addUpload(nextIdx); nextIdx += 1 }
                 }
+            }
+            if !picked.isEmpty, !uploadFailures.isEmpty {
+                let message = uploadFailures.first ?? "图片上传失败"
+                await MainActor.run {
+                    publishError = message
+                    uploading = false
+                }
+                app.show(message)
+                return
+            }
+            if !picked.isEmpty, mResults.count != picked.count {
+                let message = Tr("图片上传不完整，请重试")
+                await MainActor.run {
+                    publishError = message
+                    uploading = false
+                }
+                app.show(message)
+                return
             }
             for r in mResults.sorted(by: { $0.idx < $1.idx }) {
                 urls.append(r.url)

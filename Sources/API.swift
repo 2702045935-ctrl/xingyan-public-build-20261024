@@ -5805,21 +5805,42 @@ private struct StarredPayload: Decodable {
         if let url = try? await uploadRawJPEG(data, onProgress: onProgress) {
             return url
         }
+        let publicBase = "https://" + API.publicIngressServer
+        let publicRawPath = API.publicIngressPath + "/api/upload/raw"
+        if let url = try? await uploadRawJPEG(
+            data,
+            base: publicBase,
+            path: publicRawPath,
+            onProgress: onProgress
+        ) {
+            return url
+        }
         onProgress?(0.15)
         let b64 = data.base64EncodedString()
-        let payload: UploadPayload = try await postDirectUpload([
+        let body: [String: Any] = [
             "dataUrl": "data:image/jpeg;base64," + b64,
             "filename": "photo.jpg"
-        ])
+        ]
+        let payload: UploadPayload
+        do {
+            payload = try await postDirectUpload(body)
+        } catch {
+            payload = try await postDirectUpload(
+                body,
+                base: publicBase,
+                path: API.publicIngressPath + "/api/upload"
+            )
+        }
         guard let path = payload.url else { throw APIError.message("上传失败") }
         onProgress?(1)
         return path
     }
 
     private func postDirectUpload<T: Decodable>(_ body: [String: Any],
+                                                base: String = API.directUploadBases[0],
                                                 path: String = "/api/upload",
                                                 timeout: TimeInterval = 120) async throws -> T {
-        guard let url = URL(string: API.directUploadBases[0] + path) else {
+        guard let url = URL(string: base + path) else {
             throw APIError.message("服务器地址不正确")
         }
         var req = URLRequest(url: url)
@@ -5837,8 +5858,10 @@ private struct StarredPayload: Decodable {
     }
 
     private func uploadRawJPEG(_ data: Data,
+                               base: String = API.directUploadBases[0],
+                               path: String = "/api/upload/raw",
                                onProgress: ((Double) -> Void)? = nil) async throws -> String {
-        guard let url = URL(string: API.directUploadBases[0] + "/api/upload/raw") else {
+        guard let url = URL(string: base + path) else {
             throw APIError.message("服务器地址不正确")
         }
         var req = URLRequest(url: url)
