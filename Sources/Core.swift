@@ -926,6 +926,10 @@ final class ImageStore {
         }
     }
 
+    func putAvatar(_ key: String, _ img: UIImage) {
+        put(key, img)
+    }
+
     func clear() {
         lock.lock(); defer { lock.unlock() }
         cache.removeAll(keepingCapacity: false)
