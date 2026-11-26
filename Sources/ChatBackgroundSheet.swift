@@ -186,18 +186,6 @@ struct ChatBackgroundSheet: View {
     private var inChat: Bool { !chatId.isEmpty }
     @ObservedObject private var store = ChatBgStore.shared
 
-    private var wallpaperCardFill: Color {
-        scheme == .dark ? C.cardBg : C.meCardBg
-    }
-
-    private var wallpaperCardLine: Color {
-        scheme == .dark ? C.hairline : Color.primary.opacity(0.055)
-    }
-
-    private var wallpaperCardLineWidth: CGFloat {
-        scheme == .dark ? 0.8 : 0.6
-    }
-
     private var defaultWallpaperPath: String {
         effectiveDefaultChatBackground(app.defaultChatBackground)
     }
@@ -355,29 +343,6 @@ struct ChatBackgroundSheet: View {
             }
         }
         .tint(.accentColor)
-    }
-
-    private var wallpaperDivider: some View {
-        Rectangle()
-            .fill(scheme == .dark ? C.hairline : Color.primary.opacity(0.075))
-            .frame(height: 0.5)
-            .padding(.leading, 60)
-    }
-
-    private func wallpaperSectionHeader(_ title: String,
-                                        detail: String? = nil) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title)
-                .font(pfStyled(size: 13.5, weight: .semibold))
-                .foregroundStyle(.primary)
-            Spacer(minLength: 8)
-            if let detail {
-                Text(detail)
-                    .font(pfStyled(size: 11.5, weight: .medium))
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.horizontal, 2)
     }
 
     private func wallpaperChoiceRow(symbol: String,

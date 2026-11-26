@@ -683,41 +683,6 @@ struct ShareSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var moreCard: some View {
-        Button {
-            UIPasteboard.general.string = copyText
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-            withAnimation(.easeOut(duration: 0.16)) { copied = true }
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "doc.on.doc")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(ShareSheetTheme.accent)
-                    .frame(width: 36, height: 36)
-                    .background(ShareSheetTheme.accent.opacity(0.10), in: Circle())
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Tr("复制原始内容"))
-                        .font(pf(14.5, .medium))
-                        .foregroundStyle(ShareSheetTheme.ink(scheme))
-                    Text(Tr("适合粘贴到聊天、备忘录或其他应用"))
-                        .font(pf(10.5))
-                        .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(ShareSheetTheme.secondaryInk(scheme).opacity(0.62))
-            }
-            .padding(.horizontal, 14)
-            .frame(height: 66)
-            .background(ShareSheetTheme.card(scheme),
-                        in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        }
-        .buttonStyle(MenuPressStyle())
-        .disabled(copyText == nil)
-        .opacity(copyText == nil ? 0.45 : 1)
-    }
-
     private var cancelButton: some View {
         Button { dismiss() } label: {
             Text(Tr("取消"))
