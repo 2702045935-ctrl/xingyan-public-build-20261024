@@ -411,7 +411,7 @@ enum MediaTool {
             longSide = Int(max(abs(sz.width), abs(sz.height)))
         }
 
-        if size > 0, size <= 8 * 1024 * 1024,
+        if size > 0, size <= 1_800_000,
            secs > 0, secs <= 60,
            longSide > 0, longSide <= 1280 {
             return false
@@ -433,10 +433,11 @@ enum MediaTool {
         export.shouldOptimizeForNetworkUse = true
         let sourceSeconds = (try? await asset.load(.duration))?.seconds ?? 30
         let limitSeconds = max(1, min(60, sourceSeconds))
-        // 与服务器“可直接接收”的视频规格对齐：H.264/AAC、最长 60 秒、
-        // 不超过 8MB，码率控制在约 2Mbps，避免上传到 100% 后再被二次转码。
-        let targetBytes = Int64(limitSeconds * 2_000_000 / 8)
-        export.fileLengthLimit = max(Int64(250_000), min(Int64(7_500_000), targetBytes))
+        // The deployed legacy server synchronously re-transcodes files above
+        // 1.8 MB even after the client reaches 100%. Keep normal chat exports
+        // below that boundary so the old and new servers both return immediately.
+        let targetBytes = Int64(limitSeconds * 500_000 / 8)
+        export.fileLengthLimit = max(Int64(200_000), min(Int64(1_800_000), targetBytes))
 
         let t0 = Date()
         let secs = sourceSeconds

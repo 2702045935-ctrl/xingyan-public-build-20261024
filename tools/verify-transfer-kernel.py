@@ -10,6 +10,7 @@ MEDIA = (ROOT / "Sources" / "ChatMediaBubbles.swift").read_text(encoding="utf-8"
 MEDIA_ROW = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(
     encoding="utf-8"
 )
+MEDIA_PICKER = (ROOT / "Sources" / "MediaPicker.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -146,6 +147,11 @@ require(
 require(
     "node server/test/transfer-kernel.test.js" not in WORKFLOW,
     "the iOS build must not run the removed transfer-kernel path",
+)
+require(
+    "size <= 1_800_000" in MEDIA_PICKER
+    and "min(Int64(1_800_000), targetBytes)" in MEDIA_PICKER,
+    "normal chat video exports must stay below the legacy server's synchronous transcode threshold",
 )
 
 print("upload-baseline-1121: passed")
