@@ -161,13 +161,7 @@ struct AppleSettingsView: View {
                 NavigationLink {
                     SupportView()
                 } label: {
-                    settingsRow(Tr("帮助与客服"), symbol: "questionmark.circle.fill",
-                                color: .blue)
-                }
-                NavigationLink {
-                    FeedbackView()
-                } label: {
-                    settingsRow(Tr("帮助与反馈"), symbol: "bubble.left.and.bubble.right.fill",
+                    settingsRow(Tr("帮助与反馈"), symbol: "questionmark.circle.fill",
                                 color: .blue)
                 }
                 NavigationLink {

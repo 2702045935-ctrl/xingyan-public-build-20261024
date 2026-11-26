@@ -1823,6 +1823,22 @@ enum L10n {
         "这个会话暂时打不开，请刷新后重试": "This conversation can't be opened right now. Refresh and try again",
         "联系人索引": "Contact index",
         "上下轻扫切换字母": "Swipe up or down to change the letter",
+        "反馈已提交": "Feedback submitted",
+        "选择最接近的类型，方便我们更快分派。": "Choose the closest type to help us route it faster.",
+        "问题描述": "Problem description",
+        "截图": "Screenshots",
+        "手机号或邮箱（选填）": "Phone or email (optional)",
+        "需要进一步确认时，我们可能通过这里联系你。": "We may contact you here if we need more information.",
+        "查看处理进度和官方回复": "View status and official replies",
+        "提交时间": "Submitted",
+        "请勿填写密码、验证码或支付密码。": "Do not enter passwords, verification codes, or payment passwords.",
+        "最多 3 张。截图能帮助我们更快定位问题。": "Up to 3 screenshots. They help us find the cause faster.",
+        "保护未成年人的使用范围": "Protect a minor's access",
+        "开启后会限制部分内容入口，并可按需要管理支付权限。关闭或修改设置需要独立密码。": "This limits selected content and lets you manage payment access. The PIN is required to change or turn it off.",
+        "开启后限制": "Restricted when on",
+        "监护状态": "Guardian status",
+        "这是当前字号下的正文预览，修改后会立即应用到 App。": "This is a body-text preview at the current size. Changes apply immediately.",
+        "纯色壁纸始终可用，并会跟随深浅模式使用相应层级。": "Solid colors are always available and adapt to light and dark mode.",
 
     ]
 }

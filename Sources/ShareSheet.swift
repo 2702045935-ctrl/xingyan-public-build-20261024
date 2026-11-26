@@ -168,9 +168,7 @@ struct ShareBrandRail: View {
             .padding(.vertical, 12)
             .background {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.thinMaterial)
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(ShareSheetTheme.card(scheme).opacity(scheme == .dark ? 0.52 : 0.60))
+                    .fill(.regularMaterial)
             }
         }
     }
@@ -197,11 +195,11 @@ struct ShareFile: Identifiable {
 /// The hierarchy follows Xiaohongshu: content preview, compact circular
 /// actions, secondary utility row, then one explicit cancel action.
 enum ShareSheetTheme {
-    static let accent = Color(hex: 0xFF2442)
-    static let secondaryAccent = Color(hex: 0x2AAE88)
+    static var accent: Color { Color.dyn(0x0F8B65, 0x36CA95) }
+    static var secondaryAccent: Color { Color.dyn(0x007AFF, 0x0A84FF) }
 
     static func page(_ scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(hex: 0x111113) : Color(hex: 0xF7F7F8)
+        scheme == .dark ? Color(hex: 0x0A0A0A) : Color(hex: 0xF2F2F7)
     }
 
     @ViewBuilder
@@ -215,15 +213,15 @@ enum ShareSheetTheme {
     }
 
     static func card(_ scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(hex: 0x1D1D20) : .white
+        scheme == .dark ? Color(hex: 0x1C1C1E) : .white
     }
 
     static func ink(_ scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(hex: 0xF5F5F7) : Color(hex: 0x171719)
+        scheme == .dark ? Color(hex: 0xF2F2F7) : Color(hex: 0x1C1C1E)
     }
 
     static func secondaryInk(_ scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(hex: 0x99999F) : Color(hex: 0x707077)
+        scheme == .dark ? Color(hex: 0x8E8E93) : Color(hex: 0x6C6C70)
     }
 }
 
@@ -253,8 +251,6 @@ struct SharePreviewCard<Content: View>: View {
             .background {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(.regularMaterial)
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(ShareSheetTheme.card(scheme).opacity(scheme == .dark ? 0.54 : 0.64))
             }
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay {
@@ -262,8 +258,8 @@ struct SharePreviewCard<Content: View>: View {
                     .stroke(Color.primary.opacity(scheme == .dark ? 0.08 : 0.05),
                             lineWidth: 0.7)
             }
-            .shadow(color: Color.black.opacity(scheme == .dark ? 0.24 : 0.055),
-                    radius: 18, y: 8)
+            .shadow(color: Color.black.opacity(scheme == .dark ? 0.18 : 0.035),
+                    radius: 12, y: 5)
     }
 }
 
@@ -328,6 +324,53 @@ struct ShareActionTile: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct ShareActionRow: View {
+    @Environment(\.colorScheme) private var scheme
+
+    let title: String
+    let subtitle: String?
+    let symbol: String
+    let tint: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: symbol)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: 34, height: 34)
+                    .background(
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(tint.opacity(scheme == .dark ? 0.18 : 0.10))
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Tr(title))
+                        .font(.body)
+                        .foregroundStyle(ShareSheetTheme.ink(scheme))
+                    if let subtitle, !subtitle.isEmpty {
+                        Text(Tr(subtitle))
+                            .font(.caption)
+                            .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(ShareSheetTheme.secondaryInk(scheme).opacity(0.62))
+            }
+            .padding(.horizontal, 16)
+            .frame(minHeight: 58)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(MenuPressStyle())
     }
 }
 
@@ -435,11 +478,7 @@ struct ShareSheet: View {
                 VStack(spacing: 18) {
                     preview
                     brandRail
-                    shareSectionTitle(Tr("更多操作"))
                     actionRail
-                    if copyText != nil {
-                        moreCard
-                    }
                     privacyNote
                 }
                 .padding(.horizontal, 16)
@@ -549,57 +588,67 @@ struct ShareSheet: View {
     }
 
     private var actionRail: some View {
-        HStack(alignment: .top, spacing: 8) {
-            if copyText != nil {
-                ShareActionTile(
-                    title: copied ? "已复制" : "复制链接",
-                    subtitle: copied ? nil : "发送给朋友",
-                    symbol: copied ? "checkmark" : "link",
-                    tint: ShareSheetTheme.accent
+        VStack(alignment: .leading, spacing: 8) {
+            shareSectionTitle(Tr("更多操作"))
+
+            VStack(spacing: 0) {
+                if copyText != nil {
+                    ShareActionRow(
+                        title: copied ? "已复制" : "复制链接",
+                        subtitle: copied ? nil : "发送给朋友",
+                        symbol: copied ? "checkmark" : "link",
+                        tint: ShareSheetTheme.accent
+                    ) {
+                        UIPasteboard.general.string = copyText
+                        withAnimation(.easeOut(duration: 0.16)) { copied = true }
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    }
+
+                    if image != nil || copyText != nil {
+                        Divider().padding(.leading, 62)
+                    }
+                }
+
+                if image != nil {
+                    ShareActionRow(
+                        title: saved ? "已保存" : "保存图片",
+                        subtitle: saved ? nil : "存入相册",
+                        symbol: saved ? "checkmark" : "arrow.down.to.line.compact",
+                        tint: ShareSheetTheme.secondaryAccent
+                    ) {
+                        guard let image else { return }
+                        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                        withAnimation(.easeOut(duration: 0.16)) { saved = true }
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    }
+                    Divider().padding(.leading, 62)
+                }
+
+                ShareActionRow(
+                    title: "系统分享",
+                    subtitle: "更多应用",
+                    symbol: "square.and.arrow.up",
+                    tint: ShareSheetTheme.secondaryAccent
                 ) {
-                    UIPasteboard.general.string = copyText
-                    withAnimation(.easeOut(duration: 0.16)) { copied = true }
-                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    presentSystemShare()
+                }
+
+                if copyText != nil {
+                    Divider().padding(.leading, 62)
+                    ShareActionRow(
+                        title: "复制内容",
+                        subtitle: "复制原始内容",
+                        symbol: "doc.on.doc",
+                        tint: ShareSheetTheme.accent
+                    ) {
+                        UIPasteboard.general.string = copyText
+                        withAnimation(.easeOut(duration: 0.16)) { copied = true }
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    }
                 }
             }
-            if image != nil {
-                ShareActionTile(
-                    title: saved ? "已保存" : "保存图片",
-                    subtitle: saved ? nil : "存入相册",
-                    symbol: saved ? "checkmark" : "arrow.down.to.line.compact",
-                    tint: Color(hex: 0x2B8CF6)
-                ) {
-                    guard let image else { return }
-                    UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-                    withAnimation(.easeOut(duration: 0.16)) { saved = true }
-                    UINotificationFeedbackGenerator().notificationOccurred(.success)
-                }
-            }
-            ShareActionTile(
-                title: "系统分享",
-                subtitle: "更多应用",
-                symbol: "square.and.arrow.up",
-                tint: ShareSheetTheme.secondaryAccent
-            ) {
-                presentSystemShare()
-            }
-            ShareActionTile(
-                title: "关闭",
-                subtitle: "返回页面",
-                symbol: "xmark",
-                tint: Color(hex: 0x8B8B91)
-            ) {
-                dismiss()
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 12)
-        .background {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.thinMaterial)
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(ShareSheetTheme.card(scheme).opacity(scheme == .dark ? 0.52 : 0.60))
+            .background(.regularMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }
 

@@ -97,6 +97,7 @@ jobs:
           python3 tools/verify-chat-chrome-contrast.py
           python3 tools/verify-recall-preview.py
           python3 tools/verify-preview-semantics.py
+          python3 tools/verify-success-toast.py
           python3 tools/verify-group-announce.py
           python3 tools/verify-group-top-frost.py
           python3 tools/verify-deleted-friend-send.py
@@ -123,6 +124,7 @@ jobs:
           python3 tools/verify-video-works-integration.py
           python3 tools/verify-video-publish-douyin.py
           python3 tools/verify-phone-theme-previews.py
+          python3 tools/verify-photo-picker-performance.py
           python3 tools/verify-chat-prepend-anchor.py
           python3 tools/verify-news-compact-scroll.py
           python3 tools/verify-native-list-incremental-signatures.py
@@ -151,6 +153,7 @@ jobs:
           python3 tools/verify-moment-own-publish.py
           python3 tools/verify-me-current.py
           python3 tools/verify-me-native.py
+          python3 tools/verify-system-settings-pages.py
           python3 tools/verify-works-topbar.py
           python3 tools/verify-catalog-refresh-cache.py
           python3 tools/verify-mall-module.py

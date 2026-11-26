@@ -30,27 +30,29 @@ struct FontSettingsView: View {
     var body: some View {
         List {
             Section {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("星言 · 让连接有自己的轨道")
-                        .font(pf(20, .semibold))
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Aa")
+                        .font(pf(38, .semibold))
                         .foregroundStyle(C.label)
-                    Text("Aa  字体预览  123  Hello, Xingyan")
+                    Text("星言 Xingyan 123")
+                        .font(pf(17))
+                        .foregroundStyle(C.label)
+                    Text(Tr("这是当前字号下的正文预览，修改后会立即应用到 App。"))
                         .font(pf(14))
                         .foregroundStyle(C.subLabel)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                    HStack(spacing: 8) {
-                        Image(systemName: "textformat")
-                            .font(.system(size: 11, weight: .semibold))
-                        Text(store.family.isEmpty ? Tr("苹方 · 默认") : store.family)
-                            .lineLimit(1)
-                        Spacer(minLength: 0)
+                    Divider()
+
+                    LabeledContent {
                         Text("\(Int(store.scale * 100))%")
                             .monospacedDigit()
+                    } label: {
+                        Label(familyTitle, systemImage: "textformat")
                     }
-                    .font(pfStyled(size: 11, weight: .medium))
-                    .foregroundStyle(OrbitTheme.jade)
+                    .font(.subheadline)
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 6)
             } header: {
                 Text(Tr("字体预览"))
             }
@@ -67,7 +69,8 @@ struct FontSettingsView: View {
                         in: 0.80...1.40,
                         step: 0.02
                     )
-                    .tint(OrbitTheme.jade)
+                    .tint(Color.accentColor)
+                    .accessibilityLabel(Tr("字号"))
                     Text("A")
                         .font(pfStyled(size: 23, weight: .semibold))
                 }
@@ -103,9 +106,9 @@ struct FontSettingsView: View {
                         HStack(spacing: 12) {
                             Image(systemName: "character.book.closed.fill")
                                 .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(OrbitTheme.jade)
+                                .foregroundStyle(Color.accentColor)
                                 .frame(width: 30, height: 30)
-                                .background(OrbitTheme.jadeSoft)
+                                .background(Color.accentColor.opacity(0.12))
                                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(Tr("字体样式"))
@@ -124,14 +127,14 @@ struct FontSettingsView: View {
                             store.setFamily("", canChoose: canChooseFont)
                         } label: {
                             Text(Tr("恢复默认字体"))
-                                .foregroundStyle(C.red)
+                                .foregroundStyle(.red)
                         }
                     }
                 } else {
                     HStack(alignment: .top, spacing: 11) {
                         Image(systemName: "lock.shield.fill")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(OrbitTheme.tertiary)
+                            .foregroundStyle(.secondary)
                             .padding(.top, 2)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(Tr("字体样式由管理员统一设置"))
@@ -214,20 +217,25 @@ struct FontFamilyPickerView: View {
                 }
                 .listStyle(.insetGrouped)
                 .searchable(text: $query, prompt: Text(Tr("搜索字体")))
-            } else {
-                VStack(spacing: 13) {
-                    Image(systemName: "lock.shield.fill")
-                        .font(.system(size: 36, weight: .light))
-                        .foregroundStyle(OrbitTheme.tertiary)
-                    Text(Tr("仅管理员可用"))
-                        .font(pfStyled(size: 18, weight: .semibold))
-                        .foregroundStyle(C.label)
-                    Text(Tr("字体选择只对管理员开放。"))
-                        .font(pfStyled(size: 13))
-                        .foregroundStyle(C.subLabel)
+                } else {
+                List {
+                    Section {
+                        VStack(spacing: 12) {
+                            Image(systemName: "lock.shield.fill")
+                                .font(.system(size: 34, weight: .light))
+                                .foregroundStyle(.secondary)
+                            Text(Tr("仅管理员可用"))
+                                .font(.headline)
+                            Text(Tr("字体选择只对管理员开放。"))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 34)
+                    }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(C.pageBg.ignoresSafeArea())
+                .listStyle(.insetGrouped)
             }
         }
         .navigationTitle(Tr("选择字体"))
@@ -264,7 +272,7 @@ struct FontFamilyPickerView: View {
                 if store.family == family {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 19, weight: .semibold))
-                        .foregroundStyle(OrbitTheme.jade)
+                        .foregroundStyle(Color.accentColor)
                 }
             }
             .padding(.vertical, 4)

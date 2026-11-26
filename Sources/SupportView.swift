@@ -87,6 +87,31 @@ struct SupportView: View {
                         }
                     }
 
+                    Section(Tr("反馈与建议")) {
+                        NavigationLink {
+                            FeedbackView()
+                                .environmentObject(app)
+                        } label: {
+                            supportActionRow(
+                                symbol: "bubble.left.and.bubble.right.fill",
+                                color: .orange,
+                                title: Tr("意见反馈"),
+                                subtitle: Tr("报告问题、提出界面或功能建议")
+                            )
+                        }
+                        NavigationLink {
+                            FeedbackHistoryView()
+                                .environmentObject(app)
+                        } label: {
+                            supportActionRow(
+                                symbol: "tray.full.fill",
+                                color: .blue,
+                                title: Tr("我的反馈"),
+                                subtitle: Tr("查看处理进度和官方回复")
+                            )
+                        }
+                    }
+
                     if isTicketOn || !tickets.isEmpty {
                         Section(Tr("我的支持")) {
                             if isTicketOn {
@@ -183,20 +208,13 @@ struct SupportView: View {
     private var supportHero: some View {
         HStack(spacing: 16) {
             ZStack {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(hex: 0x28B8F6), Color(hex: 0x087CF0)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.blue.opacity(0.12))
                 Image(systemName: "lifepreserver.fill")
-                    .font(.system(size: 30, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundStyle(Color.blue)
             }
-            .frame(width: 64, height: 64)
-            .shadow(color: Color(hex: 0x087CF0).opacity(0.24), radius: 14, y: 7)
+            .frame(width: 52, height: 52)
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(Tr("需要什么帮助？"))

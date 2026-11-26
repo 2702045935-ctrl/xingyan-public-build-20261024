@@ -1,7 +1,8 @@
 import SwiftUI
+import UIKit
 
 struct FeedbackView: View {
-    @EnvironmentObject var app: AppState
+    @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
 
     @State private var category = "功能异常"
@@ -12,336 +13,259 @@ struct FeedbackView: View {
     @State private var done = false
     @State private var showPhoto = false
     @State private var showCamera = false
-    @State private var showMine = false
+    @State private var showHistory = false
 
-    private let cats = ["功能异常", "产品建议", "界面样式", "其他"]
-    private let maxLen = 200
+    private let categories = ["功能异常", "产品建议", "界面样式", "其他"]
+    private let maxLength = 200
 
     var body: some View {
-        if done {
-
-            VStack(spacing: 0) {
-                Spacer(minLength: 70)
-                ZStack {
-                    Circle()
-                        .fill(RadialGradient(colors: [C.green.opacity(0.28), Color.clear],
-                                             center: .center, startRadius: 2, endRadius: 76))
-                        .frame(width: 152, height: 152)
-                    Circle()
-                        .fill(LinearGradient(colors: [C.green, C.green.opacity(0.78)],
-                                             startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 86, height: 86)
-                        .shadow(color: C.green.opacity(0.35), radius: 14, y: 7)
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 38, weight: .bold))
-                        .foregroundColor(.white)
-                }
-                Text(Tr("感谢你的反馈"))
-                    .font(pf(20, .semibold))
-                    .foregroundColor(C.label)
-                    .padding(.top, 22)
-                Text(Tr("我们会尽快处理，处理结果可以在「我的反馈」里看。"))
-                    .font(pf(13.5))
-                    .foregroundColor(C.subLabel)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 46)
-                    .padding(.top, 8)
-
-                VStack(spacing: 10) {
-                    NavigationLink(value: "feedback.history") {
-                        Text(Tr("查看我的反馈"))
-                            .font(pf(16, .medium))
-                            .foregroundColor(C.green)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(C.green.opacity(0.55), lineWidth: 1.2))
-                    }
-                    .buttonStyle(.plain)
-
-                    Button { dismiss() } label: {
-                        Text(Tr("返回"))
-                            .font(pf(16, .medium))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(LinearGradient(colors: [C.green, C.green.opacity(0.78)],
-                                                     startPoint: .topLeading, endPoint: .bottomTrailing)))
-                            .shadow(color: C.green.opacity(0.30), radius: 10, y: 4)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 40)
-                .padding(.top, 26)
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(C.pageBg.ignoresSafeArea())
-        } else {
-            VStack(spacing: 0) {
-                NavBar(title: Tr("意见反馈"), back: { dismiss() }) {
+        VStack(spacing: 0) {
+            NavBar(
+                title: done ? Tr("反馈已提交") : Tr("意见反馈"),
+                back: { dismiss() }
+            ) {
+                if !done {
                     Button {
                         send()
                     } label: {
                         Text(busy ? Tr("提交中…") : Tr("提交"))
-                            .font(pf(14.5, .medium))
-                            .foregroundColor(content.isEmpty || busy ? C.subLabel : .white)
-                            .padding(.horizontal, 15)
-                            .frame(height: 32)
-                            .background(
-                                Capsule().fill(content.isEmpty || busy
-                                    ? AnyShapeStyle(Color.dyn(0xEDEDED, 0x2C2C2E))
-                                    : AnyShapeStyle(LinearGradient(colors: [C.green, C.green.opacity(0.78)],
-                                                                   startPoint: .topLeading, endPoint: .bottomTrailing)))
-                            )
-                            .padding(.trailing, 14)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(canSubmit
+                                             ? Color.accentColor
+                                             : Color.secondary)
+                            .padding(.trailing, 16)
                     }
                     .buttonStyle(.plain)
-                    .disabled(content.isEmpty || busy)
+                    .disabled(!canSubmit)
                 }
+            }
 
-                ScrollView {
-                    VStack(spacing: 0) {
+            if done {
+                successList
+            } else {
+                feedbackForm
+            }
+        }
+        .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .swipeBack { dismiss() }
+        .hidesTabBar()
+        .sheet(isPresented: $showPhoto) {
+            PhotosPicker(limit: 3 - picked.count) { images in
+                picked.append(contentsOf: images.prefix(3 - picked.count))
+            }
+        }
+        .sheet(isPresented: $showCamera) {
+            CameraPicker { image in
+                if picked.count < 3 {
+                    picked.append(image)
+                }
+            }
+        }
+        .sheet(isPresented: $showHistory) {
+            FeedbackHistoryView()
+                .environmentObject(app)
+        }
+    }
 
-                        VStack(alignment: .leading, spacing: 9) {
-                            Text(Tr("问题类型"))
-                                .font(pf(12.5))
-                                .foregroundColor(C.subLabel)
-                                .padding(.leading, 4)
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2),
-                                      spacing: 10) {
-                                ForEach(cats, id: \.self) { c in
-                                    Button { category = c } label: {
-                                        HStack(spacing: 10) {
-                                            ZStack {
-                                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                                    .fill(LinearGradient(colors: catColors(c),
-                                                                         startPoint: .topLeading,
-                                                                         endPoint: .bottomTrailing))
-                                                    .frame(width: 34, height: 34)
-                                                Image(systemName: catIcon(c))
-                                                    .font(.system(size: 15, weight: .semibold))
-                                                    .foregroundColor(.white)
-                                            }
-                                            Text(Tr(c))
-                                                .font(pf(14.5, category == c ? .medium : .regular))
-                                                .foregroundColor(C.label)
-                                                .lineLimit(1)
-                                            Spacer(minLength: 0)
-                                            if category == c {
-                                                Image(systemName: "checkmark.circle.fill")
-                                                    .font(.system(size: 15))
-                                                    .foregroundColor(C.green)
-                                            }
-                                        }
-                                        .padding(.horizontal, 12)
-                                        .frame(height: 58)
-                                        .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                            .fill(category == c ? C.green.opacity(0.07) : C.cardBg))
-                                        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                            .stroke(category == c ? C.green.opacity(0.6) : C.hairline,
-                                                    lineWidth: category == c ? 1.2 : 0.6))
-                                        .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-                        .padding(.top, 10)
+    private var canSubmit: Bool {
+        !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !busy
+    }
 
-                        Text(Tr("问题描述"))
-                            .font(pf(12.5))
-                            .foregroundColor(C.subLabel)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 4)
-                            .padding(.top, 14)
-                            .padding(.bottom, 6)
-                        VStack(spacing: 0) {
-                            ZStack(alignment: .topLeading) {
-                                if content.isEmpty {
-                                    Text(Tr("说说遇到的问题，或者你希望加什么功能…"))
-                                        .font(pf(15)).foregroundColor(C.subLabel)
-                                        .padding(.horizontal, 16).padding(.top, 14)
-                                }
-                                TextEditor(text: $content)
-                                    .font(pf(15))
-                                    .scrollContentBackground(.hidden)
-                                    .frame(height: 150)
-                                    .padding(.horizontal, 11)
-                                    .padding(.top, 6)
-                                    .onChange(of: content) { v in
-                                        if v.count > maxLen { content = String(v.prefix(maxLen)) }
-                                    }
-                            }
-                            HStack {
-                                Spacer(minLength: 0)
-                                Text("\(content.count)/\(maxLen)")
-                                    .font(pf(12))
-                                    .foregroundColor(content.count > maxLen - 20 ? Color(hex: 0xE08A0C) : C.subLabel)
-                                    .padding(.trailing, 16).padding(.bottom, 8)
-                            }
-                            HairLine(inset: 16)
-
-                            HStack(spacing: 10) {
-                                ForEach(Array(picked.enumerated()), id: \.offset) { _, img in
-                                    ZStack(alignment: .topTrailing) {
-                                        Image(uiImage: img)
-                                            .resizable().scaledToFill()
-                                            .frame(width: 74, height: 74)
-                                            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-                                        Image(systemName: "xmark")
-                                            .font(.system(size: 9, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .frame(width: 18, height: 18)
-                                            .background(Circle().fill(Color(hex: 0xFA5151)))
-                                            .offset(x: 6, y: -6)
-                                    }
-                                    .onTapGesture {
-                                        if let i = picked.firstIndex(where: { $0 === img }) { picked.remove(at: i) }
-                                    }
-                                }
-                                if picked.count < 3 {
-                                    Button { showPhoto = true } label: {
-                                        VStack(spacing: 4) {
-                                            Image(systemName: "plus")
-                                                .font(.system(size: 18, weight: .medium))
-                                                .foregroundColor(C.green)
-                                            Text(Tr("最多 3 张"))
-                                                .font(pf(10.5))
-                                                .foregroundColor(C.subLabel)
-                                        }
-                                        .frame(width: 74, height: 74)
-                                        .background(RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                            .fill(C.green.opacity(0.06)))
-                                        .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                            .stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                                            .foregroundColor(C.green.opacity(0.5)))
-                                    }
-                                    .buttonStyle(.plain)
-
-                                    Button { showCamera = true } label: {
-                                        VStack(spacing: 4) {
-                                            Image(systemName: "camera.fill")
-                                                .font(.system(size: 16))
-                                                .foregroundColor(C.subLabel)
-                                            Text(Tr("拍照"))
-                                                .font(pf(10.5))
-                                                .foregroundColor(C.subLabel)
-                                        }
-                                        .frame(width: 74, height: 74)
-                                        .background(RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                            .fill(C.fieldBg.opacity(0.65)))
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                                Spacer(minLength: 0)
-                            }
-                            .padding(.horizontal, 16).padding(.vertical, 12)
-                        }
-                        .background { CardGlassBox(radius: 13) }
-                        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
-                            .stroke(C.hairline, lineWidth: 0.6))
-
-                        HStack(spacing: 10) {
-                            Image(systemName: "person.crop.circle")
-                                .font(.system(size: 18))
-                                .foregroundColor(C.green)
-                            TextField(Tr("联系方式（选填，方便我们回你）"), text: $contact)
-                                .font(pf(15))
-                        }
-                        .padding(.horizontal, 14)
-                        .frame(height: 54)
-                        .background { CardGlassBox(radius: 13) }
-                        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
-                            .stroke(C.hairline, lineWidth: 0.6))
-                        .padding(.top, 10)
-
-                        NavigationLink(value: "feedback.history") {
-                            HStack(spacing: 10) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(LinearGradient(colors: [Color(hex: 0x7FA6E8), Color(hex: 0x3F66B8)],
-                                                             startPoint: .topLeading, endPoint: .bottomTrailing))
-                                        .frame(width: 34, height: 34)
-                                    Image(systemName: "tray.full.fill")
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(.white)
-                                }
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(Tr("我的反馈")).font(pf(15.5, .medium)).foregroundColor(C.label)
-                                    Text(Tr("看处理进度和官方回复")).font(pf(12)).foregroundColor(C.subLabel)
-                                }
-                                Spacer(minLength: 0)
-                                Chevron(size: 8, line: 1.5)
-                            }
-                            .padding(.horizontal, 14)
-                            .frame(height: 62)
-                            .background { CardGlassBox(radius: 13) }
-                            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                .stroke(C.hairline, lineWidth: 0.6))
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.top, 10)
-
-                        Text(Tr("截图可以帮我们更快定位问题；提交内容会存在你自己的服务器上。"))
-                            .font(pf(12)).foregroundColor(C.subLabel)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 18).padding(.top, 10)
-                        Spacer().frame(height: 30)
+    private var feedbackForm: some View {
+        Form {
+            Section {
+                Picker(Tr("问题类型"), selection: $category) {
+                    ForEach(categories, id: \.self) { item in
+                        Text(Tr(item)).tag(item)
                     }
                 }
-                .background(C.pageBg)
+            } footer: {
+                Text(Tr("选择最接近的类型，方便我们更快分派。"))
             }
-            .background(C.pageBg.ignoresSafeArea())
-            .toolbar(.hidden, for: .navigationBar)
-            .swipeBack { dismiss() }
-            .hidesTabBar()
-            .sheet(isPresented: $showPhoto) {
-                PhotosPicker(limit: 3 - picked.count) { imgs in
-                    picked.append(contentsOf: imgs.prefix(3 - picked.count))
+
+            Section {
+                ZStack(alignment: .topLeading) {
+                    if content.isEmpty {
+                        Text(Tr("说说遇到的问题，或者你希望加什么功能…"))
+                            .font(.body)
+                            .foregroundStyle(.tertiary)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 9)
+                            .allowsHitTesting(false)
+                    }
+
+                    TextEditor(text: $content)
+                        .font(.body)
+                        .scrollContentBackground(.hidden)
+                        .frame(minHeight: 132)
+                        .onChange(of: content) { value in
+                            if value.count > maxLength {
+                                content = String(value.prefix(maxLength))
+                            }
+                        }
+                }
+            } header: {
+                Text(Tr("问题描述"))
+            } footer: {
+                HStack {
+                    Text(Tr("请勿填写密码、验证码或支付密码。"))
+                    Spacer()
+                    Text("\(content.count)/\(maxLength)")
+                        .monospacedDigit()
+                        .foregroundStyle(content.count > maxLength - 20
+                                         ? Color.orange
+                                         : Color.secondary)
                 }
             }
-            .sheet(isPresented: $showCamera) {
-                CameraPicker { img in
-                    if picked.count < 3 { picked.append(img) }
+
+            Section {
+                if !picked.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            ForEach(Array(picked.enumerated()), id: \.offset) { _, image in
+                                ZStack(alignment: .topTrailing) {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 68, height: 68)
+                                        .clipShape(
+                                            RoundedRectangle(cornerRadius: 10,
+                                                             style: .continuous)
+                                        )
+
+                                    Button {
+                                        if let index = picked.firstIndex(where: {
+                                            $0 === image
+                                        }) {
+                                            picked.remove(at: index)
+                                        }
+                                    } label: {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 8, weight: .bold))
+                                            .foregroundStyle(.white)
+                                            .frame(width: 18, height: 18)
+                                            .background(.black.opacity(0.66), in: Circle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .offset(x: 6, y: -6)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                if picked.count < 3 {
+                    Menu {
+                        Button {
+                            showPhoto = true
+                        } label: {
+                            Label(Tr("从相册选择"), systemImage: "photo.on.rectangle")
+                        }
+                        Button {
+                            showCamera = true
+                        } label: {
+                            Label(Tr("拍照"), systemImage: "camera.fill")
+                        }
+                    } label: {
+                        Label(Tr("添加截图"), systemImage: "plus.circle.fill")
+                    }
+                }
+            } header: {
+                Text(Tr("截图"))
+            } footer: {
+                Text(Tr("最多 3 张。截图能帮助我们更快定位问题。"))
+            }
+
+            Section {
+                TextField(Tr("手机号或邮箱（选填）"), text: $contact)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+            } header: {
+                Text(Tr("联系方式"))
+            } footer: {
+                Text(Tr("需要进一步确认时，我们可能通过这里联系你。"))
+            }
+
+            Section {
+                Button {
+                    showHistory = true
+                } label: {
+                    HStack {
+                        Label(Tr("我的反馈"), systemImage: "tray.full.fill")
+                        Spacer()
+                        Text(Tr("查看处理进度和官方回复"))
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .scrollDismissesKeyboard(.interactively)
+    }
+
+    private var successList: some View {
+        List {
+            Section {
+                VStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 54, weight: .regular))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.green)
+                    Text(Tr("感谢你的反馈"))
+                        .font(.title3.weight(.semibold))
+                    Text(Tr("我们会尽快处理，处理结果可以在「我的反馈」里查看。"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 22)
+            }
+
+            Section {
+                Button {
+                    showHistory = true
+                } label: {
+                    Label(Tr("查看我的反馈"), systemImage: "tray.full.fill")
+                }
+                Button {
+                    dismiss()
+                } label: {
+                    Text(Tr("完成"))
+                        .frame(maxWidth: .infinity)
                 }
             }
         }
-    }
-
-    private func catIcon(_ c: String) -> String {
-        switch c {
-        case "功能异常": return "wrench.and.screwdriver.fill"
-        case "产品建议": return "lightbulb.fill"
-        case "界面样式": return "paintbrush.fill"
-        default:        return "ellipsis.bubble.fill"
-        }
-    }
-
-    private func catColors(_ c: String) -> [Color] {
-        switch c {
-        case "功能异常": return [Color(hex: 0xFF8A73), Color(hex: 0xE2432E)]
-        case "产品建议": return [Color(hex: 0xFFD34B), Color(hex: 0xE09A10)]
-        case "界面样式": return [Color(hex: 0x8A93FF), Color(hex: 0x4A55D6)]
-        default:        return [Color(hex: 0xA0A4AE), Color(hex: 0x6E7280)]
-        }
+        .listStyle(.insetGrouped)
     }
 
     private func send() {
         let text = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        if text.isEmpty { app.show(Tr("先写点内容")); return }
+        guard !text.isEmpty else {
+            app.show(Tr("先写点内容"))
+            return
+        }
         busy = true
         Task {
-
             var urls: [String] = []
-            for img in picked {
-                if let u = try? await API.shared.upload(image: img) { urls.append(u) }
+            for image in picked {
+                if let url = try? await API.shared.upload(image: image) {
+                    urls.append(url)
+                }
             }
-            if let err = await API.shared.sendFeedback(content: text, contact: contact,
-                                                       category: category, images: urls) {
-                app.show(err)
+            if let error = await API.shared.sendFeedback(
+                content: text,
+                contact: contact,
+                category: category,
+                images: urls
+            ) {
+                app.show(error)
             } else {
                 content = ""
                 contact = ""
@@ -354,71 +278,51 @@ struct FeedbackView: View {
 }
 
 struct FeedbackHistoryView: View {
-    @EnvironmentObject var app: AppState
+    @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
+
     @State private var rows: [API.MyFeedback] = []
     @State private var loading = true
 
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("我的反馈"), back: { dismiss() })
-            ScrollView {
-                VStack(spacing: 0) {
-                    if loading {
-                        ProgressView().padding(.top, 50)
-                    } else if rows.isEmpty {
-                        VStack(spacing: 8) {
-                            SVGIcon(markup: I.service, size: 40, color: C.subLabel)
-                            Text(Tr("还没有提交过反馈")).font(pf(14)).foregroundColor(C.subLabel)
+
+            List {
+                if loading {
+                    Section {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                            Spacer()
                         }
-                        .frame(maxWidth: .infinity).padding(.top, 60)
-                    } else {
-                        ForEach(rows) { r in
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack(spacing: 8) {
-                                    Text(Tr(r.category ?? "功能异常"))
-                                        .font(pf(13)).foregroundColor(.white)
-                                        .padding(.horizontal, 8).frame(height: 22)
-                                        .background(Capsule().fill(C.green.opacity(0.85)))
-                                    Spacer(minLength: 0)
-                                    Text((r.status ?? "pending") == "replied" ? Tr("已回复") : Tr("处理中"))
-                                        .font(pf(13))
-                                        .foregroundColor((r.status ?? "pending") == "replied" ? C.green : C.subLabel)
-                                }
-                                Text(r.content ?? "").font(pf(15)).foregroundColor(C.label)
-                                if let imgs = r.images, !imgs.isEmpty {
-                                    HStack(spacing: 4) {
-                                        ForEach(Array(imgs.prefix(3).enumerated()), id: \.offset) { _, s in
-                                            RemoteImage(path: s, mode: .fill, maxSide: 400)
-                                                .frame(width: 62, height: 62)
-                                                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-                                        }
-                                        Spacer(minLength: 0)
-                                    }
-                                }
-                                Text(fmt(r.createdAt)).font(pf(12)).foregroundColor(C.subLabel)
-                                if let reply = r.reply, !reply.isEmpty {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(Tr("官方回复")).font(pf(12.5, .medium)).foregroundColor(C.green)
-                                        Text(reply).font(pf(14)).foregroundColor(C.label)
-                                    }
-                                    .padding(10)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(RoundedRectangle(cornerRadius: 8).fill(C.fieldBg))
-                                }
-                            }
-                            .padding(14)
-                            .background(C.cardBg)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .padding(.horizontal, 12).padding(.top, 10)
-                        }
+                        .padding(.vertical, 36)
                     }
-                    Spacer().frame(height: 30)
+                } else if rows.isEmpty {
+                    Section {
+                        VStack(spacing: 10) {
+                            Image(systemName: "tray")
+                                .font(.system(size: 32, weight: .regular))
+                                .foregroundStyle(.secondary)
+                            Text(Tr("还没有提交过反馈"))
+                                .font(.body)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 28)
+                    }
+                } else {
+                    ForEach(rows) { row in
+                        feedbackRow(row)
+                    }
                 }
             }
-            .background(C.pageBg)
+            .listStyle(.insetGrouped)
+            .refreshable {
+                rows = await API.shared.myFeedback()
+            }
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
+        .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
@@ -428,8 +332,63 @@ struct FeedbackHistoryView: View {
         }
     }
 
-    private func fmt(_ s: String?) -> String {
-        guard let s = s, s.count >= 16 else { return "" }
-        return String(s.prefix(16)).replacingOccurrences(of: "T", with: " ")
+    private func feedbackRow(_ row: API.MyFeedback) -> some View {
+        Section {
+            HStack {
+                Text(Tr(row.category ?? "功能异常"))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text((row.status ?? "pending") == "replied"
+                     ? Tr("已回复")
+                     : Tr("处理中"))
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle((row.status ?? "pending") == "replied"
+                                     ? Color.green
+                                     : Color.secondary)
+            }
+
+            Text(row.content ?? "")
+                .font(.body)
+                .textSelection(.enabled)
+                .padding(.vertical, 3)
+
+            if let images = row.images, !images.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(images.prefix(3).enumerated()),
+                                id: \.offset) { _, path in
+                            RemoteImage(path: path, mode: .fill, maxSide: 320)
+                                .frame(width: 64, height: 64)
+                                .clipShape(
+                                    RoundedRectangle(cornerRadius: 9,
+                                                     style: .continuous)
+                                )
+                        }
+                    }
+                }
+            }
+
+            if let reply = row.reply, !reply.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(Tr("官方回复"), systemImage: "checkmark.bubble.fill")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color.accentColor)
+                    Text(reply)
+                        .font(.body)
+                        .textSelection(.enabled)
+                }
+                .padding(.vertical, 4)
+            }
+
+            if let created = row.createdAt {
+                LabeledContent(Tr("提交时间"), value: formatDate(created))
+            }
+        }
+    }
+
+    private func formatDate(_ value: String) -> String {
+        guard value.count >= 16 else { return value }
+        return String(value.prefix(16)).replacingOccurrences(of: "T", with: " ")
     }
 }

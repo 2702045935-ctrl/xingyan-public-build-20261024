@@ -79,8 +79,6 @@ struct TeenModeView: View {
                 if on { onPage } else { offPage }
             }
         }
-        .scrollContentBackground(.hidden)
-        .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(Tr("未成年人模式"))
         .navigationBarTitleDisplayMode(.large)
         .toolbar(.visible, for: .navigationBar)
@@ -108,18 +106,25 @@ struct TeenModeView: View {
     @ViewBuilder
     private var offPage: some View {
         Section {
-            VStack(spacing: 12) {
-                UmbrellaIcon(color: Color(hex: 0x3E9BF0), size: 58)
-                Text(Tr("未成年人模式"))
-                    .font(pfStyled(size: 20, weight: .semibold))
-                Text(Tr("开启后，视频号、直播、游戏、附近的人、摇一摇、搜一搜将不可访问；\n微信支付、公众号、小程序可以按需要调整。"))
-                    .font(pfStyled(size: 15))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(4)
+            HStack(alignment: .top, spacing: 14) {
+                UmbrellaIcon(color: Color.accentColor, size: 28)
+                    .frame(width: 48, height: 48)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.accentColor.opacity(0.11))
+                    )
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(Tr("保护未成年人的使用范围"))
+                        .font(.headline)
+                    Text(Tr("开启后会限制部分内容入口，并可按需要管理支付权限。关闭或修改设置需要独立密码。"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, 6)
         }
 
         Section {
@@ -128,6 +133,14 @@ struct TeenModeView: View {
             LabeledContent(Tr("监护人"), value: Tr("选填"))
         } header: {
             Text(Tr("开启流程"))
+        }
+
+        Section {
+            ForEach(Array(blocked.enumerated()), id: \.offset) { _, item in
+                Label(Tr(item.1), systemImage: teenFeatureIcon(item.0))
+            }
+        } header: {
+            Text(Tr("开启后限制"))
         }
 
         Section {
@@ -148,22 +161,29 @@ struct TeenModeView: View {
     @ViewBuilder
     private var onPage: some View {
         Section {
-            VStack(spacing: 10) {
-                UmbrellaIcon(color: Color(hex: 0x3E9BF0), size: 44)
-                Text(Tr("未成年人模式已开启"))
-                    .font(pfStyled(size: 17, weight: .semibold))
-                Text(Tr("「我」页会显示一把小雨伞"))
-                    .font(pfStyled(size: 13))
-                    .foregroundStyle(.secondary)
+            HStack(spacing: 14) {
+                UmbrellaIcon(color: Color.accentColor, size: 25)
+                    .frame(width: 42, height: 42)
+                    .background(
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .fill(Color.accentColor.opacity(0.11))
+                    )
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(Tr("未成年人模式已开启"))
+                        .font(.headline)
+                    Text(Tr("「我」页会显示一把小雨伞"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .padding(.vertical, 4)
         }
 
         Section {
             Button { askPin(.guardian) } label: {
-                HStack {
-                    Text(Tr("监护人"))
+                HStack(spacing: 12) {
+                    Label(Tr("监护人"), systemImage: "person.crop.circle")
                     Spacer()
                     Text((cfg?.guardianPhone?.isEmpty == false) ? cfg!.guardianPhone! : Tr("未设置"))
                         .foregroundStyle(.secondary)
@@ -175,12 +195,14 @@ struct TeenModeView: View {
             .buttonStyle(.plain)
             LabeledContent(Tr("使用时长"), value: Tr("每天 40 分钟"))
             LabeledContent(Tr("宵禁"), value: Tr("22:00 - 次日 6:00"))
+        } header: {
+            Text(Tr("监护状态"))
         }
 
         Section {
             ForEach(Array(blocked.enumerated()), id: \.offset) { _, it in
-                HStack {
-                    Text(Tr(it.1))
+                HStack(spacing: 12) {
+                    Label(Tr(it.1), systemImage: teenFeatureIcon(it.0))
                     Spacer()
                     Text(Tr("已限制"))
                         .foregroundStyle(.secondary)
@@ -195,7 +217,7 @@ struct TeenModeView: View {
                 get: { payAllowed },
                 set: { v in askPin(.pay(v)) }
             ))
-            .tint(C.green)
+            .tint(Color.accentColor)
         } header: {
             Text(Tr("可以按需要调整"))
         }
@@ -226,34 +248,35 @@ struct TeenModeView: View {
     }
 
     private var guardianSheet: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("监护人"), back: { showGuardian = false }) {
-                Button { Task { await saveGuardian() } } label: {
-                    Text(Tr("保存")).font(pf(16)).foregroundColor(C.green).padding(.trailing, 16)
+        NavigationStack {
+            Form {
+                Section {
+                    TextField(Tr("填家长手机号"), text: $guardianDraft)
+                        .keyboardType(.numberPad)
+                        .textContentType(.telephoneNumber)
+                } header: {
+                    Text(Tr("监护人的手机号"))
+                } footer: {
+                    Text(Tr("只保存脱敏后的号码（如 138****8888），不会外发。"))
                 }
-                .buttonStyle(.plain)
             }
-            VStack(alignment: .leading, spacing: 10) {
-                Text(Tr("监护人的手机号")).font(pf(15)).foregroundColor(C.label)
-                TextField(Tr("填家长手机号"), text: $guardianDraft)
-                    .font(pf(16))
-                    .keyboardType(.numberPad)
-                    .padding(.horizontal, 12).frame(height: 44)
-                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.searchBg))
-                Text(Tr("只保存脱敏后的号码（如 138****8888），不会外发。"))
-                    .font(pf(12)).foregroundColor(C.subLabel)
+            .navigationTitle(Tr("监护人"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(Tr("取消")) {
+                        showGuardian = false
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(Tr("保存")) {
+                        Task { await saveGuardian() }
+                    }
+                }
             }
-            .padding(16)
-            .background { CardGlassBox(radius: 14) }
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
-            .padding(.horizontal, 14).padding(.top, 10)
-            Spacer(minLength: 0)
         }
-        .background(C.pageBg.ignoresSafeArea())
-
-        .swipeBack { showGuardian = false }
+        .presentationDetents([.medium])
         .onAppear {
-
             guardianDraft = ""
         }
     }
@@ -261,6 +284,18 @@ struct TeenModeView: View {
     private func load() async {
         cfg = try? await API.shared.teen()
         loading = false
+    }
+
+    private func teenFeatureIcon(_ key: String) -> String {
+        switch key {
+        case "feed": return "play.square.stack.fill"
+        case "live": return "dot.radiowaves.left.and.right"
+        case "games": return "gamecontroller.fill"
+        case "nearby": return "location.fill"
+        case "shake": return "iphone.radiowaves.left.and.right"
+        case "search": return "magnifyingglass"
+        default: return "circle.slash"
+        }
     }
 
     private func askPin(_ what: Ask) {
@@ -362,7 +397,7 @@ struct TeenSetupWizard: View {
     private var termsStep: some View {
         Section {
             VStack(spacing: 10) {
-                UmbrellaIcon(color: Color(hex: 0x3E9BF0), size: 48)
+                UmbrellaIcon(color: Color.accentColor, size: 48)
                 Text(Tr("请先阅读并同意使用条款"))
                     .font(pfStyled(size: 17, weight: .semibold))
             }
@@ -379,7 +414,7 @@ struct TeenSetupWizard: View {
             Toggle(isOn: $agreed) {
                 Text(Tr("我已阅读并同意《未成年人模式使用条款》"))
             }
-            .tint(C.green)
+            .tint(Color.accentColor)
         }
 
         Section {

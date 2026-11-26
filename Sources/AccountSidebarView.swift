@@ -178,7 +178,7 @@ private struct AccountSidebarAvatarRail: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 8) {
-                ForEach(accounts) { account in
+                ForEach(Array(accounts.enumerated()), id: \.element.username) { index, account in
                     Button(action: onSelect) {
                         Avatar(
                             path: account.avatar,
@@ -188,14 +188,16 @@ private struct AccountSidebarAvatarRail: View {
                         )
                         .frame(width: 46, height: 46)
                         .overlay(alignment: .bottomTrailing) {
-                            Circle()
-                                .fill(Color(hex: 0x25D366))
-                                .frame(width: 8, height: 8)
-                                .overlay(Circle().stroke(
-                                    scheme == .dark ? Color(hex: 0x1A1A1A) : .white,
-                                    lineWidth: 1.5
-                                ))
-                                .offset(x: -5, y: -5)
+                            if index == 0 {
+                                Circle()
+                                    .fill(Color.dyn(0x0F8B65, 0x36CA95))
+                                    .frame(width: 8, height: 8)
+                                    .overlay(Circle().stroke(
+                                        scheme == .dark ? Color(hex: 0x1A1A1A) : .white,
+                                        lineWidth: 1.5
+                                    ))
+                                    .offset(x: -5, y: -5)
+                            }
                         }
                         .contentShape(Circle())
                     }
@@ -207,11 +209,12 @@ private struct AccountSidebarAvatarRail: View {
         }
         .background {
             ZStack {
-                Rectangle().fill(.thinMaterial)
+                Rectangle().fill(.regularMaterial)
                 Rectangle().fill(
                     LinearGradient(
                         colors: [
-                            Color(hex: 0x25D366).opacity(scheme == .dark ? 0.16 : 0.10),
+                            Color.dyn(0x0F8B65, 0x36CA95)
+                                .opacity(scheme == .dark ? 0.08 : 0.05),
                             Color.clear
                         ],
                         startPoint: .top,
@@ -220,9 +223,7 @@ private struct AccountSidebarAvatarRail: View {
                 )
             }
             Rectangle().fill(
-                scheme == .dark
-                    ? Color.black.opacity(0.22)
-                    : Color.white.opacity(0.38)
+                scheme == .dark ? Color.black.opacity(0.20) : Color.white.opacity(0.34)
             )
         }
         .overlay(alignment: .leading) {
@@ -255,25 +256,25 @@ private struct AccountSidebarPanel: View {
     private var secondaryInk: Color { Color.dyn(0x737980, 0xA0A6AB) }
     private var tertiaryInk: Color { Color.dyn(0x969CA2, 0x70777D) }
     private var rule: Color { Color.dyn(0xE8EAED, 0x24282B) }
-    private var accent: Color { Color(hex: 0x25D366) }
-    private var danger: Color { Color(hex: 0xE75454) }
+    private var accent: Color { Color.dyn(0x0F8B65, 0x36CA95) }
+    private var danger: Color { Color.dyn(0xFF3B30, 0xFF453A) }
     private var panelTint: Color {
         scheme == .dark
-            ? Color(hex: 0x111814).opacity(0.62)
-            : Color(hex: 0xF7FAF8).opacity(0.66)
+            ? Color.black.opacity(0.42)
+            : Color.white.opacity(0.62)
     }
     private var panelColorGlow: LinearGradient {
         LinearGradient(
             colors: scheme == .dark
                 ? [
-                    accent.opacity(0.16),
+                    accent.opacity(0.07),
                     Color.clear,
-                    Color.black.opacity(0.12)
+                    Color.black.opacity(0.08)
                 ]
                 : [
-                    accent.opacity(0.12),
+                    accent.opacity(0.055),
                     Color.white.opacity(0.06),
-                    Color(hex: 0xF3F7F4).opacity(0.16)
+                    Color.white.opacity(0.12)
                 ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -393,10 +394,8 @@ private struct AccountSidebarPanel: View {
             }
         }
         .fullScreenCover(isPresented: $showFeedback) {
-            NavigationStack {
-                FeedbackView()
-                    .environmentObject(app)
-            }
+            SupportView()
+                .environmentObject(app)
         }
         .alert(Tr("确定退出登录？"), isPresented: $confirmLogout) {
             Button(Tr("取消"), role: .cancel) { }
@@ -545,7 +544,15 @@ private struct AccountSidebarPanel: View {
                 Image(systemName: symbol)
                     .font(.system(size: 17, weight: .medium))
                     .foregroundStyle(destructive ? danger : secondaryInk)
-                    .frame(width: 20, height: 20)
+                    .frame(width: 28, height: 28)
+                    .background(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .fill(
+                                destructive
+                                    ? danger.opacity(scheme == .dark ? 0.13 : 0.09)
+                                    : primaryInk.opacity(scheme == .dark ? 0.075 : 0.05)
+                            )
+                    )
 
                 Text(title)
                     .font(pf(15))

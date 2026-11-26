@@ -25,6 +25,15 @@ require(
 for token in ("分享到", "SharePreviewCard", "ShareActionTile", "系统分享", "取消"):
     require(token in SHARE, f"shared Xiaohongshu-style hierarchy is missing {token}")
 require(
+    "private struct ShareActionRow" in SHARE
+    and "ShareActionRow(\n                        title: copied" in SHARE
+    and ".background(.regularMaterial)\n            .clipShape(RoundedRectangle(cornerRadius: 16"
+    in SHARE
+    and "static var accent: Color { Color.dyn(0x0F8B65, 0x36CA95) }" in SHARE
+    and "Color(hex: 0xFF2442)" not in SHARE,
+    "the primary share sheet must use the restrained system action-list hierarchy",
+)
+require(
     "UIActivityViewController(activityItems: items" in SHARE,
     "system apps must remain available through the custom More action",
 )

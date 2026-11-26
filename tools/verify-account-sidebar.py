@@ -54,18 +54,26 @@ require(
     and ".frame(width: AccountSidebarMetrics.minimumTrailingReveal)" in SIDEBAR
     and ".offset(x: isOpen ? 0 : AccountSidebarMetrics.minimumTrailingReveal)" in SIDEBAR
     and ".scaleEffect(isOpen ? 1 : 0.96, anchor: .trailing)" in SIDEBAR
-    and "Rectangle().fill(.thinMaterial)" in SIDEBAR
-    and "ForEach(accounts)" in SIDEBAR,
+    and "Rectangle().fill(.regularMaterial)" in SIDEBAR
+    and "ForEach(Array(accounts.enumerated()), id: \\.element.username)" in SIDEBAR,
     "the exposed trailing edge must cover conversation metadata with an avatar rail",
 )
 require(
-    "Color(hex: 0x111814).opacity(0.62)" in SIDEBAR
-    and "Color(hex: 0xF7FAF8).opacity(0.66)" in SIDEBAR
+    "Color.black.opacity(0.42)" in SIDEBAR
+    and "Color.white.opacity(0.62)" in SIDEBAR
     and "private var panelColorGlow: LinearGradient" in SIDEBAR
-    and "accent.opacity(0.16)" in SIDEBAR
-    and "Color.black.opacity(0.22)" in SIDEBAR
-    and "Color.white.opacity(0.38)" in SIDEBAR,
+    and "accent.opacity(0.07)" in SIDEBAR
+    and "Color.black.opacity(0.20)" in SIDEBAR
+    and "Color.white.opacity(0.34)" in SIDEBAR
+    and "Color.dyn(0x0F8B65, 0x36CA95)" in SIDEBAR,
     "sidebar material must remain visibly frosted and color-tinted",
+)
+require(
+    ".frame(width: 28, height: 28)" in SIDEBAR
+    and "RoundedRectangle(cornerRadius: 7, style: .continuous)" in SIDEBAR
+    and "SupportView()" in SIDEBAR
+    and "FeedbackView()" not in SIDEBAR,
+    "sidebar actions must use system icon tiles and one unified help center",
 )
 require(
     "struct AccountSidebarPressStyle: ButtonStyle" in SIDEBAR
