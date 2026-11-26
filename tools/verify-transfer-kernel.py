@@ -36,15 +36,17 @@ require(
     'static let directUploadBases = [' in API
     and '"https://43.242.194.89:8443"' in DIRECT_UPLOAD_BASES
     and '"https://43.242.194.89:5443"' not in DIRECT_UPLOAD_BASES
-    and 'API.directUploadBases[0] + "/api/upload/raw"' in UPLOAD_BINARY
+    and '(base: API.directUploadBases[0], path: "/api/upload/raw")' in UPLOAD_BINARY
+    and '(base: publicBase, path: API.publicIngressPath + "/api/upload/raw")' in UPLOAD_BINARY
     and "req.timeoutInterval = 180" in UPLOAD_BINARY
-    and 'API.directUploadBases[0] + "/api/upload/raw"' in UPLOAD_BINARY_FILE
+    and '(base: API.directUploadBases[0], path: "/api/upload/raw")' in UPLOAD_BINARY_FILE
+    and '(base: publicBase, path: API.publicIngressPath + "/api/upload/raw")' in UPLOAD_BINARY_FILE
     and "req.timeoutInterval = 600" in UPLOAD_BINARY_FILE
     and "private func uploadRaw(" not in API
     and "RawUploadSource" not in API
     and "uploadSession" not in API
     and API.count("session.upload") >= 3,
-    "uploads must use the 11/20 direct session and origin only",
+    "uploads must use the 11/20 direct session and origin as the primary path",
 )
 require(
     "fileSize >= 4 * 1024 * 1024" not in API
@@ -58,7 +60,8 @@ require(
 require(
     "req.httpBody = data" in UPLOAD_BINARY
     and "session.upload(" in UPLOAD_BINARY_FILE
-    and "fromFile: file,\n            delegate: delegate" in UPLOAD_BINARY_FILE,
+    and "fromFile: file," in UPLOAD_BINARY_FILE
+    and "delegate: delegate" in UPLOAD_BINARY_FILE,
     "binary and file uploads must use the restored 11/20 session and request bodies",
 )
 require(
@@ -69,11 +72,13 @@ require(
     and 'if let url = try? await uploadRawJPEG(data' in API
     and "let b64 = data.base64EncodedString()" in API
     and 'path: String = "/api/upload"' in UPLOAD_DATA
-    and "API.directUploadBases[0] + path" in UPLOAD_DATA
+    and "base: String = API.directUploadBases[0]" in API
     and 'post("/api/upload"' not in UPLOAD_DATA
-    and "let payload: UploadPayload = try await postDirectUpload(body)" in API
+    and "payload = try await postDirectUpload(body)" in UPLOAD_DATA
+    and "base: publicBase" in UPLOAD_DATA
+    and 'path: API.publicIngressPath + "/api/upload"' in UPLOAD_DATA
     and 'post("/api/upload"' not in API,
-    "all 11/20 base64 uploads must use the direct origin",
+    "base64 uploads must keep the direct origin first and use public ingress only as fallback",
 )
 require(
     "private final class ImageUploadProgress" in CHAT
