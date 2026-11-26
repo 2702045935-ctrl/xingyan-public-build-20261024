@@ -31,6 +31,7 @@ struct ContactIndexBar: View {
     private let haptic = UISelectionFeedbackGenerator()
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var accessibilityScale: CGFloat {
         switch dynamicTypeSize {
         case .accessibility1: return 1.08
@@ -50,6 +51,8 @@ struct ContactIndexBar: View {
     private var pitch: CGFloat { rowH }
 
     private var dotSide: CGFloat { max(16, rowH + 2) }
+    private var indexInk: Color { Color.dyn(0x4A4A4F, 0xB8BCC2) }
+    private var activeInk: Color { Color.white.opacity(0.98) }
 
     private var availableLetters: [String] {
         Self.letters.filter { available.contains($0) }
@@ -61,25 +64,49 @@ struct ContactIndexBar: View {
         VStack(spacing: 0) {
             VStack(spacing: 0) {
                 ForEach(displayedLetters, id: \.self) { L in
-                    Text(L)
-                        .font(pfStyled(size: fontSize, weight: shownLetter == L ? .bold : .medium))
-
-                        .foregroundColor(
-                            shownLetter == L
-                                ? .white
-                                : (available.contains(L)
-                                    ? OrbitTheme.tertiary
-                                    : OrbitTheme.tertiary.opacity(0.28))
-                        )
-                        .frame(height: rowH)
-                        .frame(width: 18)
-                        .background {
-                            if shownLetter == L {
-                                Capsule(style: .continuous)
-                                    .fill(ContactVisual.indexFill)
-                                    .frame(width: dotSide - 3, height: dotSide - 3)
-                            }
+                    ZStack {
+                        if shownLetter == L {
+                            Capsule(style: .continuous)
+                                .fill(ContactVisual.indexFill)
+                                .overlay {
+                                    Capsule(style: .continuous)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.white.opacity(0.18),
+                                                    .clear
+                                                ],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
+                                        )
+                                }
+                                .overlay {
+                                    Capsule(style: .continuous)
+                                        .stroke(Color.white.opacity(0.14),
+                                                lineWidth: 0.6)
+                                }
+                                .shadow(color: ContactVisual.indexFill.opacity(0.24),
+                                        radius: 3.5, y: 1.5)
                         }
+
+                        Text(L)
+                            .font(pfStyled(size: fontSize,
+                                           weight: shownLetter == L ? .bold : .medium))
+                            .foregroundColor(
+                                shownLetter == L
+                                    ? activeInk
+                                    : (available.contains(L)
+                                        ? indexInk
+                                        : indexInk.opacity(0.22))
+                            )
+                    }
+                    .frame(width: max(18, dotSide - 3),
+                           height: min(rowH, dotSide - 3))
+                    .frame(width: 22, height: rowH)
+                    .contentShape(Capsule(style: .continuous))
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.12),
+                               value: shownLetter)
                 }
             }
             .contentShape(Rectangle())
@@ -125,7 +152,7 @@ struct ContactIndexBar: View {
             .padding(.vertical, 5)
         }
         .padding(.vertical, padV)
-        .frame(width: 28)
+        .frame(width: 30)
         .onAppear { haptic.prepare() }
         .onChange(of: available) { next in
             if let active, !next.contains(active) {

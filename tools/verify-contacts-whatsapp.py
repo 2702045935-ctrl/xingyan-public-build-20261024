@@ -92,6 +92,14 @@ require(
     "contact index positions must stay stable and use lightweight selection feedback",
 )
 require(
+    "private var indexInk: Color { Color.dyn(0x4A4A4F, 0xB8BCC2) }" in INDEX
+    and "Capsule(style: .continuous)\n                                .fill(ContactVisual.indexFill)" in INDEX
+    and ".stroke(Color.white.opacity(0.14)" in INDEX
+    and "indexInk.opacity(0.22)" in INDEX
+    and "@Environment(\\.accessibilityReduceMotion) private var reduceMotion" in INDEX,
+    "the index rail must use a neutral hierarchy and a restrained active capsule",
+)
+require(
     "guard active != letter else { return }" in INDEX
     and INDEX.find("guard active != letter else { return }") < INDEX.find("onPick(letter)"),
     "index dragging must scroll only when the target letter actually changes",
