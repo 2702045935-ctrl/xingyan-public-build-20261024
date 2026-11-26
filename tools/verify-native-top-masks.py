@@ -8,6 +8,7 @@ CONTACTS = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
 DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 NAV = (ROOT / "Sources" / "NavGlass.swift").read_text(encoding="utf-8")
 NATIVE_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
+CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -44,13 +45,12 @@ require(
 )
 require(
     "NativeChatsTopEdgeChrome" in NAV
-    and "private struct NativeGraphiteChromeTexture" in NAV
-    and "NativeGraphiteChromeTexture(base: C.pageBg)" in NAV
-    and "base: background ?? C.pageBg" in NAV
-    and "Color.white.opacity(0.022)" in NAV
-    and "Color.white.opacity(0.028)" in NAV
+    and "NativeGraphiteChromeTexture" not in NAV
+    and "private var isDark" in NAV
+    and "NativeFrostedHeaderMaterial()" in NAV
+    and ".fill((background ?? C.pageBg)\n                            .opacity(0.22))" in NAV
     and ".opacity(scrolled > 0 ? 1 : 0)" in NAV,
-    "dark chrome must share one graphite texture with a soft edge finish",
+    "dark chrome must remain translucent system glass instead of drawing an opaque graphite mask",
 )
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         and "NativeTopScrollObserver" in CONTACTS
@@ -67,5 +67,13 @@ require("NativeTopGlassMask(active: navScrolled > 0)" in DISCOVER
         and "TopGlassBar(" not in DISCOVER
         and "TopGlassLine(" not in DISCOVER,
         "world top bar must observe the native scroll view and use the shared material")
+
+require(
+    "ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)" in CHAT
+    and "ChatBottomGlassBackdrop(lightInk: composerUsesLightInk)" in CHAT
+    and "private struct ChatBottomGlassBackdrop" in CHAT
+    and "ChatImmersiveEdgeMask(path:" not in CHAT,
+    "chat top and composer edges must use native fading glass rather than wallpaper masks",
+)
 
 print("native-top-masks: passed")
