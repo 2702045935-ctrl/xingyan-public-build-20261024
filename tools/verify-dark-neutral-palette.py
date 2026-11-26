@@ -45,9 +45,11 @@ require(
 )
 require(
     "let fill = scheme == .dark\n            ? C.tabBg" in MAIN_TAB
-    and "let themed = scheme == .dark\n                ? C.pageBg" in TAB
-    and "let themed = C.pageBg" in TAB,
-    "dark navigation and tab surfaces must ignore legacy remote black overrides",
+    and "appearance.configureWithDefaultBackground()" in TAB
+    and "UIBlurEffect(style: .systemChromeMaterial)" in TAB
+    and "systemUltraThinMaterialDark" not in TAB
+    and "TabGlassBackdrop" not in TAB,
+    "tab surfaces must use native system chrome instead of stacked custom blur",
 )
 require(
     "private enum NativeTabBarVisual" in TAB

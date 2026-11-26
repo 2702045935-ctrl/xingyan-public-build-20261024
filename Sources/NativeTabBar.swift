@@ -155,8 +155,7 @@ private final class CompactDotTabBar: UITabBar {
     }
 
     private func updateNativeBackdropVisibility() {
-        /* iOS 26/27 会保留一层原生 TabBar 背板。深色只隐藏这层，
-           不覆盖图标内容；外层 TabGlassBackdrop 继续负责玻璃效果。 */
+        /* 原生 TabBar 背板负责系统玻璃，不覆盖图标内容。 */
         for child in subviews {
             let typeName = String(describing: type(of: child))
             guard typeName.contains("BarBackground") else { continue }
@@ -307,22 +306,17 @@ struct NativeTabBar: UIViewRepresentable {
         if reduceTransparency {
             appearance.configureWithOpaqueBackground()
             appearance.backgroundEffect = nil
-            let themed = scheme == .dark
-                ? C.pageBg
-                : (UIConfig.colorIfSet("tabBarColor")
-                    ?? UIConfig.colorIfSet("tabBg")
-                    ?? C.tabBg)
+            let themed = UIConfig.colorIfSet("tabBarColor")
+                ?? UIConfig.colorIfSet("tabBg")
+                ?? C.tabBg
             appearance.backgroundColor = UIColor(themed)
             bar.isOpaque = true
         } else {
             appearance.configureWithDefaultBackground()
+            if #unavailable(iOS 26.0) {
+                appearance.backgroundEffect = UIBlurEffect(style: .systemChromeMaterial)
+            }
             bar.isOpaque = false
-        }
-        if scheme == .dark && !reduceTransparency {
-            // 深色玻璃跟随管理端整套主题，不再固定成一个脱离页面的黑阶。
-            appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
-            let themed = C.pageBg
-            appearance.backgroundColor = UIColor(themed).withAlphaComponent(0.72)
         }
         let normalTitle: [NSAttributedString.Key: Any] = [
             .foregroundColor: UIColor(NativeTabBarVisual.normalInk),
@@ -354,7 +348,7 @@ struct NativeTabBar: UIViewRepresentable {
         appearance.inlineLayoutAppearance.selected.badgeBackgroundColor = NativeTabBarVisual.badge
         appearance.compactInlineLayoutAppearance.normal.badgeBackgroundColor = NativeTabBarVisual.badge
         appearance.compactInlineLayoutAppearance.selected.badgeBackgroundColor = NativeTabBarVisual.badge
-        appearance.shadowColor = .clear
+        appearance.shadowColor = UIColor.separator.withAlphaComponent(0.28)
         if let items = bar.items, items.count == 5 {
             items[4].setTitleTextAttributes(normalTitle, for: .normal)
             items[4].setTitleTextAttributes(selectedMyTitle, for: .selected)
@@ -463,46 +457,6 @@ struct NativeTabBar: UIViewRepresentable {
                     ring.stroke()
                 }
             }
-        }
-    }
-}
-
-struct TabGlassBackdrop: UIViewRepresentable {
-    func makeUIView(context: Context) -> UIView {
-        TabGlassBackdropView()
-    }
-
-    func updateUIView(_ uiView: UIView, context: Context) {}
-
-    private final class TabGlassBackdropView: UIView {
-        private let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
-        private let tint = CAGradientLayer()
-
-        override init(frame: CGRect) {
-            super.init(frame: frame)
-            isUserInteractionEnabled = false
-            backgroundColor = .clear
-            clipsToBounds = true
-            blur.isUserInteractionEnabled = false
-            addSubview(blur)
-
-            tint.colors = [
-                UIColor(red: 25 / 255, green: 25 / 255, blue: 25 / 255, alpha: 0.72).cgColor,
-                UIColor(red: 25 / 255, green: 25 / 255, blue: 25 / 255, alpha: 0.72).cgColor
-            ]
-            tint.startPoint = CGPoint(x: 0.5, y: 0)
-            tint.endPoint = CGPoint(x: 0.5, y: 1)
-            layer.addSublayer(tint)
-        }
-
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
-        override func layoutSubviews() {
-            super.layoutSubviews()
-            blur.frame = bounds
-            tint.frame = bounds
         }
     }
 }
