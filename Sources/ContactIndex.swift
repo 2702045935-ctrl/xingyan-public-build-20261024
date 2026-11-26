@@ -30,8 +30,23 @@ struct ContactIndexBar: View {
 
     private let haptic = UISelectionFeedbackGenerator()
 
-    private var fontSize: CGFloat { max(6.5, L.ctIdxSize - 0.5) }
-    private var rowH: CGFloat { max(fontSize, L.ctIdxItemH) }
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    private var accessibilityScale: CGFloat {
+        switch dynamicTypeSize {
+        case .accessibility1: return 1.08
+        case .accessibility2: return 1.14
+        case .accessibility3: return 1.20
+        case .accessibility4: return 1.26
+        case .accessibility5: return 1.32
+        default: return 1
+        }
+    }
+    private var fontSize: CGFloat {
+        max(6.5, min(14, (L.ctIdxSize - 0.5) * accessibilityScale))
+    }
+    private var rowH: CGFloat {
+        max(fontSize, min(24, L.ctIdxItemH * accessibilityScale))
+    }
     private var pitch: CGFloat { rowH }
 
     private var dotSide: CGFloat { max(16, rowH + 2) }

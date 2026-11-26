@@ -167,6 +167,7 @@ struct ContactsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var keyword = ""
     @State private var path = NavigationPath()
@@ -195,14 +196,10 @@ struct ContactsView: View {
             .scaledValue(for: preferred)
         return max(L.navH, ceil(titleHeight + 14))
     }
-    private var listHeadH: CGFloat { max(0, contactsHeaderHeight - 7) }
+    private var listHeadH: CGFloat { max(0, contactsHeaderHeight - 23) }
     private var contactsCanvas: Color {
         scheme == .dark ? C.contactsBg
             : (UIConfig.colorIfSet("contactsBg") ?? .white)
-    }
-    private var contactsField: Color {
-        scheme == .dark ? C.searchBg
-                        : Color(hex: 0xF0F2F5)
     }
     private var contactsRule: Color {
         scheme == .dark ? C.hairline
@@ -214,24 +211,52 @@ struct ContactsView: View {
     private var contactsSecondary: Color {
         scheme == .dark ? C.subLabel : Color(hex: 0x667781)
     }
-    private var contactsSectionFill: Color {
-        scheme == .dark ? C.cardBg
-                        : Color(hex: 0xF7F8FA)
-    }
     private var contactsRowFill: Color {
         contactsCanvas
     }
+    private var contactsAccessibilityScale: CGFloat {
+        switch dynamicTypeSize {
+        case .accessibility1: return 1.10
+        case .accessibility2: return 1.18
+        case .accessibility3: return 1.26
+        case .accessibility4: return 1.34
+        case .accessibility5: return 1.42
+        default: return 1
+        }
+    }
     private var contactAvatarSize: CGFloat {
-        40
+        40 * min(1.25, contactsAccessibilityScale)
+    }
+    private var contactRowHeight: CGFloat {
+        min(78, max(contactAvatarSize + 16, 56 * contactsAccessibilityScale))
+    }
+    private var utilityIconSize: CGFloat {
+        40 * min(1.18, contactsAccessibilityScale)
+    }
+    private var utilityRowHeight: CGFloat {
+        min(72, max(utilityIconSize + 16, 56 * contactsAccessibilityScale))
+    }
+    private var sectionHeaderHeight: CGFloat {
+        min(36, 27 * contactsAccessibilityScale)
+    }
+    private var searchHeight: CGFloat {
+        min(46, 36 * contactsAccessibilityScale)
+    }
+    private var starAvatarSize: CGFloat {
+        min(56, 44 * contactsAccessibilityScale)
+    }
+    private func contactsFont(_ size: CGFloat,
+                              _ weight: Font.Weight = .regular) -> Font {
+        pfStyled(size: size * contactsAccessibilityScale, weight)
     }
     private let contactsAccent = Color(hex: 0x25D366)
 
 private var funcs: [(String, String, Color, String)] {
     [
         (Tr("新的朋友"), I.newFriends, Color(hex: 0x2C6E5E), "newFriends"),
+        (Tr("标签"), I.tag, OrbitTheme.jadeDeep, "tags"),
         (Tr("群聊"), I.groups, Color(hex: 0x315E78), "groups"),
         (Tr("仅聊天的朋友"), I.chatOnly, Color(hex: 0x8E8E99), "chatOnly"),
-        (Tr("标签"), I.tag, OrbitTheme.jadeDeep, "tags"),
         (Tr("公众号"), I.service, Color(hex: 0x5E6579), "officialAccounts")
     ]
 }
@@ -359,7 +384,7 @@ private var funcs: [(String, String, Color, String)] {
 
                                         HStack(spacing: 0) {
                                             Text(section.letter)
-                                                 .font(pfStyled(size: 13, weight: .semibold))
+                                                 .font(contactsFont(13, .semibold))
                                                  .foregroundStyle(idxLetter == section.letter
                                                                   ? contactsAccent
                                                                   : contactsSecondary)
@@ -367,8 +392,8 @@ private var funcs: [(String, String, Color, String)] {
                                             Spacer(minLength: 0)
                                         }
                                         .padding(.leading, 16)
-                                        .frame(height: 28)
-                                        .background(contactsSectionFill)
+                                        .frame(height: sectionHeaderHeight)
+                                        .background(contactsCanvas)
                                         .overlay(alignment: .bottom) {
                                             Rectangle()
                                                 .fill(contactsRule)
@@ -573,24 +598,29 @@ private var funcs: [(String, String, Color, String)] {
             plusMenu = false
             showSearch = true
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Spacer(minLength: 0)
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(contactsSecondary)
-                Text(Tr("搜索"))
-                    .font(pfStyled(size: 15))
+                Text(Tr("搜索联系人"))
+                    .font(contactsFont(15))
                     .foregroundColor(contactsSecondary)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 13)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(height: 36)
-            .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(contactsField))
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .frame(maxWidth: .infinity)
+            .frame(height: searchHeight)
+            .background(contactsCanvas)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(contactsRule)
+                    .frame(height: 0.5)
+            }
+            .contentShape(Rectangle())
         }
         .buttonStyle(ContactSearchPressStyle())
-        .accessibilityLabel(Tr("搜索"))
+        .accessibilityLabel(Tr("搜索联系人"))
     }
 
     private var funcStrip: some View {
@@ -601,7 +631,7 @@ private var funcs: [(String, String, Color, String)] {
                     Rectangle()
                         .fill(contactsRule)
                         .frame(height: 0.5)
-                        .padding(.leading, 58)
+                        .padding(.leading, 69)
                 }
             }
         }
@@ -614,10 +644,10 @@ private var funcs: [(String, String, Color, String)] {
             openFunc(item.3)
         } label: {
             HStack(spacing: 13) {
-                nativeQuickIcon(item, size: 30)
+                nativeQuickIcon(item, size: utilityIconSize)
 
                 Text(item.0)
-                    .font(pfStyled(size: 16.5, weight: .regular))
+                    .font(contactsFont(16.5))
                     .foregroundColor(contactsLabel)
 
                 Spacer(minLength: 8)
@@ -633,7 +663,7 @@ private var funcs: [(String, String, Color, String)] {
             }
             .padding(.leading, 16)
             .padding(.trailing, 18)
-            .frame(height: 56)
+            .frame(height: utilityRowHeight)
             .background(Color.clear)
             .contentShape(Rectangle())
         }
@@ -641,7 +671,7 @@ private var funcs: [(String, String, Color, String)] {
     }
 
     private var ctFuncs: [(String, String, Color, String)] {
-        let want = ["newFriends", "groups", "tags", "officialAccounts"]
+        let want = ["newFriends", "tags", "groups", "chatOnly", "officialAccounts"]
         var out: [(String, String, Color, String)] = []
         for k in want {
             if let f = funcs.first(where: { $0.3 == k }) { out.append(f) }
@@ -652,14 +682,15 @@ private var funcs: [(String, String, Color, String)] {
     private var starStrip: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(Tr("星标朋友"))
-                .font(pfStyled(size: 13, weight: .semibold))
+                .font(contactsFont(13, .semibold))
                 .foregroundStyle(contactsSecondary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 15) {
                     ForEach(starUsers) { u in
                         NavigationLink(value: u) {
                             VStack(spacing: 7) {
-                                Avatar(path: u.avatarPath, size: 44, radius: 22, circle: true,
+                                Avatar(path: u.avatarPath, size: starAvatarSize,
+                                       radius: starAvatarSize / 2, circle: true,
 
                                        level: (u.qqLevel ?? 0) > 1 ? (u.qqLevel ?? 0) : 0)
                                     .overlay(alignment: .bottomTrailing) {
@@ -672,10 +703,10 @@ private var funcs: [(String, String, Color, String)] {
                                             .offset(x: 3, y: 3)
                                     }
                                 Text(u.name)
-                                    .font(pfStyled(size: 12, weight: .regular))
+                                    .font(contactsFont(12))
                                     .foregroundColor(contactsSecondary)
                                     .lineLimit(1)
-                                    .frame(width: 58)
+                                    .frame(width: max(58, starAvatarSize * 1.32))
                             }
                         }
                         .buttonStyle(ContactAvatarPressStyle())
@@ -795,16 +826,19 @@ private var funcs: [(String, String, Color, String)] {
         switch item.3 {
         case "newFriends":
             symbol = "person.badge.plus"
-            tint = Color(uiColor: .systemGreen)
-        case "groups":
-            symbol = "person.3"
-            tint = Color(uiColor: .systemBlue)
+            tint = Color(hex: 0xEDA150)
         case "tags":
             symbol = "tag"
-            tint = Color(uiColor: .systemOrange)
+            tint = Color(hex: 0x57BE6A)
+        case "groups":
+            symbol = "person.3"
+            tint = Color(hex: 0x57BE6A)
+        case "chatOnly":
+            symbol = "bubble.left.and.bubble.right"
+            tint = Color(hex: 0x8E8E99)
         default:
             symbol = "megaphone"
-            tint = Color(uiColor: .systemPurple)
+            tint = Color(hex: 0x3D83E6)
         }
         return Image(systemName: symbol)
             .font(.system(size: size * 0.54, weight: .medium))
@@ -827,9 +861,10 @@ private var funcs: [(String, String, Color, String)] {
                    level: (user.qqLevel ?? 0) > 1 ? (user.qqLevel ?? 0) : 0)
             HStack(spacing: 5) {
                 Text(user.name)
-                    .font(pfStyled(size: 17, weight: .regular))
+                    .font(contactsFont(17))
                     .foregroundColor(contactsLabel)
                     .lineLimit(1)
+                    .layoutPriority(1)
 
                 if (user.qqLevel ?? 0) > 1, GrowthFlags.showInContacts != false {
                     QQLevelBadge(level: user.qqLevel ?? 0, size: L.v(14, 4, 16), maxIcons: 3)
@@ -853,7 +888,7 @@ private var funcs: [(String, String, Color, String)] {
         }
         .padding(.leading, 16)
         .padding(.trailing, 16)
-        .frame(height: 64)
+        .frame(height: contactRowHeight)
         .background(contactsRowFill)
         .overlay(alignment: .bottom) {
             Rectangle()

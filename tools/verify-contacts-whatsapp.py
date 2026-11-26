@@ -4,6 +4,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VIEW = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
+SEARCH_VIEW = VIEW[
+    VIEW.index("private var contactsSearchBar"):
+    VIEW.index("private var funcStrip")
+]
 INDEX = (ROOT / "Sources" / "ContactIndex.swift").read_text(encoding="utf-8")
 MENU = (ROOT / "Sources" / "MainTab.swift").read_text(encoding="utf-8")
 PHONE = (ROOT / "Sources" / "PhoneContactsView.swift").read_text(encoding="utf-8")
@@ -16,10 +20,12 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "private var contactAvatarSize: CGFloat {\n        40" in VIEW
-    and ".frame(height: 64)" in VIEW
+    "@Environment(\\.dynamicTypeSize) private var dynamicTypeSize" in VIEW
+    and "contactsAccessibilityScale" in VIEW
+    and "private var contactRowHeight: CGFloat" in VIEW
+    and ".frame(height: contactRowHeight)" in VIEW
     and ".padding(.leading, 68)" in VIEW,
-    "contact rows must use the compact 40pt avatar and 64pt WeChat-style rhythm",
+    "contact rows must use the adaptive 40pt avatar and compact 56pt rhythm",
 )
 require(
     "private var plusButton" in VIEW
@@ -28,14 +34,16 @@ require(
     "contacts must use a centered native title with the add control on the trailing edge",
 )
 require(
-    "nativeQuickIcon(item, size: 30)" in VIEW
-    and ".frame(height: 56)" in VIEW
-    and ".padding(.leading, 58)" in VIEW,
-    "contact utility rows must use compact WeChat-style icon and divider geometry",
+    "nativeQuickIcon(item, size: utilityIconSize)" in VIEW
+    and "40 * min(1.18, contactsAccessibilityScale)" in VIEW
+    and ".frame(height: utilityRowHeight)" in VIEW
+    and ".padding(.leading, 69)" in VIEW,
+    "contact utility rows must share the 40pt icon and 69pt text column",
 )
 require(
-    ".background(contactsSectionFill)" in VIEW,
-    "alphabet headers must stay neutral instead of becoming a green block",
+    ".background(contactsCanvas)" in VIEW
+    and ".frame(height: sectionHeaderHeight)" in VIEW,
+    "alphabet headers must stay close to the surrounding canvas without a heavy band",
 )
 require(
     "private var funcStrip" in VIEW
@@ -43,15 +51,19 @@ require(
     "utility contact entries must use dividers without a surrounding selection card",
 )
 require(
-    'Image(systemName: symbol)' in VIEW
+    '"newFriends", "tags", "groups", "chatOnly", "officialAccounts"' in VIEW
+    and "Color(hex: 0xEDA150)" in VIEW
+    and "Color(hex: 0x57BE6A)" in VIEW
+    and "Color(hex: 0x3D83E6)" in VIEW
     and "RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)" in VIEW,
-    "utility contact icons must use native symbols on a compact colored surface",
+    "utility entries must use five stable rows with WeChat-aligned semantic colours",
 )
 require(
-    "contactSubtitle(" not in VIEW
-    and ".frame(height: 36)" in VIEW
-    and "RoundedRectangle(cornerRadius: 8, style: .continuous)" in VIEW,
-    "contacts must use single-line native rows and the compact WeChat search field",
+    'Text(Tr("搜索联系人"))' in SEARCH_VIEW
+    and ".frame(height: searchHeight)" in SEARCH_VIEW
+    and ".frame(maxWidth: .infinity)" in SEARCH_VIEW
+    and "RoundedRectangle(cornerRadius: 8, style: .continuous)" not in SEARCH_VIEW,
+    "contacts must use the centred WeChat search label without a heavy capsule",
 )
 require(
     'Tr("未找到相关联系人")' in VIEW
@@ -83,6 +95,14 @@ require(
     "withSystemAnimation(.easeOut(duration: 0.12))" not in VIEW
     and 'proxy.scrollTo("letter-\\(L)", anchor: .top)' in VIEW,
     "alphabet index jumps must stay immediate instead of animating across the list",
+)
+require(
+    "case .accessibility1: return 1.10" in VIEW
+    and "case .accessibility5: return 1.42" in VIEW
+    and "56 * contactsAccessibilityScale" in VIEW
+    and "contactsFont(17)" in VIEW
+    and "contactsFont(16.5)" in VIEW,
+    "contact type and row rhythm must stay fixed until accessibility text sizes",
 )
 require(
     "opacity(configuration.isPressed ? 0.055 : 0)" in MENU
