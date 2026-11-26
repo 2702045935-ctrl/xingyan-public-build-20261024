@@ -13,6 +13,12 @@ MEDIA_ROW = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
+DIRECT_UPLOAD_BASES = API.split("static let directUploadBases = [", 1)[1].split(
+    "]", 1
+)[0]
+UPLOAD_DATA = API.split("private func uploadData(", 1)[1].split(
+    "private func uploadRawJPEG(", 1
+)[0]
 
 
 def require(condition: bool, message: str) -> None:
@@ -22,17 +28,16 @@ def require(condition: bool, message: str) -> None:
 
 require(
     'static let directUploadBases = [' in API
-    and API.index('"https://43.242.194.89:8443"')
-    < API.index('"https://43.242.194.89:5443"')
-    and "private let uploadSession: URLSession" in API
+    and '"https://43.242.194.89:8443"' in DIRECT_UPLOAD_BASES
+    and '"https://43.242.194.89:5443"' not in DIRECT_UPLOAD_BASES
     and "private func uploadRaw(source: RawUploadSource" in API
     and "var roots = API.directUploadBases" in API
-    and "roots.append(base)" in API
-    and "server != API.publicIngressServer" in API
+    and "roots.append(base)" not in API
+    and "uploadSession" not in API
     and "req.timeoutInterval = timeout" in API
     and "min(timeout, index == 0 ? 2 : 3)" not in API
-    and API.count("uploadSession.upload") >= 4,
-    "uploads must use the 11/20 direct path without a public-ingress fallback",
+    and API.count("session.upload") >= 4,
+    "uploads must use the 11/20 direct session and origin only",
 )
 require(
     "fileSize >= 4 * 1024 * 1024" not in API
@@ -49,19 +54,21 @@ require(
     "case .data(let data):" in API
     and "case .file(let file):" in API
     and "fromFile: file,\n                            delegate: delegate" in API
-    and "from: data,\n                            delegate: delegate" in API
-    and "if API.isConnectivity(error), index + 1 < roots.count" in API,
-    "the shared upload transport must stream data and files through direct endpoints",
+    and "from: data,\n                            delegate: delegate" in API,
+    "the shared upload transport must stream data and files through the restored session",
 )
 require(
     "private func uploadRawJPEG(" in API
     and 'mime: "image/jpeg"' in API
     and "compressed: true" in API
     and 'req.setValue("1", forHTTPHeaderField: "x-chris-compressed")' in API
-    and 'return try await uploadRawJPEG(data, onProgress: onProgress)' in API
-    and 'if let url = try? await uploadRawJPEG(data' not in API
-    and "let b64 = data.base64EncodedString()" not in API,
-    "images must fail on the direct upload instead of hiding errors behind the slow base64 endpoint",
+    and 'if let url = try? await uploadRawJPEG(data' in API
+    and "let b64 = data.base64EncodedString()" in API
+    and 'API.directUploadBases[0] + "/api/upload"' in UPLOAD_DATA
+    and 'post("/api/upload"' not in UPLOAD_DATA
+    and "let payload = try await directUploadPayload(body)" in API
+    and 'post("/api/upload"' not in API,
+    "all 11/20 base64 uploads must use the direct origin",
 )
 require(
     "private final class ImageUploadProgress" in CHAT

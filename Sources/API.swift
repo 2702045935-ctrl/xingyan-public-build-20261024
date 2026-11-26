@@ -1805,17 +1805,14 @@ final class API {
     static let shared = API()
 
     let session: URLSession
-    private let uploadSession: URLSession
     private let trustDelegate = SecureURLSessionDelegate()
 
     static let publicIngressServer = "mail.xingyanmail.site:443"
     static let publicIngressPath = "/xy"
     private static let legacyDirectServer = "43.242.194.89:8443"
-    /// Match the 11/20 fast build first. The second direct port is only a
-    /// connectivity fallback; the public ingress is never used for uploads.
+    /// Keep the exact direct upload origin used by build 2611200641.
     static let directUploadBases = [
-        "https://43.242.194.89:8443",
-        "https://43.242.194.89:5443"
+        "https://43.242.194.89:8443"
     ]
 
     private(set) var token: String = ""
@@ -1892,22 +1889,6 @@ final class API {
         cfg.httpShouldSetCookies = false
         cfg.httpCookieAcceptPolicy = .never
         session = URLSession(configuration: cfg, delegate: trustDelegate, delegateQueue: nil)
-
-        let uploadCfg = URLSessionConfiguration.default
-        uploadCfg.timeoutIntervalForRequest = 60
-        uploadCfg.timeoutIntervalForResource = 900
-        uploadCfg.requestCachePolicy = .reloadIgnoringLocalCacheData
-        uploadCfg.urlCache = nil
-        uploadCfg.httpShouldSetCookies = false
-        uploadCfg.httpCookieAcceptPolicy = .never
-        uploadCfg.httpShouldUsePipelining = true
-        uploadCfg.networkServiceType = .responsiveData
-        uploadCfg.httpMaximumConnectionsPerHost = 8
-        uploadSession = URLSession(
-            configuration: uploadCfg,
-            delegate: trustDelegate,
-            delegateQueue: nil
-        )
 
         let legacyServers: Set<String> = [
 
@@ -5797,9 +5778,37 @@ private struct StarredPayload: Decodable {
         guard let data = data else {
             throw APIError.message("图片处理失败")
         }
-        // Keep raw upload errors visible. Falling back to /api/upload turns a
-        // failing direct upload into a minute-long request with no progress.
-        return try await uploadRawJPEG(data, onProgress: onProgress)
+        if let url = try? await uploadRawJPEG(data, onProgress: onProgress) {
+            return url
+        }
+        onProgress?(0.15)
+        let b64 = data.base64EncodedString()
+        let payload = try await directUploadPayload([
+            "dataUrl": "data:image/jpeg;base64," + b64,
+            "filename": "photo.jpg"
+        ], timeout: 120)
+        guard let path = payload.url else { throw APIError.message("上传失败") }
+        onProgress?(1)
+        return path
+    }
+
+    private func directUploadPayload(_ body: [String: Any],
+                                     timeout: TimeInterval = 120) async throws -> UploadPayload {
+        guard let url = URL(string: API.directUploadBases[0] + "/api/upload") else {
+            throw APIError.message("服务器地址不正确")
+        }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.timeoutInterval = timeout
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let (responseData, response) = try await session.data(for: req)
+        guard let http = response as? HTTPURLResponse,
+              (200...299).contains(http.statusCode) else {
+            throw APIError.message("上传失败，请检查网络后再试")
+        }
+        return try JSONDecoder().decode(UploadPayload.self, from: responseData)
     }
 
     private func uploadRawJPEG(_ data: Data,
@@ -5824,15 +5833,6 @@ private struct StarredPayload: Decodable {
                            timeout: TimeInterval,
                            onProgress: ((Double) -> Void)?) async throws -> String {
         var roots = API.directUploadBases
-        // Never fall back to the public ingress for uploads. In production it
-        // is an order of magnitude slower and silently turns a fast transfer
-        // into a minute-long stall. Custom non-public test servers may still
-        // use their own local base.
-        if server != API.publicIngressServer,
-           !base.isEmpty,
-           !roots.contains(base) {
-            roots.append(base)
-        }
         var lastError: Error?
 
         for (index, root) in roots.enumerated() {
@@ -5859,26 +5859,26 @@ private struct StarredPayload: Decodable {
                 switch source {
                 case .data(let data):
                     if let delegate {
-                        (responseData, response) = try await uploadSession.upload(
+                        (responseData, response) = try await session.upload(
                             for: req,
                             from: data,
                             delegate: delegate
                         )
                     } else {
-                        (responseData, response) = try await uploadSession.upload(
+                        (responseData, response) = try await session.upload(
                             for: req,
                             from: data
                         )
                     }
                 case .file(let file):
                     if let delegate {
-                        (responseData, response) = try await uploadSession.upload(
+                        (responseData, response) = try await session.upload(
                             for: req,
                             fromFile: file,
                             delegate: delegate
                         )
                     } else {
-                        (responseData, response) = try await uploadSession.upload(
+                        (responseData, response) = try await session.upload(
                             for: req,
                             fromFile: file
                         )
@@ -6090,7 +6090,7 @@ private struct StarredPayload: Decodable {
     }
 
     func rawUpload(_ body: [String: Any]) async throws -> (url: String, name: String, bytes: Int) {
-        let payload: UploadPayload = try await post("/api/upload", body, as: UploadPayload.self)
+        let payload = try await directUploadPayload(body)
         guard let url = payload.url else { throw APIError.message("上传失败") }
         return (url, payload.name ?? "", payload.bytes ?? 0)
     }
