@@ -424,18 +424,20 @@ private struct AppearanceHomePreview: View {
 
             screen
                 .padding(4.5)
-
-            VStack(spacing: 0) {
-                Spacer()
-                HStack(spacing: 12) {
-                    sideButton(height: 18, offset: 10)
-                    Spacer()
-                    sideButton(height: 28, offset: 14)
-                }
-            }
-            .padding(.vertical, 45)
         }
         .frame(width: 128, height: 238)
+        .overlay(alignment: .leading) {
+            VStack(spacing: 5) {
+                sideButton(height: 13)
+                sideButton(height: 23)
+                sideButton(height: 23)
+            }
+            .offset(x: -1.7, y: -31)
+        }
+        .overlay(alignment: .trailing) {
+            sideButton(height: 31)
+                .offset(x: 1.7, y: -30)
+        }
         .overlay {
             RoundedRectangle(cornerRadius: 29, style: .continuous)
                 .stroke(
@@ -628,7 +630,7 @@ private struct AppearanceHomePreview: View {
             }
     }
 
-    private func sideButton(height: CGFloat, offset: CGFloat) -> some View {
+    private func sideButton(height: CGFloat) -> some View {
         Capsule()
             .fill(
                 LinearGradient(
@@ -638,7 +640,6 @@ private struct AppearanceHomePreview: View {
                 )
             )
             .frame(width: 2.2, height: height)
-            .offset(y: offset)
     }
 }
 
