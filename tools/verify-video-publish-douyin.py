@@ -36,6 +36,11 @@ require(
     "custom cover selection must upload and persist with the work",
 )
 require(
+    "publishHeader(topInset: max(geo.safeAreaInsets.top, L.safeTop))" in FEED
+    and ".padding(.top, topInset + 4)" in FEED,
+    "the complete publishing header must stay below the device safe area",
+)
+require(
     'Button(Tr("公开")) { publishVisibility = "public" }' in FEED
     and 'Button(Tr("仅朋友")) { publishVisibility = "friends" }' in FEED
     and 'Button(Tr("仅自己")) { publishVisibility = "private" }' in FEED

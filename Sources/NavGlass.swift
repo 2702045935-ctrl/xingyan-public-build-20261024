@@ -37,7 +37,7 @@ struct TopGlassBar: View {
                     fallback
                 } else {
                     ZStack {
-                        NativeGlassHeaderMaterial()
+                        NativePremiumGlassMaterial(dark: scheme == .dark)
                             .opacity(max(0.72, min(1, blur)) * t)
                         fallback.opacity(0.08 * t)
                         if let maskColor = UIConfig.colorIfSet("chatsNavMaskColor") {
@@ -54,6 +54,37 @@ struct TopGlassBar: View {
 }
 
 #if canImport(UIKit)
+struct NativePremiumGlassMaterial: UIViewRepresentable {
+    let dark: Bool
+
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        let view = UIVisualEffectView(effect: effect)
+        view.isUserInteractionEnabled = false
+        view.contentView.backgroundColor = reduceTransparency
+            ? UIColor.secondarySystemBackground
+            : (dark ? UIColor.black.withAlphaComponent(0.035)
+                    : UIColor.white.withAlphaComponent(0.028))
+        return view
+    }
+
+    func updateUIView(_ view: UIVisualEffectView, context: Context) {
+        view.effect = effect
+        view.contentView.backgroundColor = reduceTransparency
+            ? UIColor.secondarySystemBackground
+            : (dark ? UIColor.black.withAlphaComponent(0.035)
+                    : UIColor.white.withAlphaComponent(0.028))
+    }
+
+    private var effect: UIVisualEffect? {
+        guard !reduceTransparency else { return nil }
+        return UIBlurEffect(style: dark
+                            ? .systemChromeMaterialDark
+                            : .systemChromeMaterialLight)
+    }
+}
+
 struct NativeGlassHeaderMaterial: UIViewRepresentable {
     var forcedDark: Bool? = nil
 
@@ -174,6 +205,7 @@ struct NativeTopGlassMask: View {
 final class NativeTopScrollRegistry {
     static let shared = NativeTopScrollRegistry()
     weak var contacts: UIScrollView?
+    weak var discover: UIScrollView?
 }
 
 struct NativeChatsTopEdgeChrome: View {

@@ -1,0 +1,178 @@
+connected 500/10000
+connected 1000/10000
+connected 1500/10000
+connected 2000/10000
+connected 2500/10000
+connected 3000/10000
+connected 3500/10000
+connected 4000/10000
+connected 4500/10000
+connected 5000/10000
+connected 5500/10000
+connected 6000/10000
+connected 6500/10000
+connected 7000/10000
+connected 7500/10000
+connected 8000/10000
+connected 8500/10000
+connected 9000/10000
+connected 9500/10000
+connected 10000/10000
+{"connections":10000,"closedConnections":[{"userId":"u_capacity_0","code":0,"reason":""},{"userId":"u_capacity_1","code":0,"reason":""},{"userId":"u_capacity_2","code":0,"reason":""},{"userId":"u_capacity_3","code":0,"reason":""},{"userId":"u_capacity_4","code":0,"reason":""},{"userId":"u_capacity_5","code":0,"reason":""},{"userId":"u_capacity_6","code":0,"reason":""},{"userId":"u_capacity_7","code":0,"reason":""},{"userId":"u_capacity_8","code":0,"reason":""},{"userId":"u_capacity_9","code":0,"reason":""},{"userId":"u_capacity_10","code":0,"reason":""},{"userId":"u_capacity_11","code":0,"reason":""},{"userId":"u_capacity_12","code":0,"reason":""},{"userId":"u_capacity_13","code":0,"reason":""},{"userId":"u_capacity_14","code":0,"reason":""},{"userId":"u_capacity_15","code":0,"reason":""},{"userId":"u_capacity_16","code":0,"reason":""},{"userId":"u_capacity_17","code":0,"reason":""},{"userId":"u_capacity_18","code":0,"reason":""},{"userId":"u_capacity_19","code":0,"reason":""}],"connectDurationMs":10845,"rounds":3,"reconnectCount":1000,"expectedDeliveries":30000,"delivered":30000,"deliveryRate":1,"p99Ms":96,"broadcasts":[{"clientId":"capacity-1795431507176-0-1e617b","delivered":10000,"missing":0,"p50Ms":57,"p95Ms":93,"p99Ms":96,"maxMs":97},{"clientId":"capacity-1795431507276-1-4bb26a","delivered":10000,"missing":0,"p50Ms":50,"p95Ms":87,"p99Ms":90,"maxMs":91}],"reconnectBroadcast":{"clientId":"capacity-1795431508430-99-6189c1","delivered":10000,"missing":0,"p50Ms":49,"p95Ms":86,"p99Ms":91,"maxMs":93},"strict":null,"stored":null,"serverMemoryBeforeMb":173,"serverMemoryAfterMb":226,"pass":true}
+{
+  "isolated": true,
+  "dataDir": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\xingyan-capacity-load-V0TNuP",
+  "serverCount": 1,
+  "stages": [
+    10000
+  ],
+  "passed": true,
+  "results": [
+    {
+      "connections": 10000,
+      "closedConnections": [
+        {
+          "userId": "u_capacity_0",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_1",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_2",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_3",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_4",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_5",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_6",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_7",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_8",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_9",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_10",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_11",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_12",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_13",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_14",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_15",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_16",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_17",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_18",
+          "code": 0,
+          "reason": ""
+        },
+        {
+          "userId": "u_capacity_19",
+          "code": 0,
+          "reason": ""
+        }
+      ],
+      "connectDurationMs": 10845,
+      "rounds": 3,
+      "reconnectCount": 1000,
+      "expectedDeliveries": 30000,
+      "delivered": 30000,
+      "deliveryRate": 1,
+      "p99Ms": 96,
+      "broadcasts": [
+        {
+          "clientId": "capacity-1795431507176-0-1e617b",
+          "delivered": 10000,
+          "missing": 0,
+          "p50Ms": 57,
+          "p95Ms": 93,
+          "p99Ms": 96,
+          "maxMs": 97
+        },
+        {
+          "clientId": "capacity-1795431507276-1-4bb26a",
+          "delivered": 10000,
+          "missing": 0,
+          "p50Ms": 50,
+          "p95Ms": 87,
+          "p99Ms": 90,
+          "maxMs": 91
+        }
+      ],
+      "reconnectBroadcast": {
+        "clientId": "capacity-1795431508430-99-6189c1",
+        "delivered": 10000,
+        "missing": 0,
+        "p50Ms": 49,
+        "p95Ms": 86,
+        "p99Ms": 91,
+        "maxMs": 93
+      },
+      "strict": null,
+      "stored": null,
+      "serverMemoryBeforeMb": 173,
+      "serverMemoryAfterMb": 226,
+      "pass": true
+    }
+  ]
+}

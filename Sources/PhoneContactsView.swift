@@ -119,62 +119,26 @@ struct PhoneContactsView: View {
 
                     switch state {
                     case .idle, .denied:
-                        Button {
-                            Task { await loadContacts() }
-                        } label: {
-                            Text(state == .denied ? Tr("去系统设置开启通讯录权限") : Tr("读取手机联系人"))
-                                .font(pf(16, .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 50)
-                                .background(Color(hex: 0x25D366),
-                                            in: RoundedRectangle(cornerRadius: 10,
-                                                                 style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
+                        phonePermissionCard
 
                     case .requesting:
-                        ProgressView(Tr("正在读取手机联系人…"))
-                            .padding(.vertical, 30)
+                        VStack(spacing: 12) {
+                            ProgressView()
+                            Text(Tr("正在读取手机联系人…"))
+                                .font(pf(14))
+                                .foregroundStyle(C.subLabel)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 220)
 
                     case .ready:
-                        HStack(spacing: 8) {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(C.subLabel)
-                            TextField(Tr("搜索姓名或号码"), text: $keyword)
-                                .font(pfStyled(size: 15.5, weight: .regular))
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                            if !keyword.isEmpty {
-                                Button {
-                                    keyword = ""
-                                } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(C.subLabel)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                        .frame(height: 44)
-                        .background(Color.dyn(0xF0F2F5, 0x101014),
-                                    in: RoundedRectangle(cornerRadius: 12,
-                                                         style: .continuous))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
+                        phoneSearchBar
 
                         if contacts.isEmpty {
-                            Text(Tr("手机通讯录里没有可查询的号码"))
-                                .font(pf(15))
-                                .foregroundColor(C.subLabel)
-                                .padding(.vertical, 30)
+                            phoneEmptyState(icon: "person.crop.circle.badge.xmark",
+                                            title: Tr("手机通讯录里没有可查询的号码"))
                         } else if filteredContacts.isEmpty {
-                            Text(Tr("没有找到匹配的手机联系人"))
-                                .font(pf(15))
-                                .foregroundColor(C.subLabel)
-                                .padding(.vertical, 30)
+                            phoneEmptyState(icon: "magnifyingglass",
+                                            title: Tr("没有找到匹配的手机联系人"))
                         } else {
                             ForEach(groupedContacts) { section in
                                 Section {
@@ -190,13 +154,17 @@ struct PhoneContactsView: View {
                                 } header: {
                                     HStack {
                                         Text(section.letter)
-                                            .font(pfStyled(size: 13, weight: .semibold))
-                                            .foregroundStyle(C.subLabel)
+                                            .font(pfStyled(size: 12, weight: .semibold))
+                                            .foregroundStyle(
+                                                section.letter == "#"
+                                                ? Color(hex: 0x25D366)
+                                                : C.subLabel
+                                            )
                                         Spacer()
                                     }
-                                    .padding(.horizontal, 16)
-                                    .frame(height: 30)
-                                    .background(Color.dyn(0xFFFFFF, 0x000000))
+                                    .padding(.horizontal, 18)
+                                    .frame(height: 28)
+                                    .background(C.pageBg)
                                 }
                             }
                         }
@@ -206,10 +174,19 @@ struct PhoneContactsView: View {
                         Text(errorText)
                             .font(pf(12.5))
                             .foregroundColor(C.red)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 24)
                     }
 
+                    if state == .ready {
+                        Text(Tr("仅在你选择联系人后查询号码，不会批量上传通讯录。"))
+                            .font(pf(12.5))
+                            .foregroundStyle(C.subLabel)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 34)
+                            .padding(.top, 24)
+                    }
                 }
                 .padding(.bottom, max(20, L.safeBottom))
             }
@@ -230,28 +207,62 @@ struct PhoneContactsView: View {
         Color.dyn(0xFFFFFF, 0x000000).ignoresSafeArea()
     }
 
+    private var phoneSearchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(C.subLabel)
+            TextField(Tr("搜索姓名或号码"), text: $keyword)
+                .font(pfStyled(size: 15.5, weight: .regular))
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            if !keyword.isEmpty {
+                Button {
+                    keyword = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(C.subLabel)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 40)
+        .background(C.fieldBg,
+                    in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(C.pageBg)
+    }
+
     private var contactsHero: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "person.2.fill")
-                .font(.system(size: 20, weight: .semibold))
+        HStack(alignment: .center, spacing: 13) {
+            Image(systemName: "person.crop.circle.badge.plus")
+                .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 46, height: 46)
+                .frame(width: 48, height: 48)
                 .background(Color(hex: 0x25D366), in: Circle())
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(Tr("从手机通讯录添加朋友"))
                     .font(pfStyled(size: 17, weight: .semibold))
                     .foregroundStyle(C.label)
-                Text(Tr("仅在你选择联系人后查询号码，不会批量上传通讯录。"))
-                    .font(pfStyled(size: 13.5, weight: .regular))
-                    .foregroundStyle(C.subLabel)
-                    .fixedSize(horizontal: false, vertical: true)
+                if state == .ready {
+                    Text("\(contacts.count) " + Tr("位联系人"))
+                        .font(pfStyled(size: 13, weight: .regular))
+                        .foregroundStyle(C.subLabel)
+                } else {
+                    Text(Tr("安全地查找已经在使用星言的朋友"))
+                        .font(pfStyled(size: 13, weight: .regular))
+                        .foregroundStyle(C.subLabel)
+                }
             }
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(C.pageBg)
     }
 
     private func phoneContactRow(_ contact: LocalPhoneContact) -> some View {
@@ -259,16 +270,16 @@ struct PhoneContactsView: View {
             Text(String(contact.name.prefix(1)))
                 .font(pfStyled(size: 18, weight: .medium))
                 .foregroundStyle(.white)
-                .frame(width: 46, height: 46)
-                .background(Color(hex: 0x8E8E93), in: Circle())
+                .frame(width: 44, height: 44)
+                .background(phoneAvatarColor(contact.name), in: Circle())
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(contact.name)
-                    .font(pfStyled(size: 17, weight: .regular))
+                    .font(pfStyled(size: 16.5, weight: .regular))
                     .foregroundStyle(C.label)
                     .lineLimit(1)
                 Text(contact.phone)
-                    .font(pfStyled(size: 14, weight: .regular))
+                    .font(pfStyled(size: 13.5, weight: .regular))
                     .foregroundStyle(C.subLabel)
                     .lineLimit(1)
             }
@@ -277,14 +288,14 @@ struct PhoneContactsView: View {
             if searchingPhone == contact.phone {
                 ProgressView().tint(Color(hex: 0x25D366))
             } else {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(C.subLabel)
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 19, weight: .medium))
+                    .foregroundStyle(Color(hex: 0x25D366))
             }
         }
-        .padding(.horizontal, 16)
-        .frame(height: 72)
-        .background(Color.dyn(0xFFFFFF, 0x000000))
+        .padding(.horizontal, 18)
+        .frame(height: 64)
+        .background(C.pageBg)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(C.hairline)
@@ -292,6 +303,67 @@ struct PhoneContactsView: View {
                 .padding(.leading, 74)
         }
         .contentShape(Rectangle())
+    }
+
+    private var phonePermissionCard: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "person.crop.circle.badge.questionmark")
+                .font(.system(size: 42, weight: .light))
+                .foregroundStyle(Color(hex: 0x25D366))
+            Text(Tr("读取手机联系人"))
+                .font(pf(17, .semibold))
+                .foregroundStyle(C.label)
+            Text(Tr("仅在你选择联系人后查询号码，不会批量上传通讯录。"))
+                .font(pf(13.5))
+                .foregroundStyle(C.subLabel)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 22)
+            Button {
+                Task { await loadContacts() }
+            } label: {
+                Text(state == .denied
+                     ? Tr("去系统设置开启通讯录权限")
+                     : Tr("读取手机联系人"))
+                    .font(pf(15.5, .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 46)
+                    .background(Color(hex: 0x25D366),
+                                in: RoundedRectangle(cornerRadius: 13,
+                                                     style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 24)
+        }
+        .frame(maxWidth: .infinity, minHeight: 260)
+        .padding(.vertical, 20)
+    }
+
+    private func phoneEmptyState(icon: String, title: String) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 34, weight: .light))
+                .foregroundStyle(C.subLabel)
+            Text(title)
+                .font(pf(14))
+                .foregroundStyle(C.subLabel)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, minHeight: 220)
+        .padding(.horizontal, 30)
+    }
+
+    private func phoneAvatarColor(_ name: String) -> Color {
+        let palette = [
+            Color(hex: 0x7A8B99),
+            Color(hex: 0x9A7B8C),
+            Color(hex: 0x708C7B),
+            Color(hex: 0x8A8068),
+            Color(hex: 0x7A7899),
+            Color(hex: 0x698890)
+        ]
+        let scalar = name.unicodeScalars.reduce(0) { $0 + Int($1.value) }
+        return palette[abs(scalar) % palette.count]
     }
 
     private func loadContacts() async {

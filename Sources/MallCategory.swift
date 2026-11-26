@@ -12,9 +12,9 @@ struct DDCategoryTab: View {
     private var cats: [String] { ["全部"] + store.categories }
 
     private var byCate: [DDProduct] {
-        let all = store.feed(store.live)
-        guard !cate.isEmpty, cate != "全部" else { return all }
-        return all.filter { $0.cate == cate }
+        store.gridProducts(category: cate.isEmpty || cate == "全部" ? nil : cate,
+                           sellerScope: nil,
+                           channel: 0)
     }
     private var list: [DDProduct] {
         guard !tag.isEmpty else { return byCate }
@@ -22,9 +22,7 @@ struct DDCategoryTab: View {
     }
 
     private var chips: [String] {
-        var out: [String] = []
-        for p in byCate { for t in p.tags where !out.contains(t) { out.append(t) } }
-        return Array(out.prefix(8))
+        store.categoryTags(cate.isEmpty || cate == "全部" ? nil : cate)
     }
 
     var body: some View {
@@ -66,67 +64,59 @@ struct DDCategoryTab: View {
             .frame(width: 84)
             .background(DDColor.page)
 
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 10) {
-
-                    Button { onSearch() } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 13.5, weight: .medium))
-                                .foregroundColor(DDColor.sub)
-                            Text(Tr("搜商品 / 品牌 / 分类"))
-                                .font(pf(13.5)).foregroundColor(DDColor.sub)
-                            Spacer(minLength: 0)
-                        }
-                        .padding(.horizontal, 12)
-                        .frame(height: 34)
-                        .background(Capsule().fill(Color.white))
-                        .overlay(Capsule().stroke(DDColor.cardEdge, lineWidth: 0.6))
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-
+            VStack(alignment: .leading, spacing: 10) {
+                Button { onSearch() } label: {
                     HStack(spacing: 6) {
-                        Text(Tr(cate.isEmpty ? "全部商品" : cate))
-                            .font(pf(16, .semibold)).foregroundColor(DDColor.ink)
-                        Text(String(list.count) + Tr(" 件"))
-                            .font(pf(11.5)).foregroundColor(DDColor.sub)
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 13.5, weight: .medium))
+                            .foregroundColor(DDColor.sub)
+                        Text(Tr("搜商品 / 品牌 / 分类"))
+                            .font(pf(13.5)).foregroundColor(DDColor.sub)
                         Spacer(minLength: 0)
                     }
-                    .padding(.top, 2)
+                    .padding(.horizontal, 12)
+                    .frame(height: 34)
+                    .background(Capsule().fill(DDColor.card))
+                    .overlay(Capsule().stroke(DDColor.cardEdge, lineWidth: 0.6))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
 
-                    if !chips.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                chip(Tr("全部"), tag.isEmpty) { tag = "" }
-                                ForEach(chips, id: \.self) { t in
-                                    chip(Tr(t), tag == t) { tag = (tag == t) ? "" : t }
-                                }
+                HStack(spacing: 6) {
+                    Text(Tr(cate.isEmpty ? "全部商品" : cate))
+                        .font(pf(16, .semibold)).foregroundColor(DDColor.ink)
+                    Text(String(list.count) + Tr(" 件"))
+                        .font(pf(11.5)).foregroundColor(DDColor.sub)
+                    Spacer(minLength: 0)
+                }
+
+                if !chips.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            chip(Tr("全部"), tag.isEmpty) { tag = "" }
+                            ForEach(chips, id: \.self) { t in
+                                chip(Tr(t), tag == t) { tag = (tag == t) ? "" : t }
                             }
                         }
                     }
-
-                    DDWaterfallGrid(cells: list.map { p -> (view: AnyView, h: CGFloat) in
-                        (view: AnyView(DDProductCard(product: p, onOpen: { onOpen(p) })),
-                         h: DDWaterfallGrid.estimate(p))
-                    }, spacing: 10)
-
-                    if list.isEmpty {
-                        VStack(spacing: 8) {
-                            Image(systemName: "shippingbox")
-                                .font(.system(size: 30)).foregroundColor(DDColor.weak)
-                            Text(Tr("这个分类下暂时没有商品"))
-                                .font(pf(13)).foregroundColor(DDColor.sub)
-                        }
-                        .frame(maxWidth: .infinity).padding(.top, 50)
-                    }
-
-                    Spacer(minLength: 16)
                 }
 
-                .padding(.horizontal, 8)
-                .padding(.top, 10)
+                if list.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "shippingbox")
+                            .font(.system(size: 30)).foregroundColor(DDColor.weak)
+                        Text(Tr("这个分类下暂时没有商品"))
+                            .font(pf(13)).foregroundColor(DDColor.sub)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    NativeMallProductGrid(products: list, onOpen: onOpen)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
+            .padding(.horizontal, 8)
+            .padding(.top, 10)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(DDColor.page)
         }
     }

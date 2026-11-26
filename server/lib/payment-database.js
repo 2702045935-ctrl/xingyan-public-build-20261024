@@ -236,6 +236,53 @@ class PaymentDatabase extends SqlitePaymentLedger {
         PRIMARY KEY(run_id, provider_ref),
         FOREIGN KEY(run_id) REFERENCES payment_settlement_runs(id)
       );
+
+      CREATE TABLE IF NOT EXISTS payment_settlement_incidents (
+        id TEXT PRIMARY KEY,
+        run_id TEXT NOT NULL UNIQUE,
+        provider TEXT NOT NULL,
+        settlement_date TEXT NOT NULL,
+        status TEXT NOT NULL,
+        mismatch_count INTEGER NOT NULL,
+        report_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        resolved_at TEXT NOT NULL DEFAULT '',
+        resolved_by TEXT NOT NULL DEFAULT '',
+        resolution_note TEXT NOT NULL DEFAULT '',
+        FOREIGN KEY(run_id) REFERENCES payment_settlement_runs(id)
+      );
+
+      CREATE INDEX IF NOT EXISTS payment_settlement_incidents_status
+        ON payment_settlement_incidents(status, created_at);
+
+      CREATE TABLE IF NOT EXISTS payment_disputes (
+        id TEXT PRIMARY KEY,
+        intent_id TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        provider_dispute_id TEXT NOT NULL DEFAULT '',
+        previous_status TEXT NOT NULL,
+        amount_cents INTEGER NOT NULL,
+        currency TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        status TEXT NOT NULL,
+        outcome TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        resolved_at TEXT NOT NULL DEFAULT '',
+        resolved_by TEXT NOT NULL DEFAULT '',
+        resolution_note TEXT NOT NULL DEFAULT '',
+        FOREIGN KEY(intent_id) REFERENCES payment_intents(id)
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS payment_disputes_provider_ref
+        ON payment_disputes(provider, provider_dispute_id)
+        WHERE provider_dispute_id <> '';
+
+      CREATE UNIQUE INDEX IF NOT EXISTS payment_disputes_open_intent
+        ON payment_disputes(intent_id)
+        WHERE status = 'open';
+
+      CREATE INDEX IF NOT EXISTS payment_disputes_status
+        ON payment_disputes(status, created_at);
     `);
     this.ensureMeta('intent_last_hash', '');
     this.ensureMeta('intent_sequence', '0');
@@ -1503,6 +1550,24 @@ class PaymentDatabase extends SqlitePaymentLedger {
         stableJson(report),
         at
       );
+      let incidentId = '';
+      if (mismatches.length) {
+        incidentId = this.newId('setcase');
+        this.db.prepare(`
+          INSERT INTO payment_settlement_incidents(
+            id, run_id, provider, settlement_date, status, mismatch_count,
+            report_json, created_at, resolved_at, resolved_by, resolution_note
+          ) VALUES(?, ?, ?, ?, 'open', ?, ?, ?, '', '', '')
+        `).run(
+          incidentId,
+          runId,
+          providerName,
+          date,
+          mismatches.length,
+          stableJson(report),
+          at
+        );
+      }
       const insertLine = this.db.prepare(`
         INSERT INTO payment_settlement_lines(
           run_id, provider_ref, order_id, kind, amount_cents, fee_cents,
@@ -1522,7 +1587,371 @@ class PaymentDatabase extends SqlitePaymentLedger {
           stableJson(line.raw)
         );
       }
-      return Object.assign({ runId, createdAt: at }, report);
+      return Object.assign({ runId, incidentId, createdAt: at }, report);
+    });
+  }
+
+  settlementIncidents(limit, status) {
+    const max = Math.min(200, Math.max(1, Number(limit) || 50));
+    const wanted = String(status || '').trim().toLowerCase();
+    const rows = wanted
+      ? this.db.prepare(`
+          SELECT * FROM payment_settlement_incidents
+          WHERE status = ?
+          ORDER BY created_at DESC
+          LIMIT ?
+        `).all(wanted, max)
+      : this.db.prepare(`
+          SELECT * FROM payment_settlement_incidents
+          ORDER BY created_at DESC
+          LIMIT ?
+        `).all(max);
+    return rows.map((row) => ({
+      id: String(row.id),
+      runId: String(row.run_id),
+      provider: String(row.provider),
+      settlementDate: String(row.settlement_date),
+      status: String(row.status),
+      mismatchCount: Number(row.mismatch_count),
+      report: parseJson(row.report_json, {}),
+      createdAt: String(row.created_at),
+      resolvedAt: String(row.resolved_at || ''),
+      resolvedBy: String(row.resolved_by || ''),
+      resolutionNote: String(row.resolution_note || '')
+    }));
+  }
+
+  settlementIncident(incidentId) {
+    const row = this.db.prepare(`
+      SELECT * FROM payment_settlement_incidents WHERE id = ?
+    `).get(String(incidentId || ''));
+    if (!row) return null;
+    return {
+      id: String(row.id),
+      runId: String(row.run_id),
+      provider: String(row.provider),
+      settlementDate: String(row.settlement_date),
+      status: String(row.status),
+      mismatchCount: Number(row.mismatch_count),
+      report: parseJson(row.report_json, {}),
+      createdAt: String(row.created_at),
+      resolvedAt: String(row.resolved_at || ''),
+      resolvedBy: String(row.resolved_by || ''),
+      resolutionNote: String(row.resolution_note || '')
+    };
+  }
+
+  resolveSettlementIncident(incidentId, actor, note) {
+    const id = String(incidentId || '');
+    const resolvedBy = String(actor || '').trim();
+    const resolutionNote = String(note || '').trim();
+    if (!id) throw new Error('settlement incident id is required');
+    if (!resolvedBy || !resolutionNote) {
+      throw new Error('settlement incident resolution requires actor and note');
+    }
+    return this.transaction(() => {
+      const row = this.db.prepare(`
+        SELECT * FROM payment_settlement_incidents WHERE id = ?
+      `).get(id);
+      if (!row) throw new Error('settlement incident not found');
+      if (row.status === 'resolved') {
+        return {
+          duplicate: true,
+          incident: this.settlementIncident(id)
+        };
+      }
+      const at = this.now();
+      this.db.prepare(`
+        UPDATE payment_settlement_incidents
+        SET status = 'resolved', resolved_at = ?, resolved_by = ?, resolution_note = ?
+        WHERE id = ?
+      `).run(at, resolvedBy, resolutionNote, id);
+      return {
+        duplicate: false,
+        incident: this.settlementIncident(id)
+      };
+    });
+  }
+
+  disputeView(row) {
+    if (!row) return null;
+    return {
+      id: String(row.id),
+      intentId: String(row.intent_id),
+      provider: String(row.provider),
+      providerDisputeId: String(row.provider_dispute_id || ''),
+      previousStatus: String(row.previous_status),
+      amountCents: Number(row.amount_cents),
+      currency: String(row.currency),
+      reason: String(row.reason),
+      status: String(row.status),
+      outcome: String(row.outcome || ''),
+      createdAt: String(row.created_at),
+      resolvedAt: String(row.resolved_at || ''),
+      resolvedBy: String(row.resolved_by || ''),
+      resolutionNote: String(row.resolution_note || '')
+    };
+  }
+
+  dispute(disputeId) {
+    return this.disputeView(this.db.prepare(`
+      SELECT * FROM payment_disputes WHERE id = ?
+    `).get(String(disputeId || '')));
+  }
+
+  disputes(limit, status) {
+    const max = Math.min(200, Math.max(1, Number(limit) || 50));
+    const wanted = String(status || '').trim().toLowerCase();
+    const rows = wanted
+      ? this.db.prepare(`
+          SELECT * FROM payment_disputes
+          WHERE status = ?
+          ORDER BY created_at DESC
+          LIMIT ?
+        `).all(wanted, max)
+      : this.db.prepare(`
+          SELECT * FROM payment_disputes
+          ORDER BY created_at DESC
+          LIMIT ?
+        `).all(max);
+    return rows.map((row) => this.disputeView(row));
+  }
+
+  openDispute(input) {
+    const row = input || {};
+    const intentId = String(row.intentId || '');
+    const provider = String(row.provider || 'xingyan').trim();
+    const providerDisputeId = String(row.providerDisputeId || '').trim();
+    const reason = String(row.reason || '').trim();
+    if (!intentId) throw new Error('disputed payment intent is required');
+    if (!provider) throw new Error('dispute provider is required');
+    if (reason.length < 2) throw new Error('dispute reason is required');
+    return this.transaction(() => {
+      if (providerDisputeId) {
+        const existing = this.db.prepare(`
+          SELECT * FROM payment_disputes
+          WHERE provider = ? AND provider_dispute_id = ?
+        `).get(provider, providerDisputeId);
+        if (existing) {
+          if (String(existing.intent_id) !== intentId) {
+            throw new Error('provider dispute reference belongs to another intent');
+          }
+          return { duplicate: true, dispute: this.disputeView(existing) };
+        }
+      }
+      const open = this.db.prepare(`
+        SELECT * FROM payment_disputes
+        WHERE intent_id = ? AND status = 'open'
+      `).get(intentId);
+      if (open) return { duplicate: true, dispute: this.disputeView(open) };
+      const intent = this.intent(intentId);
+      if (!intent) throw new Error('payment intent not found');
+      if (!['captured', 'partially_refunded', 'refunded'].includes(intent.status)) {
+        throw new Error('payment intent is not disputable');
+      }
+      const at = this.now();
+      const disputeId = this.newId('dsp');
+      this.db.prepare(`
+        INSERT INTO payment_disputes(
+          id, intent_id, provider, provider_dispute_id, previous_status,
+          amount_cents, currency, reason, status, outcome, created_at,
+          resolved_at, resolved_by, resolution_note
+        ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, 'open', '', ?, '', '', '')
+      `).run(
+        disputeId,
+        intent.id,
+        provider,
+        providerDisputeId,
+        intent.status,
+        intent.amountCents,
+        intent.currency,
+        reason,
+        at
+      );
+      this.db.prepare(`
+        UPDATE payment_intents
+        SET status = 'disputed', version = version + 1, updated_at = ?
+        WHERE id = ?
+      `).run(at, intent.id);
+      this.appendIntentEventLocked({
+        commandId: 'dispute:' + intent.id + ':' + disputeId,
+        intentId: intent.id,
+        type: 'disputed',
+        version: intent.version + 1,
+        at,
+        data: {
+          disputeId,
+          provider,
+          providerDisputeId,
+          previousStatus: intent.status,
+          amountCents: intent.amountCents,
+          currency: intent.currency,
+          reason
+        }
+      });
+      return {
+        duplicate: false,
+        dispute: this.dispute(disputeId)
+      };
+    });
+  }
+
+  resolveDispute(disputeId, actor, note, outcome) {
+    const id = String(disputeId || '').trim();
+    const resolvedBy = String(actor || '').trim();
+    const resolutionNote = String(note || '').trim();
+    const result = String(outcome || '').trim().toLowerCase();
+    if (!id) throw new Error('dispute id is required');
+    if (!resolvedBy || resolutionNote.length < 8) {
+      throw new Error('dispute resolution requires actor and note');
+    }
+    if (!['won', 'withdrawn', 'accepted', 'lost'].includes(result)) {
+      throw new Error('dispute resolution outcome is invalid');
+    }
+    return this.transaction(() => {
+      const dispute = this.dispute(id);
+      if (!dispute) throw new Error('payment dispute not found');
+      if (dispute.status === 'resolved') {
+        return { duplicate: true, dispute };
+      }
+      if (dispute.status === 'adjustment_required') {
+        if (dispute.outcome === result) {
+          return { duplicate: true, adjustmentRequired: true, dispute };
+        }
+        throw new Error('payment dispute is awaiting financial adjustment');
+      }
+      const intent = this.intent(dispute.intentId);
+      if (!intent || intent.status !== 'disputed') {
+        throw new Error('payment intent is not frozen by this dispute');
+      }
+      const at = this.now();
+      const adjustmentRequired = result === 'accepted' || result === 'lost';
+      this.db.prepare(`
+        UPDATE payment_disputes
+        SET status = ?, outcome = ?, resolved_at = ?,
+            resolved_by = ?, resolution_note = ?
+        WHERE id = ?
+      `).run(
+        adjustmentRequired ? 'adjustment_required' : 'resolved',
+        result,
+        at,
+        resolvedBy,
+        resolutionNote,
+        id
+      );
+      if (adjustmentRequired) {
+        this.db.prepare(`
+          UPDATE payment_intents
+          SET version = version + 1, updated_at = ?
+          WHERE id = ?
+        `).run(at, intent.id);
+        this.appendIntentEventLocked({
+          commandId: 'dispute-adjustment-required:' + id,
+          intentId: intent.id,
+          type: 'dispute_adjustment_required',
+          version: intent.version + 1,
+          at,
+          data: {
+            disputeId: id,
+            outcome: result,
+            resolvedBy,
+            resolutionNote
+          }
+        });
+        return {
+          duplicate: false,
+          adjustmentRequired: true,
+          dispute: this.dispute(id)
+        };
+      }
+      this.db.prepare(`
+        UPDATE payment_intents
+        SET status = ?, version = version + 1, updated_at = ?
+        WHERE id = ?
+      `).run(dispute.previousStatus, at, intent.id);
+      this.appendIntentEventLocked({
+        commandId: 'resolve-dispute:' + id,
+        intentId: intent.id,
+        type: 'dispute_resolved',
+        version: intent.version + 1,
+        at,
+        data: {
+          disputeId: id,
+          outcome: result,
+          resolvedBy,
+          resolutionNote,
+          restoredStatus: dispute.previousStatus
+        }
+      });
+      return {
+        duplicate: false,
+        adjustmentRequired: false,
+        dispute: this.dispute(id)
+      };
+    });
+  }
+
+  finalizeDisputeAdjustment(disputeId, actor, note, ledgerRef) {
+    const id = String(disputeId || '').trim();
+    const resolvedBy = String(actor || '').trim();
+    const resolutionNote = String(note || '').trim();
+    const adjustmentRef = String(ledgerRef || '').trim();
+    if (!id || !adjustmentRef) throw new Error('dispute and ledger reference are required');
+    if (!resolvedBy || resolutionNote.length < 8) {
+      throw new Error('dispute adjustment requires actor and note');
+    }
+    return this.transaction(() => {
+      const dispute = this.dispute(id);
+      if (!dispute) throw new Error('payment dispute not found');
+      if (dispute.status === 'resolved') {
+        return { duplicate: true, dispute };
+      }
+      if (dispute.status !== 'adjustment_required') {
+        throw new Error('payment dispute does not require a financial adjustment');
+      }
+      if (!['accepted', 'lost'].includes(dispute.outcome)) {
+        throw new Error('payment dispute outcome does not require a loss adjustment');
+      }
+      const adjustment = this.recordForRef(adjustmentRef);
+      if (!adjustment) throw new Error('financial adjustment ledger entry not found');
+      if (Date.parse(adjustment.at) < Date.parse(dispute.createdAt)) {
+        throw new Error('financial adjustment predates the payment dispute');
+      }
+      const intent = this.intent(dispute.intentId);
+      if (!intent || intent.status !== 'disputed') {
+        throw new Error('payment intent is not frozen by this dispute');
+      }
+      const at = this.now();
+      this.db.prepare(`
+        UPDATE payment_disputes
+        SET status = 'resolved', resolved_at = ?, resolved_by = ?,
+            resolution_note = ?
+        WHERE id = ?
+      `).run(at, resolvedBy, resolutionNote, id);
+      this.db.prepare(`
+        UPDATE payment_intents
+        SET status = ?, version = version + 1, updated_at = ?
+        WHERE id = ?
+      `).run(dispute.previousStatus, at, intent.id);
+      this.appendIntentEventLocked({
+        commandId: 'finalize-dispute:' + id,
+        intentId: intent.id,
+        type: 'dispute_resolved',
+        version: intent.version + 1,
+        at,
+        data: {
+          disputeId: id,
+          outcome: dispute.outcome,
+          resolvedBy,
+          resolutionNote,
+          ledgerRef: adjustmentRef,
+          restoredStatus: dispute.previousStatus
+        }
+      });
+      return {
+        duplicate: false,
+        dispute: this.dispute(id)
+      };
     });
   }
 
@@ -1533,11 +1962,36 @@ class PaymentDatabase extends SqlitePaymentLedger {
       SELECT COUNT(*) AS count FROM payment_outbox
       WHERE status IN ('pending', 'dead')
     `).get();
+    const dead = this.db.prepare(`
+      SELECT COUNT(*) AS count FROM payment_outbox
+      WHERE status = 'dead'
+    `).get();
+    const incidents = this.db.prepare(`
+      SELECT COUNT(*) AS count FROM payment_settlement_incidents
+      WHERE status = 'open'
+    `).get();
+    const disputes = this.db.prepare(`
+      SELECT COUNT(*) AS count FROM payment_intents
+      WHERE status = 'disputed'
+    `).get();
+    const openSettlementIncidents = Number(incidents && incidents.count) || 0;
+    const deadOutbox = Number(dead && dead.count) || 0;
+    const openDisputes = Number(disputes && disputes.count) || 0;
+    const blockers = [];
+    if (!ledger.ok) blockers.push('payment_ledger_integrity_failed');
+    if (!intents.ok) blockers.push('payment_intent_integrity_failed');
+    if (deadOutbox > 0) blockers.push('payment_outbox_dead');
+    if (openSettlementIncidents > 0) blockers.push('settlement_incident_open');
+    if (openDisputes > 0) blockers.push('payment_dispute_open');
     return {
-      ok: ledger.ok && intents.ok,
+      ok: blockers.length === 0,
+      blockers,
       ledger,
       intents,
       outboxPending: Number(pending && pending.count) || 0,
+      deadOutbox,
+      openSettlementIncidents,
+      openDisputes,
       schemaVersion: this.getMeta('schema_version')
     };
   }

@@ -282,9 +282,16 @@ async function main() {
       toUserId: bob.user.id,
       media: 'audio'
     }));
-    const ringing = await waitEvent(aliceSocket.events, (event) =>
-      event.type === 'call' && event.action === 'ringing' && event.callId === callId,
-    '主叫响铃');
+    let ringing;
+    try {
+      ringing = await waitEvent(aliceSocket.events, (event) =>
+        event.type === 'call' && event.action === 'ringing' && event.callId === callId,
+      '主叫响铃');
+    } catch (error) {
+      console.error('call-signal shard logs:\n' + shardA.logs.join(''));
+      console.error('chat shard logs:\n' + shardB.logs.join(''));
+      throw error;
+    }
     assert.equal(ringing.offline, true);
 
     await new Promise((resolve) => setTimeout(resolve, 250));

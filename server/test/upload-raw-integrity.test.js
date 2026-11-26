@@ -113,6 +113,48 @@ async function main() {
     assert.equal(downloaded.length, payload.length);
     assert.ok(downloaded.equals(payload), '上传后下载内容不一致');
 
+    for (const megabytes of [5, 20]) {
+      const benchmarkPayload = crypto.randomBytes(megabytes * 1024 * 1024);
+      const startedAt = performance.now();
+      const benchmarkUpload = await fetch(base + '/api/upload/raw', {
+        method: 'POST',
+        headers: {
+          Cookie: cookie,
+          'Content-Type': 'application/octet-stream',
+          'x-chris-compressed': '1'
+        },
+        body: benchmarkPayload
+      });
+      const benchmarkMs = Math.round(performance.now() - startedAt);
+      const benchmarkBody = await benchmarkUpload.json();
+      assert.equal(benchmarkUpload.status, 200, JSON.stringify(benchmarkBody));
+      assert.equal(benchmarkBody.data.bytes, benchmarkPayload.length);
+      assert.ok(
+        benchmarkMs < 2000,
+        `${megabytes}MB 上传处理耗时 ${benchmarkMs}ms，未达到秒级门禁`
+      );
+      console.log(`upload-raw ${megabytes}MB: ${benchmarkMs}ms`);
+    }
+
+    const videoPayload = crypto.randomBytes(5 * 1024 * 1024);
+    const videoStartedAt = performance.now();
+    const videoUpload = await fetch(base + '/api/upload/raw', {
+      method: 'POST',
+      headers: {
+        Cookie: cookie,
+        'Content-Type': 'video/mp4',
+        'x-chris-compressed': '1'
+      },
+      body: videoPayload
+    });
+    const videoMs = Math.round(performance.now() - videoStartedAt);
+    const videoBody = await videoUpload.json();
+    assert.equal(videoUpload.status, 200, JSON.stringify(videoBody));
+    assert.equal(videoBody.data.bytes, videoPayload.length);
+    assert.ok(videoMs < 2000,
+      `客户端已压缩的 5MB 视频仍被服务器同步处理 ${videoMs}ms`);
+    console.log(`upload-raw compressed-video 5MB: ${videoMs}ms`);
+
     const empty = await fetch(base + '/api/upload/raw', {
       method: 'POST',
       headers: { Cookie: cookie, 'Content-Type': 'application/octet-stream' },

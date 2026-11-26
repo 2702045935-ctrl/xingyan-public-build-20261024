@@ -3,6 +3,7 @@ import UIKit
 
 struct WallpaperCropView: View {
     let image: UIImage
+    var originalImage: UIImage? = nil
     let onCancel: () -> Void
     let onApply: (UIImage) -> Void
 
@@ -11,6 +12,7 @@ struct WallpaperCropView: View {
     @State private var settledZoom: CGFloat = 1
     @State private var offset: CGSize = .zero
     @State private var settledOffset: CGSize = .zero
+    @State private var applying = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -127,17 +129,26 @@ struct WallpaperCropView: View {
             Spacer(minLength: 0)
 
             Button {
-                onApply(render(viewport: viewport))
+                applyCrop(viewport: viewport)
             } label: {
-                Text(Tr("设定"))
-                    .font(pf(14.5, .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16)
-                    .frame(height: 36)
-                    .background(Capsule().fill(Color.white.opacity(0.17)))
-                    .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 0.7))
+                Group {
+                    if applying {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text(Tr("设定"))
+                            .font(pf(14.5, .semibold))
+                            .foregroundStyle(.white)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 36)
+                .background(Capsule().fill(Color.white.opacity(0.17)))
+                .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 0.7))
             }
             .buttonStyle(.plain)
+            .disabled(applying)
+            .accessibilityLabel(Tr("设定"))
         }
         .padding(.horizontal, 16)
         .padding(.top, max(10, L.safeTop + 4))
@@ -195,7 +206,32 @@ struct WallpaperCropView: View {
         )
     }
 
-    private func render(viewport: CGSize) -> UIImage {
+    private func applyCrop(viewport: CGSize) {
+        guard !applying else { return }
+        applying = true
+        let source = originalImage ?? image
+        let cropZoom = zoom
+        let cropOffset = offset
+        Task {
+            let rendered = await Task.detached(priority: .userInitiated) {
+                Self.render(
+                    image: source,
+                    viewport: viewport,
+                    zoom: cropZoom,
+                    offset: cropOffset
+                )
+            }.value
+            await MainActor.run {
+                applying = false
+                onApply(rendered)
+            }
+        }
+    }
+
+    private nonisolated static func render(image: UIImage,
+                                           viewport: CGSize,
+                                           zoom: CGFloat,
+                                           offset: CGSize) -> UIImage {
         let targetScale = min(3, 3200 / max(1, max(viewport.width, viewport.height)))
         let target = CGSize(width: max(1, viewport.width * targetScale),
                             height: max(1, viewport.height * targetScale))

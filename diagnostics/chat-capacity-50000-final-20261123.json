@@ -1,0 +1,66 @@
+{
+  "scope": "Isolated local temporary server, synthetic users and temporary group; no production data",
+  "optimizationsApplied": [
+    "O(1) indexed WebSocket token user lookup",
+    "large-group presence fanout capped at 512 members",
+    "single-shard fanout bypasses cross-shard discovery",
+    "identical group summaries reuse serialized JSON",
+    "identical WebSocket payloads reuse one encoded frame",
+    "cross-shard fanout batches 512 recipients per internal request",
+    "clients update from the realtime chat summary instead of reloading the whole chat list for every message",
+    "native TCP WebSocket load client with explicit unique source ports"
+  ],
+  "results": [
+    {
+      "connections": 10000,
+      "connectDurationMs": 19458,
+      "stormRounds": 6,
+      "delivered": 60000,
+      "expected": 60000,
+      "deliveryRate": 1,
+      "p99Ms": 1775,
+      "serverMemoryAfterMb": 170,
+      "twoSecondP99Pass": true
+    },
+    {
+      "connections": 30000,
+      "connectDurationMs": 78935,
+      "stormRounds": 6,
+      "delivered": 180000,
+      "expected": 180000,
+      "deliveryRate": 1,
+      "p99Ms": 5442,
+      "serverMemoryAfterMb": 220,
+      "twoSecondP99Pass": false
+    },
+    {
+      "connections": 40000,
+      "connectDurationMs": 45823,
+      "stormRounds": 2,
+      "delivered": 80000,
+      "expected": 80000,
+      "deliveryRate": 1,
+      "p99Ms": 6802,
+      "serverMemoryAfterMb": 354,
+      "twoSecondP99Pass": false
+    },
+    {
+      "connections": 50000,
+      "connectDurationMs": 103457,
+      "stormRounds": 2,
+      "delivered": 100000,
+      "expected": 100000,
+      "deliveryRate": 1,
+      "p99Ms": 8482,
+      "serverMemoryAfterMb": 295,
+      "twoSecondP99Pass": false
+    }
+  ],
+  "conclusion": [
+    "One isolated Node process accepted 50000 concurrent sockets",
+    "No message loss was observed from 10000 through 50000 concurrent recipients",
+    "10000 is the highest currently verified tier with P99 below 2 seconds",
+    "Fanout latency remains the limiting factor above 10000",
+    "Production still requires multi-cell soak and capacity evidence"
+  ]
+}

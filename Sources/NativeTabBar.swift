@@ -248,8 +248,7 @@ struct NativeTabBar: UIViewRepresentable {
                          selectedImage: Self.worldIconWithOrbit()),
             UITabBarItem(title: C.tabText3, image: UIImage(systemName: "person.crop.circle"),
                          selectedImage: UIImage(systemName: "person.crop.circle.fill")?
-                            .withTintColor(UIColor(OrbitTheme.jade),
-                                           renderingMode: .alwaysOriginal))
+                            .withRenderingMode(.alwaysTemplate))
         ]
         applyColors(bar)
         refresh(bar)
@@ -321,16 +320,18 @@ struct NativeTabBar: UIViewRepresentable {
     }
 
     private func applyColors(_ bar: UITabBar) {
-        bar.tintColor = UIColor.systemBlue
+        bar.tintColor = UIColor(OrbitTheme.jade)
         bar.unselectedItemTintColor = UIColor(OrbitTheme.secondary)
 
         let appearance = UITabBarAppearance()
         if reduceTransparency {
             appearance.configureWithOpaqueBackground()
             appearance.backgroundEffect = nil
-            let themed = UIConfig.colorIfSet("tabBarColor")
-                ?? UIConfig.colorIfSet("tabBg")
-                ?? (scheme == .dark ? C.pageBg : C.tabBg)
+            let themed = scheme == .dark
+                ? C.pageBg
+                : (UIConfig.colorIfSet("tabBarColor")
+                    ?? UIConfig.colorIfSet("tabBg")
+                    ?? C.tabBg)
             appearance.backgroundColor = UIColor(themed)
             bar.isOpaque = true
         } else {
@@ -340,9 +341,7 @@ struct NativeTabBar: UIViewRepresentable {
         if scheme == .dark && !reduceTransparency {
             // 深色玻璃跟随管理端整套主题，不再固定成一个脱离页面的黑阶。
             appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
-            let themed = UIConfig.colorIfSet("tabBarColor")
-                ?? UIConfig.colorIfSet("tabBg")
-                ?? C.pageBg
+            let themed = C.pageBg
             appearance.backgroundColor = UIColor(themed).withAlphaComponent(0.72)
         }
         let normalTitle: [NSAttributedString.Key: Any] = [
@@ -350,17 +349,25 @@ struct NativeTabBar: UIViewRepresentable {
             .font: pfUIFont(10.5, .medium)
         ]
         let selectedTitle: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(OrbitTheme.secondary),
+            .foregroundColor: UIColor(OrbitTheme.jade),
             .font: pfUIFont(10.5, .semibold)
         ]
         let selectedMyTitle: [NSAttributedString.Key: Any] = [
             .foregroundColor: UIColor(OrbitTheme.jade),
             .font: pfUIFont(10.5, .semibold)
         ]
-        appearance.stackedLayoutAppearance.normal.iconColor = UIColor(OrbitTheme.secondary)
-        appearance.stackedLayoutAppearance.normal.titleTextAttributes = normalTitle
-        appearance.stackedLayoutAppearance.selected.iconColor = UIColor.systemBlue
-        appearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedTitle
+        let normalIcon = UIColor(OrbitTheme.secondary)
+        let selectedIcon = UIColor(OrbitTheme.jade)
+        for itemAppearance in [
+            appearance.stackedLayoutAppearance,
+            appearance.inlineLayoutAppearance,
+            appearance.compactInlineLayoutAppearance
+        ] {
+            itemAppearance.normal.iconColor = normalIcon
+            itemAppearance.normal.titleTextAttributes = normalTitle
+            itemAppearance.selected.iconColor = selectedIcon
+            itemAppearance.selected.titleTextAttributes = selectedTitle
+        }
         appearance.stackedLayoutAppearance.normal.badgeBackgroundColor = .systemRed
         appearance.stackedLayoutAppearance.selected.badgeBackgroundColor = .systemRed
         appearance.inlineLayoutAppearance.normal.badgeBackgroundColor = .systemRed
@@ -391,7 +398,7 @@ struct NativeTabBar: UIViewRepresentable {
 
     private func refresh(_ bar: UITabBar) {
         guard let items = bar.items, items.count == 5 else { return }
-        items[0].badgeValue = badge > 0 ? (badge > 99 ? "•••" : "\(badge)") : nil
+        items[0].badgeValue = badge > 0 ? (badge > 99 ? "99+" : "\(badge)") : nil
         items[1].badgeValue = contactsDot ? "" : nil
         items[2].badgeValue = nil
         items[3].badgeValue = momentsDot ? "" : nil
@@ -411,7 +418,7 @@ struct NativeTabBar: UIViewRepresentable {
         private let systemMyImage = UIImage(systemName: "person.crop.circle")?
             .withRenderingMode(.alwaysTemplate)
         private let systemMySelected = UIImage(systemName: "person.crop.circle.fill")?
-            .withTintColor(UIColor(OrbitTheme.jade), renderingMode: .alwaysOriginal)
+            .withRenderingMode(.alwaysTemplate)
 
         init(selection: Binding<Int>) {
             self.selection = selection

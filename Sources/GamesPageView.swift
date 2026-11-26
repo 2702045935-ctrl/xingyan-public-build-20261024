@@ -43,7 +43,7 @@ struct GamesPageView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
-    @State private var games: [MiniApp] = []
+    @State private var games: [MiniApp] = API.shared.cachedMiniApps(kind: "game")
     @State private var shareApp: MiniApp?
 
     @State private var iconPickFor = ""
@@ -67,7 +67,7 @@ struct GamesPageView: View {
     private let ink = C.label
     private let subInk = C.subLabel
 
-    @State private var loading = true
+    @State private var loading = API.shared.cachedMiniApps(kind: "game").isEmpty
     @State private var isVisible = false
     @State private var isInteracting = false
     @State private var lastInteraction = Date.distantPast
@@ -139,7 +139,7 @@ struct GamesPageView: View {
                         .padding(.horizontal, 16)
                     }
 
-                    if loading {
+                    if loading && list.isEmpty {
                         HStack(spacing: 10) {
                             ProgressView().tint(subInk)
                             Text(Tr("正在加载…")).font(pf(14)).foregroundColor(subInk)
@@ -211,7 +211,10 @@ struct GamesPageView: View {
                   Date().timeIntervalSince(lastInteraction) > 1.2 else { return }
             withAnimation(.easeInOut(duration: 0.4)) { bannerIndex = (bannerIndex + 1) % n }
         }
-        .onAppear { isVisible = true }
+        .onAppear {
+            isVisible = true
+            GameRuntimeWarmup.warm()
+        }
         .onDisappear { isVisible = false }
         .navigationDestination(isPresented: $showDetail) {
             if let g = detail {
@@ -605,6 +608,7 @@ struct GameWebPage: View {
             .statusBarHidden(false)
 
             .onAppear {
+                GameRuntimeWarmup.warm()
                 Self.setGameAudio(true)
                 StatusBarStyle.shared.set(light: true)
             }
@@ -939,7 +943,6 @@ struct GameWebPage: View {
     }
 
     private func prepare(force: Bool = false) async {
-        loading = true
         errorText = ""
         let path = game.url
         guard !path.isEmpty, let remoteIndex = API.shared.assetURL(path) else {
@@ -959,19 +962,31 @@ struct GameWebPage: View {
         do {
             try fm.createDirectory(at: root, withIntermediateDirectories: true)
 
+            let cachedIndex = root.appendingPathComponent("index.html")
+            if !force,
+               let size = try? cachedIndex.resourceValues(
+                   forKeys: [.fileSizeKey]
+               ).fileSize,
+               size > 0 {
+                localDir = root
+                localIndex = cachedIndex
+                loading = false
+            } else {
+                loading = localIndex == nil
+            }
+
             let list = await miniAppFileList(baseDir: remoteDir)
 
             let stamp = GamesPageView.stableKey(list.joined(separator: "|"))
             let stampFile = root.appendingPathComponent(".list")
             let oldStamp = (try? String(contentsOf: stampFile, encoding: .utf8)) ?? ""
             let needAll = force || oldStamp != stamp
-            for f in list {
-                let dst = root.appendingPathComponent(f)
-                if !needAll, let sz = try? dst.resourceValues(forKeys: [.fileSizeKey]).fileSize, sz > 0 { continue }
-                try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
-                let data = try await API.shared.assetData(remoteDir.appendingPathComponent(f))
-                try data.write(to: dst, options: .atomic)
-            }
+            try await GameRuntimeAssets.download(
+                list,
+                from: remoteDir,
+                to: root,
+                force: needAll
+            )
             try? stamp.write(to: stampFile, atomically: true, encoding: .utf8)
             localDir = root
             localIndex = root.appendingPathComponent("index.html")
@@ -1067,16 +1082,6 @@ struct GamesPageAdminSheet: View {
     }
 }
 
-private let gamePerformanceJS = """
-(() => {
-  window.addEventListener('DOMContentLoaded', () => {
-    const style = document.createElement('style');
-    style.textContent = 'html,body{overscroll-behavior:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}canvas{touch-action:none;}';
-    document.head && document.head.appendChild(style);
-  });
-})();
-"""
-
 struct GameWebView: UIViewRepresentable {
     let index: URL
 
@@ -1099,17 +1104,8 @@ struct GameWebView: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> WKWebView {
-        let cfg = WKWebViewConfiguration()
+        let cfg = GameRuntimeConfiguration.make()
         context.coordinator.userContentController = cfg.userContentController
-        cfg.allowsInlineMediaPlayback = true
-        cfg.mediaTypesRequiringUserActionForPlayback = []
-
-        cfg.userContentController.addUserScript(
-            WKUserScript(source: WebSafeArea.js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
-        cfg.userContentController.addUserScript(
-            WKUserScript(source: gamePerformanceJS,
-                         injectionTime: .atDocumentStart,
-                         forMainFrameOnly: true))
         if !rankJs.isEmpty {
             cfg.userContentController.addUserScript(
                 WKUserScript(source: rankJs, injectionTime: .atDocumentStart, forMainFrameOnly: true))
@@ -1127,17 +1123,7 @@ struct GameWebView: UIViewRepresentable {
             cfg.userContentController.add(context.coordinator.room, name: "chrisRoom")
         }
         let v = WKWebView(frame: .zero, configuration: cfg)
-        let gameBackground = UIColor(red: 0.043, green: 0.055, blue: 0.09, alpha: 1)
-        v.isOpaque = true
-        v.backgroundColor = gameBackground
-        v.underPageBackgroundColor = gameBackground
-        v.allowsLinkPreview = false
-        v.scrollView.bounces = false
-        v.scrollView.isScrollEnabled = false
-        v.scrollView.showsVerticalScrollIndicator = false
-        v.scrollView.showsHorizontalScrollIndicator = false
-        v.scrollView.backgroundColor = gameBackground
-        v.scrollView.contentInsetAdjustmentBehavior = .never
+        GameRuntimeConfiguration.configure(v)
         v.loadFileURL(index, allowingReadAccessTo: dir ?? index.deletingLastPathComponent())
         box?.web = v
         context.coordinator.web = v

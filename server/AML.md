@@ -74,9 +74,10 @@ node server/test/payment-ledger.test.js
 
 ## 当前上线状态
 
-按当前产品决定，AML 自动拦截默认关闭，`AML_RUNTIME_ENABLED=0`，不作为本次
-真钱支付链路的依赖。支付数据库、支付机构回调、对账和故障演练状态以
-`GET /api/payment/status` 的 `realMoneyReady` 为准。
+内部演示环境仍可设置 `AML_RUNTIME_ENABLED=0`，但此时
+`GET /api/payment/status` 必须返回 `realMoneyReady=false`，充值、提现和机构
+资金入口保持 503。接入真钱前必须设置 `AML_RUNTIME_ENABLED=1`，并确保 AML
+引擎健康。
 
 如果以后重新启用 AML 自动决策，以下条件全部完成前，不得开启自动拦截：
 

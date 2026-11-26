@@ -2,6 +2,27 @@ import SceneKit
 import UIKit
 
 enum StarWorldUSDZScene {
+    private static let sceneCache = NSCache<NSURL, SCNScene>()
+    private static let preloadLock = NSLock()
+    private static var preloadStarted = false
+
+    static func preloadIfNeeded() {
+        preloadLock.lock()
+        if preloadStarted {
+            preloadLock.unlock()
+            return
+        }
+        preloadStarted = true
+        preloadLock.unlock()
+
+        Task.detached(priority: .utility) {
+            for name in ["StarWorldRoom", "StarWorldPlaza", "StarWorldAvatar"] {
+                guard let url = assetURL(name) else { continue }
+                _ = try? assetScene(url)
+            }
+        }
+    }
+
     static func makeRoom(root providedRoot: SCNNode, profile: StarAvatarProfile) -> SCNScene? {
         guard let roomURL = assetURL("StarWorldRoom") else { return nil }
         let scene = SCNScene()
@@ -10,7 +31,7 @@ enum StarWorldUSDZScene {
 
         do {
             let room = try assetScene(roomURL)
-            moveChildren(from: room.rootNode, to: providedRoot)
+            moveChildren(from: room.rootNode.clone(), to: providedRoot)
             providedRoot.childNode(withName: "SM_FloorBase", recursively: true)?.name = "room.floor"
         } catch {
             return nil
@@ -56,7 +77,7 @@ enum StarWorldUSDZScene {
         do {
             let plaza = try assetScene(plazaURL)
             let content = SCNNode()
-            moveChildren(from: plaza.rootNode, to: content)
+            moveChildren(from: plaza.rootNode.clone(), to: content)
             // The authored plaza is centered below its waterline. Raise it once for walking.
             content.position.y = 3.30
             providedRoot.addChildNode(content)
@@ -122,13 +143,18 @@ enum StarWorldUSDZScene {
     }
 
     private static func assetScene(_ url: URL) throws -> SCNScene {
-        try SCNScene(
+        if let cached = sceneCache.object(forKey: url as NSURL) {
+            return cached
+        }
+        let scene = try SCNScene(
             url: url,
             options: [
                 .checkConsistency: false,
                 .convertUnitsToMeters: true
             ]
         )
+        sceneCache.setObject(scene, forKey: url as NSURL)
+        return scene
     }
 
     private static func moveChildren(from source: SCNNode, to target: SCNNode) {
@@ -143,7 +169,7 @@ enum StarWorldUSDZScene {
         guard let url = assetURL("StarWorldAvatar"),
               let source = try? assetScene(url) else { return nil }
         let root = SCNNode()
-        moveChildren(from: source.rootNode, to: root)
+        moveChildren(from: source.rootNode.clone(), to: root)
         root.name = "player.room"
         return root
     }
@@ -197,7 +223,7 @@ enum StarWorldUSDZScene {
         sun.castsShadow = true
         sun.shadowMode = .deferred
         sun.shadowRadius = 4
-        sun.shadowMapSize = CGSize(width: 2048, height: 2048)
+        sun.shadowMapSize = CGSize(width: 1024, height: 1024)
         sun.orthographicScale = 72
         let sunNode = SCNNode()
         sunNode.light = sun

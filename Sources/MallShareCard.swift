@@ -40,12 +40,14 @@ final class MallSheet: ObservableObject {
 
 struct MallCardBubble: View {
     let info: MallCardInfo
+    var mine: Bool = false
+    var showTail: Bool = false
 
     var onOpen: () -> Void
 
     var body: some View {
         Button { onOpen() } label: {
-            WeChatMessageCard {
+            WeChatMessageCard(mine: mine, showTail: showTail) {
                 HStack(spacing: 12) {
                     DDThumb(em: info.em, size: 70, radius: 12,
                             img: info.img.isEmpty ? nil : info.img)

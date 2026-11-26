@@ -78,6 +78,10 @@ struct FeedPlayerView: View {
         }
         .statusBarHidden(true)
         .onAppear { seed() }
+        .onDisappear {
+            VideoKernelTelemetry.shared.finishAll()
+            PlayerPool.shared.suspend()
+        }
         .sheet(item: $commentItem) { it in
             FeedCommentSheet(item: it) { n in
                 if var s = ui[it.id] { s.comments = n; ui[it.id] = s }
@@ -88,11 +92,7 @@ struct FeedPlayerView: View {
         }
         .sheet(isPresented: $showShare) { ShareSheet(items: shareItems) }
         .task(id: index) {
-
-            let lo = max(0, index - 1), hi = min(items.count - 1, index + 1)
-            if lo <= hi { PlayerPool.shared.keepOnly(Array(items[lo...hi]).map { $0.id }) }
-
-            PlayerPool.shared.currentId = items[safe: index]?.id ?? ""
+            PlayerPool.shared.focus(items: items, index: index)
             await trackProgress()
         }
     }
@@ -213,245 +213,6 @@ private extension Array {
     subscript(safe i: Int) -> Element? { (i >= 0 && i < count) ? self[i] : nil }
 }
 
-final class PlayerPool: ObservableObject {
-    static let shared = PlayerPool()
-
-    @Published var currentId: String = ""
-
-    @Published private(set) var loading: Set<String> = []
-
-    @Published private(set) var failed: Set<String> = []
-    private var players: [String: AVPlayer] = [:]
-    private var urls: [String: URL] = [:]
-    private var tasks: [String: Task<Void, Never>] = [:]
-
-    private var recent: [String] = []
-
-    private var played: Set<String> = []
-
-    func player(for item: FeedItem) -> AVPlayer? {
-        let key = item.id
-        touch(key)
-        if let p = players[key] { return p }
-        guard let u = startURL(item) else { return nil }
-        return makePlayer(item: item, url: u, triedMP4: u == mp4URL(item))
-    }
-
-    private func touch(_ key: String) {
-        recent.removeAll { $0 == key }
-        recent.insert(key, at: 0)
-        if recent.count > 8 { recent.removeLast(recent.count - 8) }
-    }
-
-    func hasPlayed(_ id: String) -> Bool { played.contains(id) }
-
-    private func startURL(_ item: FeedItem) -> URL? {
-        if let v = item.video, !v.isEmpty, let u = API.shared.assetURL(v) { return u }
-        if let h = item.hls, !h.isEmpty, let u = API.shared.assetURL(h) { return u }
-        return API.shared.assetURL(item.playPath)
-    }
-
-    private func mp4URL(_ item: FeedItem) -> URL? {
-        guard let v = item.video, !v.isEmpty else { return nil }
-        return API.shared.assetURL(v)
-    }
-
-    @discardableResult
-    private func makePlayer(item: FeedItem, url: URL, triedMP4: Bool, fromDownload: Bool = false) -> AVPlayer {
-        let key = item.id
-
-        let p = AVPlayer()
-        p.actionAtItemEnd = .none
-
-        p.automaticallyWaitsToMinimizeStalling = false
-        players[key] = p
-        urls[key] = url
-        if currentId == key { p.play() }
-        CrashCatcher.note("视频号", "开始加载 id=\(key) 源=\(url.absoluteString)")
-        loadInto(item: item, player: p, url: url, triedMP4: triedMP4, fromDownload: fromDownload)
-        return p
-    }
-
-    private func loadInto(item: FeedItem, player p: AVPlayer, url: URL, triedMP4: Bool, fromDownload: Bool = false) {
-        let key = item.id
-
-        if url.scheme != "http" && url.scheme != "https" {
-            attach(item: item, player: p, file: url, remote: url, triedMP4: true)
-            return
-        }
-
-        if let local = LocalStore.localURL(url.path), FileManager.default.fileExists(atPath: local.path) {
-            attach(item: item, player: p, file: local, remote: url, triedMP4: true)
-            return
-        }
-
-        if url.pathExtension == "m3u8", let pi = StreamPlay.item(url) {
-            pi.preferredForwardBufferDuration = 1.5
-            p.replaceCurrentItem(with: pi)
-            NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime,
-                                                  object: pi, queue: .main) { [weak p] _ in
-                p?.seek(to: .zero)
-                p?.play()
-            }
-            urls[key] = url
-            if currentId == key { p.play() }
-            verify(item: item, player: p, url: url, triedMP4: false)
-            return
-        }
-
-        Task { @MainActor [weak self] in
-            guard let self = self else { return }
-            let local = await StreamPlay.download(url)
-            guard self.players[key] === p else { return }
-            guard let file = local else {
-                self.loading.remove(key)
-                self.failed.insert(key)
-                CrashCatcher.note("视频号", "整段下载失败 id=\(key) 源=\(url.absoluteString)")
-                return
-            }
-            self.attach(item: item, player: p, file: file, remote: url, triedMP4: true)
-        }
-    }
-
-    private func attach(item: FeedItem, player p: AVPlayer, file: URL, remote: URL, triedMP4: Bool) {
-        let key = item.id
-        let pi = AVPlayerItem(url: file)
-        pi.preferredForwardBufferDuration = 2
-        p.replaceCurrentItem(with: pi)
-        NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime,
-                                              object: pi, queue: .main) { [weak p] _ in
-            p?.seek(to: .zero)
-            p?.play()
-        }
-        urls[key] = file
-        if currentId == key { p.play() }
-        verify(item: item, player: p, url: remote, triedMP4: triedMP4)
-    }
-
-    private func verify(item: FeedItem, player: AVPlayer, url: URL, triedMP4: Bool) {
-        let key = item.id
-        tasks[key]?.cancel()
-        tasks[key] = Task { @MainActor [weak self] in
-            guard let self = self else { return }
-            if !self.played.contains(key) { self.loading.insert(key) }
-            self.failed.remove(key)
-
-            var moved = false
-            var activeWait = 0.0
-            for tick in 0..<250 {
-                if self.players[key] !== player { return }
-                let active = (self.currentId == key)
-                if active { player.play() }
-                if let it = player.currentItem {
-                    if it.status == .failed { break }
-                    if it.status == .readyToPlay, CMTimeGetSeconds(player.currentTime()) > 0.05 {
-                        moved = true
-                        break
-                    }
-                }
-
-                if tick % 25 == 0 {
-                    let st = player.currentItem?.status.rawValue ?? -1
-                    let t = CMTimeGetSeconds(player.currentTime())
-                    let buf = player.currentItem?.loadedTimeRanges.first?.timeRangeValue.duration.seconds ?? 0
-                    CrashCatcher.note("视频号",
-                        "诊断 id=\(key) active=\(active) status=\(st) t=\(String(format: "%.2f", t.isFinite ? t : 0))"
-                        + " rate=\(player.rate) 缓冲=\(String(format: "%.1f", buf.isFinite ? buf : 0))"
-                        + " likely=\(player.currentItem?.isPlaybackLikelyToKeepUp ?? false)")
-                }
-                if active { activeWait += 0.2 }
-
-                if active, activeWait >= (triedMP4 ? 12 : 3), !(player.currentItem?.isPlaybackLikelyToKeepUp ?? false) {
-                    break
-                }
-                try? await Task.sleep(nanoseconds: 200_000_000)
-            }
-            guard self.players[key] === player else { return }
-            if moved {
-                self.played.insert(key)
-                self.loading.remove(key)
-                self.failed.remove(key)
-                CrashCatcher.note("视频号", "出画面 id=\(key)")
-                return
-            }
-
-            if self.currentId != key, player.currentItem?.status != .failed {
-                self.loading.remove(key)
-                self.tasks[key] = nil
-                CrashCatcher.note("视频号", "预加载等画面超时（先不判失败）id=\(key) 源=\(url.absoluteString)")
-                return
-            }
-            let why = player.currentItem?.error?.localizedDescription ?? "没等到画面"
-            CrashCatcher.note("视频号", "加载失败 id=\(key) 源=\(url.absoluteString) 原因=\(why)")
-            player.pause()
-            StreamPlay.cancel(player.currentItem)
-            player.replaceCurrentItem(with: nil)
-            if self.players[key] === player { self.players.removeValue(forKey: key) }
-            self.urls.removeValue(forKey: key)
-            if !triedMP4, let u2 = self.mp4URL(item), u2 != url {
-                CrashCatcher.note("视频号", "改用整包 MP4（先下后播）id=\(key)")
-                self.makePlayer(item: item, url: u2, triedMP4: true, fromDownload: true)
-            } else {
-                self.loading.remove(key)
-                self.failed.insert(key)
-            }
-        }
-    }
-
-    func retry(_ item: FeedItem) {
-        let key = item.id
-        tasks[key]?.cancel()
-        players[key]?.pause()
-        StreamPlay.cancel(players[key]?.currentItem)
-        players[key]?.replaceCurrentItem(with: nil)
-        players.removeValue(forKey: key)
-        urls.removeValue(forKey: key)
-        played.remove(key)
-        failed.remove(key)
-        loading.remove(key)
-        guard let u = startURL(item) else { failed.insert(key); return }
-        CrashCatcher.note("视频号", "手动重试 id=\(key) 源=\(u.absoluteString)")
-        makePlayer(item: item, url: u, triedMP4: u == mp4URL(item))
-    }
-
-    func play(_ item: FeedItem) {
-        guard let p = player(for: item) else { return }
-        if p.timeControlStatus != .playing { p.play() }
-
-        if !played.contains(item.id), tasks[item.id] == nil, let u = urls[item.id] {
-            verify(item: item, player: p, url: u, triedMP4: (u == mp4URL(item)))
-        }
-    }
-
-    func pause(_ item: FeedItem) {
-        players[item.id]?.pause()
-    }
-
-    func progress(of id: String) -> Double {
-        guard let p = players[id], let it = p.currentItem else { return 0 }
-        let total = CMTimeGetSeconds(it.duration)
-        guard total.isFinite, total > 0 else { return 0 }
-        return max(0, min(1, CMTimeGetSeconds(p.currentTime()) / total))
-    }
-
-    func keepOnly(_ ids: [String]) {
-
-        var keep = Set(ids)
-        keep.formUnion(recent)
-        if !currentId.isEmpty { keep.insert(currentId) }
-        for (k, p) in players where !keep.contains(k) {
-            p.pause()
-            StreamPlay.cancel(p.currentItem)
-            p.replaceCurrentItem(with: nil)
-            tasks[k]?.cancel()
-            tasks.removeValue(forKey: k)
-            players.removeValue(forKey: k)
-            urls.removeValue(forKey: k)
-            loading.remove(k)
-        }
-    }
-}
-
 private struct PlayerPage: View {
     let item: FeedItem
     let active: Bool
@@ -534,10 +295,10 @@ private struct PlayerPage: View {
 
             VStack {
                 Spacer()
-                VStack(spacing: 18) {
+                VStack(spacing: 16) {
                     ZStack(alignment: .bottom) {
                         Button { onAvatar() } label: {
-                            Avatar(path: ui.authorAvatar, size: 46, radius: 23, circle: true)
+                            Avatar(path: ui.authorAvatar, size: 48, radius: 24, circle: true)
                                 .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 1.5))
                         }
                         .buttonStyle(.plain)
@@ -550,7 +311,7 @@ private struct PlayerPage: View {
                                     .background(Circle().fill(Color(hex: 0xFE2C55)))
                             }
                             .buttonStyle(.plain)
-                            .offset(y: 9)
+                            .offset(y: 8)
                         }
                     }
                     .padding(.bottom, ui.followed ? 0 : 8)
@@ -567,7 +328,7 @@ private struct PlayerPage: View {
                                    count: 0, action: onShare)
                     MusicDisc()
                 }
-                .padding(.bottom, 34)
+                .padding(.bottom, 32)
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 12)
@@ -651,6 +412,10 @@ struct PlayerLayerView: UIViewRepresentable {
         let l = v.layer as? AVPlayerLayer
         if l?.player !== player { l?.player = player }
     }
+
+    static func dismantleUIView(_ uiView: PlayerLayerUIView, coordinator: ()) {
+        (uiView.layer as? AVPlayerLayer)?.player = nil
+    }
 }
 
 struct VerticalPager<Content: View>: UIViewControllerRepresentable {
@@ -716,16 +481,17 @@ private struct FeedRailButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 27))
+                    .font(.system(size: 29, weight: .semibold))
                     .foregroundColor(color)
-                    .shadow(color: .black.opacity(0.35), radius: 4)
+                    .shadow(color: .black.opacity(0.62), radius: 4, y: 2)
+                    .frame(width: 44, height: 34)
                 if count > 0 {
                     Text(FeedCount.text(count))
-                        .font(pfStyled(size: 12, weight: .semibold))
+                        .font(pfStyled(size: 12.5, weight: .semibold))
                         .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.35), radius: 3)
+                        .shadow(color: .black.opacity(0.68), radius: 3, y: 1)
                 }
             }
         }

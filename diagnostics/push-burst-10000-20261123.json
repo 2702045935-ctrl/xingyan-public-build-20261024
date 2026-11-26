@@ -1,0 +1,18 @@
+{
+  "scope": "Isolated fake APNs HTTP/2 server, temporary 10k-member group, no production traffic",
+  "targets": 10000,
+  "retryTargets": 10,
+  "invalidTargets": 10,
+  "totalRequests": 10020,
+  "accepted": 9990,
+  "transientResponses": 20,
+  "invalidResponses": 10,
+  "http2Connections": 1,
+  "maxConcurrentStreams": 32,
+  "retryAttemptsExact": true,
+  "invalidTokensRemoved": true,
+  "pushLogLines": 300,
+  "elapsedMs": 2157,
+  "serverMemoryMb": 188,
+  "pass": true
+}

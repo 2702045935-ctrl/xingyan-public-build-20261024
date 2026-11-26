@@ -1,5 +1,5 @@
 {
-  "baseline": "candidate: rolling two-page history prefetch + native prepend commit barrier",
+  "baseline": "chat and moments frozen while other pages migrate",
   "files": [
     {
       "path": "Sources/ChatDetailView.swift",
@@ -12,14 +12,99 @@
       "sha256": "706cad4ee60e3d2bd29f16db76f9a1a76789ad912aa77fff0387df9a532d180c"
     },
     {
-      "path": "Sources/ContactsView.swift",
-      "size": 69416,
-      "sha256": "b6852a3968e463607425ef6339b8a1828634ad2dc744a938254e71d176a2eca5"
-    },
-    {
       "path": "Sources/ScrollProbe.swift",
       "size": 10157,
       "sha256": "6417eab14d59c6b9973e208c549e0167884defa58fe234ad7a22a4b1d3a012b9"
+    },
+    {
+      "path": "Sources/ChatBackgroundSheet.swift",
+      "size": 38209,
+      "sha256": "32202e0e302dd612c5aa7a6614440ba59faa712769adf5b485ec00e95f332451"
+    },
+    {
+      "path": "Sources/ChatComposerField.swift",
+      "size": 15404,
+      "sha256": "9c55ada14810179d11ec5e443bde3cdd4782bf3b3069905e0a2e6462e5523529"
+    },
+    {
+      "path": "Sources/ChatMediaBubbles.swift",
+      "size": 31975,
+      "sha256": "0ab2f78bd8d4bd88ef34a9aae553d8d7c9bfa7f786e645297de50ef12c39fc61"
+    },
+    {
+      "path": "Sources/ChatStressFixture.swift",
+      "size": 3171,
+      "sha256": "5c3a04d73abbff8e90127f0637319b0bbe2f51fdf8186c849bae4a5d711e8d7a"
+    },
+    {
+      "path": "Sources/ChatThemes.swift",
+      "size": 21662,
+      "sha256": "afbb47e746185992fddc13cb69be53535cbe995d1f47a8756275e1597e57f48a"
+    },
+    {
+      "path": "Sources/ChatWallpaperEffect.swift",
+      "size": 30364,
+      "sha256": "09d99e8a111506d260810d8005f7ca06f5b15e7000fcd6da2feb44cb6a6eb3e4"
+    },
+    {
+      "path": "Sources/ChatsView.swift",
+      "size": 150411,
+      "sha256": "77c4a246f6b5b9c1626cf922cb691a5b7e1b942cb85d9e5ed8c936eaa620e3cc"
+    },
+    {
+      "path": "Sources/NativeChatList.swift",
+      "size": 33781,
+      "sha256": "4919a2cea590630f465a6164470c9d16c0f9164fb7f7bc62fd6c03160257e96f"
+    },
+    {
+      "path": "Sources/NativeChatRowCell.swift",
+      "size": 42333,
+      "sha256": "50aafbe5675786f95c2d4c1de7b7bf0d22d81afd21262eaf32a4b2e6bfa68dc7"
+    },
+    {
+      "path": "Sources/WeChatMessageCards.swift",
+      "size": 3117,
+      "sha256": "dcf08e432c7b3020e93969de9757f52ac101d90d690bb6c0a6dd83f9dca98ad4"
+    },
+    {
+      "path": "Sources/DiscoverView.swift",
+      "size": 160468,
+      "sha256": "1683cf8fd17f54b24d2aace0affb2e06d6069f72f944fa89e7399f9e49bd8a48"
+    },
+    {
+      "path": "Sources/MomentFeedCard.swift",
+      "size": 29957,
+      "sha256": "98829e4222d57ae21b0494a25eca65fb877660a148a0f8c2f04d29dcc30e8448"
+    },
+    {
+      "path": "Sources/MomentMediaLayout.swift",
+      "size": 1210,
+      "sha256": "1ea4789d82e075e583fba4c774b3af424f0bfbacfe823700d6c4fdcca67d31ae"
+    },
+    {
+      "path": "Sources/MomentStressFixture.swift",
+      "size": 3468,
+      "sha256": "7b405d632059a4a17e8852658db872674c80b203ec8ab5f2a31e1ccdcfe5f562"
+    },
+    {
+      "path": "Sources/MediaPicker.swift",
+      "size": 26533,
+      "sha256": "c5b2ab8220d476d1ee0dd4d8ca3b693b3265ab95db788d3190838bdc360fe6f4"
+    },
+    {
+      "path": "Sources/MessageStressFixture.swift",
+      "size": 11699,
+      "sha256": "dd3dd0fec5a76c693ad1914c13ce78a14a754b005fdbdbdbd082d39a26d5be0d"
+    },
+    {
+      "path": "Sources/MusicPresenceStore.swift",
+      "size": 4147,
+      "sha256": "ff16ee57bb37688b38fc79110760f2ec18ba551083d57c8dd2cb9b51ac7aefee"
+    },
+    {
+      "path": "Sources/NativeStaticList.swift",
+      "size": 23741,
+      "sha256": "47288370b2de8016b241a03307c621d079c6d09ee09258424007b50f56b4e173"
     }
   ]
 }

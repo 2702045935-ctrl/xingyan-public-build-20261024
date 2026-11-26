@@ -1,5 +1,6 @@
 import SwiftUI
 import AVKit
+import XingyanMallCore
 
 struct DDProduct: Identifiable, Codable, Hashable {
     var id: String
@@ -314,6 +315,46 @@ struct DDAdCoupon: Decodable, Hashable {
     }
 }
 
+extension DDProduct: MallCatalogItem {
+    var mallID: String { id }
+    var mallCategory: String { cate }
+    var mallIsSelfOperated: Bool { isSelfOperated }
+    var mallDiscountRate: Double {
+        orig > price ? max(0, (orig - price) / max(0.01, orig)) : 0
+    }
+    var mallSaving: Double { max(0, orig - price) }
+    var mallSales: Int { salesNum }
+    var mallSearchText: String {
+        ([title, shop, cate] + tags).joined(separator: "\n")
+    }
+    var mallIsLive: Bool { live }
+    var mallShopKey: String { shopKey }
+    var mallTags: [String] { tags }
+}
+
+enum MallStressFixture {
+    static let defaultsKey = "chris.mall.stressCount"
+    static let supportedCounts = [0, 5_000, 9_000]
+
+    static var count: Int {
+        if let raw = ProcessInfo.processInfo.environment["MALL_STRESS_COUNT"],
+           let value = Int(raw), value > 0 {
+            return value
+        }
+        let args = ProcessInfo.processInfo.arguments
+        if let index = args.firstIndex(of: "-MallStressCount"),
+           args.indices.contains(index + 1),
+           let value = Int(args[index + 1]), value > 0 {
+            return value
+        }
+        return max(0, UserDefaults.standard.integer(forKey: defaultsKey))
+    }
+
+    static func set(_ count: Int) {
+        UserDefaults.standard.set(max(0, count), forKey: defaultsKey)
+    }
+}
+
 @MainActor
 final class DDStore: ObservableObject {
     static let shared = DDStore()
@@ -321,6 +362,7 @@ final class DDStore: ObservableObject {
     @Published private(set) var products: [DDProduct] = []
     @Published private(set) var live: [DDProduct] = []
     @Published private(set) var categories: [String] = []
+    @Published private(set) var catalogRevision = 0
 
     @Published private(set) var banners: [String] = []
 
@@ -389,6 +431,15 @@ final class DDStore: ObservableObject {
     @Published private(set) var deliveryModes: [DDDeliveryMode] = DDDeliveryMode.defaults
     @Published var deliveryModeId: String = DDDeliveryMode.defaults.first?.id ?? ""
 
+    private var catalogKernel = MallCatalogKernel<DDProduct>()
+    private var unstressedProducts: [DDProduct] = []
+    private var dislikedLookup = Set<String>()
+    private var mutedCateLookup = Set<String>()
+    private var hiddenAdLookup = Set<String>()
+    private var favoriteLookup = Set<String>()
+    private var followedShopLookup = Set<String>()
+    private var lastCatalogRefreshAt = Date.distantPast
+
     var deliveryMode: DDDeliveryMode? {
         deliveryModes.first { $0.id == deliveryModeId } ?? deliveryModes.first
     }
@@ -445,7 +496,7 @@ final class DDStore: ObservableObject {
     }
 
     private struct Box: Codable {
-        var products: [DDProduct]
+        var products: [DDProduct]?
         var orders: [DDOrder]
         var cart: [DDCartLine]
         var history: [String]
@@ -485,10 +536,20 @@ final class DDStore: ObservableObject {
         return dir.appendingPathComponent("Xingyan/PrivateData/mall-state.json")
     }
 
+    private var catalogFileURL: URL {
+        if let target = LocalStore.privateFile("mall-catalog.json") {
+            return target
+        }
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory,
+                                           in: .userDomainMask)[0]
+        return dir.appendingPathComponent("Xingyan/PrivateData/mall-catalog.json")
+    }
+
     private init() {
+        var legacyProducts: [DDProduct] = []
         if let d = try? Data(contentsOf: fileURL),
            let b = try? JSONDecoder().decode(Box.self, from: d) {
-            products = b.products
+            legacyProducts = b.products ?? []
             orders = b.orders
             cart = b.cart
             history = b.history
@@ -515,12 +576,20 @@ final class DDStore: ObservableObject {
             mutedCates = b.mutedCates ?? []
             splash = b.splash ?? DDSplash()
         }
+        if let d = try? Data(contentsOf: catalogFileURL),
+           let saved = try? JSONDecoder().decode([DDProduct].self, from: d) {
+            products = saved
+        } else {
+            products = legacyProducts
+        }
         if products.isEmpty { products = DDStore.seeds }
+        unstressedProducts = products
         let count = Self.benchmarkProductCount
         if count > products.count {
             products = Self.benchmarkProducts(products, count: count)
         }
-        syncCatalogCaches()
+        syncCatalogCaches(persist: false)
+        scheduleCatalogPersist()
 
         if addresses.isEmpty, !address.isEmpty {
             addresses = [DDAddress(id: "a" + String(Int(Date().timeIntervalSince1970 * 1000)),
@@ -530,7 +599,7 @@ final class DDStore: ObservableObject {
 
     private func save() {
         guard Self.benchmarkProductCount == 0 else { return }
-        let b = Box(products: products, orders: orders, cart: cart,
+        let b = Box(products: nil, orders: orders, cart: cart,
                     history: history, favs: favs, address: address, banners: banners,
                     views: views, addresses: addresses,
                     reviews: reviews, afterSales: afterSales, followedShops: followedShops,
@@ -542,15 +611,38 @@ final class DDStore: ObservableObject {
         if let d = try? JSONEncoder().encode(b) { try? d.write(to: fileURL) }
     }
 
-    private func syncCatalogCaches() {
-        live = products.filter { $0.live }
-        var seen = Set<String>()
-        categories = live.compactMap { seen.insert($0.cate).inserted ? $0.cate : nil }
+    private func scheduleCatalogPersist() {
+        guard Self.benchmarkProductCount == 0 else { return }
+        let snapshot = products
+        let url = catalogFileURL
+        Task.detached(priority: .utility) {
+            guard let data = try? JSONEncoder().encode(snapshot) else { return }
+            try? data.write(to: url, options: .atomic)
+        }
     }
 
-    private static var benchmarkProductCount: Int {
-        max(0, Int(ProcessInfo.processInfo.environment["MALL_STRESS_COUNT"] ?? "") ?? 0)
+    private func rebuildRelevanceLookups() {
+        dislikedLookup = Set(disliked)
+        mutedCateLookup = Set(mutedCates)
+        hiddenAdLookup = Set(hiddenAds)
+        favoriteLookup = Set(favs)
+        followedShopLookup = Set(followedShops)
     }
+
+    private func invalidateRelevanceCaches() {
+        catalogKernel.invalidateQueryCaches()
+    }
+
+    private func syncCatalogCaches(persist: Bool = true) {
+        catalogKernel.rebuild(products)
+        live = catalogKernel.live
+        categories = catalogKernel.categories
+        rebuildRelevanceLookups()
+        catalogRevision &+= 1
+        if persist { scheduleCatalogPersist() }
+    }
+
+    private static var benchmarkProductCount: Int { MallStressFixture.count }
 
     private static func benchmarkProducts(_ source: [DDProduct], count: Int) -> [DDProduct] {
         guard !source.isEmpty, count > source.count else { return source }
@@ -568,8 +660,9 @@ final class DDStore: ObservableObject {
 
         guard r.ok else { return }
         if !r.products.isEmpty {
-            products = r.products
+            unstressedProducts = r.products
         }
+        products = unstressedProducts.isEmpty ? DDStore.seeds : unstressedProducts
         let stressCount = Self.benchmarkProductCount
         if stressCount > products.count {
             products = Self.benchmarkProducts(products, count: stressCount)
@@ -587,8 +680,26 @@ final class DDStore: ObservableObject {
             channels = chs.sorted { ($0.sort ?? 99) < ($1.sort ?? 99) }
             channelsConfigured = true
         }
+        lastCatalogRefreshAt = Date()
         save()
     }
+
+    func refreshIfNeeded(maxAge: TimeInterval = 45) async {
+        guard Date().timeIntervalSince(lastCatalogRefreshAt) >= maxAge else { return }
+        await refresh()
+    }
+
+    func setStressProductCount(_ count: Int) {
+        let normalized = max(0, count)
+        MallStressFixture.set(normalized)
+        let base = unstressedProducts.isEmpty ? DDStore.seeds : unstressedProducts
+        products = normalized > base.count
+            ? Self.benchmarkProducts(base, count: normalized)
+            : base
+        syncCatalogCaches()
+    }
+
+    var unstressedProductCount: Int { unstressedProducts.count }
 
     @discardableResult
     func opsSetChannels(_ list: [DDChannelItem]) async -> Bool {
@@ -676,7 +787,49 @@ final class DDStore: ObservableObject {
         }
     }
 
-    func product(_ id: String) -> DDProduct? { products.first { $0.id == id } }
+    func product(_ id: String) -> DDProduct? { catalogKernel.item(id: id) }
+
+    func gridProducts(category: String?, sellerScope: String?,
+                      channel: Int) -> [DDProduct] {
+        let sort = MallCatalogSort(rawValue: channel) ?? .recommended
+        let rows = catalogKernel.rows(
+            category: category,
+            sellerScope: sellerScope,
+            sort: sort,
+            include: { !dislikedLookup.contains($0.id) }
+        )
+        return sort == .recommended ? feed(rows) : rows
+    }
+
+    func sellerCounts(category: String?) -> (all: Int, selfOperated: Int, third: Int) {
+        catalogKernel.counts(category: category)
+    }
+
+    func searchProducts(_ query: String) -> [DDProduct] {
+        catalogKernel.search(query)
+    }
+
+    func seckillProducts() -> [DDProduct] {
+        catalogKernel.seckill(limit: 8)
+    }
+
+    func dealHighlights(limit: Int) -> [DDProduct] {
+        catalogKernel.deals(limit: limit)
+    }
+
+    func bestDeal() -> DDProduct? { catalogKernel.bestDeal() }
+
+    func dealAverageSaving() -> (count: Int, average: Double) {
+        catalogKernel.dealAverageSaving()
+    }
+
+    func categoryTags(_ category: String?, limit: Int = 8) -> [String] {
+        catalogKernel.hashtags(category: category, limit: limit)
+    }
+
+    func relatedProducts(to product: DDProduct, limit: Int = 6) -> [DDProduct] {
+        catalogKernel.related(to: product, limit: limit)
+    }
 
     var cartCount: Int { cart.reduce(0) { $0 + $1.count } }
     var cartTotal: Double {
@@ -895,10 +1048,15 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    func isFav(_ pid: String) -> Bool { favs.contains(pid) }
+    func isFav(_ pid: String) -> Bool { favoriteLookup.contains(pid) }
+
+    var favoriteProducts: [DDProduct] {
+        favs.compactMap { catalogKernel.item(id: $0) }
+    }
 
     func toggleFav(_ pid: String) {
         if let i = favs.firstIndex(of: pid) { favs.remove(at: i) } else { favs.insert(pid, at: 0) }
+        favoriteLookup = Set(favs)
         save()
     }
 
@@ -1023,19 +1181,24 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    func isFollowed(_ key: String) -> Bool { followedShops.contains(key) }
+    func isFollowed(_ key: String) -> Bool { followedShopLookup.contains(key) }
 
     func toggleFollow(_ key: String) {
         guard !key.isEmpty else { return }
         if let i = followedShops.firstIndex(of: key) { followedShops.remove(at: i) }
         else { followedShops.insert(key, at: 0) }
+        followedShopLookup = Set(followedShops)
         save()
     }
 
     var followedProducts: [DDProduct] {
+        var seen = Set<String>()
         var out: [DDProduct] = []
-        for p in products where followedShops.contains(p.shopKey) && !out.contains(where: { $0.id == p.id }) {
-            out.append(p)
+        out.reserveCapacity(min(products.count, 128))
+        for p in products where followedShopLookup.contains(p.shopKey) {
+            if seen.insert(p.id).inserted {
+                out.append(p)
+            }
         }
         return out
     }
@@ -1074,57 +1237,76 @@ final class DDStore: ObservableObject {
     }
 
     func hideAd(_ id: String) {
-        guard !hiddenAds.contains(id) else { return }
+        guard !hiddenAdLookup.contains(id) else { return }
         hiddenAds.append(id)
+        hiddenAdLookup.insert(id)
         save()
     }
-    func adHidden(_ id: String) -> Bool { hiddenAds.contains(id) }
+    func adHidden(_ id: String) -> Bool { hiddenAdLookup.contains(id) }
 
     func notInterested(_ p: DDProduct, muteCate: Bool) {
-        if !disliked.contains(p.id) { disliked.append(p.id) }
-        if muteCate, !p.cate.isEmpty, !mutedCates.contains(p.cate) { mutedCates.append(p.cate) }
+        if !dislikedLookup.contains(p.id) {
+            disliked.append(p.id)
+            dislikedLookup.insert(p.id)
+        }
+        if muteCate, !p.cate.isEmpty, !mutedCateLookup.contains(p.cate) {
+            mutedCates.append(p.cate)
+            mutedCateLookup.insert(p.cate)
+        }
+        invalidateRelevanceCaches()
         save()
     }
 
     func unmuteCate(_ c: String) {
         mutedCates.removeAll { $0 == c }
+        mutedCateLookup.remove(c)
+        invalidateRelevanceCaches()
         save()
     }
 
     func restoreDisliked(_ id: String) {
         disliked.removeAll { $0 == id }
+        dislikedLookup.remove(id)
+        invalidateRelevanceCaches()
         save()
     }
     func restoreAllDisliked() {
         disliked.removeAll()
         mutedCates.removeAll()
+        dislikedLookup.removeAll(keepingCapacity: true)
+        mutedCateLookup.removeAll(keepingCapacity: true)
+        invalidateRelevanceCaches()
         save()
     }
     func unhideAd(_ id: String) {
         hiddenAds.removeAll { $0 == id }
+        hiddenAdLookup.remove(id)
         save()
     }
     func unhideAllAds() {
         hiddenAds.removeAll()
+        hiddenAdLookup.removeAll(keepingCapacity: true)
         save()
     }
 
-    var dislikedProducts: [DDProduct] { products.filter { disliked.contains($0.id) } }
+    var dislikedProducts: [DDProduct] {
+        products.filter { dislikedLookup.contains($0.id) }
+    }
 
     func feed(_ list: [DDProduct]) -> [DDProduct] {
-        if disliked.isEmpty && mutedCates.isEmpty { return list }
-        let kept = list.filter { !disliked.contains($0.id) }
-        if mutedCates.isEmpty { return kept }
+        if dislikedLookup.isEmpty && mutedCateLookup.isEmpty { return list }
+        let kept = list.filter { !dislikedLookup.contains($0.id) }
+        if mutedCateLookup.isEmpty { return kept }
         let sorted = kept.sorted { a, b in
-            let ma = mutedCates.contains(a.cate) ? 1 : 0
-            let mb = mutedCates.contains(b.cate) ? 1 : 0
+            let ma = mutedCateLookup.contains(a.cate) ? 1 : 0
+            let mb = mutedCateLookup.contains(b.cate) ? 1 : 0
             return ma < mb
         }
 
         if sorted.isEmpty && !list.isEmpty {
             return list.sorted { a, b in
-                let ma = mutedCates.contains(a.cate) ? 1 : 0
-                let mb = mutedCates.contains(b.cate) ? 1 : 0
+                let ma = mutedCateLookup.contains(a.cate) ? 1 : 0
+                let mb = mutedCateLookup.contains(b.cate) ? 1 : 0
                 return ma < mb
             }
         }
@@ -1172,16 +1354,7 @@ final class DDStore: ObservableObject {
         setCartSpec(o.pid, o.spec)
     }
 
-    func search(_ q: String) -> [DDProduct] {
-        let s = q.trimmingCharacters(in: .whitespaces)
-        guard !s.isEmpty else { return live }
-        return live.filter {
-            $0.title.localizedCaseInsensitiveContains(s)
-                || $0.shop.localizedCaseInsensitiveContains(s)
-                || $0.cate == s
-                || $0.tags.contains { $0.contains(s) }
-        }
-    }
+    func search(_ q: String) -> [DDProduct] { searchProducts(q) }
 
     static let seeds: [DDProduct] = [
         DDProduct(id: "p01", em: "🎧", title: "【百亿补贴】无线蓝牙耳机 主动降噪 入耳式 超长续航 苹果安卓通用",
@@ -1225,29 +1398,37 @@ extension View {
 }
 
 enum DDColor {
-    static let red      = Color(hex: 0xE02F24)
-    static let redDeep  = Color(hex: 0xC81E14)
-    static let redLight = Color(hex: 0xFFF1EF)
-    static let orange   = Color(hex: 0x176A57)
+    static let red      = Color.dyn(0xD92D20, 0xFF453A)
+    static let redDeep  = Color.dyn(0xC81E14, 0xFF6961)
+    static let redLight = Color.dyn(0xFFF1EF, 0x2D1715)
+    static let orange   = Color.dyn(0x176A57, 0x58C7A9)
 
-    static let blue     = Color(hex: 0x007DFF)
-    static let blueDeep = Color(hex: 0x2F6FED)
-    static let blueLight = Color(hex: 0xEAF4FF)
-    static let blueEdge = Color(hex: 0xD6E7FF)
-    static let page     = Color(hex: 0xF4F6F9)
-    static let card     = Color(hex: 0xFFFFFF)
-    static let ink      = Color(hex: 0x182431)
-    static let sub      = Color(hex: 0x707A8A)
-    static let weak     = Color(hex: 0xA4ADBA)
-    static let line     = Color(hex: 0xE9EDF2)
+    static let blue     = Color.dyn(0x0071E3, 0x0A84FF)
+    static let blueDeep = Color.dyn(0x0071E3, 0x2997FF)
+    static let blueLight = Color.dyn(0xEAF4FF, 0x101E31)
+    static let blueEdge = Color.dyn(0xD6E7FF, 0x263B58)
+    static let page     = Color.dyn(0xF5F5F7, 0x000000)
+    static let hero     = Color.dyn(0xF5F5F7, 0x0A0A0A)
+    static let card     = Color.dyn(0xFFFFFF, 0x1C1C1E)
+    static let fill     = Color.dyn(0xF5F5F7, 0x2C2C2E)
+    static let ink      = Color.dyn(0x1D1D1F, 0xF5F5F7)
+    static let sub      = Color.dyn(0x6E6E73, 0xA1A1A6)
+    static let weak     = Color.dyn(0x86868B, 0x7C7C80)
+    static let line     = Color.dyn(0xE5E5EA, 0x38383A)
 
-    static let cardGrad = LinearGradient(colors: [Color(hex: 0xFFFFFF), Color(hex: 0xFBFCFE)],
+    static let cardGrad = LinearGradient(colors: [Color.dyn(0xFFFFFF, 0x1C1C1E),
+                                                  Color.dyn(0xFBFCFE, 0x202022)],
                                          startPoint: .top, endPoint: .bottom)
-    static let cardEdge = Color(hex: 0xE9EDF2)
-    static let cardShadow = Color(hex: 0x26354A).opacity(0.07)
+    static let cardEdge = Color.dyn(0xE5E5EA, 0x38383A)
+    static let cardShadow = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor.black.withAlphaComponent(0.28)
+            : UIColor(hex: 0x26354A).withAlphaComponent(0.07)
+    })
 
-    static let mineCardGrad = LinearGradient(colors: [Color(hex: 0xFFFFFF), Color(hex: 0xFBFCFE),
-                                                      Color(hex: 0xFFFFFF)],
+    static let mineCardGrad = LinearGradient(colors: [Color.dyn(0xFFFFFF, 0x1C1C1E),
+                                                      Color.dyn(0xFBFCFE, 0x202022),
+                                                      Color.dyn(0xFFFFFF, 0x1C1C1E)],
                                              startPoint: .top, endPoint: .bottom)
 
     static let barGrad = LinearGradient(colors: [Color(hex: 0x2F6FED), Color(hex: 0x007DFF)],
@@ -1556,17 +1737,15 @@ struct MallNativeView: View {
         }
 
         .task {
-            await store.refresh()
-            await store.refreshMallBadges()
+            let badgeTask = Task { await store.refreshMallBadges() }
+            await store.refreshIfNeeded()
+            await badgeTask.value
 
             if store.splash.isOn, !showSplash { withAnimation(.easeOut(duration: 0.2)) { showSplash = true } }
 
             DDCity.shared.locateIfNeeded()
             MallWeather.shared.refresh()
         }
-        .ddLight()
-
-        .preferredColorScheme(.light)
         if let product = productPath.last {
             DDDetailView(
                 product: product,
@@ -1601,7 +1780,7 @@ struct MallNativeView: View {
         let l = (store.splash.link ?? "").trimmingCharacters(in: .whitespaces)
         withAnimation(.easeOut(duration: 0.2)) { showSplash = false }
         guard !l.isEmpty, a != "none" else { return }
-        if a == "product", let p = store.products.first(where: { $0.id == l }) {
+        if a == "product", let p = store.product(l) {
             openProduct_tap(p)
             return
         }
@@ -1972,47 +2151,19 @@ struct DDHomeTab: View {
     @State private var atTop = true
     @State private var cate: String? = nil
     @State private var sellerScope: String? = nil
+    @State private var gridLimit = 120
+    @State private var nativeGridController = NativeMallProductGridController()
     private var list: [DDProduct] {
-        let category = cate == nil ? store.live : store.live.filter { $0.cate == cate }
-        let base: [DDProduct]
-        switch sellerScope {
-        case "self":  base = category.filter { $0.isSelfOperated }
-        case "third": base = category.filter { !$0.isSelfOperated }
-        default:      base = category
-        }
-
-        let rows = store.feed(base)
-        switch topChannel {
-        case 1:
-            return rows.sorted {
-                let d0 = ($0.orig - $0.price) / max(0.01, $0.orig)
-                let d1 = ($1.orig - $1.price) / max(0.01, $1.orig)
-                return d0 > d1
-            }
-        case 2:
-            return rows.sorted { ($0.sales ?? 0) > ($1.sales ?? 0) }
-        case 3:
-            return Array(rows.reversed())
-        default:
-            return rows
-        }
+        store.gridProducts(category: cate,
+                           sellerScope: sellerScope,
+                           channel: topChannel)
     }
 
-    private var seckillList: [DDProduct] {
-        store.live
-            .filter { $0.orig > $0.price }
-            .sorted {
-                let tagged0 = $0.tags.contains { $0.contains("秒杀") || $0.contains("限时") }
-                let tagged1 = $1.tags.contains { $0.contains("秒杀") || $0.contains("限时") }
-                if tagged0 != tagged1 { return tagged0 }
-                if $0.discountRate != $1.discountRate {
-                    return $0.discountRate > $1.discountRate
-                }
-                return $0.salesNum > $1.salesNum
-            }
-            .prefix(8)
-            .map { $0 }
+    private var gridPageSignature: String {
+        "\(cate ?? "*")|\(sellerScope ?? "*")|\(topChannel)|\(list.count)"
     }
+
+    private var seckillList: [DDProduct] { store.seckillProducts() }
 
     private var mallFloorPullValue: CGFloat { DDMallFloorCfg.pull }
 
@@ -2026,7 +2177,186 @@ struct DDHomeTab: View {
         }
     }
 
+    private var nativePerformanceMode: Bool {
+        !store.products.isEmpty
+    }
+
+    private var nativeHeaderRevision: String {
+        [
+            String(store.catalogRevision),
+            String(topChannel),
+            cate ?? "*",
+            sellerScope ?? "*",
+            String(store.mutedCates.count),
+            String(store.disliked.count)
+        ].joined(separator: "|")
+    }
+
+    private var nativeFooterRevision: String {
+        [
+            String(store.catalogRevision),
+            String(store.ads.count),
+            String(store.channels.count),
+            String(store.mutedCates.count)
+        ].joined(separator: "|")
+    }
+
     var body: some View {
+        if nativePerformanceMode {
+            nativePerformanceBody
+        } else {
+            editorialBody
+        }
+    }
+
+    private var nativePerformanceBody: some View {
+        NativeMallProductGrid(
+            products: list,
+            onOpen: onOpen,
+            onAddCart: { product in
+                store.addCart(product.id)
+                appState.show(Tr("已加入购物车"))
+            },
+            header: AnyView(nativePerformanceHeader),
+            footer: AnyView(nativePerformanceFooter),
+            headerRevision: nativeHeaderRevision,
+            footerRevision: nativeFooterRevision,
+            controller: nativeGridController
+        )
+        .background(DDColor.page)
+        .sheet(item: $channel) { kind in
+            DDChannelView(kind: kind, onCart: { channel = nil; onCart() })
+                .environmentObject(appState)
+        }
+        .sheet(isPresented: $showVipAd) {
+            DDVipPageView { product in
+                showVipAd = false
+                onOpen(product)
+            }
+            .environmentObject(appState)
+        }
+        .fullScreenCover(isPresented: $showMusicAd) {
+            NavigationStack { ListenView().environmentObject(appState) }
+        }
+        .sheet(isPresented: $showAdOrders) {
+            DDOrdersView().environmentObject(appState)
+        }
+        .sheet(isPresented: $showAdFav) {
+            DDFavView(onOpen: { product in
+                showAdFav = false
+                onOpen(product)
+            })
+            .environmentObject(appState)
+        }
+        .sheet(isPresented: $showAdViews) {
+            DDViewsView(onOpen: { product in
+                showAdViews = false
+                onOpen(product)
+            })
+        }
+        .sheet(isPresented: $showAddressHome) {
+            DDAddressListView().environmentObject(appState)
+        }
+    }
+
+    private var nativePerformanceHeader: some View {
+        VStack(spacing: 14) {
+            carousel(nil)
+            categoryQuickRail(nil)
+            curatedStrip
+            recommendationDock
+            if store.disliked.count >= 20 &&
+                store.dislikedProducts.count >= store.live.count {
+                restoreDislikedNotice
+            }
+        }
+        .padding(.top, 10)
+        .padding(.bottom, 4)
+    }
+
+    private var recommendationDock: some View {
+        VStack(spacing: 0) {
+            sectionTitle(
+                Tr("为你推荐"),
+                subtitle: Tr("按兴趣和热度持续更新"),
+                right: Tr("全部商品")
+            ) {
+                cate = nil
+                sellerScope = nil
+                toGrid(nil)
+            }
+            cateRow
+            sellerScopeRow
+            if !store.mutedCates.isEmpty { mutedNote }
+        }
+        .padding(.vertical, 8)
+        .background(
+            DDColor.card,
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(DDColor.cardEdge, lineWidth: 0.6)
+        }
+        .shadow(color: Color.black.opacity(0.045), radius: 14, y: 5)
+        .padding(.horizontal, 10)
+    }
+
+    private var nativePerformanceFooter: some View {
+        VStack(spacing: 14) {
+            seckill(nil)
+            sellerGateway(nil)
+            sectionTitle(
+                Tr("品牌好价"),
+                subtitle: Tr("大牌直降 · 平台补贴"),
+                right: Tr("全部好价")
+            ) {
+                channel = .subsidy
+            }
+            dealBoard
+            couponRail
+            sectionTitle(
+                Tr("精选会场"),
+                subtitle: Tr("主题频道与限时活动"),
+                right: Tr("更多频道")
+            ) {
+                channel = .rank
+            }
+            promoBoard(onViewAll: {
+                cate = nil
+                sellerScope = nil
+                toGrid(nil)
+            })
+            adStrip
+            Spacer().frame(height: 16)
+        }
+        .padding(.top, 10)
+    }
+
+    private var restoreDislikedNotice: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "hand.thumbsdown")
+                .font(.system(size: 12))
+                .foregroundColor(DDColor.sub)
+            Text(Tr("你把商品都隐藏了，先给你看全部"))
+                .font(pf(12))
+                .foregroundColor(DDColor.sub)
+            Spacer(minLength: 0)
+            Button {
+                store.restoreAllDisliked()
+                appState.show(Tr("已全部恢复"))
+            } label: {
+                Text(Tr("全部恢复"))
+                    .font(pf(12.5, .medium))
+                    .foregroundColor(DDColor.red)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+    }
+
+    private var editorialBody: some View {
 
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
@@ -2182,16 +2512,20 @@ struct DDHomeTab: View {
         }
     }
 
-    private func toGrid(_ proxy: ScrollViewProxy) {
-        withAnimation(.easeInOut(duration: 0.3)) { proxy.scrollTo("dd-grid", anchor: .top) }
+    private func toGrid(_ proxy: ScrollViewProxy?) {
+        guard let proxy else {
+            nativeGridController.scrollToProductStart()
+            return
+        }
+        withAnimation(.easeInOut(duration: 0.3)) {
+            proxy.scrollTo("dd-grid", anchor: .top)
+        }
     }
 
     @ViewBuilder
     private var curatedStrip: some View {
-        let deals = store.live.filter { $0.orig > $0.price }
-        if let best = deals.max(by: { $0.discountRate < $1.discountRate }) {
-            let averageSave = deals.isEmpty ? 0 :
-                deals.reduce(0.0) { $0 + max(0, $1.orig - $1.price) } / Double(deals.count)
+        if let best = store.bestDeal() {
+            let stats = store.dealAverageSaving()
             Button { onOpen(best) } label: {
                 HStack(spacing: 13) {
                     VStack(alignment: .leading, spacing: 7) {
@@ -2215,10 +2549,10 @@ struct DDHomeTab: View {
                                 .padding(.horizontal, 7)
                                 .frame(height: 20)
                                 .background(Capsule().fill(DDColor.redDeep))
-                            Text(Tr("\(deals.count) 件正在降"))
+                            Text(Tr("\(stats.count) 件正在降"))
                                 .font(pf(10))
                                 .foregroundColor(DDColor.sub)
-                            Text(Tr("平均省 ¥") + moneyFmt(averageSave))
+                            Text(Tr("平均省 ¥") + moneyFmt(stats.average))
                                 .font(pf(10, .medium))
                                 .foregroundColor(Color(hex: 0xA37D38))
                         }
@@ -2267,7 +2601,7 @@ struct DDHomeTab: View {
     }
 
     @ViewBuilder
-    private func categoryQuickRail(_ proxy: ScrollViewProxy) -> some View {
+    private func categoryQuickRail(_ proxy: ScrollViewProxy?) -> some View {
         let cats = Array(store.categories.prefix(10))
         if !cats.isEmpty {
             VStack(alignment: .leading, spacing: 9) {
@@ -2438,14 +2772,7 @@ struct DDHomeTab: View {
     }
 
     private var dealBoard: some View {
-        let deals = store.live
-            .filter { $0.orig > $0.price }
-            .sorted {
-                $0.discountRate != $1.discountRate
-                    ? $0.discountRate > $1.discountRate
-                    : $0.salesNum > $1.salesNum
-            }
-            .prefix(4)
+        let deals = store.dealHighlights(limit: 4)
         let columns = [
             GridItem(.flexible(), spacing: 8, alignment: .top),
             GridItem(.flexible(), spacing: 8, alignment: .top)
@@ -2635,7 +2962,7 @@ struct DDHomeTab: View {
 
     @State private var bannerPage = 0
 
-    @ViewBuilder private func carousel(_ proxy: ScrollViewProxy) -> some View {
+    @ViewBuilder private func carousel(_ proxy: ScrollViewProxy?) -> some View {
         let imgs = store.banners.filter { !$0.isEmpty }
         if !imgs.isEmpty {
             VStack(spacing: 8) {
@@ -2782,7 +3109,7 @@ struct DDHomeTab: View {
         .padding(.horizontal, 10)
     }
 
-    private func seckill(_ proxy: ScrollViewProxy) -> some View {
+    private func seckill(_ proxy: ScrollViewProxy?) -> some View {
         VStack(alignment: .leading, spacing: 10) {
 
             HStack(spacing: 0) {
@@ -2841,9 +3168,10 @@ struct DDHomeTab: View {
         .frame(width: 82)
     }
 
-    private func sellerGateway(_ proxy: ScrollViewProxy) -> some View {
-        let selfCount = store.live.filter { $0.isSelfOperated }.count
-        let thirdCount = store.live.count - selfCount
+    private func sellerGateway(_ proxy: ScrollViewProxy?) -> some View {
+        let counts = store.sellerCounts(category: nil)
+        let selfCount = counts.selfOperated
+        let thirdCount = counts.third
         return HStack(spacing: 10) {
             sellerGatewayCard("self", title: "星选自营",
                               subtitle: "统一发货 · 平台售后",
@@ -2861,7 +3189,7 @@ struct DDHomeTab: View {
 
     private func sellerGatewayCard(_ scope: String, title: String, subtitle: String,
                                    count: Int, icon: String, colors: [Color],
-                                   proxy: ScrollViewProxy) -> some View {
+                                   proxy: ScrollViewProxy?) -> some View {
         Button {
             withAnimation(.easeOut(duration: 0.18)) {
                 cate = nil
@@ -2944,13 +3272,11 @@ struct DDHomeTab: View {
     }
 
     private var sellerScopeRow: some View {
-        let current = cate == nil ? store.live : store.live.filter { $0.cate == cate }
-        let selfCount = current.filter { $0.isSelfOperated }.count
-        let thirdCount = current.count - selfCount
+        let counts = store.sellerCounts(category: cate)
         return HStack(spacing: 8) {
-            sellerScopeButton(nil, title: "全部", count: current.count, accent: DDColor.blueDeep)
-            sellerScopeButton("self", title: "星选自营", count: selfCount, accent: DDColor.redDeep)
-            sellerScopeButton("third", title: "第三方", count: thirdCount, accent: DDColor.blueDeep)
+            sellerScopeButton(nil, title: "全部", count: counts.all, accent: DDColor.blueDeep)
+            sellerScopeButton("self", title: "星选自营", count: counts.selfOperated, accent: DDColor.redDeep)
+            sellerScopeButton("third", title: "第三方", count: counts.third, accent: DDColor.blueDeep)
         }
         .padding(.horizontal, 10)
         .padding(.bottom, 4)
@@ -3078,29 +3404,41 @@ struct DDHomeTab: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 42)
         } else {
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
-                ForEach(list) { p in
-                    DDProductCard(product: p,
-                                  onOpen: { onOpen(p) },
-                                  onAddCart: {
-                                      store.addCart(p.id)
-                                      appState.show(Tr("已加入购物车"))
-                                  })
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                store.notInterested(p, muteCate: false)
-                                appState.show(Tr("好的，这件不再推给你"))
-                            } label: { Label(Tr("不感兴趣"), systemImage: "hand.thumbsdown") }
-                            if !p.cate.isEmpty {
-                                Button {
-                                    store.notInterested(p, muteCate: true)
-                                    appState.show(Tr("好的，少推「") + Tr(p.cate) + Tr("」"))
-                                } label: { Label(Tr("不感兴趣，少推这一类"), systemImage: "eye.slash") }
+            VStack(spacing: 0) {
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+                    ForEach(Array(list.prefix(gridLimit))) { p in
+                        DDProductCard(product: p,
+                                      onOpen: { onOpen(p) },
+                                      onAddCart: {
+                                          store.addCart(p.id)
+                                          appState.show(Tr("已加入购物车"))
+                                      })
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    store.notInterested(p, muteCate: false)
+                                    appState.show(Tr("好的，这件不再推给你"))
+                                } label: { Label(Tr("不感兴趣"), systemImage: "hand.thumbsdown") }
+                                if !p.cate.isEmpty {
+                                    Button {
+                                        store.notInterested(p, muteCate: true)
+                                        appState.show(Tr("好的，少推「") + Tr(p.cate) + Tr("」"))
+                                    } label: { Label(Tr("不感兴趣，少推这一类"), systemImage: "eye.slash") }
+                                }
                             }
+                    }
+                }
+                if gridLimit < list.count {
+                    Color.clear
+                        .frame(height: 1)
+                        .onAppear {
+                            gridLimit = min(list.count, gridLimit + 120)
                         }
                 }
             }
             .padding(.horizontal, 10)
+            .onChange(of: gridPageSignature) { _ in
+                gridLimit = 120
+            }
         }
     }
 
@@ -3218,7 +3556,8 @@ struct DDProductCard: View {
                 } else {
                     ZStack {
                         LinearGradient(
-                            colors: [Color(hex: 0xF8F8F8), Color(hex: 0xEFEFEF)],
+                            colors: [Color.dyn(0xF8F8F8, 0x2C2C2E),
+                                     Color.dyn(0xEFEFEF, 0x242426)],
                             startPoint: .topLeading, endPoint: .bottomTrailing)
                         Text(product.em)
                             .font(pfStyled(size: 72))
@@ -3348,7 +3687,7 @@ struct DDProductCard: View {
             .padding(.top, 6)
             .padding(.bottom, 10)
         }
-        .background(Color.white)
+        .background(DDColor.card)
         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
@@ -3362,16 +3701,7 @@ struct DDRecTab: View {
     var onOpen: (DDProduct) -> Void
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 10) {
-                ForEach(store.live) { p in
-                    Button { onOpen(p) } label: { recCard(p) }
-                        .buttonStyle(.plain)
-                }
-                Spacer().frame(height: 16)
-            }
-            .padding(.vertical, 10)
-        }
+        NativeMallProductGrid(products: store.live, onOpen: onOpen)
         .background(DDColor.page)
     }
 
@@ -3913,7 +4243,6 @@ struct DDCartTab: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { payAll() }
             }
         }
-        .ddLight()
     }
 
     private var cartPayTitle: String {
@@ -3993,6 +4322,7 @@ struct DDMineTab: View {
     @State private var showHidden = false
 
     @State private var showVip = false
+    @State private var showMallStress = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -4040,6 +4370,10 @@ struct DDMineTab: View {
                 onOpen(p)
             })
             .environmentObject(app)
+        }
+        .sheet(isPresented: $showMallStress) {
+            MallStressView()
+                .environmentObject(app)
         }
     }
 
@@ -4196,6 +4530,11 @@ struct DDMineTab: View {
             toolRow("不感兴趣与隐藏", "hand.thumbsdown",
                     Tr("\(store.disliked.count) 件商品 · \(store.hiddenAds.count) 条广告")) { showHidden = true }
             HairLine(inset: 52)
+            if app.me?.ops == true {
+                toolRow("商城压力架", "speedometer",
+                        Tr("\(store.products.count) 件商品")) { showMallStress = true }
+                HairLine(inset: 52)
+            }
             toolRow("联系客服", "bubble.left.and.bubble.right", "") { showService = true }
         }
         .background(DDColor.cardGrad)
@@ -4232,6 +4571,116 @@ struct DDMineTab: View {
         .buttonStyle(.plain)
     }
 
+}
+
+struct MallStressView: View {
+    @ObservedObject private var store = DDStore.shared
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            DDSheetBar(title: Tr("商城压力架"))
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(Tr("原生商品预览压测"))
+                            .font(pfStyled(size: 22, weight: .semibold))
+                            .foregroundColor(DDColor.ink)
+                        Text(Tr("商品网格使用 UICollectionView 复用和系统图片预取。"))
+                            .font(pfStyled(size: 13.5))
+                            .foregroundColor(DDColor.sub)
+                    }
+
+                    HStack(spacing: 10) {
+                        stressButton("5,000", count: 5_000)
+                        stressButton("9,000", count: 9_000)
+                    }
+                    Button {
+                        store.setStressProductCount(0)
+                    } label: {
+                        HStack {
+                            Text(Tr("恢复真实商品目录"))
+                                .font(pfStyled(size: 15, weight: .semibold))
+                            Spacer()
+                            Text("\(store.unstressedProductCount) " + Tr("件"))
+                                .font(pfStyled(size: 13))
+                                .foregroundColor(DDColor.sub)
+                        }
+                        .foregroundColor(DDColor.ink)
+                        .padding(.horizontal, 16)
+                        .frame(height: 50)
+                        .background(DDColor.fill)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(Tr("当前目录"))
+                                .font(pfStyled(size: 12))
+                                .foregroundColor(DDColor.sub)
+                            Text("\(store.products.count)")
+                                .font(pfStyled(size: 34, weight: .bold))
+                                .monospacedDigit()
+                                .foregroundColor(DDColor.ink)
+                        }
+                        Spacer()
+                        HStack(spacing: 5) {
+                            Circle().fill(C.green).frame(width: 6, height: 6)
+                            Text(Tr("原生预取已开启"))
+                                .font(pfStyled(size: 12, weight: .semibold))
+                                .foregroundColor(DDColor.ink)
+                        }
+                    }
+                    .padding(18)
+                    .background(DDColor.card)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(DDColor.cardEdge, lineWidth: 0.6)
+                    }
+
+                    Text(Tr("压测项：分类切换、搜索、筛选、收藏、详情返回、连续滚动与图片预取。"))
+                        .font(pfStyled(size: 12.5))
+                        .foregroundColor(DDColor.weak)
+
+                    Button(Tr("完成")) { dismiss() }
+                        .font(pfStyled(size: 15, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(DDColor.blueDeep)
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                }
+                .padding(18)
+            }
+        }
+        .background(DDColor.page.ignoresSafeArea())
+    }
+
+    private func stressButton(_ title: String, count: Int) -> some View {
+        Button {
+            store.setStressProductCount(count)
+        } label: {
+            VStack(spacing: 4) {
+                Text(title)
+                    .font(pfStyled(size: 24, weight: .bold))
+                Text(Tr("件商品"))
+                    .font(pfStyled(size: 11.5, weight: .medium))
+                    .foregroundColor(DDColor.sub)
+            }
+            .foregroundColor(DDColor.ink)
+            .frame(maxWidth: .infinity)
+            .frame(height: 92)
+            .background(DDColor.card)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(DDColor.cardEdge, lineWidth: 0.6)
+            }
+        }
+        .buttonStyle(.plain)
+    }
 }
 
 struct DDDetailView: View {
@@ -4274,9 +4723,9 @@ struct DDDetailView: View {
                     VStack(spacing: 0) {
                         mediaHero
                         priceCard
+                        configurationCard.id("dd-config")
                         detailSectionNav(proxy)
                         benefitCard.id("dd-benefit")
-                        configurationCard.id("dd-config")
                         highlightsCard
 
                         if DDStore.groupOn { groupCard }
@@ -4304,13 +4753,11 @@ struct DDDetailView: View {
         }
         .sheet(isPresented: $showSpec) {
             DDSpecSheet(product: product) { v in pickedSpec = v.name }
-                .ddLight()
         }
         .sheet(isPresented: $showShare) { DDShareSheet(product: product).environmentObject(app) }
         .sheet(isPresented: $showService) { DDHelpCenterView(product: product).environmentObject(app) }
         .sheet(isPresented: $showCoupon) {
             DDCouponSheet(total: displayPrice) { _ in }
-                .ddLight()
         }
         .sheet(isPresented: $showShop) {
             DDShopPageView(shop: product.shop, onOpen: { p in
@@ -4321,8 +4768,6 @@ struct DDDetailView: View {
         .fullScreenCover(isPresented: $showMediaViewer) {
             DDProductMediaViewer(product: product, initialPage: mediaPage)
         }
-        .ddLight()
-
         .onAppear { if pickedSpec.isEmpty { pickedSpec = product.specList.first?.name ?? "" } }
     }
 
@@ -4336,77 +4781,131 @@ struct DDDetailView: View {
 
     private func detailSectionNav(_ proxy: ScrollViewProxy) -> some View {
         HStack(spacing: 0) {
-            detailNavButton("履约", icon: "shippingbox.fill", id: "dd-benefit", proxy: proxy)
-            Divider().frame(height: 28)
-            detailNavButton("规格", icon: "slider.horizontal.3", id: "dd-config", proxy: proxy)
-            Divider().frame(height: 28)
-            detailNavButton("评价", icon: "star.bubble.fill", id: "dd-review", proxy: proxy)
-            Divider().frame(height: 28)
-            detailNavButton("详情", icon: "doc.text.image.fill", id: "dd-detail", proxy: proxy)
+            detailNavButton("配送与服务", id: "dd-benefit", proxy: proxy)
+            detailNavButton("评价", id: "dd-review", proxy: proxy)
+            detailNavButton("参数", id: "dd-param", proxy: proxy)
+            detailNavButton("详情", id: "dd-detail", proxy: proxy)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .stroke(DDColor.cardEdge, lineWidth: 0.7))
-        .shadow(color: Color.black.opacity(0.035), radius: 8, y: 3)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(4)
+        .background {
+            Capsule(style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay(Capsule().stroke(DDColor.cardEdge, lineWidth: 0.7))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
         .background(DDColor.page)
     }
 
-    private func detailNavButton(_ title: String, icon: String, id: String,
+    private func detailNavButton(_ title: String, id: String,
                                  proxy: ScrollViewProxy) -> some View {
         Button {
             withAnimation(.easeInOut(duration: 0.28)) {
                 proxy.scrollTo(id, anchor: .top)
             }
         } label: {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
-                Text(Tr(title)).font(pf(10.5, .medium))
-            }
-            .foregroundColor(DDColor.ink)
+            Text(Tr(title))
+                .font(pfStyled(size: 12.5, weight: .semibold))
+                .foregroundColor(DDColor.ink)
+                .padding(.horizontal, 10)
             .frame(maxWidth: .infinity)
-            .frame(height: 48)
+            .frame(height: 36)
         }
         .buttonStyle(.plain)
     }
 
     private var configurationCard: some View {
-        Button { showSpec = true } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(DDColor.redDeep)
-                    .frame(width: 34, height: 34)
-                    .background(RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(DDColor.redLight))
-                Text(pickedSpec.isEmpty ? (selectedVariant?.name ?? Tr("标准款")) : pickedSpec)
-                    .font(pf(15, .medium))
-                    .foregroundColor(DDColor.ink)
-                    .lineLimit(1)
-                Spacer(minLength: 8)
-                Text(Tr("已选"))
-                    .font(pf(11))
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text(Tr("选择配置"))
+                    .font(pfStyled(size: 13, weight: .semibold))
                     .foregroundColor(DDColor.sub)
-                Text("¥" + moneyFmt(displayPrice))
-                    .font(pf(13.5, .semibold))
-                    .foregroundColor(DDColor.ink)
-                Chevron(size: 8, line: 1.5)
+                Spacer(minLength: 8)
+                Button { showSpec = true } label: {
+                    HStack(spacing: 3) {
+                        Text(Tr("全部配置"))
+                            .font(pfStyled(size: 12.5, weight: .medium))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(DDColor.blueDeep)
+                }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 12)
-            .frame(height: 60)
-            .background(DDColor.card)
-            .contentShape(Rectangle())
+
+            if !product.specList.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(product.specList.prefix(6))) { variant in
+                            Button {
+                                withAnimation(.easeOut(duration: 0.18)) {
+                                    pickedSpec = variant.name
+                                }
+                            } label: {
+                                configPill(variant.name,
+                                           selected: pickedSpec == variant.name,
+                                           available: variant.stock > 0)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        if product.specList.count > 6 {
+                            Button { showSpec = true } label: {
+                                Text("+\(product.specList.count - 6)")
+                                    .font(pfStyled(size: 13, weight: .semibold))
+                                    .foregroundColor(DDColor.sub)
+                                    .padding(.horizontal, 15)
+                                    .frame(height: 38)
+                                    .background(Capsule().fill(DDColor.fill))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text((selectedVariant?.stock ?? 0) > 0 ? Tr("现货") : Tr("暂时缺货"))
+                    .font(pfStyled(size: 12, weight: .medium))
+                    .foregroundColor((selectedVariant?.stock ?? 0) > 0 ? C.green : DDColor.red)
+                Spacer(minLength: 8)
+                Text("¥" + moneyFmt(displayPrice))
+                    .font(pfStyled(size: 15, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundColor(DDColor.ink)
+            }
         }
-        .buttonStyle(.plain)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .padding(18)
+        .background(DDColor.card)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
-        .padding(.horizontal, 10)
-        .padding(.top, 10)
+        .padding(.horizontal, 16)
+        .padding(.top, 18)
+    }
+
+    private func configPill(_ title: String, selected: Bool, available: Bool) -> some View {
+        HStack(spacing: 6) {
+            Text(Tr(title))
+                .font(pfStyled(size: 13.5, weight: selected ? .semibold : .medium))
+                .lineLimit(1)
+            if !available {
+                Text(Tr("缺货"))
+                    .font(pfStyled(size: 9.5, weight: .medium))
+                    .foregroundColor(DDColor.weak)
+            }
+        }
+        .foregroundColor(selected ? DDColor.ink : DDColor.sub)
+        .padding(.horizontal, 15)
+        .frame(height: 38)
+        .background {
+            Capsule(style: .continuous)
+                .fill(selected ? DDColor.card : DDColor.fill)
+        }
+        .overlay {
+            Capsule(style: .continuous)
+                .stroke(selected ? DDColor.blueDeep : Color.clear, lineWidth: 1.5)
+        }
+        .opacity(available ? 1 : 0.62)
     }
 
     private var deliveryCard: some View {
@@ -4454,17 +4953,21 @@ struct DDDetailView: View {
 
     private func sectionTitle(_ t: String) -> some View {
         HStack {
-            Text(t).font(pf(15, .semibold)).foregroundColor(DDColor.ink)
+            Text(t)
+                .font(pfStyled(size: 21, weight: .semibold))
+                .foregroundColor(DDColor.ink)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 14).padding(.top, 4)
+        .padding(.horizontal, 20)
+        .padding(.top, 22)
+        .padding(.bottom, 10)
     }
 
     private var recommendRow: some View {
-        let others = store.live.filter { $0.id != product.id && ($0.cate == product.cate || $0.shop == product.shop) }.prefix(6)
+        let others = store.relatedProducts(to: product, limit: 6)
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                ForEach(Array(others)) { p in
+                ForEach(others) { p in
                     Button { onOpenOther?(p) } label: {
                         VStack(alignment: .leading, spacing: 5) {
                             DDThumb(em: p.em, size: 104, radius: 10, img: p.img)
@@ -4540,7 +5043,7 @@ struct DDDetailView: View {
         .padding(.horizontal, 12)
         .padding(.top, L.safeTop + 4)
         .padding(.bottom, 8)
-        .background(LinearGradient(colors: [Color.white.opacity(0.94), Color.clear],
+        .background(LinearGradient(colors: [DDColor.hero.opacity(0.94), Color.clear],
                                    startPoint: .top, endPoint: .bottom))
     }
 
@@ -4561,8 +5064,9 @@ struct DDDetailView: View {
                     .tag(index)
                 }
                 ForEach(Array(images.enumerated()), id: \.offset) { index, value in
-                    RemoteImage(path: value, icon: "photo", mode: .fill)
+                    RemoteImage(path: value, icon: "photo", mode: .fit)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(18)
                         .clipped()
                         .tag(videos.count + index)
                 }
@@ -4570,13 +5074,13 @@ struct DDDetailView: View {
                     Text(product.em)
                         .font(pfStyled(size: 150))
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color(hex: 0xF2F5F8))
+                        .background(DDColor.hero)
                         .tag(0)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
 
-            LinearGradient(colors: [.clear, .black.opacity(0.25)],
+            LinearGradient(colors: [.clear, .black.opacity(0.10)],
                            startPoint: .center, endPoint: .bottom)
                 .allowsHitTesting(false)
 
@@ -4611,137 +5115,87 @@ struct DDDetailView: View {
             .padding(.horizontal, 14)
             .padding(.bottom, 12)
         }
-        .frame(height: min(620, max(440, UIScreen.main.bounds.width * 1.3)))
-        .background(Color(hex: 0xF2F5F8))
+        .frame(height: min(560, max(420, UIScreen.main.bounds.width * 1.06)))
+        .background(DDColor.hero)
         .contentShape(Rectangle())
         .onTapGesture { showMediaViewer = true }
     }
 
     private var priceCard: some View {
-        let sellerTint = product.isSelfOperated ? DDColor.redDeep : DDColor.blueDeep
         let saved = max(0, product.orig - displayPrice)
         let rating = store.rating(of: product) ?? product.rating ?? 0
-        return VStack(spacing: 0) {
-            HStack(alignment: .bottom, spacing: 14) {
-                VStack(alignment: .leading, spacing: 7) {
-                    HStack(spacing: 6) {
-                        Text(Tr("到手价"))
-                            .font(pfStyled(size: 11, weight: .semibold))
-                            .foregroundColor(DDColor.redDeep)
-                        if saved > 0 {
-                            Text(Tr("已省 ¥") + moneyFmt(saved))
-                                .font(pfStyled(size: 11, weight: .medium))
-                                .foregroundColor(DDColor.sub)
-                        }
-                    }
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        DDPrice(value: displayPrice, size: 36, color: DDColor.redDeep)
-                        if product.orig > displayPrice {
-                            Text("¥" + moneyFmt(product.orig))
-                                .font(pfStyled(size: 12.5))
-                                .foregroundColor(DDColor.weak)
-                                .strikethrough()
-                        }
-                    }
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Text(Tr(product.sellerBadge))
+                    .font(pfStyled(size: 12, weight: .semibold))
+                    .foregroundColor(DDColor.sub)
+                if product.tags.first != nil {
+                    Text("·").foregroundColor(DDColor.line)
+                    Text(product.tags.first.map { Tr($0) } ?? "")
+                        .font(pfStyled(size: 12, weight: .medium))
+                        .foregroundColor(DDColor.sub)
+                        .lineLimit(1)
                 }
                 Spacer(minLength: 8)
-                VStack(alignment: .trailing, spacing: 5) {
-                    if rating > 0 {
-                        HStack(spacing: 3) {
-                            Image(systemName: "star.fill").font(.system(size: 10))
-                            Text(String(format: "%.1f", rating))
-                                .font(pfStyled(size: 12.5, weight: .semibold))
-                        }
-                        .foregroundColor(Color(hex: 0xB78932))
-                    }
-                    Text(product.sold.isEmpty ? Tr("新品上架") : Tr("已售 ") + product.sold)
-                        .font(pfStyled(size: 10.5))
-                        .foregroundColor(DDColor.sub)
-                }
+                Text(product.sold.isEmpty ? Tr("新品") : Tr("已售 ") + product.sold)
+                    .font(pfStyled(size: 12))
+                    .foregroundColor(DDColor.weak)
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 18)
-            .padding(.bottom, 14)
 
-            VStack(alignment: .leading, spacing: 9) {
-                Text(product.title)
-                    .font(pfStyled(size: 22, weight: .semibold))
-                    .foregroundColor(DDColor.ink)
-                    .lineSpacing(4)
+            Text(product.title)
+                .font(pfStyled(size: 28, weight: .semibold))
+                .foregroundColor(DDColor.ink)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let subtitle = product.subtitle, !subtitle.isEmpty {
+                Text(subtitle)
+                    .font(pfStyled(size: 15))
+                    .foregroundColor(DDColor.sub)
+                    .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
-                if let subtitle = product.subtitle, !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(pfStyled(size: 13.5))
-                        .foregroundColor(DDColor.sub)
-                        .lineSpacing(3)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 7) {
-                        productTag(Tr(product.sellerBadge), color: sellerTint)
-                        productTag(Tr(product.isSelfOperated ? "官方正品" : "平台保障"),
-                                   color: sellerTint)
-                        productTag(product.tags.first.map { Tr($0) } ?? Tr("包邮"),
-                                   color: DDColor.red)
-                    }
-                }
             }
-            .padding(.horizontal, 18)
-            .padding(.bottom, 16)
-            .overlay(alignment: .top) { HairLine(inset: 18) }
 
-            Button { showShop = true } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: product.isSelfOperated ? "checkmark.seal.fill" : "storefront.fill")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(sellerTint)
-                        .frame(width: 34, height: 34)
-                        .background(Circle().fill(sellerTint.opacity(0.08)))
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 5) {
-                            Text(product.shop.isEmpty ? Tr("星言官方旗舰店") : product.shop)
-                                .font(pfStyled(size: 14, weight: .semibold))
-                                .foregroundColor(DDColor.ink)
-                                .lineLimit(1)
-                            Text(Tr(product.isSelfOperated ? "自营" : "第三方"))
-                                .font(pfStyled(size: 9, weight: .semibold))
-                                .foregroundColor(sellerTint)
-                                .padding(.horizontal, 5)
-                                .frame(height: 17)
-                                .background(Capsule().fill(sellerTint.opacity(0.09)))
-                        }
-                        Text(Tr(product.sellerFulfillment))
-                            .font(pfStyled(size: 11.5))
-                            .foregroundColor(DDColor.sub)
-                            .lineLimit(1)
-                    }
-                    Spacer(minLength: 4)
-                    Text(Tr("进店"))
-                        .font(pfStyled(size: 11.5, weight: .medium))
-                        .foregroundColor(DDColor.sub)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .semibold))
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Text("¥")
+                    .font(pfStyled(size: 20, weight: .semibold))
+                Text(moneyFmt(displayPrice))
+                    .font(pfStyled(size: 36, weight: .bold))
+                    .monospacedDigit()
+                if product.orig > displayPrice {
+                    Text("¥" + moneyFmt(product.orig))
+                        .font(pfStyled(size: 13))
                         .foregroundColor(DDColor.weak)
+                        .strikethrough()
                 }
-                .padding(.horizontal, 18)
-                .frame(height: 58)
-                .background(DDColor.page.opacity(0.55))
-                .contentShape(Rectangle())
+                Spacer(minLength: 8)
+                if rating > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(String(format: "%.1f", rating))
+                            .font(pfStyled(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(Color.dyn(0xB7791F, 0xF0C15A))
+                }
             }
-            .buttonStyle(.plain)
-            .overlay(alignment: .top) { HairLine(inset: 18) }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
-            .stroke(Color.white.opacity(0.92), lineWidth: 0.8))
-        .shadow(color: Color.black.opacity(0.07), radius: 18, y: 7)
-        .padding(.horizontal, 10)
-        .padding(.top, -18)
-        .zIndex(2)
-    }
+            .foregroundColor(DDColor.ink)
 
+            if saved > 0 {
+                Text(Tr("立省 ¥") + moneyFmt(saved))
+                    .font(pfStyled(size: 12.5, weight: .medium))
+                    .foregroundColor(DDColor.sub)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(DDColor.card)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
+            .stroke(DDColor.cardEdge, lineWidth: 0.6))
+        .padding(.horizontal, 16)
+        .padding(.top, 22)
+    }
     private func productTag(_ text: String, color: Color) -> some View {
         Text(text)
             .font(pf(10.5, .medium))
@@ -4755,137 +5209,129 @@ struct DDDetailView: View {
     private var benefitCard: some View {
         let coupon = store.ads.compactMap(\.coupon).first
         let saved = max(0, product.orig - displayPrice)
-        let sellerTint = product.isSelfOperated ? DDColor.redDeep : DDColor.blueDeep
         return VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 7) {
-                Text(Tr("履约与保障")).font(pf(15.5, .semibold)).foregroundColor(DDColor.ink)
-                Text(Tr(product.isSelfOperated ? "星言统一履约" : "商家履约 · 平台监管"))
-                    .font(pf(10.5, .medium))
-                    .foregroundColor(sellerTint)
-                    .padding(.horizontal, 7)
-                    .frame(height: 21)
-                    .background(Capsule().fill(sellerTint.opacity(0.09)))
-                Spacer(minLength: 0)
-            }
-            HStack(spacing: 8) {
-                benefitTile(icon: "shippingbox.fill", title: "配送",
-                            value: store.deliveryMode?.days ?? Tr("预计 48 小时内发货"),
-                            tint: DDColor.blueDeep)
-                benefitTile(icon: "arrow.uturn.backward.circle.fill", title: "售后",
-                            value: product.isSelfOperated ? Tr("平台统一售后") : Tr("店铺售后 · 平台介入"),
-                            tint: sellerTint)
-            }
-            HStack(spacing: 8) {
-                benefitTile(icon: "ticket.fill", title: "优惠",
-                            value: saved > 0 ? (Tr("已省 ¥") + moneyFmt(saved)) : Tr("店铺优惠"),
-                            tint: DDColor.redDeep)
-                benefitTile(icon: "checkmark.shield.fill", title: "服务",
-                            value: product.serviceList.prefix(2).joined(separator: " · "),
-                            tint: C.green)
-            }
-            Button { showCoupon = true } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "gift.fill")
-                        .font(.system(size: 13))
-                        .foregroundColor(DDColor.redDeep)
-                    Text(coupon.map { $0.text + Tr("，结算可用") } ?? Tr("查看优惠券与平台活动"))
-                        .font(pf(12.5, .medium))
-                        .foregroundColor(DDColor.ink)
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
-                    Text(Tr("去领取"))
-                        .font(pf(11.5, .medium))
-                        .foregroundColor(DDColor.redDeep)
-                    Chevron(size: 7, line: 1.4).foregroundColor(DDColor.redDeep.opacity(0.7))
-                }
-                .padding(.horizontal, 12)
-                .frame(height: 40)
-                .background(RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(DDColor.redLight))
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(14)
-        .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .stroke(DDColor.cardEdge, lineWidth: 0.6))
-        .padding(.horizontal, 10)
-    }
-
-    private func benefitTile(icon: String, title: String, value: String,
-                             tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 5) {
-                Image(systemName: icon).font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(tint)
-                Text(Tr(title)).font(pf(11, .semibold)).foregroundColor(DDColor.sub)
-            }
-            Text(value)
-                .font(pf(12.5, .medium))
+            Text(Tr("配送与服务"))
+                .font(pfStyled(size: 21, weight: .semibold))
                 .foregroundColor(DDColor.ink)
-                .lineLimit(2)
-                .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(spacing: 0) {
+                detailInfoRow(
+                    icon: "shippingbox",
+                    title: Tr("配送"),
+                    value: store.deliveryMode?.days ?? Tr("预计 48 小时内发货")
+                )
+                HairLine(inset: 50)
+                detailInfoRow(
+                    icon: "arrow.uturn.backward",
+                    title: Tr("售后"),
+                    value: product.isSelfOperated ? Tr("平台统一售后") : Tr("店铺售后 · 平台介入")
+                )
+                HairLine(inset: 50)
+                detailInfoRow(
+                    icon: "checkmark.shield",
+                    title: Tr("保障"),
+                    value: product.serviceList.prefix(2).joined(separator: " · ")
+                )
+                if saved > 0 {
+                    HairLine(inset: 50)
+                    detailInfoRow(
+                        icon: "tag",
+                        title: Tr("优惠"),
+                        value: Tr("立省 ¥") + moneyFmt(saved)
+                    )
+                }
+                HairLine(inset: 50)
+                Button { showCoupon = true } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "ticket")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(DDColor.ink)
+                            .frame(width: 26)
+                        Text(coupon.map { $0.text + Tr("，结算可用") } ?? Tr("优惠券与平台活动"))
+                            .font(pfStyled(size: 15))
+                            .foregroundColor(DDColor.ink)
+                            .lineLimit(1)
+                        Spacer(minLength: 8)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(DDColor.weak)
+                    }
+                    .padding(.horizontal, 16)
+                    .frame(height: 54)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .background(DDColor.card)
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(DDColor.cardEdge, lineWidth: 0.6))
         }
-        .padding(11)
-        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(DDColor.page.opacity(0.72)))
+        .padding(.horizontal, 16)
+        .padding(.top, 22)
     }
 
+    private func detailInfoRow(icon: String, title: String, value: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: .medium))
+                .foregroundColor(DDColor.ink)
+                .frame(width: 26)
+            Text(Tr(title))
+                .font(pfStyled(size: 15, weight: .medium))
+                .foregroundColor(DDColor.ink)
+                .frame(width: 54, alignment: .leading)
+            Text(value)
+                .font(pfStyled(size: 14))
+                .foregroundColor(DDColor.sub)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(.horizontal, 16)
+        .frame(minHeight: 54)
+    }
     @ViewBuilder private var highlightsCard: some View {
         let brand = product.brand?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let points: [String] = (brand.isEmpty ? [] : [Tr("品牌 · ") + brand]) + product.tags
+        let points = (brand.isEmpty ? [] : [Tr("品牌 · ") + brand]) + product.tags
         let unique = points.reduce(into: [String]()) { result, point in
             if !point.isEmpty && !result.contains(point) { result.append(point) }
         }
-        if !points.isEmpty {
-            VStack(alignment: .leading, spacing: 11) {
-                HStack(spacing: 7) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(DDColor.redDeep)
-                    Text(Tr("核心亮点")).font(pf(15.5, .semibold)).foregroundColor(DDColor.ink)
-                    Spacer(minLength: 0)
-                    Text(Tr("星言甄选"))
-                        .font(pf(10.5, .semibold))
-                        .foregroundColor(DDColor.redDeep)
-                }
+        if !unique.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(Tr("亮点"))
+                    .font(pfStyled(size: 21, weight: .semibold))
+                    .foregroundColor(DDColor.ink)
                 LazyVGrid(columns: [
-                    GridItem(.flexible(), spacing: 8),
-                    GridItem(.flexible(), spacing: 8)
-                ], spacing: 8) {
+                    GridItem(.flexible(), spacing: 10),
+                    GridItem(.flexible(), spacing: 10)
+                ], spacing: 10) {
                     ForEach(Array(unique.prefix(4)), id: \.self) { point in
-                        HStack(spacing: 6) {
+                        HStack(spacing: 9) {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: 17, height: 17)
-                                .background(Circle().fill(DDColor.redDeep.opacity(0.86)))
-                            Text(Tr(point))
-                                .font(pf(12, .medium))
+                                .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(DDColor.ink)
-                                .lineLimit(1)
+                            Text(Tr(point))
+                                .font(pfStyled(size: 13.5, weight: .medium))
+                                .foregroundColor(DDColor.ink)
+                                .lineLimit(2)
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 9)
-                        .frame(height: 36)
-                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(DDColor.redLight.opacity(0.72)))
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 54)
+                        .background(DDColor.fill)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
                 }
             }
-            .padding(14)
+            .padding(18)
             .background(DDColor.card)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(DDColor.cardEdge, lineWidth: 0.6))
-            .padding(.horizontal, 10)
-            .padding(.top, 10)
+            .padding(.horizontal, 16)
+            .padding(.top, 22)
         }
     }
-
     private var groupCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
@@ -4898,7 +5344,7 @@ struct DDDetailView: View {
             }
             ForEach(0..<2, id: \.self) { i in
                 HStack(spacing: 10) {
-                    Circle().fill(Color(hex: 0xFFD9CC)).frame(width: 34, height: 34)
+                    Circle().fill(DDColor.redLight).frame(width: 34, height: 34)
                         .overlay(Text(i == 0 ? "拼" : "友")
                             .font(pf(13, .semibold)).foregroundColor(DDColor.red))
                     VStack(alignment: .leading, spacing: 2) {
@@ -4918,23 +5364,21 @@ struct DDDetailView: View {
                 }
             }
         }
-        .padding(14)
+        .padding(18)
         .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
-        .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
-        .padding(.horizontal, 10)
-        .padding(.top, 10)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+        .padding(.horizontal, 16)
+        .padding(.top, 22)
     }
 
     private var shopCard: some View {
-        let shopTint = product.isSelfOperated ? DDColor.redDeep : C.green
+        let shopTint = DDColor.ink
         return VStack(alignment: .leading, spacing: 10) {
             Button { showShop = true } label: {
                 HStack(spacing: 11) {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(LinearGradient(colors: [shopTint.opacity(0.15), shopTint.opacity(0.04)],
-                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .fill(DDColor.fill)
                         .frame(width: 46, height: 46)
                         .overlay(Image(systemName: "building.2.fill")
                             .font(.system(size: 18, weight: .medium))
@@ -4985,13 +5429,13 @@ struct DDDetailView: View {
                 .font(pf(13.5)).foregroundColor(DDColor.sub)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(14)
+        .padding(18)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
-        .padding(.horizontal, 10)
-        .padding(.top, 10)
+        .padding(.horizontal, 16)
+        .padding(.top, 22)
     }
 
     private func shopAction(_ icon: String, title: String, tint: Color) -> some View {
@@ -5003,12 +5447,11 @@ struct DDDetailView: View {
         .frame(maxWidth: .infinity)
         .frame(height: 34)
         .background(RoundedRectangle(cornerRadius: 9, style: .continuous)
-            .fill(tint.opacity(0.07)))
+            .fill(DDColor.fill))
     }
 
     private var bottomBar: some View {
         VStack(spacing: 0) {
-            HairLine()
             HStack(spacing: 7) {
                 bottomEntry(Tr("店铺"), "storefront") { showShop = true }
                 bottomEntry(Tr("客服"), "bubble.left.and.bubble.right") { showService = true }
@@ -5026,7 +5469,8 @@ struct DDDetailView: View {
                         group = true
                         showOrder = true
                     } label: {
-                        buyButton(Tr("发起拼单"), "¥" + moneyFmt(displayPrice), DDColor.redDeep)
+                        buyButton(Tr("发起拼单"), "¥" + moneyFmt(displayPrice),
+                                  DDColor.blueDeep)
                     }
                     .buttonStyle(.plain)
                 } else {
@@ -5039,16 +5483,20 @@ struct DDDetailView: View {
                         group = false
                         showOrder = true
                     } label: {
-                        buyButton(Tr("立即购买"), "¥" + moneyFmt(displayPrice), DDColor.redDeep)
+                        buyButton(Tr("立即购买"), "¥" + moneyFmt(displayPrice),
+                                  DDColor.blueDeep)
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 12).padding(.top, 8)
-            .padding(.bottom, 8)
+            .padding(.horizontal, 14).padding(.top, 9)
+            .padding(.bottom, 9)
         }
-        .background(DDColor.card)
-        .shadow(color: Color.black.opacity(0.06), radius: 12, y: -4)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .top) {
+            Rectangle().fill(DDColor.cardEdge).frame(height: 0.5)
+        }
+        .shadow(color: DDColor.cardShadow, radius: 16, y: -5)
     }
 
     private func bottomEntry(_ title: String, _ icon: String,
@@ -5059,7 +5507,7 @@ struct DDDetailView: View {
                 Text(title).font(pf(9.5)).lineLimit(1)
             }
             .foregroundColor(DDColor.ink)
-            .frame(width: 38, height: 44)
+            .frame(width: 40, height: 46)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -5071,13 +5519,16 @@ struct DDDetailView: View {
             Text(title).font(pf(15, .medium))
             if !price.isEmpty { Text(price).font(pf(11.5)) }
         }
-        .foregroundColor(soft ? DDColor.redDeep : .white)
-        .frame(maxWidth: .infinity).frame(height: 44)
+        .foregroundColor(soft ? DDColor.ink : .white)
+        .frame(maxWidth: .infinity).frame(height: 46)
         .background {
             if let solid { RoundedRectangle(cornerRadius: 22, style: .continuous).fill(solid) }
-            else if soft { RoundedRectangle(cornerRadius: 22, style: .continuous).fill(DDColor.redLight) }
+            else if soft {
+                RoundedRectangle(cornerRadius: 23, style: .continuous)
+                    .fill(DDColor.fill)
+            }
             else {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: 23, style: .continuous)
                     .fill(LinearGradient(colors: [DDColor.red, DDColor.redDeep],
                                          startPoint: .leading, endPoint: .trailing))
             }
@@ -5439,7 +5890,7 @@ struct DDOrderSheet: View {
             }
         }
         .sheet(isPresented: $showInvoice) {
-            DDInvoiceSheet(title: $invoice).ddLight()
+            DDInvoiceSheet(title: $invoice)
         }
         .sheet(isPresented: $showVip) {
             DDVipPageView().environmentObject(app)
@@ -5466,7 +5917,6 @@ struct DDOrderSheet: View {
                 .environmentObject(app)
             }
         }
-        .ddLight()
     }
 
     private var goodsAmount: Double {
@@ -5665,7 +6115,6 @@ struct DDOrdersView: View {
             }
             .environmentObject(app)
         }
-        .ddLight()
     }
 
     private func card(_ o: DDOrder) -> some View {
@@ -5782,7 +6231,7 @@ struct DDFavView: View {
     @ObservedObject private var store = DDStore.shared
     var onOpen: (DDProduct) -> Void
 
-    private var list: [DDProduct] { store.products.filter { store.isFav($0.id) } }
+    private var list: [DDProduct] { store.favoriteProducts }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -5804,7 +6253,6 @@ struct DDFavView: View {
             }
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
     }
 }
 
@@ -5843,7 +6291,6 @@ struct DDViewsView: View {
             }
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
     }
 }
 
@@ -5906,7 +6353,6 @@ struct DDSearchView: View {
             if kw.isEmpty { idle } else { found }
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
     }
 
     private var searchBar: some View {
@@ -5976,22 +6422,17 @@ struct DDSearchView: View {
             DDSearchFilterBar(sort: sort, onlyStock: onlyStock,
                               onSort: { sort = $0 },
                               onStock: { onlyStock.toggle() })
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 10) {
-                    ForEach(result) { p in
-                        Button {
-                            store.pushHistory(kw)
-                            onOpen(p)
-                        } label: { resultRow(p) }
-                        .buttonStyle(.plain)
+            Group {
+                if result.isEmpty {
+                    Text(Tr("没有找到相关商品")).font(pf(14)).foregroundColor(DDColor.sub)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    NativeMallProductGrid(products: result) { p in
+                        store.pushHistory(kw)
+                        onOpen(p)
                     }
-                    if result.isEmpty {
-                        Text(Tr("没有找到相关商品")).font(pf(14)).foregroundColor(DDColor.sub)
-                            .padding(.top, 50)
-                    }
-                    Spacer().frame(height: 14)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .padding(.vertical, 10)
             }
             .background(DDColor.page)
         }

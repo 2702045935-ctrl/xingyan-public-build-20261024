@@ -1,5 +1,14 @@
 import SwiftUI
 
+private struct GroupMembersPageResult {
+    var members: [User]
+    var ownerId: String
+    var createdAt: String
+    var memberCount: Int
+    var nextCursor: Int
+    var hasMore: Bool
+}
+
 struct GroupInfoView: View {
     @ObservedObject private var lang = LangStore.shared
     let chat: Chat
@@ -9,6 +18,9 @@ struct GroupInfoView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var members: [User] = []
+    @State private var memberCount = 0
+    @State private var memberNextCursor = 0
+    @State private var membersHasMore = false
     @State private var ownerId = ""
     @State private var createdAt = ""
     @State private var loading = true
@@ -97,11 +109,7 @@ struct GroupInfoView: View {
             pinned = live.pinned == true
             muted = live.muted == true
             muteAll = live.muteAll == true
-            if let r = try? await API.shared.chatMembers(chatId: chat.id) {
-                members = r.members
-                ownerId = r.ownerId
-                createdAt = r.createdAt
-            }
+            await loadInitialMembers()
             announce = chatAnnounceFromList()
             loading = false
         }
@@ -142,13 +150,27 @@ struct GroupInfoView: View {
             GroupAddMembersView(chat: chat, existing: members.map { $0.id }) { names in
                 app.show(names.isEmpty ? Tr("没有新增成员") : (Tr("已邀请 ") + names.joined(separator: "、") + Tr(" 进群")))
                 Task {
-                    if let r = try? await API.shared.chatMembers(chatId: chat.id) { members = r.members }
+                    if let r = try? await API.shared.chatMembersPage(
+                        chatId: chat.id,
+                        limit: 100,
+                        cursor: 0
+                    ) {
+                        members = r.members
+                        memberCount = r.memberCount
+                        memberNextCursor = r.nextCursor
+                        membersHasMore = r.hasMore
+                    }
                     await app.loadChats()
                 }
             }
         }
         .navigationDestination(isPresented: $showAllMembers) {
-            GroupMembersPage(chat: chat, members: members, ownerId: ownerId)
+            GroupMembersPage(chat: chat,
+                             initialMembers: members,
+                             initialNextCursor: memberNextCursor,
+                             initialHasMore: membersHasMore,
+                             totalMembers: max(memberCount, members.count),
+                             ownerId: ownerId)
                 .environmentObject(app)
         }
         .onReceive(NotificationCenter.default.publisher(for: ChatSearchJump.didRequest)) { note in
@@ -188,6 +210,69 @@ struct GroupInfoView: View {
                     onOk: { if kickMode == "kick" { kick() } else { muteMember() } },
                     onCancel: { kickTarget = nil })
             }
+        }
+    }
+
+    private func loadInitialMembers() async {
+        let cachedMembers = (chat.memberIds ?? []).compactMap {
+            app.contact(for: $0)
+        }
+        if !cachedMembers.isEmpty {
+            members = cachedMembers
+            memberCount = max(chat.memberCount ?? 0, cachedMembers.count)
+        }
+        loading = members.isEmpty
+
+        let page = await memberPageWithTimeout(seconds: 5)
+        if let page {
+            members = page.members
+            memberCount = page.memberCount
+            memberNextCursor = page.nextCursor
+            membersHasMore = page.hasMore
+            ownerId = page.ownerId
+            createdAt = page.createdAt
+            loading = false
+            return
+        }
+
+        // The legacy endpoint has no pagination query and can still recover the
+        // first member set when a proxy/server path rejects the cursor form.
+        loading = false
+        if let legacy = try? await API.shared.chatMembers(chatId: chat.id) {
+            members = legacy.members
+            memberCount = max(members.count, chat.memberCount ?? 0)
+            ownerId = legacy.ownerId
+            createdAt = legacy.createdAt
+            membersHasMore = false
+        }
+    }
+
+    private func memberPageWithTimeout(seconds: Double) async -> GroupMembersPageResult? {
+        await withTaskGroup(of: GroupMembersPageResult?.self) { group in
+            group.addTask {
+                guard let r = try? await API.shared.chatMembersPage(
+                    chatId: chat.id,
+                    limit: 100,
+                    cursor: 0
+                ) else { return nil }
+                return GroupMembersPageResult(
+                    members: r.members,
+                    ownerId: r.ownerId,
+                    createdAt: r.createdAt,
+                    memberCount: r.memberCount,
+                    nextCursor: r.nextCursor,
+                    hasMore: r.hasMore
+                )
+            }
+            group.addTask {
+                try? await Task.sleep(
+                    nanoseconds: UInt64(max(0.1, seconds) * 1_000_000_000)
+                )
+                return nil
+            }
+            let result = await group.next() ?? nil
+            group.cancelAll()
+            return result
         }
     }
 
@@ -286,7 +371,7 @@ struct GroupInfoView: View {
                                                                 endPoint: .bottomTrailing))))
                             .padding(.trailing, 14)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(MenuPressStyle())
                     .disabled(over)
                 }
             }
@@ -516,15 +601,17 @@ struct GroupInfoView: View {
                 id: "members",
                 signature: "\(loading)-\(removing)-\(isOwner)-\(ownerId)-\(memberKey)"
             ),
-            NativeStaticItem(id: "settings-title", signature: Tr("群聊设置")),
+            NativeStaticItem(id: "settings-title", signature: Tr("群聊设置") + Lang.code),
             NativeStaticItem(
                 id: "info",
                 signature: "\(chat.name)|\(announce)|\(myAlias)|\(ownerName)"
             ),
+            NativeStaticItem(id: "chat-settings-title", signature: Tr("聊天设置") + Lang.code),
             NativeStaticItem(
                 id: "switches",
                 signature: "\(pinned)-\(muteAll)-\(muted)-\(isOwner)"
             ),
+            NativeStaticItem(id: "tools-title", signature: Tr("聊天工具") + Lang.code),
             NativeStaticItem(id: "tools", signature: "\(chat.id)-\(Lang.code)"),
             NativeStaticItem(id: "actions-title", signature: Tr("操作")),
             NativeStaticItem(id: "danger", signature: "\(isOwner)")
@@ -541,8 +628,8 @@ struct GroupInfoView: View {
         case "members":
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
-                    Text(Tr("群成员") + "（\(members.count)）")
-                        .font(pf(13, .semibold))
+                    Text(Tr("群成员") + "（\(max(memberCount, members.count))）")
+                        .font(pf(13))
                         .foregroundColor(C.subLabel)
                     Spacer(minLength: 0)
                     if isOwner {
@@ -563,8 +650,14 @@ struct GroupInfoView: View {
                 .padding(.horizontal, 14)
         case "info":
             infoCard.padding(.horizontal, 14)
+        case "chat-settings-title":
+            ChatInfoSectionTitle(text: Tr("聊天设置"))
+                .padding(.horizontal, 14)
         case "switches":
             switchCard.padding(.horizontal, 14)
+        case "tools-title":
+            ChatInfoSectionTitle(text: Tr("聊天工具"))
+                .padding(.horizontal, 14)
         case "tools":
             groupToolCard.padding(.horizontal, 14)
         case "actions-title":
@@ -583,42 +676,55 @@ struct GroupInfoView: View {
 
     private var headCard: some View {
         GroupCard {
-            VStack(spacing: 9) {
+            HStack(spacing: 14) {
                 Group {
                     if (chat.avatar ?? "").isEmpty {
                         GroupAvatarMosaic(chatId: chat.id,
                                           memberIds: chat.memberIds ?? members.map(\.id),
-                                          size: 76, radius: 19)
+                                          size: 68, radius: 16)
                     } else {
-                        Avatar(path: chat.avatar ?? "", size: 76, radius: 19, group: true)
+                        Avatar(path: chat.avatar ?? "", size: 68, radius: 16, group: true)
                     }
                 }
-                .overlay(RoundedRectangle(cornerRadius: 19, style: .continuous)
-                    .stroke(Color.white.opacity(0.35), lineWidth: 0.8))
-                .shadow(color: Color.black.opacity(0.12), radius: 10, y: 4)
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.primary.opacity(0.07), lineWidth: 0.6))
 
-                Text(chat.name)
-                    .font(pf(20, .semibold))
-                    .foregroundColor(C.label)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 3)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(chat.name)
+                        .font(pf(19, .semibold))
+                        .foregroundColor(C.label)
+                        .lineLimit(2)
 
-                Text(memberLine)
-                    .font(pf(13))
-                    .foregroundColor(C.subLabel)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
+                    Text(memberLine)
+                        .font(pf(13))
+                        .foregroundColor(C.subLabel)
+                        .lineLimit(2)
+                }
+
+                Spacer(minLength: 8)
+
+                Button {
+                    showQR = true
+                } label: {
+                    Image(systemName: "qrcode")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(C.label)
+                        .frame(width: 36, height: 36)
+                        .background(Color.primary.opacity(0.055), in: Circle())
+                        .contentShape(Circle())
+                }
+                .buttonStyle(MenuPressStyle())
+                .accessibilityLabel(Tr("群二维码"))
             }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 22)
-            .padding(.vertical, 22)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
         }
     }
 
     private var memberLine: String {
-        if members.isEmpty { return Tr("群聊") }
-        var s = "\(members.count) 位成员"
+        let count = max(memberCount, members.count)
+        if count == 0 { return Tr("群聊") }
+        var s = "\(count) 位成员"
         if !createdText.isEmpty { s += " · " + createdText + "创建" }
         return s
     }
@@ -634,7 +740,10 @@ struct GroupInfoView: View {
             } else {
                 LazyVGrid(columns: gridColumns, spacing: 14) {
                     ForEach(visibleMembers) { u in
-                        VStack(spacing: 6) {
+                        Button {
+                            cardUser = u
+                        } label: {
+                            VStack(spacing: 6) {
                             ZStack(alignment: .topLeading) {
                                 Avatar(path: u.avatarPath, size: 52, radius: 10, level: u.qqLevel ?? 0)
 
@@ -650,7 +759,7 @@ struct GroupInfoView: View {
                                             .frame(height: 20)
                                             .background(Capsule().fill(C.red))
                                     }
-                                    .buttonStyle(.plain)
+                                    .buttonStyle(MenuPressStyle())
                                     .offset(x: -6, y: -6)
                                 }
                             }
@@ -667,11 +776,10 @@ struct GroupInfoView: View {
                                 }
                             }
                             .frame(maxWidth: .infinity)
+                            }
+                            .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
-
-                        .contentShape(Rectangle())
-                        .onTapGesture { cardUser = u }
+                        .buttonStyle(MenuPressStyle())
                         .contextMenu {
                             Button { cardUser = u } label: { Label(Tr("查看资料"), systemImage: "person.crop.circle") }
                             if u.id == app.me?.id || isOwner {
@@ -699,7 +807,7 @@ struct GroupInfoView: View {
                         }
                     }
 
-                    if members.count > 20 {
+                    if max(memberCount, members.count) > 20 {
                         VStack(spacing: 6) {
                             Button {
                                 showAllMembers = true
@@ -713,7 +821,7 @@ struct GroupInfoView: View {
                                         .foregroundColor(C.subLabel)
                                 }
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(MenuPressStyle())
                             Text(Tr("更多群成员"))
                                 .font(pf(10.5))
                                 .foregroundColor(C.subLabel)
@@ -733,7 +841,7 @@ struct GroupInfoView: View {
                                     .foregroundColor(C.subLabel)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(MenuPressStyle())
                         Text(Tr("成员")).font(pf(10.5)).foregroundColor(C.subLabel)
                     }
                     .frame(maxWidth: .infinity)
@@ -744,9 +852,8 @@ struct GroupInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(ChatInfoCardTint.group))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
-        .shadow(color: Color.black.opacity(0.05), radius: 8, y: 2)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(ChatInfoCardTint.group))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
     }
 
     private var infoCard: some View {
@@ -843,9 +950,6 @@ struct GroupInfoView: View {
 
     private var groupToolCard: some View {
         GroupCard {
-            ChatInfoTextRow(title: Tr("群二维码"), symbol: "qrcode",
-                            symbolTint: Color(hex: 0x0A84FF)) { showQR = true }
-            ChatInfoDivider()
             ChatInfoTextRow(title: Tr("查找聊天记录"), symbol: "magnifyingglass",
                             symbolTint: Color(hex: 0x0A84FF)) { showSearch = true }
             ChatInfoDivider()
@@ -856,7 +960,6 @@ struct GroupInfoView: View {
                             symbolTint: Color(hex: 0x5E5CE6)) { showGroupBg = true }
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("群语音通话"),
-                            subtitle: Tr("和群里的人一起语音"),
                             symbol: "phone.fill",
                             symbolTint: Color(hex: 0x34C759)) {
                 CallCenter.shared.startGroupCall(chatId: chat.id, title: chat.name)
@@ -864,7 +967,6 @@ struct GroupInfoView: View {
             }
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("群视频通话"),
-                            subtitle: Tr("和群里的人一起视频"),
                             symbol: "video.fill",
                             symbolTint: Color(hex: 0x0A84FF)) {
                 CallCenter.shared.startGroupCall(chatId: chat.id, title: chat.name, video: true)
@@ -872,29 +974,22 @@ struct GroupInfoView: View {
             }
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("投诉群聊"),
-                            subtitle: Tr("违法违规、诈骗或骚扰"),
                             symbol: "exclamationmark.shield.fill",
                             symbolTint: Color(hex: 0xFF9F0A)) {
                 showComplaint = true
             }
         }
-        .padding(.top, 10)
     }
 
     private var dangerCard: some View {
         GroupCard {
-            ChatInfoTextRow(title: Tr("清空聊天记录"), destructive: true,
-                            symbol: "trash.fill",
-                            symbolTint: Color(hex: 0xFF3B30)) { confirmClear = true }
+            ChatInfoDangerRow(title: Tr("清空聊天记录")) { confirmClear = true }
             ChatInfoDivider()
-            ChatInfoTextRow(title: Tr("删除该聊天"), destructive: true,
-                            symbol: "bubble.left.and.bubble.right.fill",
-                            symbolTint: Color(hex: 0xFF3B30)) { deleteChat() }
+            ChatInfoDangerRow(title: Tr("删除该聊天")) { deleteChat() }
             ChatInfoDivider()
-            ChatInfoTextRow(title: isOwner ? "解散并退出群聊" : "退出群聊",
-                            destructive: true,
-                            symbol: "rectangle.portrait.and.arrow.right",
-                            symbolTint: Color(hex: 0xFF3B30)) { confirmQuit = true }
+            ChatInfoDangerRow(title: isOwner ? "解散并退出群聊" : "退出群聊") {
+                confirmQuit = true
+            }
         }
     }
 }
@@ -904,11 +999,30 @@ struct GroupMembersPage: View {
     @Environment(\.dismiss) private var dismiss
 
     let chat: Chat
-    let members: [User]
     let ownerId: String
+    let totalMembers: Int
 
     @State private var query = ""
     @State private var selected: User? = nil
+    @State private var members: [User]
+    @State private var nextCursor: Int
+    @State private var hasMore: Bool
+    @State private var loadingMore = false
+    @State private var loadMoreFailed = false
+
+    init(chat: Chat,
+         initialMembers: [User],
+         initialNextCursor: Int,
+         initialHasMore: Bool,
+         totalMembers: Int,
+         ownerId: String) {
+        self.chat = chat
+        self.ownerId = ownerId
+        self.totalMembers = totalMembers
+        _members = State(initialValue: initialMembers)
+        _nextCursor = State(initialValue: initialNextCursor)
+        _hasMore = State(initialValue: initialHasMore)
+    }
 
     private let columns = Array(
         repeating: GridItem(.flexible(minimum: 0), spacing: 12, alignment: .top),
@@ -925,10 +1039,42 @@ struct GroupMembersPage: View {
         }
     }
 
+    private func loadMoreMembers() async {
+        guard hasMore, !loadingMore, !loadMoreFailed else { return }
+        loadingMore = true
+        defer { loadingMore = false }
+        let previousCursor = nextCursor
+        guard let page = try? await API.shared.chatMembersPage(
+            chatId: chat.id,
+            limit: 100,
+            cursor: previousCursor
+        ) else {
+            loadMoreFailed = true
+            return
+        }
+        let known = Set(members.map(\.id))
+        let incoming = page.members.filter { !known.contains($0.id) }
+        let advanced = page.nextCursor > previousCursor
+        guard advanced, !incoming.isEmpty else {
+            // 空页或游标没有前进时必须停下，否则底部 spinner 会永久重复请求。
+            hasMore = false
+            return
+        }
+        members.append(contentsOf: incoming)
+        nextCursor = page.nextCursor
+        hasMore = page.hasMore
+        loadMoreFailed = false
+    }
+
+    private func retryMoreMembers() {
+        loadMoreFailed = false
+        Task { await loadMoreMembers() }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("全部群成员"), back: { dismiss() }) {
-                Text("\(members.count)")
+                Text("\(max(totalMembers, members.count))")
                     .font(pf(13, .semibold))
                     .foregroundColor(C.subLabel)
                     .padding(.trailing, 14)
@@ -959,7 +1105,7 @@ struct GroupMembersPage: View {
 
                     GroupCard {
                         LazyVGrid(columns: columns, spacing: 18) {
-                            ForEach(filtered) { u in
+                            ForEach(Array(filtered.enumerated()), id: \.element.id) { index, u in
                                 Button { selected = u } label: {
                                     VStack(spacing: 7) {
                                         Avatar(path: u.avatarPath, size: 54, radius: 11,
@@ -984,6 +1130,10 @@ struct GroupMembersPage: View {
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
+                                .onAppear {
+                                    guard index >= filtered.count - 15 else { return }
+                                    Task { await loadMoreMembers() }
+                                }
                             }
                         }
                         .padding(.horizontal, 14)
@@ -996,6 +1146,27 @@ struct GroupMembersPage: View {
                             .foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 36)
+                    }
+                    if hasMore {
+                        if loadMoreFailed {
+                            Button {
+                                retryMoreMembers()
+                            } label: {
+                                Text(Tr("加载失败，点击重试"))
+                                    .font(pf(13, .medium))
+                                    .foregroundColor(C.green)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 40)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .onAppear {
+                                    Task { await loadMoreMembers() }
+                                }
+                        }
                     }
                 }
                 .padding(.horizontal, 14)
@@ -1587,26 +1758,11 @@ struct DirectChatInfoView: View {
                     .padding(.bottom, 2)
             }
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    peerCard
-                    if chat.sysTeam != true, peer?.banned == true || friendMeta?.block == true {
-                        relationshipStatusCard
-                    }
-                    if chat.sysTeam == true {
-                        teamSimpleIntro
-                    } else {
-                        ChatInfoSectionTitle(text: Tr("聊天设置"))
-                        switchCard
-                        ChatInfoSectionTitle(text: Tr("常用"))
-                        toolCard
-                        ChatInfoSectionTitle(text: Tr("操作"))
-                        dangerCard
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.top, 6)
-                .padding(.bottom, 30)
+            NativeStaticList(items: directInfoNativeItems,
+                             signature: { $0.signature }) { item in
+                directInfoNativeRow(item)
+                    .environmentObject(app)
+                    .environment(\.chatInfoCardTone, .direct)
             }
         }
         .background(C.pageBg.ignoresSafeArea())
@@ -1740,6 +1896,71 @@ struct DirectChatInfoView: View {
         }
     }
 
+    private var directInfoNativeItems: [NativeStaticItem] {
+        let statusNeeded = chat.sysTeam != true
+            && (peer?.banned == true || friendMeta?.block == true)
+        if chat.sysTeam == true {
+            return [
+                NativeStaticItem(id: "peer",
+                                 signature: "\(peer?.id ?? "")-\(peer?.name ?? "")-\(peer?.avatarPath ?? "")"),
+                NativeStaticItem(id: "team-intro", signature: chat.id)
+            ]
+        }
+        return [
+            NativeStaticItem(id: "peer",
+                             signature: "\(peer?.id ?? "")-\(peer?.name ?? "")-\(peer?.avatarPath ?? "")-\(peer?.username ?? "")"),
+            NativeStaticItem(id: "relationship",
+                             signature: "\(statusNeeded)-\(peer?.banned == true)-\(friendMeta?.block == true)-\(relationshipStatusDetail)"),
+            NativeStaticItem(id: "chat-settings-title", signature: Tr("聊天设置") + Lang.code),
+            NativeStaticItem(id: "switches", signature: "\(pinned)-\(muted)-\(peer?.relation ?? "")"),
+            NativeStaticItem(id: "chat-tools-title", signature: Tr("聊天工具") + Lang.code),
+            NativeStaticItem(id: "tools", signature: "\(chat.id)-\(peer?.id ?? "")-\(Lang.code)"),
+            NativeStaticItem(id: "other-title", signature: Tr("其他") + Lang.code),
+            NativeStaticItem(id: "danger", signature: "\(peer?.relation ?? "")-\(friendMeta?.block == true)")
+        ]
+    }
+
+    @ViewBuilder
+    private func directInfoNativeRow(_ item: NativeStaticItem) -> some View {
+        switch item.id {
+        case "peer":
+            peerCard
+                .padding(.horizontal, 14)
+                .padding(.top, 6)
+        case "relationship":
+            if chat.sysTeam != true,
+               peer?.banned == true || friendMeta?.block == true {
+                relationshipStatusCard
+                    .padding(.horizontal, 14)
+            }
+        case "team-intro":
+            teamSimpleIntro
+                .padding(.horizontal, 14)
+                .padding(.bottom, 30)
+        case "chat-settings-title":
+            ChatInfoSectionTitle(text: Tr("聊天设置"))
+                .padding(.horizontal, 14)
+        case "switches":
+            switchCard.padding(.horizontal, 14)
+        case "chat-tools-title":
+            ChatInfoSectionTitle(text: Tr("聊天工具"))
+                .padding(.horizontal, 14)
+        case "tools":
+            toolCard.padding(.horizontal, 14)
+        case "other-title":
+            ChatInfoSectionTitle(text: Tr("其他"))
+                .padding(.horizontal, 14)
+        case "danger":
+            VStack(spacing: 0) {
+                dangerCard
+                Color.clear.frame(height: 30)
+            }
+            .padding(.horizontal, 14)
+        default:
+            EmptyView()
+        }
+    }
+
     private var relationshipStatusCard: some View {
         GroupCard {
             HStack(alignment: .top, spacing: 12) {
@@ -1777,8 +1998,11 @@ struct DirectChatInfoView: View {
     }
 
     private var peerCard: some View {
-        GroupCard {
-            HStack(spacing: 12) {
+        Button {
+            if peer != nil { showCard = true }
+        } label: {
+            GroupCard {
+                HStack(spacing: 12) {
                 Avatar(path: peer?.avatarPath ?? "", size: 68, radius: 16, level: peer?.qqLevel ?? 0)
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(Color.white.opacity(0.35), lineWidth: 0.8))
@@ -1809,10 +2033,12 @@ struct DirectChatInfoView: View {
                 }
             }
             .contentShape(Rectangle())
-            .onTapGesture { if peer != nil { showCard = true } }
             .padding(.horizontal, 16)
             .padding(.vertical, 18)
+            }
         }
+        .buttonStyle(MenuPressStyle())
+        .disabled(peer == nil)
     }
 
     private var switchCard: some View {
@@ -1917,7 +2143,7 @@ struct DirectChatInfoView: View {
             .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
     }
 
     private func sysDestination(for key: String) -> SysPage {
@@ -1995,13 +2221,9 @@ struct DirectChatInfoView: View {
                     }
                     ChatInfoDivider()
                 }
-                ChatInfoTextRow(title: Tr("清空聊天记录"), destructive: true,
-                                symbol: "trash.fill",
-                                symbolTint: Color(hex: 0xFF3B30)) { confirmClear = true }
+                ChatInfoDangerRow(title: Tr("清空聊天记录")) { confirmClear = true }
                 ChatInfoDivider()
-                ChatInfoTextRow(title: Tr("删除该聊天"), destructive: true,
-                                symbol: "bubble.left.and.bubble.right.fill",
-                                symbolTint: Color(hex: 0xFF3B30)) { confirmDelete = true }
+                ChatInfoDangerRow(title: Tr("删除该聊天")) { confirmDelete = true }
             }
             Text(Tr("危险操作会立即影响你和对方的联系。删除聊天只会移除本地会话，不会解除双方的朋友关系。"))
                 .font(pf(12))
@@ -2035,7 +2257,7 @@ struct DirectChatInfoView: View {
             .padding(.vertical, 12)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
     }
 
     private func setBlocked(_ value: Bool) {
@@ -2246,12 +2468,12 @@ private struct ChatInfoSectionTitle: View {
 
     var body: some View {
         Text(text)
-            .font(pf(13, .semibold))
+            .font(pf(13))
             .foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 4)
-            .padding(.top, 22)
-            .padding(.bottom, 9)
+            .padding(.top, 18)
+            .padding(.bottom, 7)
     }
 }
 
@@ -2267,19 +2489,9 @@ private struct ChatInfoTextRow: View {
     var body: some View {
         Button(action: tap) {
             HStack(spacing: 12) {
-                if let symbol {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 9, style: .continuous)
-                            .fill(symbolTint.opacity(destructive ? 0.12 : 0.13))
-                        Image(systemName: symbol)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(destructive ? C.red : symbolTint)
-                    }
-                    .frame(width: 31, height: 31)
-                }
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(pf(15.5, .medium))
+                        .font(pf(16))
                         .foregroundColor(destructive
                             ? Color.dyn(0xE03A3A, 0xFF6B6B)
                             : C.label)
@@ -2294,17 +2506,21 @@ private struct ChatInfoTextRow: View {
                 Spacer(minLength: 10)
                 if let value, !value.isEmpty {
                     Text(value)
-                        .font(pf(14.5))
+                        .font(pf(15))
                         .foregroundColor(C.subLabel)
                         .lineLimit(1)
                         .truncationMode(.middle)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundColor(C.subLabel.opacity(0.55))
                 }
             }
             .padding(.horizontal, 16)
-            .frame(minHeight: 58)
+            .frame(minHeight: 54)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
     }
 }
 
@@ -2318,19 +2534,9 @@ private struct ChatInfoToggleRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            if let symbol {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(symbolTint.opacity(0.13))
-                    Image(systemName: symbol)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(symbolTint)
-                }
-                .frame(width: 31, height: 31)
-            }
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(pf(15.5, .medium))
+                    .font(pf(16))
                     .foregroundColor(C.label)
                 if let subtitle, !subtitle.isEmpty {
                     Text(subtitle)
@@ -2345,7 +2551,7 @@ private struct ChatInfoToggleRow: View {
                 .tint(C.green)
         }
         .padding(.horizontal, 16)
-        .frame(minHeight: 58)
+        .frame(minHeight: 54)
     }
 }
 
@@ -2366,6 +2572,23 @@ private struct ChatInfoTextButton: View {
                 .padding(.horizontal, 12)
                 .frame(height: 30)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
+    }
+}
+
+private struct ChatInfoDangerRow: View {
+    let title: String
+    let tap: () -> Void
+
+    var body: some View {
+        Button(action: tap) {
+            Text(title)
+                .font(pf(16, .medium))
+                .foregroundColor(Color.dyn(0xE03A3A, 0xFF6B6B))
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(MenuPressStyle())
     }
 }

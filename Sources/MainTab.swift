@@ -15,6 +15,17 @@ struct MainTabView: View {
 
     @ObservedObject private var mallSheet = MallSheet.shared
 
+    /// Mount the destination in the same SwiftUI transaction as the selection
+    /// change. Updating `tab` first leaves an empty Color.clear frame until the
+    /// onChange callback inserts the tab, which makes every first visit look
+    /// like a network/load delay and builds the page one frame late.
+    private func selectTab(_ next: Int) {
+        guard (0..<5).contains(next) else { return }
+        mountedTabs.insert(next)
+        guard tab != next else { return }
+        tab = next
+    }
+
     private var unreadTotal: Int {
         app.unreadForIcon
     }
@@ -83,7 +94,9 @@ struct MainTabView: View {
 
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if rootTabBarVisible {
-                    NativeTabBar(selection: $tab,
+                    NativeTabBar(selection: Binding(
+                                 get: { tab },
+                                 set: { selectTab($0) }),
                                  badge: app.showDot("chats", auto: unreadTotal > 0) ? unreadTotal : 0,
                                  contactsDot: app.showDot("contacts", auto: app.friendRequests > 0),
                                  momentsDot: app.showDot("discover", auto: app.momentsUnread > 0),
@@ -142,8 +155,7 @@ struct MainTabView: View {
                     }
                 },
                 onOpenProfile: {
-                    mountedTabs.insert(4)
-                    tab = 4
+                    selectTab(4)
                 }
             )
             .environmentObject(app)
@@ -277,13 +289,16 @@ struct MainTabView: View {
                 await app.loadChats()
                 CrashCatcher.note("推送", "会话已加载 " + String(app.chats.count) + " 个")
 
-                tab = 0
+                selectTab(0)
                 app.pendingPushChatId = chatId
             }
         }
 
         .onChange(of: app.wantChatsTab) { v in
-            if v { tab = 0; app.wantChatsTab = false }
+            if v {
+                selectTab(0)
+                app.wantChatsTab = false
+            }
         }
         .onChange(of: tab) { value in
             mountedTabs.insert(value)
@@ -294,7 +309,7 @@ struct MainTabView: View {
                   (0..<5).contains(next),
                   next != tab else { return }
             UISelectionFeedbackGenerator().selectionChanged()
-            tab = next
+            selectTab(next)
         }
 
         .onReceive(NotificationCenter.default.publisher(for: .chrisOpenPair)) { note in
@@ -735,9 +750,11 @@ struct TabBar: View {
     }
 
     private var tabMaskLayer: some View {
-        let fill = UIConfig.colorIfSet("tabBarColor")
-            ?? UIConfig.colorIfSet("tabBg")
-            ?? C.tabBg
+        let fill = scheme == .dark
+            ? C.tabBg
+            : (UIConfig.colorIfSet("tabBarColor")
+                ?? UIConfig.colorIfSet("tabBg")
+                ?? C.tabBg)
 
         if scheme == .dark {
             return AnyView(ZStack {
@@ -1381,9 +1398,18 @@ struct MenuRow: View {
 }
 
 struct MenuPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(configuration.isPressed ? Color.gray.opacity(0.16) : Color.clear)
+            .contentShape(Rectangle())
+            .overlay {
+                Color.primary
+                    .opacity(configuration.isPressed ? 0.055 : 0)
+                    .allowsHitTesting(false)
+            }
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
+                       value: configuration.isPressed)
     }
 }
 
@@ -1425,7 +1451,7 @@ struct GroupCard<Content: View>: View {
 
     var body: some View {
         let themedCard = tone != .standard
-        let radius: CGFloat = themedCard ? 16 : (scheme == .dark ? 14 : 0)
+        let radius: CGFloat = themedCard ? 14 : (scheme == .dark ? 14 : 0)
         if glass && scheme != .dark {
             VStack(spacing: 0) { content }
                 .background {

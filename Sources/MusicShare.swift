@@ -218,12 +218,16 @@ struct FriendNowPlaying: Decodable, Identifiable {
     }
 
     var livePosition: Double {
-        guard playing == true, let position else { return position ?? 0 }
-        let base = max(0, position)
-        let started = (at ?? 0) / 1_000
-        guard started > 0 else { return base }
-        let elapsed = max(0, Date().timeIntervalSince1970 - started)
-        return base + elapsed
+        let base = max(0, position ?? 0)
+        guard playing == true, let stamp = at, stamp > 0 else { return base }
+        let elapsed = max(0, (Date().timeIntervalSince1970 * 1000 - stamp) / 1000)
+        let limit = duration ?? .greatestFiniteMagnitude
+        return min(max(0, limit), base + elapsed)
+    }
+
+    var liveProgress: Double {
+        guard let duration, duration > 0 else { return 0 }
+        return min(1, max(0, livePosition / duration))
     }
 }
 
@@ -487,7 +491,7 @@ struct MusicCardInfo {
 }
 
 @MainActor
-final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
+final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate, SystemMusicHost {
     static let shared = MusicPlayer()
 
     @Published private(set) var current: MusicTrack?
@@ -506,16 +510,22 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
     private var endObserver: NSObjectProtocol?
     var timer: Timer?
     private var cache: [String: Data] = [:]
+    private let kernel = SystemMusicKernel.shared
+    private var prefetchTasks: [String: Task<Void, Never>] = [:]
+    private var prefetchedTracks: Set<String> = []
 
     private var remoteReady = false
 
     private var syncedSecond: Int = -1
 
-    private var nowId = ""
-    private var nowAt = Date.distantPast
     private var listenedSeconds: Double = 0
 
     var queue: [MusicTrack] = []
+
+    override init() {
+        super.init()
+        kernel.attach(self)
+    }
 
     func applyLike(id: String, myId: String, liked: Bool, count: Int) {
         func patch(_ t: MusicTrack) -> MusicTrack {
@@ -536,7 +546,10 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
         queue = queue.map { $0.id == id ? patch($0) : $0 }
     }
-    func setQueue(_ list: [MusicTrack]) { queue = list }
+    func setQueue(_ list: [MusicTrack]) {
+        queue = list
+        kernel.queueChanged()
+    }
 
     var loopOne = false
 
@@ -608,13 +621,6 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         play(n)
     }
 
-    private func reportNow(_ t: MusicTrack) {
-        if nowId == t.id, Date().timeIntervalSince(nowAt) < 60 { return }
-        nowId = t.id
-        nowAt = Date()
-        Task { await API.shared.musicNow(t) }
-    }
-
     func ensureRemote() {
         guard !remoteReady else { return }
         remoteReady = true
@@ -624,28 +630,12 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
     func isPlaying(_ id: String) -> Bool { playing && current?.id == id }
 
     func toggle(_ t: MusicTrack) {
-        if current?.id == t.id, let p = player {
-            if p.isPlaying {
-                p.pause(); playing = false; stopTimer()
-            } else {
-
-                try? AVAudioSession.sharedInstance().setActive(true)
-                sleepStopped = false
-                p.play(); p.rate = rate; playing = true; startTimer()
-            }
-            syncNowPlaying()
-            return
-        }
-
-        if current?.id == t.id, let st = stream {
+        if current?.id == t.id {
             if playing {
-                st.pause(); playing = false; stopTimer()
+                pause()
             } else {
-                try? AVAudioSession.sharedInstance().setActive(true)
-                sleepStopped = false
-                st.play(); st.rate = rate; playing = true; startTimer()
+                systemMusicResume()
             }
-            syncNowPlaying()
             return
         }
         recordPlaybackOutcome()
@@ -685,7 +675,8 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         current = t
         listenedSeconds = 0
         RecommendationEventStore.shared.record(t.id, .play)
-        reportNow(t)
+        kernel.begin(t)
+        prefetchNextTrack()
 
         MusicLibrary.shared.markPlayed(t)
 
@@ -698,8 +689,7 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         if let local = localURL(t), FileManager.default.fileExists(atPath: local.path),
            let p = try? AVAudioPlayer(contentsOf: local) {
             stopTimer()
-            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-            try? AVAudioSession.sharedInstance().setActive(true)
+            _ = kernel.activateSession()
             player = p
             p.delegate = self
             p.enableRate = true
@@ -730,9 +720,10 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
             return
         }
         stopTimer()
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-        try? AVAudioSession.sharedInstance().setActive(true)
+        _ = kernel.activateSession()
         stream = p
+        p.automaticallyWaitsToMinimizeStalling = kernel.waitsToMinimizeStalling
+        p.currentItem?.preferredForwardBufferDuration = kernel.preferredForwardBuffer
         watchEnd(p)
         playing = true
         loadingId = ""
@@ -811,8 +802,7 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     private func start(data: Data, track: MusicTrack) {
         stopTimer()
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-        try? AVAudioSession.sharedInstance().setActive(true)
+        _ = kernel.activateSession()
         player = try? AVAudioPlayer(data: data)
         player?.delegate = self
         player?.enableRate = true
@@ -829,11 +819,16 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
     }
 
     func pause() {
+        pause(userInitiated: true)
+    }
+
+    private func pause(userInitiated: Bool) {
         player?.pause()
         stream?.pause()
         playing = false
         level = 0
         stopTimer()
+        kernel.pause(userInitiated: userInitiated)
         syncNowPlaying()
     }
 
@@ -850,6 +845,9 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         total = 0
         listenedSeconds = 0
         stopTimer()
+        kernel.stop()
+        prefetchTasks.values.forEach { $0.cancel() }
+        prefetchTasks.removeAll()
         syncNowPlaying()
     }
 
@@ -860,6 +858,8 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
             p.currentTime = v
             seconds = v
             progress = r
+            kernel.update(position: seconds, duration: total, playing: playing, force: true)
+            kernel.seek()
             syncNowPlaying()
             return
         }
@@ -870,6 +870,8 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
                     toleranceBefore: .zero, toleranceAfter: .zero)
             seconds = v
             progress = r
+            kernel.update(position: seconds, duration: total, playing: playing, force: true)
+            kernel.seek()
             syncNowPlaying()
         }
     }
@@ -913,6 +915,7 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
         let s = Int(seconds)
         if s != syncedSecond { syncedSecond = s; syncNowPlaying() }
+        kernel.update(position: seconds, duration: total, playing: playing)
     }
 
     nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
@@ -930,6 +933,7 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         progress = 0
         seconds = 0
         stopTimer()
+        kernel.finish()
         syncNowPlaying()
 
         if sleepStopped { sleepStopped = false; return }
@@ -943,6 +947,100 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         if let i = queue.firstIndex(where: { $0.id == t.id }), i + 1 < queue.count {
             play(queue[i + 1])
         }
+    }
+
+    var systemMusicIsPlaying: Bool { playing }
+    var systemMusicPosition: Double { seconds }
+
+    func systemMusicPauseForInterruption() {
+        pause(userInitiated: false)
+    }
+
+    func systemMusicResume() {
+        guard let track = current else { return }
+        _ = kernel.activateSession()
+        sleepStopped = false
+        if let player {
+            player.play()
+            player.rate = rate
+            playing = true
+            startTimer()
+        } else if let stream {
+            stream.play()
+            stream.rate = rate
+            playing = true
+            startTimer()
+        } else {
+            play(track)
+            return
+        }
+        kernel.resume()
+        kernel.update(position: seconds, duration: total, playing: true, force: true)
+        syncNowPlaying()
+    }
+
+    func systemMusicRecover(at position: Double) {
+        guard let track = current else { return }
+        let ratio = total > 0 ? min(1, max(0, position / total)) : 0
+        play(track)
+        guard ratio > 0 else { return }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 900_000_000)
+            guard self.current?.id == track.id, self.total > 0 else { return }
+            self.seek(ratio)
+        }
+    }
+
+    func systemMusicPrefetchNext() {
+        prefetchNextTrack()
+    }
+
+    func systemMusicDucking(_ active: Bool) {
+        let volume: Float = active ? 0.16 : 1
+        player?.volume = volume
+        stream?.volume = volume
+    }
+
+    private func prefetchNextTrack() {
+        guard let next = nextTrackForPrefetch(),
+              !next.url.isEmpty,
+              let local = localURL(next) else { return }
+        if FileManager.default.fileExists(atPath: local.path) {
+            prefetchedTracks.insert(next.id)
+            return
+        }
+        guard prefetchTasks[next.id] == nil,
+              let remote = API.shared.assetURL(next.url) else { return }
+        for id in prefetchTasks.keys.filter({ $0 != next.id }) {
+            prefetchTasks[id]?.cancel()
+            prefetchTasks.removeValue(forKey: id)
+        }
+        prefetchTasks[next.id] = Task { [weak self] in
+            var request = URLRequest(url: remote)
+            request.timeoutInterval = 120
+            if !API.shared.token.isEmpty {
+                request.setValue("Bearer \(API.shared.token)",
+                                 forHTTPHeaderField: "Authorization")
+            }
+            guard let (temporary, response) = try? await API.shared.session.download(for: request),
+                  !((response as? HTTPURLResponse).map { $0.statusCode >= 400 } ?? false),
+                  let self else { return }
+            try? FileManager.default.removeItem(at: local)
+            if (try? FileManager.default.moveItem(at: temporary, to: local)) != nil {
+                self.prefetchedTracks.insert(next.id)
+            }
+            self.prefetchTasks.removeValue(forKey: next.id)
+        }
+    }
+
+    private func nextTrackForPrefetch() -> MusicTrack? {
+        guard let current, !queue.isEmpty, !loopOne, playMode != 1 else { return nil }
+        if playMode == 2, queue.count > 1 {
+            return queue.first { $0.id != current.id }
+        }
+        guard let index = queue.firstIndex(where: { $0.id == current.id }),
+              index + 1 < queue.count else { return nil }
+        return queue[index + 1]
     }
 }
 
@@ -1000,12 +1098,14 @@ struct MusicPlayButton: View {
 
 struct MusicBubble: View {
     let info: MusicCardInfo
+    var mine: Bool = false
+    var showTail: Bool = false
 
     var onOpen: () -> Void
     @ObservedObject private var player = MusicPlayer.shared
 
     var body: some View {
-        WeChatMessageCard {
+        WeChatMessageCard(mine: mine, showTail: showTail) {
             HStack(spacing: 10) {
                 ZStack(alignment: .bottomTrailing) {
                     MusicCover(path: info.cover, size: 56, radius: 12)
@@ -1048,8 +1148,8 @@ struct ListenView: View {
     var onSend: ((MusicTrack) -> Void)? = nil
     var onLeave: (() -> Void)? = nil
 
-    @State private var tracks: [MusicTrack] = []
-    @State private var loading = true
+    @State private var tracks: [MusicTrack] = API.shared.cachedMusicTracks()
+    @State private var loading = API.shared.cachedMusicTracks().isEmpty
     @State private var query = ""
     @State private var lastTracksRefresh = Date.distantPast
 
@@ -1293,6 +1393,12 @@ struct ListenView: View {
                 await loadFriends()
                 try? await Task.sleep(nanoseconds: 15_000_000_000)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: .chrisMusicPresenceChanged
+        )) { _ in
+            guard tab == 2 else { return }
+            Task { await loadFriends() }
         }
         .sheet(isPresented: $showIconPick) {
             PhotoPicker { img in
@@ -2615,6 +2721,22 @@ struct ListenView: View {
                         .font(pfStyled(size: 12))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(friend.playing == false
+                                  ? Color.secondary.opacity(0.45)
+                                  : OrbitTheme.jade)
+                            .frame(width: 6, height: 6)
+                        Text(friend.playing == false ? Tr("已暂停") : Tr("正在听"))
+                            .font(pfStyled(size: 11.5))
+                            .foregroundStyle(.secondary)
+                        if (friend.duration ?? 0) > 0 {
+                            ProgressView(value: friend.liveProgress)
+                                .progressViewStyle(.linear)
+                                .tint(OrbitTheme.jade)
+                                .frame(maxWidth: 92)
+                        }
+                    }
                 }
 
                 Spacer(minLength: 6)

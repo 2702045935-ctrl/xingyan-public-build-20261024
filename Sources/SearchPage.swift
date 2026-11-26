@@ -265,15 +265,15 @@ struct SearchPage: View {
     }
 
     private var xhsCanvas: Color {
-        Color.dyn(0xFFFFFF, 0x0B141A)
+        Color.dyn(0xFFFFFF, 0x191919)
     }
 
     private var xhsCard: Color {
-        Color.dyn(0xFFFFFF, 0x111B21)
+        Color.dyn(0xFFFFFF, 0x1C1C1E)
     }
 
     private var xhsField: Color {
-        Color.dyn(0xF0F2F5, 0x202C33)
+        Color.dyn(0xF0F2F5, 0x242426)
     }
 
     private var xhsRed: Color {
@@ -1562,6 +1562,7 @@ struct SearchPage: View {
     private func openChat(id: String,
                           peerId: String? = nil,
                           isGroup: Bool = false) {
+        recordSearchHit(scope: isGroup ? "groups" : "messages", targetId: id)
         if let chat = app.chats.first(where: { $0.id == id }) {
             finishOpenChat(chat)
             return
@@ -1599,6 +1600,7 @@ struct SearchPage: View {
     }
 
     private func openUser(_ user: User) {
+        recordSearchHit(scope: "people", targetId: user.id)
         if let onOpenUser {
             onOpenUser(user)
             dismiss()
@@ -1606,6 +1608,20 @@ struct SearchPage: View {
             focused = false
             pickedUser = user
         }
+    }
+
+    private func recordSearchHit(scope: String, targetId: String) {
+        let query = key
+        guard !query.isEmpty, !targetId.isEmpty else { return }
+        let event: [String: Any] = [
+            "eventId": UUID().uuidString,
+            "type": "click",
+            "scope": scope,
+            "targetId": targetId,
+            "query": query,
+            "at": ISO8601DateFormatter().string(from: Date())
+        ]
+        Task { await API.shared.searchEvents([event]) }
     }
 
     private func scheduleRemoteSearch() {

@@ -22,15 +22,24 @@ final class AppState: ObservableObject {
     private var locallyHiddenAt: [String: Date] = [:]
     private var locallyHiddenLastMessage: [String: String] = [:]
     private var locallyHiddenLastMessageAt: [String: Date] = [:]
+    private var locallyHiddenUnread: [String: Int] = [:]
     /// 刚读过的会话会短暂挡住分片旧快照，避免服务端尚未追上阅读游标时红点闪回。
     private var locallyReadAt: [String: Date] = [:]
     private var suspiciousChatDropCount = 0
+    private var chatSnapshotGeneration = 0
 
     init() {
-
+        Realtime.shared.setChatEventHandler { [weak self] event in
+            self?.handle(event)
+        }
         let cached = Self.cachedUser()
         if let cached, !cached.id.isEmpty {
             chats = LocalStore.cachedChatList(userId: cached.id)
+            contacts = Self.cachedContacts(userId: cached.id)
+            prefetchContactAvatars(contacts)
+        }
+        if ContactStressFixture.isActive {
+            contacts = ContactStressFixture.contacts
         }
         installMessageStressFixture(myId: cached?.id ?? "")
         applyCachedUIConfig()
@@ -242,11 +251,9 @@ final class AppState: ObservableObject {
 
     @Published var langVersion = 0
 
-    @Published var splashDone = false
-
     @Published var defaultChatBackground = ""
 
-    @Published var toast: String?
+    @Published var toast: AppToastNotice?
 
     @Published var payScan: PayScanInfo?
 
@@ -278,10 +285,27 @@ final class AppState: ObservableObject {
     /// the local snapshot into memory before the destination is pushed, while
     /// the tap pressing the source row is still visible on screen.
     func prepareChatForImmediatePresentation(_ chat: Chat) {
-        guard prefetched[chat.id]?.isEmpty != false else { return }
         let cached = LocalStore.cachedChat(chat.id)
-        if !cached.isEmpty {
-            prefetched[chat.id] = cached
+        rememberChatPageMessages(chat.id, cached)
+    }
+
+    /// Keep the in-memory first-frame page and the durable chat page in sync.
+    /// A sent message can be acknowledged before the delayed disk write, so a
+    /// quick exit/re-entry must merge both sources instead of trusting the old
+    /// in-memory page.
+    func rememberChatPageMessages(_ chatId: String, _ incoming: [Message]) {
+        guard !incoming.isEmpty else { return }
+        var byId: [String: Message] = [:]
+        for message in prefetched[chatId] ?? [] {
+            byId[message.id] = message
+        }
+        for message in incoming {
+            byId[message.id] = message
+        }
+        prefetched[chatId] = byId.values.sorted {
+            let left = ($0.seq ?? 0, $0.createdAt ?? "")
+            let right = ($1.seq ?? 0, $1.createdAt ?? "")
+            return left < right
         }
     }
 
@@ -344,34 +368,31 @@ final class AppState: ObservableObject {
         guard v != appearance else { return }
 
         appearanceTransitionTask?.cancel()
-        guard !UIAccessibility.isReduceMotionEnabled else {
-            appearance = v
-            UserDefaults.standard.set(v, forKey: "chris.appearance")
-            appearanceVeilOpacity = 0
-            return
+        appearanceTransitionTask = nil
+        // Theme switching is a system-level appearance update, not a screen
+        // transition. Every account, sheet and native surface must resolve the
+        // new semantic colors in the same update instead of lagging behind a
+        // timed veil animation.
+        let windowStyle: UIUserInterfaceStyle
+        switch v {
+        case "light":
+            windowStyle = .light
+        case "dark":
+            windowStyle = .dark
+        default:
+            windowStyle = .unspecified
         }
-
-        let brightening = v == "light"
-        withAnimation(.easeOut(duration: 0.16)) {
-            appearanceVeilOpacity = brightening ? 0.16 : 0.12
-        }
-        appearanceTransitionTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 150_000_000)
-            guard let self, !Task.isCancelled else { return }
-            self.appearance = v
-            UserDefaults.standard.set(v, forKey: "chris.appearance")
-
-            // 新主题先落位，再用半秒以上撤掉压暗层，形成由深到浅的提亮。
-            withAnimation(.linear(duration: 0.03)) {
-                self.appearanceVeilOpacity = brightening ? 0.17 : 0.12
+        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+            for window in scene.windows where window.overrideUserInterfaceStyle != windowStyle {
+                // preferredColorScheme propagates through SwiftUI on the next
+                // transaction. Setting the owning window first makes dynamic
+                // UIKit colors and the native chats table change together.
+                window.overrideUserInterfaceStyle = windowStyle
             }
-            try? await Task.sleep(nanoseconds: 40_000_000)
-            guard !Task.isCancelled else { return }
-            withAnimation(.easeInOut(duration: brightening ? 0.54 : 0.42)) {
-                self.appearanceVeilOpacity = 0
-            }
-            self.appearanceTransitionTask = nil
         }
+        appearance = v
+        UserDefaults.standard.set(v, forKey: "chris.appearance")
+        appearanceVeilOpacity = 0
     }
 
     func withSoftChatTransition(_ action: @escaping () -> Void) {
@@ -415,6 +436,20 @@ final class AppState: ObservableObject {
         }
     }
 
+    @discardableResult
+    private func beginChatSnapshot() -> Int {
+        chatSnapshotGeneration &+= 1
+        return chatSnapshotGeneration
+    }
+
+    private func invalidateChatSnapshots() {
+        chatSnapshotGeneration &+= 1
+    }
+
+    private func acceptsChatSnapshot(_ generation: Int) -> Bool {
+        generation == chatSnapshotGeneration
+    }
+
     /// 切号时先清掉账号作用域的数据和旧任务，避免旧账号响应落到新账号界面。
     private func beginAccountTransition() {
         accountEpoch += 1
@@ -431,6 +466,7 @@ final class AppState: ObservableObject {
         locallyHiddenAt.removeAll()
         locallyHiddenLastMessage.removeAll()
         locallyHiddenLastMessageAt.removeAll()
+        locallyHiddenUnread.removeAll()
         suspiciousChatDropCount = 0
         prefetched.removeAll()
         chats = []
@@ -486,6 +522,9 @@ final class AppState: ObservableObject {
             show("系统公告：" + ev.announce)
         }
         if let n = ev.momentUnread { momentsUnread = n }
+        if let n = ev.momentUnreadDelta {
+            momentsUnread = max(0, momentsUnread + n)
+        }
         if let n = ev.momentNoticeUnread { momentNoticeUnread = n }
         if let n = ev.friendRequests {
 
@@ -499,45 +538,17 @@ final class AppState: ObservableObject {
                 hideChatLocally(ev.chatId)
             }
 
-            if let incoming = ev.chat {
-                if isDismissedGroup(incoming) {
-                    hideChatLocally(incoming.id)
-                    coalesce { [weak self] in await self?.loadChats() }
-                    return
-                }
-                applyRealtimeChat(incoming)
-                if let message = ev.message {
-                    collectAdminSticker(from: message)
-                    ensureIncomingUnread(message, chatId: ev.chatId)
-                    applyRealtimeMessage(message, chatId: ev.chatId, countUnread: false)
-                }
-            } else if let message = ev.message {
+            if let message = ev.message {
                 collectAdminSticker(from: message)
-                applyRealtimeMessage(message, chatId: ev.chatId)
             }
-            let cid = ev.chatId
-            coalesce { [weak self] in
-                await self?.loadChats()
-                guard let self = self else { return }
-                if !cid.isEmpty, let c = self.chats.first(where: { $0.id == cid }) {
-                    if c.muted == true { return }
-
-                    let mid = c.lastMessage?.id ?? ""
-                    guard LocalNotify.shouldNotify(chatId: c.id, msgId: mid,
-                                                   at: c.lastMessage?.createdAt) else { return }
-                    let isGroup = c.type == "group" || (c.memberCount ?? 0) > 2
-                    let sender = (c.lastMessage?.senderName ?? "")
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                    LocalNotify.incoming(title: c.name,
-                                         body: c.lastMessage?.preview ?? "你收到一条新消息",
-                                         chatId: c.id,
-                                         msgId: mid,
-                                         badge: unreadForIcon,
-                                         count: max(1, c.unreadCount),
-                                         isGroup: isGroup,
-                                         sender: sender)
-                } else {
-                    LocalNotify.incoming(title: "新消息", body: "你收到一条新消息", badge: unreadForIcon)
+            let applied = applyRealtimeDelivery(
+                chat: ev.chat,
+                message: ev.message,
+                chatId: ev.chatId
+            )
+            if !applied {
+                coalesce { [weak self] in
+                    await self?.loadChats()
                 }
             }
         case "transfer":
@@ -631,12 +642,49 @@ final class AppState: ObservableObject {
             coalesce { [weak self] in
                 await self?.refreshUI(force: true)
                 await self?.loadChats()
+                await self?.refreshDotCounts()
                 await self?.syncRecentMessages(chatCount: 20, limit: 50)
                 await self?.syncDeviceChats()
                 await self?.syncMessageEvents()
             }
         default:
             break
+        }
+    }
+
+    private func reconcileIncomingNotification(previous: Chat?,
+                                               current: Chat?,
+                                               allowNewChat: Bool) {
+        guard ChatUnreadKernel.shouldNotify(
+            previous: previous,
+            current: current,
+            openChatId: openChat?.id,
+            allowNewChat: allowNewChat
+        ) else { return }
+        notifyIncomingRow(current)
+    }
+
+    private func notifyIncomingRow(_ c: Chat?) {
+        if let c {
+            if c.muted == true { return }
+            let mid = c.lastMessage?.id ?? ""
+            guard LocalNotify.shouldNotify(chatId: c.id, msgId: mid,
+                                           at: c.lastMessage?.createdAt) else { return }
+            let isGroup = c.type == "group" || (c.memberCount ?? 0) > 2
+            let sender = (c.lastMessage?.senderName ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            LocalNotify.incoming(title: c.name,
+                                 body: c.lastMessage?.preview ?? "你收到一条新消息",
+                                 chatId: c.id,
+                                 msgId: mid,
+                                 badge: unreadForIcon,
+                                 count: max(1, c.unreadCount),
+                                 isGroup: isGroup,
+                                 sender: sender)
+        } else {
+            LocalNotify.incoming(title: "新消息",
+                                 body: "你收到一条新消息",
+                                 badge: unreadForIcon)
         }
     }
 
@@ -718,11 +766,20 @@ final class AppState: ObservableObject {
     private var toastTask: Task<Void, Never>?
 
     func show(_ text: String) {
-        toast = text
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let notice = AppToastNotice(text: trimmed)
+        // Commit the visual state immediately. The task only removes the toast
+        // after it has been readable; it never delays first presentation.
+        toast = notice
         toastTask?.cancel()
-        toastTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 1_900_000_000)
-            if !Task.isCancelled { self?.toast = nil }
+        toastTask = Task { @MainActor [weak self] in
+            UIAccessibility.post(notification: .announcement, argument: trimmed)
+            try? await Task.sleep(
+                nanoseconds: UInt64(notice.duration * 1_000_000_000)
+            )
+            guard !Task.isCancelled, self?.toast?.id == notice.id else { return }
+            self?.toast = nil
         }
     }
 
@@ -811,6 +868,27 @@ final class AppState: ObservableObject {
         return try? JSONDecoder().decode(User.self, from: d)
     }
 
+    private static func contactsCacheKey(userId: String) -> String {
+        "chris.contactsJSON." + userId
+    }
+
+    private static func cachedContacts(userId: String) -> [User] {
+        guard !userId.isEmpty,
+              let data = UserDefaults.standard.data(
+                  forKey: contactsCacheKey(userId: userId)
+              ) else { return [] }
+        return (try? JSONDecoder().decode([User].self, from: data)) ?? []
+    }
+
+    private static func saveCachedContacts(_ rows: [User], userId: String?) {
+        guard let userId, !userId.isEmpty else { return }
+        guard let data = try? JSONEncoder().encode(rows) else { return }
+        UserDefaults.standard.set(
+            data,
+            forKey: contactsCacheKey(userId: userId)
+        )
+    }
+
     func refreshUI(force: Bool = false) async {
         let cfg = await API.shared.uiConfig()
 
@@ -893,6 +971,7 @@ final class AppState: ObservableObject {
         let user = try await API.shared.login(username: username, password: password, sliderTicket: "")
         beginAccountTransition()
         me = user
+        restoreCachedAccountSnapshot(for: user)
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -903,6 +982,7 @@ final class AppState: ObservableObject {
         let user = try await API.shared.login(username: username, password: password, sliderTicket: sliderTicket)
         beginAccountTransition()
         me = user
+        restoreCachedAccountSnapshot(for: user)
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -912,6 +992,7 @@ final class AppState: ObservableObject {
     func adoptRegistered(_ user: User) async {
         beginAccountTransition()
         me = user
+        restoreCachedAccountSnapshot(for: user)
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -930,6 +1011,7 @@ final class AppState: ObservableObject {
         let user = try await API.shared.loginPhone(phone: phone, code: code, register: register)
         beginAccountTransition()
         me = user
+        restoreCachedAccountSnapshot(for: user)
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -939,6 +1021,7 @@ final class AppState: ObservableObject {
     func finishLogin(_ user: User) async {
         beginAccountTransition()
         me = user
+        restoreCachedAccountSnapshot(for: user)
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -954,6 +1037,24 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// 登录后先恢复当前账号自己的本机快照，再让 refreshAll 网络校准。
+    /// 不能等首包回来才把会话和联系人铺上，否则首登会短暂显示空页面。
+    private func restoreCachedAccountSnapshot(for user: User) {
+        let cachedChats = LocalStore.cachedChatList(userId: user.id)
+        if !cachedChats.isEmpty {
+            chats = cachedChats
+        }
+        let cachedContacts = Self.cachedContacts(userId: user.id)
+        if !cachedContacts.isEmpty {
+            contacts = cachedContacts
+            prefetchContactAvatars(cachedContacts)
+        }
+    }
+
+    private func prefetchContactAvatars(_ rows: [User]) {
+        ImageStore.shared.prefetchAvatars(rows.prefix(64).map(\.avatarPath))
+    }
+
     private var didInitialBoot = false
     private var dotTask: Task<Void, Never>?
     func startDotWatch() {
@@ -961,7 +1062,11 @@ final class AppState: ObservableObject {
         dotTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refreshDotCounts()
-                try? await Task.sleep(nanoseconds: 12_000_000_000)
+                let active = UIApplication.shared.applicationState == .active
+                let delay = active
+                    ? ChatUnreadKernel.foregroundRecoveryDelay
+                    : ChatUnreadKernel.backgroundRecoveryDelay
+                try? await Task.sleep(nanoseconds: delay)
             }
         }
     }
@@ -969,13 +1074,20 @@ final class AppState: ObservableObject {
         let epoch = accountEpoch
         guard isCurrentAccount(epoch), let d = await API.shared.badgeCounts() else { return }
         guard isCurrentAccount(epoch) else { return }
+        let previousById = Dictionary(
+            chats.map { ($0.id, $0) },
+            uniquingKeysWith: { _, latest in latest }
+        )
         if d.friendRequests != friendRequests {
             friendRequests = d.friendRequests
             await loadContacts()
         }
         if d.momentUnread != momentsUnread { momentsUnread = d.momentUnread }
         if !d.recentChats.isEmpty {
-            let serverRows = Dictionary(uniqueKeysWithValues: d.recentChats.map { ($0.id, $0) })
+            let serverRows = Dictionary(
+                d.recentChats.map { ($0.id, $0) },
+                uniquingKeysWith: { _, latest in latest }
+            )
             let recent = mergeServerChats(d.recentChats).map { row -> Chat in
                 guard let server = serverRows[row.id],
                       let localMessageId = row.lastMessage?.id,
@@ -1000,6 +1112,13 @@ final class AppState: ObservableObject {
             let merged = applyLocalRemarksToChats(orderedChatsForList(combined))
             if !AppState.sameChats(chats, merged) {
                 chats = merged
+            }
+            for row in merged where serverRows[row.id] != nil {
+                reconcileIncomingNotification(
+                    previous: previousById[row.id],
+                    current: row,
+                    allowNewChat: true
+                )
             }
         }
         authoritativeUnreadTotal = d.unreadTotal
@@ -1066,6 +1185,7 @@ final class AppState: ObservableObject {
 
     private func loadHomeDataParallel() async {
         let epoch = accountEpoch
+        let chatGeneration = beginChatSnapshot()
         loadingChats = true
         async let meRequest = API.shared.me()
         async let chatsRequest = API.shared.chats()
@@ -1080,20 +1200,25 @@ final class AppState: ObservableObject {
         do {
             let fresh = try await chatsRequest
             guard isCurrentAccount(epoch) else { return }
-            let merged = mergeServerChats(fresh)
-            if !AppState.sameChats(chats, merged) { chats = merged }
-            loadError = nil
+            if acceptsChatSnapshot(chatGeneration) {
+                let merged = mergeServerChats(fresh)
+                if !AppState.sameChats(chats, merged) { chats = merged }
+                loadError = nil
+            }
         } catch {
             loadError = nil
         }
 
         if let r = try? await contactsRequest {
             guard isCurrentAccount(epoch) else { return }
+            guard !ContactStressFixture.isActive else { return }
             let friends = applyLocalRemarksToContacts(r.friends)
+            Self.saveCachedContacts(friends, userId: me?.id)
             let sameOrder = contacts.map { $0.id } == friends.map { $0.id }
             let sameLook = contacts.count == friends.count
                 && zip(contacts, friends).allSatisfy { $0.avatarPath == $1.avatarPath && $0.name == $1.name }
             if !(sameOrder && sameLook) { contacts = friends }
+            prefetchContactAvatars(friends)
             friendRequests = r.incoming.count
         }
 
@@ -1128,6 +1253,7 @@ final class AppState: ObservableObject {
     func syncRecentMessages(chatCount: Int = 20, limit: Int = 50) async {
         guard !syncInFlight else { return }
         let epoch = accountEpoch
+        let chatGeneration = beginChatSnapshot()
         guard isCurrentAccount(epoch) else { return }
         syncInFlight = true
         let showHint = !UserDefaults.standard.bool(forKey: syncHintKey)
@@ -1151,12 +1277,13 @@ final class AppState: ObservableObject {
         do {
             let r = try await API.shared.chatsWithRecentMessages(chats: chatCount, limit: limit)
             guard isCurrentAccount(epoch) else { return }
+            guard acceptsChatSnapshot(chatGeneration) else { return }
             let merged = mergeServerChats(r.chats)
             if !AppState.sameChats(chats, merged) { chats = merged }
             var total = 0
             for c in r.synced {
                 if let msgs = c.messages, !msgs.isEmpty {
-                    prefetched[c.id] = msgs
+                    rememberChatPageMessages(c.id, msgs)
                     total += msgs.count
                 }
             }
@@ -1235,7 +1362,13 @@ final class AppState: ObservableObject {
 
                     if let latestChat,
                        let index = chats.firstIndex(where: { $0.id == latestChat.id }) {
-                        chats[index] = mergeServerChat(latestChat, local: chats[index])
+                        let previousRow = chats[index]
+                        chats[index] = mergeServerChat(latestChat, local: previousRow)
+                        reconcileIncomingNotification(
+                            previous: previousRow,
+                            current: chats[index],
+                            allowNewChat: false
+                        )
                     }
 
                     guard reachedTip, !fetched.isEmpty else { continue }
@@ -1304,6 +1437,14 @@ final class AppState: ObservableObject {
                     case "chat.read":
                         guard payload.userId == userId else { continue }
                         markChatReadLocally(chatId)
+                    case "chat.removed":
+                        guard payload.ownerId == userId else { continue }
+                        hideChatLocally(chatId)
+                    case "friend.removed":
+                        guard payload.ownerId == userId,
+                              let removedId = payload.targetId,
+                              !removedId.isEmpty else { continue }
+                        applyFriendRemoved(userId: removedId)
                     default:
                         break
                     }
@@ -1321,6 +1462,11 @@ final class AppState: ObservableObject {
 
     func loadChats() async {
         let epoch = accountEpoch
+        let previousById = Dictionary(
+            chats.map { ($0.id, $0) },
+            uniquingKeysWith: { _, latest in latest }
+        )
+        let chatGeneration = beginChatSnapshot()
         let showInitialLoading = chats.isEmpty && !loadingChats
         if showInitialLoading { loadingChats = true }
         defer {
@@ -1331,6 +1477,7 @@ final class AppState: ObservableObject {
         do {
             let fresh = try await API.shared.chats()
             guard let userId = me?.id, !userId.isEmpty, isCurrentAccount(epoch) else { return }
+            guard acceptsChatSnapshot(chatGeneration) else { return }
             let merged = mergeServerChats(fresh)
             let suspiciousDrop = !chats.isEmpty
                 && (merged.isEmpty || merged.count < max(1, chats.count / 2))
@@ -1348,6 +1495,13 @@ final class AppState: ObservableObject {
             if !AppState.sameChats(chats, merged) { chats = merged }
             LocalStore.saveChatList(chats, userId: userId)
             prefetchChatAvatars(merged)
+            for row in merged {
+                reconcileIncomingNotification(
+                    previous: previousById[row.id],
+                    current: row,
+                    allowNewChat: false
+                )
+            }
             loadError = nil
         } catch {
             loadError = nil
@@ -1453,7 +1607,8 @@ final class AppState: ObservableObject {
             if let stamp,
                now.timeIntervalSince(stamp) >= 2,
                !(server.lastMessage?.id ?? "").isEmpty,
-               server.lastMessage?.id == local.lastMessage?.id {
+               server.lastMessage?.id == local.lastMessage?.id,
+               !hasUnresolvedMention(server: server, local: local) {
                 optimisticChats[server.id] = nil
                 optimisticAt[server.id] = nil
                 out = mergeServerChat(server, local: local)
@@ -1536,9 +1691,13 @@ final class AppState: ObservableObject {
                 // 撤回请求成功后，会话快照仍可能短暂返回同一条消息的旧正文。
                 // 已撤回摘要必须压住旧快照，直到服务端追上或出现新的末条消息。
                 out.lastMessage = localLast
-            } else if (server.lastMessage?.preview ?? "").isEmpty,
-                      !(localLast.preview ?? "").isEmpty {
-                out.lastMessage = localLast
+            } else if let serverLast = server.lastMessage {
+                out.lastMessage = mergeSameMessageSummary(
+                    server: serverLast,
+                    local: localLast,
+                    serverUnread: server.unreadCount,
+                    localUnread: local.unreadCount
+                )
             }
         } else if !serverNewer {
             out.lastMessage = localLast
@@ -1553,12 +1712,51 @@ final class AppState: ObservableObject {
         return out
     }
 
+    /// 同一末条消息下，服务端偶尔先返回没有 mention 标记的旧摘要。
+    /// 在服务端追上未读状态前，本地 `@` 只能升级不能降级。
+    private func mergeSameMessageSummary(server: LastMessage,
+                                         local: LastMessage,
+                                         serverUnread: Int,
+                                         localUnread: Int) -> LastMessage {
+        var out = server
+        if (out.id ?? "").isEmpty { out.id = local.id }
+        if (out.preview ?? "").isEmpty { out.preview = local.preview }
+        if (out.senderId ?? "").isEmpty { out.senderId = local.senderId }
+        if (out.senderName ?? "").isEmpty { out.senderName = local.senderName }
+        if (out.kind ?? "").isEmpty { out.kind = local.kind }
+        if (out.createdAt ?? "").isEmpty { out.createdAt = local.createdAt }
+
+        let serverMentioned = serverUnread > 0 && out.mentionMe == true
+        let localMentioned = localUnread > 0 && local.mentionMe == true
+        if serverUnread == 0 {
+            out.mentionMe = false
+        } else if localMentioned && !serverMentioned {
+            out.mentionMe = true
+        }
+        return out
+    }
+
+    private func hasPendingMention(_ chat: Chat) -> Bool {
+        chat.unreadCount > 0 && chat.lastMessage?.mentionMe == true
+    }
+
+    private func hasUnresolvedMention(server: Chat, local: Chat) -> Bool {
+        guard !(server.lastMessage?.id ?? "").isEmpty,
+              server.lastMessage?.id == local.lastMessage?.id else { return false }
+        return hasPendingMention(local)
+            && server.unreadCount > 0
+            && !hasPendingMention(server)
+    }
+
     private func serverCaughtUp(_ server: Chat, local: Chat) -> Bool {
         guard let serverLast = server.lastMessage,
               let localLast = local.lastMessage else {
             return local.lastMessage == nil
         }
         if serverLast.id == localLast.id {
+            if hasUnresolvedMention(server: server, local: local) {
+                return false
+            }
             if recallSummary(localLast), !recallSummary(serverLast) {
                 return false
             }
@@ -1599,6 +1797,7 @@ final class AppState: ObservableObject {
     }
 
     func markChatReadLocally(_ chatId: String) {
+        invalidateChatSnapshots()
         optimisticChats[chatId] = nil
         optimisticAt[chatId] = nil
         locallyReadAt[chatId] = Date()
@@ -1636,6 +1835,7 @@ final class AppState: ObservableObject {
     }
 
     func setChatUnreadLocally(_ chatId: String, unread: Int?, flagged: Bool?) {
+        invalidateChatSnapshots()
         guard let index = chats.firstIndex(where: { $0.id == chatId }) else { return }
         let before = chats[index]
         if (unread ?? 0) > 0 || flagged == true {
@@ -1654,6 +1854,7 @@ final class AppState: ObservableObject {
 
     func applyRecallSummaryLocally(_ chatId: String, messageId: String) {
         guard !chatId.isEmpty, !messageId.isEmpty else { return }
+        invalidateChatSnapshots()
         prefetched[chatId] = nil
         optimisticChats[chatId] = nil
         optimisticAt[chatId] = nil
@@ -1680,6 +1881,7 @@ final class AppState: ObservableObject {
     }
 
     func hideChatLocally(_ chatId: String) {
+        invalidateChatSnapshots()
         let hidden = chats.first(where: { $0.id == chatId })
         locallyHiddenChats.insert(chatId)
         locallyHiddenAt[chatId] = Date()
@@ -1687,6 +1889,9 @@ final class AppState: ObservableObject {
         locallyHiddenLastMessageAt[chatId] = TimeFmt.date(
             hidden?.lastMessage?.createdAt ?? hidden?.updatedAt ?? ""
         )
+        locallyHiddenUnread[chatId] = hidden?.muted == true
+            ? 0
+            : max(0, hidden?.unreadCount ?? 0)
         optimisticChats[chatId] = nil
         optimisticAt[chatId] = nil
         chats.removeAll { $0.id == chatId }
@@ -1699,6 +1904,7 @@ final class AppState: ObservableObject {
         locallyHiddenAt.removeValue(forKey: chatId)
         locallyHiddenLastMessage.removeValue(forKey: chatId)
         locallyHiddenLastMessageAt.removeValue(forKey: chatId)
+        locallyHiddenUnread.removeValue(forKey: chatId)
     }
 
     private func hiddenChatHasNewerActivity(_ chat: Chat) -> Bool {
@@ -1720,6 +1926,7 @@ final class AppState: ObservableObject {
     /// 先在本地补上会话，列表才不会短暂或长期漏掉新聊天。
     func ensureChatVisible(_ chat: Chat, latest: Message? = nil) {
         guard let myId = me?.id, !myId.isEmpty else { return }
+        invalidateChatSnapshots()
         guard !isDismissedGroup(chat) else {
             hideChatLocally(chat.id)
             return
@@ -1731,21 +1938,38 @@ final class AppState: ObservableObject {
         locallyHiddenAt.removeValue(forKey: chat.id)
         locallyHiddenLastMessage.removeValue(forKey: chat.id)
         locallyHiddenLastMessageAt.removeValue(forKey: chat.id)
+        locallyHiddenUnread.removeValue(forKey: chat.id)
         let before = chats.first(where: { $0.id == chat.id })
         var row = before ?? chat
+        var advancedSummary = false
         if let latest {
-            row.lastMessage = LastMessage(
-                id: latest.id,
-                senderId: latest.senderId,
-                senderName: latest.senderName,
-                kind: latest.kind,
-                preview: previewText(for: latest),
-                createdAt: latest.createdAt,
-                mentionMe: false
-            )
-            row.updatedAt = latest.createdAt ?? row.updatedAt
+            let candidateAt = latest.createdAt ?? ""
+            let currentAt = row.lastMessage?.createdAt ?? ""
+            let isSameMessage = row.lastMessage?.id == latest.id
+            let shouldAdvance = row.lastMessage == nil
+                || candidateAt > currentAt
+                || (candidateAt == currentAt && !isSameMessage)
+            if shouldAdvance {
+                row.lastMessage = LastMessage(
+                    id: latest.id,
+                    senderId: latest.senderId,
+                    senderName: latest.senderName,
+                    kind: latest.kind,
+                    preview: previewText(for: latest),
+                    createdAt: latest.createdAt,
+                    mentionMe: false
+                )
+                row.updatedAt = latest.createdAt ?? row.updatedAt
+                advancedSummary = true
+            }
         }
         row.unread = 0
+        if advancedSummary {
+            // A pending preview was written on tap. Only a non-regressing
+            // candidate may replace that optimistic list row.
+            optimisticChats[chat.id] = row
+            optimisticAt[chat.id] = Date()
+        }
         if let index = chats.firstIndex(where: { $0.id == chat.id }) {
             chats[index] = row
         } else {
@@ -1757,6 +1981,30 @@ final class AppState: ObservableObject {
             LocalStore.saveChatList(chats, userId: userId)
         }
         syncIconBadge()
+    }
+
+    /// The composer shows its pending bubble immediately. Mirror that same
+    /// pending row into the conversation list so backing out before the send
+    /// acknowledgement cannot leave the previous message in the list preview.
+    func previewOutgoingMessage(_ chat: Chat,
+                                clientId: String,
+                                kind: String,
+                                content: String,
+                                mentions: [String] = []) {
+        guard let myId = me?.id, !myId.isEmpty else { return }
+        let now = TimeFmt.isoFrac.string(from: Date())
+        let pending = Message(
+            id: "pending-" + clientId,
+            clientId: clientId,
+            chatId: chat.id,
+            senderId: myId,
+            kind: kind,
+            content: content,
+            createdAt: now,
+            senderName: me?.name,
+            mentions: mentions
+        )
+        ensureChatVisible(chat, latest: pending)
     }
 
     func noteFriendRequestSent(_ user: User, note: String) {
@@ -1907,6 +2155,7 @@ final class AppState: ObservableObject {
         guard var me = me else { return }
         func text(_ key: String) -> String? { fields[key] as? String }
         let now = Date()
+        var changed = false
         for key in ["nickname", "bio", "region", "gender", "birthday",
                     "patText", "phone", "username", "avatar", "momentCover",
                     "chatBackground"] {
@@ -1914,17 +2163,51 @@ final class AppState: ObservableObject {
                 localProfileOverrides[key] = (value, now)
             }
         }
-        if let value = text("nickname") { me.nickname = value }
-        if let value = text("bio") { me.bio = value }
-        if let value = text("region") { me.region = value }
-        if let value = text("gender") { me.gender = value }
-        if let value = text("birthday") { me.birthday = value }
-        if let value = text("patText") { me.patText = value }
-        if let value = text("phone") { me.phone = value }
-        if let value = text("username") { me.username = value }
-        if let value = text("avatar") { me.avatar = value }
-        if let value = text("momentCover") { me.momentCover = value }
-        if let value = text("chatBackground") { me.chatBackground = value }
+        if let value = text("nickname"), me.nickname != value {
+            me.nickname = value
+            changed = true
+        }
+        if let value = text("bio"), me.bio != value {
+            me.bio = value
+            changed = true
+        }
+        if let value = text("region"), me.region != value {
+            me.region = value
+            changed = true
+        }
+        if let value = text("gender"), me.gender != value {
+            me.gender = value
+            changed = true
+        }
+        if let value = text("birthday"), me.birthday != value {
+            me.birthday = value
+            changed = true
+        }
+        if let value = text("patText"), me.patText != value {
+            me.patText = value
+            changed = true
+        }
+        if let value = text("phone"), me.phone != value {
+            me.phone = value
+            changed = true
+        }
+        if let value = text("username"), me.username != value {
+            me.username = value
+            changed = true
+        }
+        if let value = text("avatar"), me.avatar != value {
+            me.avatar = value
+            changed = true
+        }
+        if let value = text("momentCover"), me.momentCover != value {
+            me.momentCover = value
+            changed = true
+        }
+        if let value = text("chatBackground"), me.chatBackground != value {
+            me.chatBackground = value
+            changed = true
+        }
+        guard changed else { return }
         self.me = me
         rememberLastUser()
     }
@@ -2000,104 +2283,114 @@ final class AppState: ObservableObject {
         return out
     }
 
-    /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。
-    private func applyRealtimeChat(_ incoming: Chat) {
-        guard !isDismissedGroup(incoming) else {
-            hideChatLocally(incoming.id)
-            return
+    /// One atomic reducer for every realtime conversation delivery.
+    @discardableResult
+    private func applyRealtimeDelivery(chat incomingChat: Chat?,
+                                       message: Message?,
+                                       chatId: String) -> Bool {
+        invalidateChatSnapshots()
+        let ids = [incomingChat?.id ?? "", message?.chatId ?? "", chatId]
+        guard let id = ids.first(where: { !$0.isEmpty }) else { return false }
+        if let incomingChat, isDismissedGroup(incomingChat) {
+            hideChatLocally(incomingChat.id)
+            return true
         }
-        if locallyHiddenChats.contains(incoming.id),
-           !hiddenChatHasNewerActivity(incoming) {
-            return
-        }
-        locallyHiddenChats.remove(incoming.id)
-        locallyHiddenAt.removeValue(forKey: incoming.id)
-        locallyHiddenLastMessage.removeValue(forKey: incoming.id)
-        locallyHiddenLastMessageAt.removeValue(forKey: incoming.id)
+
         var rows = chats
-        let previous = rows.first(where: { $0.id == incoming.id })
-        var updated = incoming
-        if let index = rows.firstIndex(where: { $0.id == incoming.id }) {
-            let current = rows[index]
-            let currentMid = current.lastMessage?.id ?? ""
-            let incomingMid = incoming.lastMessage?.id ?? ""
-            var merged = incoming
-            if let sender = incoming.lastMessage?.senderId, sender != me?.id,
-               !incomingMid.isEmpty, incomingMid != currentMid,
-               incoming.unreadCount <= current.unreadCount {
-                merged.unread = current.unreadCount + 1
-            } else {
-                merged.unread = max(current.unreadCount, incoming.unreadCount)
-            }
-            rows[index] = merged
-            updated = merged
-            if let sender = incoming.lastMessage?.senderId, sender != me?.id {
-                optimisticChats[incoming.id] = merged
-                optimisticAt[incoming.id] = Date()
-            }
+        let previous = rows.first(where: { $0.id == id })
+        if let incomingChat,
+           locallyHiddenChats.contains(id),
+           !hiddenChatHasNewerActivity(incomingChat) {
+            return true
+        }
+        guard previous != nil || incomingChat != nil else { return false }
+
+        locallyHiddenChats.remove(id)
+        locallyHiddenAt.removeValue(forKey: id)
+        locallyHiddenLastMessage.removeValue(forKey: id)
+        locallyHiddenLastMessageAt.removeValue(forKey: id)
+        locallyHiddenUnread.removeValue(forKey: id)
+
+        var row: Chat
+        if let incomingChat {
+            row = previous.map { mergeServerChat(incomingChat, local: $0) } ?? incomingChat
+            row.unread = ChatUnreadKernel.realtimeUnread(
+                current: previous?.unreadCount ?? 0,
+                incoming: incomingChat.unreadCount,
+                previousMessageId: previous?.lastMessage?.id ?? "",
+                newMessageId: incomingChat.lastMessage?.id ?? "",
+                senderIsMe: incomingChat.lastMessage?.senderId == me?.id,
+                openChatId: openChat?.id,
+                chatId: id
+            )
+        } else if let previous {
+            row = previous
         } else {
-            rows.insert(incoming, at: 0)
-            if let sender = incoming.lastMessage?.senderId, sender != me?.id {
-                optimisticChats[incoming.id] = incoming
-                optimisticAt[incoming.id] = Date()
+            return false
+        }
+
+        if let message {
+            let sameMessage = row.lastMessage?.id == message.id
+            let incomingAt = TimeFmt.date(message.createdAt)
+            let currentAt = TimeFmt.date(row.lastMessage?.createdAt ?? "")
+            let advances: Bool
+            if row.lastMessage == nil || sameMessage {
+                advances = true
+            } else if let incomingAt, let currentAt {
+                advances = incomingAt >= currentAt
+            } else {
+                advances = true
+            }
+            if advances {
+                var preview = Self.realtimePreview(message)
+                if row.type == "group", message.senderId != me?.id,
+                   let sender = message.senderName,
+                   !sender.isEmpty, !preview.isEmpty {
+                    preview = sender + "：" + preview
+                }
+                if incomingChat == nil {
+                    row.unread = ChatUnreadKernel.unreadAfterReceivingMessage(
+                        current: row.unreadCount,
+                        isNewMessage: !sameMessage,
+                        senderIsMe: message.senderId == me?.id,
+                        openChatId: openChat?.id,
+                        chatId: id
+                    )
+                }
+                row.lastMessage = LastMessage(
+                    id: message.id,
+                    senderId: message.senderId,
+                    senderName: message.senderName,
+                    kind: message.kindName,
+                    preview: preview,
+                    createdAt: message.createdAt,
+                    mentionMe: message.mentionsUser(me?.id ?? "")
+                        || (row.unreadCount > 0
+                            && previous?.lastMessage?.mentionMe == true)
+                )
+                row.updatedAt = message.createdAt ?? row.updatedAt
             }
         }
+
+        if openChat?.id == id { row.flagged = false }
+        if let index = rows.firstIndex(where: { $0.id == id }) {
+            rows[index] = row
+        } else {
+            rows.insert(row, at: 0)
+        }
         chats = orderedChatsForList(rows)
-        adjustAuthoritativeUnread(from: previous, to: updated)
-        syncIconBadge()
-    }
-
-    /// 兼容只带 message、没有 chat 摘要的实时事件。
-    private func ensureIncomingUnread(_ message: Message, chatId: String) {
-        guard message.senderId != me?.id else { return }
-        let ids = [message.chatId ?? "", chatId]
-        guard let id = ids.first(where: { !$0.isEmpty }),
-              let index = chats.firstIndex(where: { $0.id == id }),
-              chats[index].lastMessage?.id == message.id,
-              chats[index].unreadCount == 0 else { return }
-        let before = chats[index]
-        chats[index].unread = 1
-        adjustAuthoritativeUnread(from: before, to: chats[index])
-        if var optimistic = optimisticChats[id],
-           optimistic.lastMessage?.id == message.id {
-            optimistic.unread = 1
-            optimisticChats[id] = optimistic
+        adjustAuthoritativeUnread(from: previous, to: row)
+        if row.lastMessage?.senderId != me?.id {
+            optimisticChats[id] = row
+            optimisticAt[id] = Date()
         }
         syncIconBadge()
-    }
-
-    private func applyRealtimeMessage(_ message: Message, chatId: String,
-                                      countUnread: Bool = true) {
-        let ids = [message.chatId ?? "", chatId]
-        guard let id = ids.first(where: { !$0.isEmpty }),
-              let index = chats.firstIndex(where: { $0.id == id }) else { return }
-        let before = chats[index]
-        var row = before
-        if countUnread, row.lastMessage?.id != message.id, message.senderId != me?.id {
-            row.unread = row.unreadCount + 1
-        }
-        var preview = Self.realtimePreview(message)
-        if row.type == "group", message.senderId != me?.id,
-           let sender = message.senderName, !sender.isEmpty, !preview.isEmpty {
-            preview = sender + "：" + preview
-        }
-        row.lastMessage = LastMessage(
-            id: message.id,
-            senderId: message.senderId,
-            senderName: message.senderName,
-            kind: message.kindName,
-            preview: preview,
-            createdAt: message.createdAt,
-            mentionMe: message.mentionsUser(me?.id ?? "")
+        reconcileIncomingNotification(
+            previous: previous,
+            current: row,
+            allowNewChat: true
         )
-        row.updatedAt = message.createdAt ?? row.updatedAt
-        var rows = chats
-        rows[index] = row
-        chats = orderedChatsForList(rows)
-        adjustAuthoritativeUnread(from: before, to: row)
-        optimisticChats[id] = row
-        optimisticAt[id] = Date()
-        syncIconBadge()
+        return true
     }
 
     private static func realtimePreview(_ message: Message) -> String {
@@ -2184,6 +2477,7 @@ final class AppState: ObservableObject {
     /// 清空聊天记录后立即丢掉列表预览、预取缓存和本机底稿。
     /// 不能等下一次 loadChats：否则会短暂显示旧预览，重新进会话还会从本机缓存“复活”。
     func forgetChatHistory(_ chatId: String, notify: Bool = true) {
+        invalidateChatSnapshots()
         if let i = chats.firstIndex(where: { $0.id == chatId }) {
             let before = chats[i]
             var c = chats[i]
@@ -2216,19 +2510,24 @@ final class AppState: ObservableObject {
             if (x.avatar ?? "") != (y.avatar ?? "") { return false }
             if (x.moodIcon ?? "") != (y.moodIcon ?? "") { return false }
             if (x.onlineMemberIds ?? []) != (y.onlineMemberIds ?? []) { return false }
+            if (x.lastMessage?.id ?? "") != (y.lastMessage?.id ?? "") { return false }
+            if (x.lastMessage?.senderId ?? "") != (y.lastMessage?.senderId ?? "") { return false }
+            if (x.lastMessage?.senderName ?? "") != (y.lastMessage?.senderName ?? "") { return false }
+            if (x.lastMessage?.kind ?? "") != (y.lastMessage?.kind ?? "") { return false }
             if (x.lastMessage?.preview ?? "") != (y.lastMessage?.preview ?? "") { return false }
             if (x.lastMessage?.createdAt ?? "") != (y.lastMessage?.createdAt ?? "") { return false }
+            if (x.lastMessage?.mentionMe ?? false) != (y.lastMessage?.mentionMe ?? false) { return false }
+            if (x.updatedAt ?? "") != (y.updatedAt ?? "") { return false }
         }
         return true
     }
 
     var unreadForIcon: Int {
-        if let authoritativeUnreadTotal {
-            return min(999, max(0, authoritativeUnreadTotal))
-        }
-        var n = 0
-        for c in chats where c.muted != true { n += c.unreadCount }
-        return min(999, max(0, n))
+        ChatUnreadKernel.iconValue(
+            authoritativeTotal: authoritativeUnreadTotal,
+            locallyHiddenUnread: locallyHiddenUnread.values.reduce(0, +),
+            chats: chats
+        )
     }
 
     func syncIconBadge() {
@@ -2239,11 +2538,13 @@ final class AppState: ObservableObject {
     }
 
     func loadContacts() async {
+        guard !ContactStressFixture.isActive else { return }
         let epoch = accountEpoch
         if let r = try? await API.shared.contactsFull() {
             guard isCurrentAccount(epoch) else { return }
 
             let friends = applyLocalRemarksToContacts(r.friends)
+            Self.saveCachedContacts(friends, userId: me?.id)
             let sameOrder = contacts.map { $0.id } == friends.map { $0.id }
             let sameLook = contacts.count == friends.count
                 && zip(contacts, friends).allSatisfy {
@@ -2292,6 +2593,7 @@ final class AppState: ObservableObject {
             locallyHiddenAt.removeAll()
             locallyHiddenLastMessage.removeAll()
             locallyHiddenLastMessageAt.removeAll()
+            locallyHiddenUnread.removeAll()
             contacts = []
             moments = []
             showSavedLogin = false
@@ -2311,6 +2613,7 @@ final class AppState: ObservableObject {
         locallyHiddenAt.removeAll()
         locallyHiddenLastMessage.removeAll()
         locallyHiddenLastMessageAt.removeAll()
+        locallyHiddenUnread.removeAll()
         contacts = []
         moments = []
         showSavedLogin = true
@@ -2331,6 +2634,32 @@ final class AppState: ObservableObject {
         }
         API.shared.setToken(nextToken)
         guard !API.shared.token.isEmpty else { return false }
+        if switchingAccount,
+           let username,
+           !username.isEmpty,
+           let cached = AppState.cachedUser(username: username),
+           !cached.id.isEmpty,
+           cached.username?.caseInsensitiveCompare(username) == .orderedSame {
+            me = cached
+            let cachedChats = LocalStore.cachedChatList(userId: cached.id)
+            if !cachedChats.isEmpty { chats = cachedChats }
+            contacts = Self.cachedContacts(userId: cached.id)
+            finishLoginTransition()
+            rememberLastUser()
+            Realtime.shared.start()
+            GrowthStore.shared.start()
+            Task {
+                if let session = try? await API.shared.session(),
+                   session.ok,
+                   let fresh = session.user {
+                    applyMyProfileUser(fresh)
+                }
+                await refreshAll()
+                await syncRecentMessages()
+                await syncDeviceChats()
+            }
+            return true
+        }
         let epoch = accountEpoch
         do {
             let s = try await API.shared.session()
@@ -2357,6 +2686,16 @@ final class AppState: ObservableObject {
         }
         finishLoginTransition()
         rememberLastUser()
+        if switchingAccount {
+            Realtime.shared.start()
+            GrowthStore.shared.start()
+            Task {
+                await refreshAll()
+                await syncRecentMessages()
+                await syncDeviceChats()
+            }
+            return true
+        }
         await refreshAll()
         Realtime.shared.start()
         GrowthStore.shared.start()
@@ -2400,7 +2739,6 @@ struct CHRISApp: App {
                     .environmentObject(app)
                     .environmentObject(externalFiles)
                     .preferredColorScheme(app.preferredScheme)
-                    .systemAnimation(.easeInOut(duration: 0.38), value: app.appearance)
                     .onOpenURL { url in
                         if url.isFileURL { ExternalFileInbox.shared.accept([url]) }
                     }
@@ -2419,12 +2757,6 @@ struct CHRISApp: App {
                         PairApproveView(startCode: app.pairApproveCode) { app.pairApproveCode = "" }
                             .environmentObject(app)
                     }
-                if !app.splashDone {
-                    SplashView()
-                        .transition(.opacity)
-                        .zIndex(9)
-                }
-
                 if let n = app.noticeAlert {
                     CenterCard(title: (n.title?.isEmpty == false ? n.title! : Tr("公告")),
                                text: n.content ?? "",
@@ -2613,35 +2945,43 @@ struct RootView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                if app.booting {
-                    LaunchView()
-                } else if savedLoginConfirmEnabled && (app.needConfirmLogin || app.showSavedLogin) {
+                if !app.booting {
+                    if savedLoginConfirmEnabled && (app.needConfirmLogin || app.showSavedLogin) {
 
-                    SavedLoginConfirm()
-                } else if app.me == nil {
+                        SavedLoginConfirm()
+                    } else if app.me == nil {
 
-                    HarmonyLoginView()
-                } else if app.me?.needsOnboarding == true {
-                    NewUserOnboardingView()
-                        .environmentObject(app)
-                } else {
-                    MainTabView()
+                        HarmonyLoginView()
+                    } else if app.me?.needsOnboarding == true {
+                        NewUserOnboardingView()
+                            .environmentObject(app)
+                    } else {
+                        MainTabView()
+                    }
                 }
 
-                if let text = app.toast {
+                if let notice = app.toast {
                     VStack {
                         Spacer()
-                        Text(text)
-                            .font(pf(14))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.black.opacity(0.78)))
+                        AppToastView(notice: notice)
+                            .id(notice.id)
+                            .transition(
+                                .asymmetric(
+                                    insertion: .scale(scale: 0.96, anchor: .bottom)
+                                        .combined(with: .opacity),
+                                    removal: .opacity
+                                )
+                            )
                             .padding(.bottom, L.tabH + L.safeBottom + 40)
                     }
                     .allowsHitTesting(false)
+                    .zIndex(19)
                 }
             }
+            .animation(
+                .spring(response: 0.26, dampingFraction: 0.90),
+                value: app.toast?.id
+            )
             // UI 配置刷新只应重绘界面，不能重建主 Tab 容器；否则当前 Tab、
             // 导航栈和滚动位置都会被重置。账号登录完成仍可通过 authVersion
             // 重建一次根视图，确保新账号从干净的首页开始。
@@ -2662,13 +3002,6 @@ struct RootView: View {
                 if scenePhase == .active && app.me != nil {
                     await app.refreshUI()
                 }
-            }
-        }
-        .onAppear {
-
-            guard !app.splashDone else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.78) {
-                withAnimation(.easeOut(duration: 0.28)) { app.splashDone = true }
             }
         }
         .onChange(of: scenePhase) { phase in
@@ -2701,6 +3034,11 @@ struct RootView: View {
             }
         }
         .onChange(of: realtime.event) { ev in
+            if Realtime.isChatStateEvent(ev.type) {
+                // AppState 通过逐条事件入口消费这些类型，避免高频消息被
+                // SwiftUI 对单个 @Published 值的合并刷新吃掉。
+                return
+            }
 
             if ev.type == "ui" {
                 Task { await app.refreshUI(force: true) }
@@ -2713,14 +3051,6 @@ struct RootView: View {
             }
             app.handle(ev)
         }
-    }
-}
-
-struct LaunchView: View {
-    var body: some View {
-        /* 启动完成后如果还在取登录态，继续显示同一张品牌启动页。
-           以前这里会切回旧的星轨连接页，看起来像“新启动页没生效”。 */
-        SplashView()
     }
 }
 

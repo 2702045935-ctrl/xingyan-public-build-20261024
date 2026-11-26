@@ -27,8 +27,38 @@ require(
 )
 require(
     "stressLoadedMoments.append(contentsOf:" in VIEW
-    and "MomentStressFixture.moments(\n                    range:" in VIEW,
-    "Moments stress data must append only the new page instead of rebuilding all rows",
+    and "range: stressLoadedCount..<next" in VIEW
+    and "stressLoadedMoments.removeFirst(min(removed, stressLoadedMoments.count))" in VIEW,
+    "Moments stress data must consume one page and keep a bounded active window",
+)
+require(
+    "@State private var pendingMomentCommit = false" in VIEW
+    and "if momentsScrollActive {\n"
+    "            pendingMomentCommit = true\n"
+    "            scheduleMomentPrefetch()\n"
+    "            return\n"
+    "        }" in VIEW
+    and "if !scrolling, pendingMomentCommit" in VIEW,
+    "Moments prefetched pages must commit only after the active scroll stops",
+)
+require(
+    "private var momentPrefetchLead: Int" in VIEW
+    and "MomentStressFixture.isActive ? Self.stressMomentPageSize : 12" in VIEW
+    and "index >= source.count - momentPrefetchLead" in VIEW,
+    "Moments stress must arm a full page of prefetch runway before the tail",
+)
+require(
+    "momentPaging.moments = await Self.generateStressMoments(" in VIEW
+    and "private static func generateStressMoments(range: Range<Int>) async -> [Moment]" in VIEW
+    and "Task.detached(priority: .userInitiated)" in VIEW
+    and "if let task = momentPaging.task {\n                await task.value" in VIEW
+    and "scheduleMomentPrefetch()" in VIEW,
+    "Moments stress pages must be generated off the main thread before display",
+)
+require(
+    "@StateObject private var momentPaging = MomentPrefetchStore()" in VIEW
+    and "@Published" not in VIEW.split("private final class MomentPrefetchStore", 1)[1].split("}", 1)[0],
+    "prefetch output must stay outside SwiftUI observation until a visible page commits",
 )
 
 print("moment-stress-scroll: passed")

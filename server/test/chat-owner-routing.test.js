@@ -137,21 +137,46 @@ async function login(base, username) {
   return { cookie: raw.split(';')[0], user: payload.data.user };
 }
 
-function connect(base, cookie) {
+function connectOnce(base, cookie) {
   const token = cookie.slice(cookie.indexOf('=') + 1);
   const socket = new WebSocket(base.replace(/^http/, 'ws') + '/?token=' + encodeURIComponent(token));
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('ws timeout')), 6000);
-    socket.addEventListener('error', () => reject(new Error('ws failed')));
+    let settled = false;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (error) {
+        try { socket.close(); } catch (_) { /* already closed */ }
+        reject(error);
+      } else {
+        resolve(socket);
+      }
+    };
+    const timer = setTimeout(() => finish(new Error('ws timeout')), 6000);
+    socket.addEventListener('error', () => finish(new Error('ws failed')));
+    socket.addEventListener('close', () => finish(new Error('ws closed before ready')));
     socket.addEventListener('message', (event) => {
       try {
         if (JSON.parse(String(event.data || '')).type === 'ready') {
-          clearTimeout(timer);
-          resolve(socket);
+          finish();
         }
       } catch (_) { /* ignore */ }
     });
   });
+}
+
+async function connect(base, cookie) {
+  let lastError;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      return await connectOnce(base, cookie);
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+    }
+  }
+  throw lastError;
 }
 
 async function waitFor(condition, timeoutMs) {

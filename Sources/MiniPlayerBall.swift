@@ -273,25 +273,11 @@ extension MusicPlayer {
     }
 
     private func remotePlay() {
-        guard let t = current else { return }
-        if let p = player {
-            try? AVAudioSession.sharedInstance().setActive(true)
-            p.play(); playing = true; startTimer(); syncNowPlaying()
-        } else if let st = stream {
-
-            try? AVAudioSession.sharedInstance().setActive(true)
-            st.play(); playing = true; startTimer(); syncNowPlaying()
-        } else {
-            play(t)
-        }
+        systemMusicResume()
     }
 
     private func remotePause() {
-        player?.pause()
-        stream?.pause()
-        playing = false
-        stopTimer()
-        syncNowPlaying()
+        pause()
     }
 
     func syncNowPlaying() {

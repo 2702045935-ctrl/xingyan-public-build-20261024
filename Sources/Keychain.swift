@@ -5,6 +5,20 @@ enum Keychain {
     private static let service = "com.chris.chatnative"
 
     static func set(_ value: String, for key: String) {
+        set(value, for: key, accessible: kSecAttrAccessibleAfterFirstUnlock)
+    }
+
+    static func setDeviceBound(_ value: String, for key: String) {
+        set(
+            value,
+            for: key,
+            accessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        )
+    }
+
+    private static func set(_ value: String,
+                            for key: String,
+                            accessible: CFString) {
         guard let data = value.data(using: .utf8) else { return }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -14,7 +28,7 @@ enum Keychain {
         SecItemDelete(query as CFDictionary)
         var add = query
         add[kSecValueData as String] = data
-        add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        add[kSecAttrAccessible as String] = accessible
         SecItemAdd(add as CFDictionary, nil)
     }
 

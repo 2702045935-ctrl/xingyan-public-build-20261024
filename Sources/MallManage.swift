@@ -836,7 +836,6 @@ struct MallProductSheet: View {
             .padding(.bottom, max(10, L.safeBottom))
         }
         .background(C.pageBg.ignoresSafeArea())
-        .ddLight()
         .onAppear { fill() }
         .sheet(isPresented: $showPick) {
             PhotoPicker { image in
@@ -1055,7 +1054,6 @@ struct MallAdSheet: View {
             .padding(.bottom, max(10, L.safeBottom))
         }
         .background(C.pageBg.ignoresSafeArea())
-        .ddLight()
         .onAppear { fill() }
     }
 

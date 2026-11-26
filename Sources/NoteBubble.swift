@@ -26,7 +26,11 @@ struct NoteCardBubble: View {
 
     var body: some View {
         Button { open = true } label: {
-            WeChatMessageCard(width: 250) {
+            WeChatMessageCard(
+                width: 250,
+                mine: mine,
+                showTail: showTail
+            ) {
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "doc.text.fill")
                         .font(.system(size: 24, weight: .medium))

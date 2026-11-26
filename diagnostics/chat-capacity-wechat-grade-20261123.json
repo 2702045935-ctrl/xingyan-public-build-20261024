@@ -1,0 +1,70 @@
+{
+  "scope": "Isolated local server, temporary users and temporary group; no production data",
+  "wechatGradeChanges": [
+    "large groups use one compact message event instead of 30000 personalized summaries",
+    "clients update their local chat row from the message event without reloading the full chat list",
+    "identical messages reuse serialized JSON and encoded WebSocket frames",
+    "websocket token lookup uses an indexed user map",
+    "large-group presence events no longer fan out to every member",
+    "cross-shard fanout batches recipients instead of one internal HTTP request per user"
+  ],
+  "largeDataStrictResult": {
+    "connections": 30000,
+    "messages": 100,
+    "expectedDeliveries": 3000000,
+    "delivered": 3000000,
+    "deliveryRate": 1,
+    "p99Ms": 333,
+    "closedConnections": 0,
+    "clientConsistency": {
+      "missing": 0,
+      "duplicates": 0,
+      "orderViolations": 0,
+      "extra": 0,
+      "inconsistentConnections": 0,
+      "pass": true
+    },
+    "storedHistory": {
+      "rows": 100,
+      "missing": 0,
+      "idDuplicates": 0,
+      "clientIdDuplicates": 0,
+      "orderViolations": 0,
+      "pass": true
+    },
+    "serverMemoryBeforeMb": 307,
+    "serverMemoryAfterMb": 355,
+    "pass": true
+  },
+  "fiftyThousandBroadcast": {
+    "connections": 50000,
+    "messages": 100,
+    "delivered": 5000000,
+    "expected": 5000000,
+    "deliveryRate": 1,
+    "p99Ms": 638,
+    "closedConnections": 0,
+    "clientConsistency": {
+      "missing": 0,
+      "duplicates": 0,
+      "orderViolations": 0,
+      "extra": 0,
+      "inconsistentConnections": 0,
+      "pass": true
+    },
+    "storedHistory": {
+      "rows": 100,
+      "idDuplicates": 0,
+      "clientIdDuplicates": 0,
+      "orderViolations": 0,
+      "pass": true
+    },
+    "pass": true
+  },
+  "conclusion": [
+    "30000 concurrent clients passed a strict three-million-delivery consistency storm",
+    "Fifty thousand concurrent clients passed a strict five-million-delivery consistency storm",
+    "The large-group fast path delivers tens of thousands of recipients with sub-second P99 in the isolated run",
+    "Production still requires the same strict soak against the deployed multi-cell topology"
+  ]
+}

@@ -1,0 +1,174 @@
+connected 1000/100000
+connected 2000/100000
+connected 3000/100000
+connected 4000/100000
+connected 5000/100000
+connected 6000/100000
+connected 7000/100000
+connected 8000/100000
+connected 9000/100000
+connected 10000/100000
+connected 11000/100000
+connected 12000/100000
+connected 13000/100000
+connected 14000/100000
+connected 15000/100000
+connected 16000/100000
+connected 17000/100000
+connected 18000/100000
+connected 19000/100000
+connected 20000/100000
+connected 21000/100000
+connected 22000/100000
+connected 23000/100000
+connected 24000/100000
+connected 25000/100000
+connected 26000/100000
+connected 27000/100000
+connected 28000/100000
+connected 29000/100000
+connected 30000/100000
+connected 31000/100000
+connected 32000/100000
+connected 33000/100000
+connected 34000/100000
+connected 35000/100000
+connected 36000/100000
+connected 37000/100000
+connected 38000/100000
+connected 39000/100000
+connected 40000/100000
+connected 41000/100000
+connected 42000/100000
+connected 43000/100000
+connected 44000/100000
+connected 45000/100000
+connected 46000/100000
+connected 47000/100000
+connected 48000/100000
+connected 49000/100000
+connected 50000/100000
+connected 51000/100000
+connected 52000/100000
+connected 53000/100000
+connected 54000/100000
+connected 55000/100000
+connected 56000/100000
+connected 57000/100000
+connected 58000/100000
+connected 59000/100000
+connected 60000/100000
+connected 61000/100000
+connected 62000/100000
+connected 63000/100000
+connected 64000/100000
+connected 65000/100000
+connected 66000/100000
+connected 67000/100000
+connected 68000/100000
+connected 69000/100000
+connected 70000/100000
+connected 71000/100000
+connected 72000/100000
+connected 73000/100000
+connected 74000/100000
+connected 75000/100000
+connected 76000/100000
+connected 77000/100000
+connected 78000/100000
+connected 79000/100000
+connected 80000/100000
+connected 81000/100000
+connected 82000/100000
+connected 83000/100000
+connected 84000/100000
+connected 85000/100000
+connected 86000/100000
+connected 87000/100000
+connected 88000/100000
+connected 89000/100000
+connected 90000/100000
+connected 91000/100000
+connected 92000/100000
+connected 93000/100000
+connected 94000/100000
+connected 95000/100000
+connected 96000/100000
+connected 97000/100000
+connected 98000/100000
+connected 99000/100000
+connected 100000/100000
+{"connections":100000,"closedConnections":[],"connectDurationMs":92645,"rounds":3,"reconnectCount":0,"expectedDeliveries":300000,"delivered":300000,"deliveryRate":1,"p99Ms":1185,"broadcasts":[{"clientId":"capacity-1795431706348-0-401b5e","delivered":100000,"missing":0,"p50Ms":646,"p95Ms":1148,"p99Ms":1185,"maxMs":1195},{"clientId":"capacity-1795431707569-1-966998","delivered":100000,"missing":0,"p50Ms":650,"p95Ms":1139,"p99Ms":1176,"maxMs":1188}],"reconnectBroadcast":{"clientId":"capacity-1795431708775-99-3dcfaa","delivered":100000,"missing":0,"p50Ms":610,"p95Ms":1104,"p99Ms":1142,"maxMs":1151},"strict":{"expectedPerConnection":3,"connectionsChecked":100000,"missing":0,"duplicates":0,"orderViolations":0,"extra":0,"inconsistentConnections":0,"pass":true},"stored":{"rows":3,"expected":3,"missing":0,"idDuplicates":0,"clientIdDuplicates":0,"orderViolations":0,"pass":true},"serverMemoryBeforeMb":731,"serverMemoryAfterMb":744,"pass":true}
+{
+  "isolated": true,
+  "dataDir": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\xingyan-capacity-load-C04re3",
+  "serverCount": 1,
+  "stages": [
+    100000
+  ],
+  "passed": true,
+  "results": [
+    {
+      "connections": 100000,
+      "closedConnections": [],
+      "connectDurationMs": 92645,
+      "rounds": 3,
+      "reconnectCount": 0,
+      "expectedDeliveries": 300000,
+      "delivered": 300000,
+      "deliveryRate": 1,
+      "p99Ms": 1185,
+      "broadcasts": [
+        {
+          "clientId": "capacity-1795431706348-0-401b5e",
+          "delivered": 100000,
+          "missing": 0,
+          "p50Ms": 646,
+          "p95Ms": 1148,
+          "p99Ms": 1185,
+          "maxMs": 1195
+        },
+        {
+          "clientId": "capacity-1795431707569-1-966998",
+          "delivered": 100000,
+          "missing": 0,
+          "p50Ms": 650,
+          "p95Ms": 1139,
+          "p99Ms": 1176,
+          "maxMs": 1188
+        }
+      ],
+      "reconnectBroadcast": {
+        "clientId": "capacity-1795431708775-99-3dcfaa",
+        "delivered": 100000,
+        "missing": 0,
+        "p50Ms": 610,
+        "p95Ms": 1104,
+        "p99Ms": 1142,
+        "maxMs": 1151
+      },
+      "strict": {
+        "expectedPerConnection": 3,
+        "connectionsChecked": 100000,
+        "missing": 0,
+        "duplicates": 0,
+        "orderViolations": 0,
+        "extra": 0,
+        "inconsistentConnections": 0,
+        "pass": true
+      },
+      "stored": {
+        "rows": 3,
+        "expected": 3,
+        "missing": 0,
+        "idDuplicates": 0,
+        "clientIdDuplicates": 0,
+        "orderViolations": 0,
+        "pass": true
+      },
+      "serverMemoryBeforeMb": 731,
+      "serverMemoryAfterMb": 744,
+      "pass": true
+    }
+  ]
+}

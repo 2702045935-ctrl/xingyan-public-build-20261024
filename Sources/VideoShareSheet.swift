@@ -66,6 +66,23 @@ struct VideoShareSheet: View {
             }
             .padding(.horizontal, 16)
 
+            ShareBrandRail { brand in
+                let opened = ShareBrandAction.open(brand, text: link)
+                dismiss()
+                if !opened {
+                    app.show(Tr("内容已复制，请确认已安装") + Tr(brand.label))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+
+            Text(Tr("更多操作"))
+                .font(pf(12, .semibold))
+                .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 8) {
                     ShareActionTile(title: "转发给朋友",
@@ -134,9 +151,10 @@ struct VideoShareSheet: View {
             .buttonStyle(.plain)
             .padding(.top, 8)
         }
-        .background(ShareSheetTheme.page(scheme).ignoresSafeArea())
+        .background(ShareSheetTheme.pageBackdrop(scheme).ignoresSafeArea())
+        .shareSheetTranslucentBackground()
         .presentationDragIndicator(.hidden)
-        .presentationDetents([.height(500), .large])
+        .presentationDetents([.fraction(0.76), .large])
     }
 
     private func textRow(_ title: String, _ symbol: String, _ run: @escaping () -> Void) -> some View {

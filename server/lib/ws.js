@@ -83,14 +83,18 @@ function decodeFrames(buffer) {
   return { frames, rest: buffer.subarray(offset) };
 }
 
-function sendText(socket, text) {
+function sendFrame(socket, frame) {
   if (!socket || socket.destroyed) return false;
   try {
-    socket.write(encodeFrame(0x1, Buffer.from(text, 'utf8')));
+    socket.write(frame);
     return true;
   } catch (err) {
     return false;
   }
+}
+
+function sendText(socket, text) {
+  return sendFrame(socket, encodeFrame(0x1, Buffer.from(text, 'utf8')));
 }
 
 function attach(socket, { onMessage, onClose }) {
@@ -142,4 +146,4 @@ function attach(socket, { onMessage, onClose }) {
   socket.on('error', done);
 }
 
-module.exports = { acceptKey, encodeFrame, decodeFrames, sendText, attach };
+module.exports = { acceptKey, encodeFrame, decodeFrames, sendFrame, sendText, attach };

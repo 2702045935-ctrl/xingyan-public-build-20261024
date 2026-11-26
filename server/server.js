@@ -43,6 +43,9 @@ const { PaymentTokenVault } = require('./lib/payment-token-vault');
 const { PaymentDeviceEnrollment } = require('./lib/payment-device-enrollment');
 const { PaymentKeyRing } = require('./lib/payment-keyring');
 const { PaymentIntentEngine } = require('./lib/payment-intent-engine');
+const { VideoRecommendationKernel } = require('./lib/video-recommendation');
+const { SearchRankingKernel } = require('./lib/search-ranking');
+const { PaymentSettlementScheduler } = require('./lib/payment-settlement-scheduler');
 const {
   normalizeBillTimeZone,
   billMonthKey,
@@ -53,6 +56,11 @@ const {
   isOpsWebAuthPath,
   isProtectedOpsPath
 } = require('./lib/app-ops');
+const {
+  appendMentionIndex,
+  buildMentionIndex,
+  hasUnreadMention
+} = require('./lib/mention-index');
 
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -71,8 +79,10 @@ let paymentTokenVault = null;
 let paymentIntentEngine = null;
 let paymentDatabase = null;
 let paymentProvider = null;
+let paymentKeyringReady = false;
 let paymentOutboxTimer = null;
 let paymentBackupTimer = null;
+let paymentSettlementScheduler = null;
 let paymentRealMoneyReady = false;
 const paymentIntentChallenges = new Map();
 const paymentCoreMode = ['off', 'shadow', 'enforce'].includes(
@@ -115,6 +125,25 @@ function configuredPaymentKeyring() {
   } catch (_) {
     return null;
   }
+}
+
+function paymentReadinessSnapshot() {
+  const { evaluatePaymentReadiness } = require('./lib/payment-readiness');
+  let databaseReady = false;
+  if (paymentDatabase) {
+    try { databaseReady = paymentDatabase.readiness().ok === true; }
+    catch (_) { databaseReady = false; }
+  }
+  return evaluatePaymentReadiness({
+    mode: paymentCoreMode,
+    database: !!paymentDatabase,
+    databaseReady,
+    keyringReady: paymentKeyringReady,
+    provider: paymentProvider,
+    providerReady: !!(paymentProvider && paymentProvider.ready()),
+    amlEnabled: AML_ENFORCEMENT_ENABLED,
+    amlHealthy: amlEngineHealthy === true
+  });
 }
 
 function observeShardShadow(routeId, payload) {
@@ -608,6 +637,42 @@ const FEED_BATCH = 12;
    原来每个 /api/feed 请求都要同步读写两个文件，人多的时候白白占磁盘和事件循环。 */
 const FEED_STORE = {};
 let feedStoreTimer = null;
+let videoRecommendationKernel = null;
+try {
+  videoRecommendationKernel = new VideoRecommendationKernel({
+    file: path.join(DATA_DIR, 'feed-events.json'),
+    persistDelayMs: 1500,
+    maxEventsPerUser: 5000
+  });
+} catch (error) {
+  videoRecommendationKernel = null;
+  console.log('[视频推荐] 内核初始化失败，自动使用旧排序：'
+    + String(error && error.message || error));
+}
+function closeVideoRecommendationKernel() {
+  if (!videoRecommendationKernel) return;
+  try { videoRecommendationKernel.close(); }
+  catch (_) { /* process is already exiting */ }
+  videoRecommendationKernel = null;
+}
+let searchRankingKernel = null;
+try {
+  searchRankingKernel = new SearchRankingKernel({
+    file: path.join(DATA_DIR, 'search-events.json'),
+    persistDelayMs: 1500,
+    maxEventsPerUser: 3000
+  });
+} catch (error) {
+  searchRankingKernel = null;
+  console.log('[搜索推荐] 内核初始化失败，自动使用基础排序：'
+    + String(error && error.message || error));
+}
+function closeSearchRankingKernel() {
+  if (!searchRankingKernel) return;
+  try { searchRankingKernel.close(); }
+  catch (_) { /* process is already exiting */ }
+  searchRankingKernel = null;
+}
 function feedStoreRead(name, fallback) {
   if (!FEED_STORE[name]) FEED_STORE[name] = { data: null, dirty: false };
   const slot = FEED_STORE[name];
@@ -822,7 +887,7 @@ function rankFeedFor(user, items, myFriends) {
      连排 3 条。以前是"严格交替"，结果把某个作者的老视频硬插到新视频中间，
      顺序看上去像被洗过一样乱，所以改成现在这种轻量打散。 */
   const top = scored.slice(0, 300);
-  const out = top.map((x) => x.it);
+  let out = top.map((x) => x.it);
   const authorKeyOf = (it) => it.authorId || ('item:' + it.id);
   for (let i = 2; i < out.length; i += 1) {
     const a0 = authorKeyOf(out[i - 2]), a1 = authorKeyOf(out[i - 1]), a2 = authorKeyOf(out[i]);
@@ -835,6 +900,27 @@ function rankFeedFor(user, items, myFriends) {
           break;
         }
       }
+    }
+  }
+
+  /* 视频推荐内核只覆盖“候选顺序”。队列、曝光和旧逻辑保留作为最终兜底：
+     内核异常、文件损坏或空结果时，视频页仍然使用上面的旧排序正常出片。 */
+  if (videoRecommendationKernel) {
+    try {
+      const kernelRanked = videoRecommendationKernel.rank({
+        userId: user.id,
+        items: feedPool,
+        follows,
+        friends: Array.from(myFriends || []),
+        views: mineViews,
+        nowMs
+      });
+      if (Array.isArray(kernelRanked) && kernelRanked.length) {
+        out = kernelRanked.map((row) => row.item);
+      }
+    } catch (error) {
+      console.log('[视频推荐] 排序失败，回退旧排序：'
+        + String(error && error.message || error));
     }
   }
 
@@ -1671,7 +1757,42 @@ const DISCOVER_FILE = 'discover.json';
    但这个名字**不在白名单里** → normalizeRowList 会把它改成列表最后那个（soon），
    于是 App 收到 action=soon，点进去就是「这一页排在下一批」。
    （用户报的「漂流瓶肯定不在发现页 / 显示的是这一页排在下一批」就是这个。） */
-const DISCOVER_ACTIONS = ['moments', 'news', 'nearby', 'shake', 'bottle', 'live', 'games', 'channels', 'miniapps', 'music', 'soon'];
+const DISCOVER_ACTIONS = ['moments', 'map', 'news', 'nearby', 'shake', 'bottle', 'live',
+  'games', 'channels', 'miniapps', 'music', 'map', 'shop', 'scan', 'search', 'soon'];
+const FEATURE_MANIFEST_KEY_ID = 'fm-v1';
+let featureManifestPrivateKey = null;
+
+function loadFeatureManifestPrivateKey() {
+  if (featureManifestPrivateKey) return featureManifestPrivateKey;
+  const inline = String(process.env.FEATURE_MANIFEST_PRIVATE_KEY_PEM || '');
+  const file = String(
+    process.env.FEATURE_MANIFEST_KEY_FILE
+      || path.join(DATA_DIR, 'feature-manifest-ed25519.pem')
+  );
+  const pem = inline || (fs.existsSync(file)
+    ? fs.readFileSync(file, 'utf8')
+    : '');
+  if (!pem.trim()) {
+    throw new Error('feature manifest signing key is not configured');
+  }
+  featureManifestPrivateKey = crypto.createPrivateKey(pem);
+  return featureManifestPrivateKey;
+}
+
+function signFeatureManifest(manifest) {
+  const bytes = Buffer.from(JSON.stringify(manifest), 'utf8');
+  const signature = crypto.sign(
+    null,
+    bytes,
+    loadFeatureManifestPrivateKey()
+  );
+  return {
+    algorithm: 'Ed25519',
+    keyId: FEATURE_MANIFEST_KEY_ID,
+    payload: bytes.toString('base64url'),
+    signature: signature.toString('base64url')
+  };
+}
 /* ---------------------------------------------- 我页（后台也能自由增删） */
 const ME_PAGE_FILE = 'me-page.json';
 const ME_ACTIONS = ['service', 'favorites', 'moments', 'works', 'stickers', 'settings', 'cards', 'channels', 'shop', 'plugins', 'soon'];
@@ -2665,6 +2786,7 @@ const DEFAULT_BRANDING = {
   updatedAt: ''
 };
 const messageCache = new Map();
+const mentionIndexCache = new Map();
 /* CHRIS_BURN_V1 观察名单：这几条会话里还有「带小火苗」的消息，定时器要盯着它们
    （哪怕开关后来被关掉，也要把已经发出去的那几条烧干净）。 */
 const burnWatch = new Set();
@@ -3086,6 +3208,7 @@ function burnSweepAll() {
     for (let i = list.length - 1; i >= 0; i--) {
       if (goneSet[list[i].id]) list.splice(i, 1);
     }
+    invalidateMentionIndex(chat.id);
     saveMessagesFile(chat.id, list);
     if (!list.some((m) => m && m.burn)) burnWatch.delete(chat.id);
     (chat.memberIds || []).forEach((id) => sendTo(id, { type: 'burn', chatId: chat.id, ids: gone }));
@@ -3218,6 +3341,7 @@ let momentReplicationState = null;
 let momentReplicationOutbox = null;
 let momentReplicationPromise = null;
 let momentReplicationRetryTimer = null;
+let momentReplicationSaveTimer = null;
 
 function momentsStorageSignature() {
   const fileSig = (file) => {
@@ -3323,6 +3447,10 @@ function momentReplicationMap() {
 }
 
 function saveMomentReplicationOutbox() {
+  if (momentReplicationSaveTimer) {
+    clearTimeout(momentReplicationSaveTimer);
+    momentReplicationSaveTimer = null;
+  }
   const records = Array.from(momentReplicationMap().values());
   if (!records.length) {
     try { fs.unlinkSync(path.join(DATA_DIR, MOMENT_REPLICATION_FILE)); } catch (_) { }
@@ -3331,13 +3459,22 @@ function saveMomentReplicationOutbox() {
   writeJson(path.join(DATA_DIR, MOMENT_REPLICATION_FILE), { records });
 }
 
+function scheduleMomentReplicationSave() {
+  if (momentReplicationSaveTimer) return;
+  momentReplicationSaveTimer = setTimeout(() => {
+    momentReplicationSaveTimer = null;
+    saveMomentReplicationOutbox();
+  }, 120);
+  if (momentReplicationSaveTimer.unref) momentReplicationSaveTimer.unref();
+}
+
 function queueMomentReplicationRecords(records) {
   const outbox = momentReplicationMap();
   (records || []).forEach((record) => {
     const id = String(record && (record.id || (record.moment && record.moment.id)) || '');
     if (id) outbox.set(id, record);
   });
-  saveMomentReplicationOutbox();
+  scheduleMomentReplicationSave();
 }
 
 function flushMomentReplication() {
@@ -3449,6 +3586,7 @@ function initPaymentLedger() {
   if (databaseMode === 'sqlite') {
     const { SqlitePaymentLedger } = require('./lib/sqlite-payment-ledger');
     const keyring = configuredPaymentKeyring();
+    paymentKeyringReady = !!keyring;
     const databaseOptions = {
       databaseFile: path.join(DATA_DIR, 'payments.sqlite3'),
       hmac: (payload) => crypto.createHmac('sha256', String(db.secret || 'chris'))
@@ -3956,6 +4094,10 @@ async function runPaymentOutboxOnce() {
 }
 
 function closePaymentDatabase() {
+  if (paymentSettlementScheduler) {
+    try { paymentSettlementScheduler.stop(); } catch (_) { }
+    paymentSettlementScheduler = null;
+  }
   if (paymentOutboxTimer) {
     clearTimeout(paymentOutboxTimer);
     paymentOutboxTimer = null;
@@ -5740,6 +5882,23 @@ function loadMessages(chatId) {
   return trimmed;
 }
 
+function invalidateMentionIndex(chatId) {
+  if (chatId) mentionIndexCache.delete(chatId);
+}
+
+function mentionIndexForChat(chatId, rows) {
+  const messages = Array.isArray(rows) ? rows : loadMessages(chatId);
+  const cached = mentionIndexCache.get(chatId);
+  if (cached && cached.rows === messages) return cached.index;
+  const index = buildMentionIndex(messages);
+  mentionIndexCache.set(chatId, { rows: messages, index });
+  if (mentionIndexCache.size > 256) {
+    const oldest = mentionIndexCache.keys().next().value;
+    if (oldest && oldest !== chatId) mentionIndexCache.delete(oldest);
+  }
+  return index;
+}
+
 function appendMessage(chatId, message) {
   let duplicate = false;
   if (shardAuthorityRuntime && shardAuthorityRuntime.appliesTo(chatId)) {
@@ -5781,6 +5940,10 @@ function appendMessage(chatId, message) {
   const last = list[list.length - 1];
   if (!last || last.id !== message.id) list.push(message);   // 只看尾巴，几万条也不拖慢
   if (list.length > MAX_CACHE) list.splice(0, list.length - MAX_CACHE);
+  const cachedMentionIndex = mentionIndexCache.get(chatId);
+  if (cachedMentionIndex && cachedMentionIndex.rows === list) {
+    appendMentionIndex(cachedMentionIndex.index, message);
+  }
   captureShardSnapshots(['messageThreads'], {
     messages: { [chatId]: list }
   }, { replace: false });
@@ -7143,9 +7306,22 @@ function rememberCachedUsers(users) {
   if (changed) saveUserCache();
 }
 
-const findUser = (id) => db.users.find((u) => u.id === id)
-  || (loadUserCache(), remoteUsers.get(String(id || '')))
-  || remoteCallUsers.get(String(id || '')) || null;
+let userIndexSource = null;
+let userIndexLength = -1;
+let userById = new Map();
+const findUser = (id) => {
+  if (userIndexSource !== db.users || userIndexLength !== db.users.length) {
+    userById = new Map();
+    db.users.forEach((user) => {
+      if (user && user.id && !userById.has(user.id)) userById.set(user.id, user);
+    });
+    userIndexSource = db.users;
+    userIndexLength = db.users.length;
+  }
+  return userById.get(String(id || ''))
+    || (loadUserCache(), remoteUsers.get(String(id || '')))
+    || remoteCallUsers.get(String(id || '')) || null;
+};
 setInterval(() => {
   const cutoff = Date.now() - 10 * 60 * 1000;
   remoteCallUsers.forEach((user, id) => {
@@ -7563,11 +7739,59 @@ function setClearedSeq(userId, chatId, seq) {
   return value;
 }
 
-function unreadCount(userId, chat) {
+function unreadIndexForMessages(messages) {
+  const eligibleSeqs = [];
+  const ownSeqs = new Map();
+  (messages || []).forEach((message) => {
+    if (!message || message.recalled) return;
+    const seq = Number(message.seq || 0);
+    eligibleSeqs.push(seq);
+    const senderId = String(message.senderId || '');
+    if (!senderId) return;
+    if (!ownSeqs.has(senderId)) ownSeqs.set(senderId, []);
+    ownSeqs.get(senderId).push(seq);
+  });
+  return { eligibleSeqs, ownSeqs };
+}
+
+function upperBound(values, target) {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const mid = (low + high) >> 1;
+    if (values[mid] <= target) low = mid + 1;
+    else high = mid;
+  }
+  return low;
+}
+
+function unreadCountFromIndex(userId, chat, index) {
   const last = Math.max(lastReadSeq(userId, chat.id), clearedSeqFor(userId, chat.id));
-  const n = loadMessages(chat.id).filter((m) =>
-    m.seq > last && m.senderId !== userId && !m.recalled
-  ).length;
+  const eligibleSeqs = index.eligibleSeqs;
+  const ownSeqs = index.ownSeqs.get(userId) || [];
+  const total = eligibleSeqs.length - upperBound(eligibleSeqs, last);
+  const own = ownSeqs.length - upperBound(ownSeqs, last);
+  const count = total - own;
+  if (count > 0) return count;
+  return (chat.flaggedUnread || []).includes(userId) ? 1 : 0;
+}
+
+function unreadCount(userId, chat, summaryContext) {
+  const last = Math.max(lastReadSeq(userId, chat.id), clearedSeqFor(userId, chat.id));
+  if (summaryContext && summaryContext.unreadIndex) {
+    return unreadCountFromIndex(userId, chat, summaryContext.unreadIndex);
+  }
+  const messages = (summaryContext && Array.isArray(summaryContext.messageRows))
+    ? summaryContext.messageRows
+    : loadMessages(chat.id);
+  let n = 0;
+  /* 绝大多数会话只有少量未读；从尾部扫到已读游标即可，不能每个收件人
+     都把整个 5000 条消息缓存过滤一遍。 */
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (Number(message.seq || 0) <= last) break;
+    if (message.senderId !== userId && !message.recalled) n += 1;
+  }
   if (n > 0) return n;
   /* 左滑「标为未读」：最后一条是自己发的也算未读（微信就是这样，只显示一个小红点） */
   return (chat.flaggedUnread || []).includes(userId) ? 1 : 0;
@@ -7720,7 +7944,7 @@ function isLegacyTransferText(m) {
   return c.indexOf('💰 转账') === 0 || c.indexOf('💰 已发起一笔转账') === 0;
 }
 
-function chatSummary(chat, forUserId, lastHint) {
+function chatSummary(chat, forUserId, lastHint, summaryContext) {
   /* 发消息时调用方知道刚写进去的那条，就不用把整个聊天记录读一遍了
      —— 这是压测里最热的一段（每发一条消息要读 2 次聊天文件）。 */
   let last = lastHint || null;
@@ -7803,22 +8027,24 @@ function chatSummary(chat, forUserId, lastHint) {
      点进会话（客户端报 read）才消失。 */
   let mentionMe = false;
   if (chat.type === 'group') {
-    const rows = loadMessages(chat.id);
-    const readSeq = (((db.reads || {})[forUserId]) || {})[chat.id] || 0;
-    for (let i = rows.length - 1; i >= 0 && i >= rows.length - 40; i--) {
-      const m = rows[i];
-      if (Number(m.seq || 0) <= readSeq) break;
-      if (m.senderId !== forUserId && Array.isArray(m.mentions) && m.mentions.indexOf(forUserId) >= 0) {
-        mentionMe = true;
-        break;
-      }
-    }
+    const rows = summaryContext && Array.isArray(summaryContext.messageRows)
+      ? summaryContext.messageRows
+      : loadMessages(chat.id);
+    const index = (summaryContext && summaryContext.mentionIndex)
+      || mentionIndexForChat(chat.id, rows);
+    const readSeq = Math.max(lastReadSeq(forUserId, chat.id), clearedSeqFor(forUserId, chat.id));
+    mentionMe = hasUnreadMention(index, forUserId, readSeq);
   }
   /* 位置/地图预览是独立卡片语义，不要把 @ 提示混进地图地址；只有文字消息才加。 */
   if (mentionMe && preview && previewSrc && previewSrc.kind === 'text') {
     preview = '[有人@我] ' + preview;
   }
-  const online = chat.type === 'group' ? onlinePresenceSet() : null;
+  const memberPreviewIds = summaryContext && summaryContext.memberPreviewIds
+    ? summaryContext.memberPreviewIds
+    : (chat.type === 'group' ? chat.memberIds.slice(0, 64) : chat.memberIds);
+  const online = chat.type === 'group'
+    ? ((summaryContext && summaryContext.online) || onlinePresenceSet())
+    : null;
   return {
     id: chat.id,
     type: chat.type,
@@ -7836,9 +8062,13 @@ function chatSummary(chat, forUserId, lastHint) {
     oaDigest: oaDigest,
     qqLevel,
     ...memberInfo,
-    memberIds: chat.memberIds,
+    /* 会话摘要只携带头像所需的一小段成员预览；万人群不能把完整成员数组
+       复制给每个收件人，完整目录走 chats/:id/members 分页接口。 */
+    memberIds: memberPreviewIds,
+    memberIdsTruncated: chat.type === 'group'
+      && chat.memberIds.length > memberPreviewIds.length,
     onlineMemberIds: online
-      ? chat.memberIds.filter((id) => id !== forUserId && online.has(id))
+      ? memberPreviewIds.filter((id) => id !== forUserId && online.has(id))
       : undefined,
     memberCount: chat.memberIds.length,
     lastMessage: last ? {
@@ -7851,7 +8081,7 @@ function chatSummary(chat, forUserId, lastHint) {
       /* 时间是最后一条消息的时间（不受转账预览被跳过的影响） */
       createdAt: last.createdAt
     } : null,
-    unread: unreadCount(forUserId, chat),
+    unread: unreadCount(forUserId, chat, summaryContext),
     pinned: (chat.pinnedFor || []).includes(forUserId),
     /* 消息免打扰（群屏蔽）：列表里显示小铃铛划掉，红点不弹 */
     muted: (chat.mutedFor || []).includes(forUserId),
@@ -7865,6 +8095,88 @@ function chatSummary(chat, forUserId, lastHint) {
     meMuted: chat.type === 'group' ? (chat.muteMembers || []).includes(forUserId) : false,
     updatedAt: last ? last.createdAt : chat.createdAt
   };
+}
+
+function fanoutGroupSummary(chat, userId, message, summaryContext,
+                            common, cache) {
+  const rows = summaryContext.messageRows;
+  const mentionIndex = summaryContext.mentionIndex
+    || mentionIndexForChat(chat.id, rows);
+  const readSeq = Math.max(
+    lastReadSeq(userId, chat.id),
+    clearedSeqFor(userId, chat.id)
+  );
+  const mentionMe = hasUnreadMention(mentionIndex, userId, readSeq);
+  const sender = findUser(message.senderId);
+  const shownSender = sender ? groupNameFor(chat, userId, sender) : '';
+  const previewSender = message.senderId === userId ? '' : shownSender;
+  let preview = previewTextOf(message);
+  if (message.recalled) {
+    preview = (previewSender ? previewSender + ' ' : '') + '撤回了一条消息';
+  } else if (previewSender && preview) {
+    preview = previewSender + '：' + preview;
+  }
+  if (mentionMe && preview && message.kind === 'text') {
+    preview = '[有人@我] ' + preview;
+  }
+  const unread = unreadCount(userId, chat, summaryContext);
+  const pinned = common.pinnedFor.has(userId);
+  const muted = common.mutedFor.has(userId);
+  const flagged = common.flaggedUnread.has(userId);
+  const meMuted = common.muteMembers.has(userId);
+  const lastSenderName = sender ? displayNameFor(userId, sender) : '';
+  const key = [
+    unread,
+    mentionMe ? 1 : 0,
+    previewSender,
+    lastSenderName,
+    preview,
+    pinned ? 1 : 0,
+    muted ? 1 : 0,
+    flagged ? 1 : 0,
+    meMuted ? 1 : 0
+  ].join('\u0000');
+  let summary = cache.get(key);
+  if (summary) return { summary, key };
+  summary = {
+    id: chat.id,
+    type: chat.type,
+    title: chat.name,
+    avatar: chat.avatar || '',
+    moodIcon: '',
+    moodText: '',
+    botRank: null,
+    bot: null,
+    sysTeam: false,
+    oaId: '',
+    oaDigest: false,
+    qqLevel: 0,
+    memberIds: common.memberPreviewIds,
+    memberIdsTruncated: chat.memberIds.length > common.memberPreviewIds.length,
+    onlineMemberIds: common.onlineMemberIds,
+    memberCount: chat.memberIds.length,
+    lastMessage: {
+      id: message.id,
+      senderId: message.senderId,
+      senderName: lastSenderName,
+      kind: message.kind,
+      preview,
+      mentionMe,
+      createdAt: message.createdAt
+    },
+    unread,
+    pinned,
+    muted,
+    burn: !!chat.burn,
+    flagged,
+    ownerId: chat.ownerId || '',
+    announce: chat.announce || '',
+    muteAll: !!chat.muteAll,
+    meMuted,
+    updatedAt: message.createdAt
+  };
+  cache.set(key, summary);
+  return { summary, key };
 }
 
 /* ---------------------------------------------------------------- 朋友圈 */
@@ -8023,12 +8335,43 @@ function momentUnread(userId) {
 function broadcastMoment(authorId, payload) {
   momentAudience(authorId).forEach((id) => {
     if (!connections.has(id)) return;          // 离线的人本来也收不到，别再花 CPU 算未读数
-    const body = Object.assign({}, payload);
+    if (payload.type === 'moment' && payload.action === 'new'
+        && !momentVisibleTo(payload.moment, id)) return;
     if (payload.type === 'moment' && payload.action === 'new') {
-      body.unread = momentUnread(id);
+      queueMomentRedDot(id, id === authorId ? 0 : 1);
+      return;
     }
+    const body = Object.assign({}, payload);
     sendTo(id, body);
   });
+}
+
+const momentRedDotQueue = new Map();
+let momentRedDotTimer = null;
+
+function queueMomentRedDot(userId, delta) {
+  let row = momentRedDotQueue.get(userId);
+  if (!row) {
+    row = { delta: 0, count: 0 };
+    momentRedDotQueue.set(userId, row);
+  }
+  row.delta += Math.max(0, Number(delta) || 0);
+  row.count += 1;
+  if (momentRedDotTimer) return;
+  momentRedDotTimer = setTimeout(() => {
+    momentRedDotTimer = null;
+    const batch = Array.from(momentRedDotQueue.entries());
+    momentRedDotQueue.clear();
+    batch.forEach(([id, item]) => {
+      sendTo(id, {
+        type: 'moment',
+        action: 'newBatch',
+        count: item.count,
+        momentUnreadDelta: item.delta
+      });
+    });
+  }, 40);
+  if (momentRedDotTimer.unref) momentRedDotTimer.unref();
 }
 
 /* ---------------------------------------------- 朋友圈「消息列表」（微信那个小信封）
@@ -8127,7 +8470,7 @@ function buildOfSocket(socket) {
   const m = raw.match(/B(\d+)/);
   return m ? Number(m[1]) : 0;
 }
-function sendToLocal(userId, payload) {
+function sendToLocal(userId, payload, textCache, textCacheKey) {
   const set = connections.get(userId);
   if (!set) return 0;
   let sent = 0;
@@ -8135,21 +8478,33 @@ function sendToLocal(userId, payload) {
   set.forEach((socket) => {
     const build = buildOfSocket(socket);
     const key = String(build);
-    let text = cache.get(key);
-    if (text === undefined) {
-      text = applyMediaBase(signUploadsInText(JSON.stringify(degradedForBuild(payload, build))));
-      cache.set(key, text);
+    const compositeKey = textCache ? `${textCacheKey}\u0000${key}` : '';
+    let encoded = textCache ? textCache.get(compositeKey) : cache.get(key);
+    if (encoded === undefined) {
+      const text = applyMediaBase(
+        signUploadsInText(JSON.stringify(degradedForBuild(payload, build)))
+      );
+      encoded = {
+        text,
+        frame: ws.encodeFrame(0x1, Buffer.from(text, 'utf8'))
+      };
+      cache.set(key, encoded);
+      if (textCache) textCache.set(compositeKey, encoded);
     }
-    if (ws.sendText(socket, text)) sent += 1;
+    if (ws.sendFrame(socket, encoded.frame)) sent += 1;
   });
   return sent;
 }
 
+let shardPortsCache = null;
 function shardPorts() {
+  if (shardPortsCache) return shardPortsCache;
   const count = Math.max(1, Number(process.env.SHARD_COUNT) || 1);
   const base = Number(process.env.SHARD_BASE_PORT) || 5299;
-  if (count <= 1) return [];
-  return Array.from({ length: count }, (_, index) => base + index * 100);
+  shardPortsCache = count <= 1
+    ? []
+    : Array.from({ length: count }, (_, index) => base + index * 100);
+  return shardPortsCache;
 }
 
 const callSignalAgent = new http.Agent({ keepAlive: true, maxSockets: 256 });
@@ -8511,13 +8866,92 @@ function relayToShardPorts(userId, payload, ports) {
   });
 }
 
+const FANOUT_RELAY_BATCH_SIZE = 512;
+
+function queueFanoutRelay(batch, userId, payload, ports) {
+  Array.from(new Set(ports || [])).forEach((port) => {
+    if (port === PORT) return;
+    if (!batch.has(port)) batch.set(port, []);
+    batch.get(port).push({ userId: String(userId), payload });
+  });
+}
+
+function flushFanoutRelays(batch) {
+  batch.forEach((items, port) => {
+    for (let start = 0; start < items.length; start += FANOUT_RELAY_BATCH_SIZE) {
+      const chunk = items.slice(start, start + FANOUT_RELAY_BATCH_SIZE);
+      const body = JSON.stringify({ items: chunk });
+      const relay = http.request({
+        host: '127.0.0.1',
+        port,
+        path: '/__shard/relay-batch',
+        method: 'POST',
+        agent: chatOwnerAgent,
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+          'X-Shard-Relay': db.secret || ''
+        }
+      }, (response) => response.resume());
+      relay.setTimeout(2000, () => relay.destroy());
+      relay.on('error', () => {});
+      relay.end(body);
+    }
+  });
+}
+
 function relayToShardPeers(userId, payload) {
   relayToShardPorts(userId, payload, shardPorts());
 }
 
-function sendTo(userId, payload) {
-  const sent = sendToLocal(userId, payload);
-  relayToShardPeers(userId, payload);
+function broadcastCompactChatMessage(chat, payload) {
+  const textCache = new Map();
+  let sent = 0;
+  chat.memberIds.forEach((id) => {
+    if (!connections.has(id)) return;
+    sent += sendToLocal(
+      id, payload, textCache, 'large-group-message'
+    );
+  });
+  const body = JSON.stringify({ chatId: chat.id, payload });
+  shardPorts().forEach((port) => {
+    if (port === PORT) return;
+    const relay = http.request({
+      host: '127.0.0.1',
+      port,
+      path: '/__shard/chat-broadcast',
+      method: 'POST',
+      agent: chatOwnerAgent,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'X-Shard-Relay': db.secret || ''
+      }
+    }, (response) => response.resume());
+    relay.setTimeout(2000, () => relay.destroy());
+    relay.on('error', () => {});
+    relay.end(body);
+  });
+  return sent;
+}
+
+function sendTo(userId, payload, fanoutContext) {
+  const sent = sendToLocal(
+    userId,
+    payload,
+    fanoutContext && fanoutContext.textCache,
+    fanoutContext && fanoutContext.textCacheKey
+  );
+  /* 只把消息转发给「确实有这条用户连接」的分片。以前每个人都会向所有
+     分片各发一次请求，万人群广播时会平白产生几万次本地 HTTP 请求。 */
+  if (shardPorts().length) {
+    const ports = onlineShardPorts(userId);
+    if (fanoutContext && fanoutContext.relayBatch) {
+      queueFanoutRelay(fanoutContext.relayBatch, userId, payload, ports);
+    } else {
+      relayToShardPorts(userId, payload, ports);
+    }
+  }
   return sent;
 }
 
@@ -8532,6 +8966,23 @@ function localOnlineIds() {
   );
 }
 
+/** Delivery truth must not depend on a user's visible presence mode. */
+function deliveryOnlineIds() {
+  const out = [];
+  connections.forEach((set, userId) => {
+    let alive = false;
+    set.forEach((socket) => { if (socket && !socket.destroyed) alive = true; });
+    if (alive) out.push(userId);
+  });
+  return out;
+}
+
+function deliveryPresenceSet() {
+  const out = new Set(deliveryOnlineIds());
+  peerOnlineCache.forEach((set) => set.forEach((id) => out.add(id)));
+  return out;
+}
+
 function onlinePresenceSet() {
   const out = new Set(localOnlineIds());
   peerOnlineCache.forEach((set) => set.forEach((id) => out.add(id)));
@@ -8540,11 +8991,28 @@ function onlinePresenceSet() {
 
 function onlineShardPorts(userId) {
   const ports = [];
-  if (connections.has(userId)) ports.push(PORT);
+  const local = connections.get(userId);
+  if (local && Array.from(local).some((socket) => socket && !socket.destroyed)) {
+    ports.push(PORT);
+  }
   peerOnlineCache.forEach((set, port) => {
     if (set.has(userId)) ports.push(port);
   });
   return ports;
+}
+
+function onlineMembersOfChat(chat, online) {
+  const presence = online || deliveryPresenceSet();
+  const memberIds = (chat && Array.isArray(chat.memberIds)) ? chat.memberIds : [];
+  if (memberIds.length <= presence.size) {
+    return memberIds.filter((id) => presence.has(id));
+  }
+  const members = new Set(memberIds);
+  const recipients = [];
+  presence.forEach((id) => {
+    if (members.has(id)) recipients.push(id);
+  });
+  return recipients;
 }
 
 function broadcastPresenceToPeers(userId, online) {
@@ -8642,10 +9110,92 @@ function sendToAll(payload) {
 
 function sendToChat(chat, payload, exceptUserId) {
   let sent = 0;
-  chat.memberIds.forEach((id) => {
+  onlineMembersOfChat(chat).forEach((id) => {
     if (exceptUserId && id === exceptUserId) return;
     sent += sendTo(id, payload);
   });
+  return sent;
+}
+
+function fanoutChatMessage(chat, message, sender, clientId) {
+  const deliveryOnline = deliveryPresenceSet();
+  const visibleOnline = onlinePresenceSet();
+  const memberPreviewIds = chat.type === 'group'
+    ? chat.memberIds.slice(0, 64)
+    : chat.memberIds;
+  const recipients = onlineMembersOfChat(chat, deliveryOnline);
+  const sharedOnlineMemberIds = memberPreviewIds.filter((id) => visibleOnline.has(id));
+  if (chat.type === 'group' && chat.memberIds.length > 512) {
+    const senderName = memberAlias(chat, sender.id)
+      || sender.nickname
+      || sender.username
+      || '';
+    const out = Object.assign({}, message, { senderName });
+    const payload = { type: 'message', message: out };
+    return broadcastCompactChatMessage(chat, payload);
+  }
+  const messageRows = loadMessages(chat.id);
+  const summaryContext = {
+    online: visibleOnline,
+    memberPreviewIds,
+    messageRows
+  };
+  if (chat.type === 'group') {
+    summaryContext.mentionIndex = mentionIndexForChat(chat.id, messageRows);
+  }
+  /* 多人同时在线时，把「哪些消息算未读、谁被 @」只建一次索引。
+     以前每个收件人都会重新遍历同一份消息缓存，1 万人群会放大成万倍。 */
+  if (recipients.length > 1) {
+    summaryContext.unreadIndex = unreadIndexForMessages(messageRows);
+  }
+  let sent = 0;
+  const textCache = chat.type === 'group' ? new Map() : null;
+  const relayBatch = new Map();
+  const groupCommon = chat.type === 'group' ? {
+    pinnedFor: new Set(chat.pinnedFor || []),
+    mutedFor: new Set(chat.mutedFor || []),
+    flaggedUnread: new Set(chat.flaggedUnread || []),
+    muteMembers: new Set(chat.muteMembers || []),
+    memberPreviewIds,
+    onlineMemberIds: sharedOnlineMemberIds
+  } : null;
+  const groupSummaryCache = chat.type === 'group' ? new Map() : null;
+  for (const id of recipients) {
+    const senderName = chat.type === 'group'
+      ? groupNameFor(chat, id, sender)
+      : '';
+    const out = chat.type === 'group'
+      ? Object.assign({}, message, { senderName })
+      : message;
+    let summary;
+    let textCacheKey;
+    if (chat.type === 'group') {
+      const built = fanoutGroupSummary(
+        chat,
+        id,
+        message,
+        summaryContext,
+        groupCommon,
+        groupSummaryCache
+      );
+      summary = built.summary;
+      textCacheKey = built.key + '\u0000' + (id === sender.id ? (clientId || '') : '');
+    } else {
+      summary = chatSummary(chat, id, message, summaryContext);
+      textCacheKey = '';
+    }
+    sent += sendTo(id, {
+      type: 'message',
+      message: out,
+      chat: summary,
+      clientId: id === sender.id ? (clientId || null) : null
+    }, {
+      textCache,
+      textCacheKey: textCache ? textCacheKey : '',
+      relayBatch
+    });
+  }
+  flushFanoutRelays(relayBatch);
   return sent;
 }
 
@@ -8699,12 +9249,19 @@ function friendStatusMap(userId) {
   return out;
 }
 
+const PRESENCE_GROUP_FANOUT_LIMIT =
+  Number(process.env.PRESENCE_GROUP_FANOUT_LIMIT) || 512;
+
 function notifyPresence(userId, online) {
   const payload = { type: 'presence', userId, online, status: online ? visibleStatus(userId) : 'offline' };
   const targets = new Set(friendIds(userId));
   db.chats.forEach((chat) => {
     if (!chat || chat.type !== 'group' || !Array.isArray(chat.memberIds)
         || !chat.memberIds.includes(userId)) return;
+    /* 大群不能把每个上线/下线事件扇出给全部成员：万人群连续登录时
+       会形成 O(n²) 的小包风暴。大群在线人数由 ready/chat summary
+       刷新，小群继续保留逐成员 presence。 */
+    if (chat.memberIds.length > PRESENCE_GROUP_FANOUT_LIMIT) return;
     chat.memberIds.forEach((id) => {
       if (id && id !== userId) targets.add(id);
     });
@@ -8765,6 +9322,57 @@ function isUserConnected(userId) {
   return alive;
 }
 
+const APNS_MAX_IN_FLIGHT = Math.max(
+  1, Math.min(512, Number(process.env.APNS_MAX_IN_FLIGHT) || 128)
+);
+const APNS_REQUEST_TIMEOUT_MS = Math.max(
+  1000, Number(process.env.APNS_REQUEST_TIMEOUT_MS) || 8000
+);
+const apnsSessions = new Map();
+const apnsWaiters = [];
+let apnsActiveStreams = 0;
+
+function apnsHost(sandbox) {
+  const override = String(process.env[
+    sandbox ? 'APNS_SANDBOX_HOST' : 'APNS_PRODUCTION_HOST'
+  ] || '').trim();
+  return override || (sandbox
+    ? 'https://api.sandbox.push.apple.com'
+    : 'https://api.push.apple.com');
+}
+
+function acquireApnsSlot() {
+  if (apnsActiveStreams < APNS_MAX_IN_FLIGHT) {
+    apnsActiveStreams += 1;
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => apnsWaiters.push(resolve));
+}
+
+function releaseApnsSlot() {
+  const next = apnsWaiters.shift();
+  if (next) next();
+  else apnsActiveStreams = Math.max(0, apnsActiveStreams - 1);
+}
+
+function apnsSession(host) {
+  const current = apnsSessions.get(host);
+  if (current && !current.closed && !current.destroyed) return current;
+  const session = http2.connect(host);
+  apnsSessions.set(host, session);
+  const forget = () => {
+    if (apnsSessions.get(host) === session) apnsSessions.delete(host);
+  };
+  session.on('error', forget);
+  session.on('close', forget);
+  session.on('goaway', forget);
+  session.setTimeout(10 * 60 * 1000, () => {
+    forget();
+    try { session.close(); } catch (e) { }
+  });
+  return session;
+}
+
 /* APNs 用的是 ES256 签的 JWT；苹果要求最多 1 小时换一次，这里 50 分钟换一次 */
 let jwtCache = { at: 0, token: '', key: '' };
 
@@ -8783,29 +9391,30 @@ function apnsJwt() {
   return jwtCache.token;
 }
 
-/** 真发一条 APNs 通知；返回 { ok, status, reason } */
-function apnsSend(deviceToken, sandbox, payload,
-                  pushType = 'alert', priority = '10') {
-  return new Promise((resolve) => {
+/** 真发一条 APNs 通知；连接复用，流并发有上限。 */
+function apnsSendOnce(deviceToken, sandbox, payload,
+                      pushType = 'alert', priority = '10', collapseId = '') {
+  return acquireApnsSlot().then(() => new Promise((resolve) => {
     const c = readPush().config;
-    const host = sandbox ? 'https://api.sandbox.push.apple.com' : 'https://api.push.apple.com';
+    const host = apnsHost(sandbox);
     let done = false;
-    let client = null;
+    let timer = null;
     const finish = (r) => {
       if (done) return;
       done = true;
-      try { if (client) client.close(); } catch (e) { }
+      if (timer) clearTimeout(timer);
+      releaseApnsSlot();
       resolve(r);
     };
+    let session = null;
+    let req = null;
     try {
-      client = http2.connect(host);
+      session = apnsSession(host);
     } catch (e) {
       return finish({ ok: false, status: 0, reason: String(e && e.message || e) });
     }
-    client.on('error', (e) => finish({ ok: false, status: 0, reason: String(e && e.message || e) }));
-    let req = null;
     try {
-      req = client.request({
+      const headers = {
         ':method': 'POST',
         ':path': '/3/device/' + deviceToken,
         authorization: 'bearer ' + apnsJwt(),
@@ -8814,7 +9423,9 @@ function apnsSend(deviceToken, sandbox, payload,
         'apns-priority': priority,
         'apns-expiration': String(Math.floor(Date.now() / 1000) + 3600),
         'content-type': 'application/json'
-      });
+      };
+      if (collapseId) headers['apns-collapse-id'] = String(collapseId).slice(0, 64);
+      req = session.request(headers);
     } catch (e) {
       return finish({ ok: false, status: 0, reason: String(e && e.message || e) });
     }
@@ -8824,10 +9435,45 @@ function apnsSend(deviceToken, sandbox, payload,
     req.setEncoding('utf8');
     req.on('data', (d) => { if (text.length < 400) text += d; });
     req.on('end', () => finish({ ok: status === 200, status, reason: text }));
-    req.on('error', (e) => finish({ ok: false, status: 0, reason: String(e && e.message || e) }));
+    req.on('error', (e) => finish({
+      ok: false,
+      status: 0,
+      reason: String(e && e.message || e)
+    }));
+    timer = setTimeout(() => {
+      try { req.close(); } catch (e) { }
+      finish({ ok: false, status: 0, reason: 'timeout' });
+    }, APNS_REQUEST_TIMEOUT_MS);
     req.end(JSON.stringify(payload));
-    setTimeout(() => finish({ ok: false, status: 0, reason: 'timeout' }), 8000);
-  });
+  }));
+}
+
+/** 429/5xx/网络错误做有限重试，避免一次抖动就把通知丢掉。 */
+async function apnsSend(deviceToken, sandbox, payload,
+                        pushType = 'alert', priority = '10', collapseId = '') {
+  let result = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    result = await apnsSendOnce(
+      deviceToken, sandbox, payload, pushType, priority, collapseId
+    );
+    if (result.ok || (result.status !== 429 && result.status < 500)) return result;
+    if (attempt < 2) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, 100 * Math.pow(2, attempt))
+      );
+    }
+  }
+  return result;
+}
+
+let pushSaveTimer = null;
+function schedulePushSave() {
+  if (pushSaveTimer) return;
+  pushSaveTimer = setTimeout(() => {
+    pushSaveTimer = null;
+    savePush();
+  }, 120);
+  if (pushSaveTimer.unref) pushSaveTimer.unref();
 }
 
 function pushRemoveToken(userId, token) {
@@ -8835,19 +9481,50 @@ function pushRemoveToken(userId, token) {
   if (!p.tokens[userId]) return;
   p.tokens[userId] = p.tokens[userId].filter((d) => d.token !== token);
   if (!p.tokens[userId].length) delete p.tokens[userId];
-  savePush();
+  schedulePushSave();
 }
 
-/** 记一条推送日志（只留最近 300 条，后台页面能看到发没发出去） */
+/** 推送日志按批写，只保留最近 300 条，避免每条通知都重读整个文件。 */
+const pushLogPending = [];
+let pushLogTimer = null;
+let pushLogLineCount = null;
+
+function flushPushLogs() {
+  pushLogTimer = null;
+  if (!pushLogPending.length) return;
+  const rows = pushLogPending.splice(0, pushLogPending.length);
+  const file = path.join(DATA_DIR, 'push-log.jsonl');
+  try {
+    fs.appendFileSync(file, rows.join(''), 'utf8');
+  } catch (e) {
+    return;
+  }
+  try {
+    if (pushLogLineCount === null) {
+      const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+      const total = old ? old.trim().split('\n').length : 0;
+      pushLogLineCount = Math.max(0, total - rows.length);
+    }
+    pushLogLineCount += rows.length;
+    if (pushLogLineCount > 300) {
+      const lines = fs.readFileSync(file, 'utf8').trim().split('\n');
+      const kept = lines.slice(-300);
+      fs.writeFileSync(file, kept.join('\n') + '\n', 'utf8');
+      pushLogLineCount = kept.length;
+    }
+  } catch (e) {
+    pushLogLineCount = null;
+  }
+}
+
 function pushLog(row) {
-  try {
-    fs.appendFileSync(path.join(DATA_DIR, 'push-log.jsonl'), JSON.stringify(Object.assign({ at: now() }, row)) + '\n', 'utf8');
-  } catch (e) { }
-  try {
-    const f = path.join(DATA_DIR, 'push-log.jsonl');
-    const lines = fs.readFileSync(f, 'utf8').trim().split('\n');
-    if (lines.length > 300) fs.writeFileSync(f, lines.slice(-300).join('\n') + '\n', 'utf8');
-  } catch (e) { }
+  pushLogPending.push(
+    JSON.stringify(Object.assign({ at: now() }, row)) + '\n'
+  );
+  if (pushLogPending.length > 1000) flushPushLogs();
+  if (pushLogTimer) return;
+  pushLogTimer = setTimeout(flushPushLogs, 100);
+  if (pushLogTimer.unref) pushLogTimer.unref();
 }
 
 /** 某个人所有会话的未读总数 —— 推到手机上就是「桌面图标右上角那个数字」 */
@@ -8855,6 +9532,9 @@ function unreadTotalOf(userId) {
   let n = 0;
   chatsOf(userId).forEach((c) => {
     if ((c.mutedFor || []).includes(userId)) return;
+    // botRank 0 is the assistant surface, not a row in the conversation list.
+    // Counting it creates a badge with no visible conversation to open.
+    if (Number(c.botRank) === 0) return;
     n += unreadCount(userId, c);
   });
   return Math.min(999, Math.max(0, n));
@@ -8919,9 +9599,6 @@ async function pushToUser(userId, opts) {
     }, { badge: badge });
     const payload = {
       aps,
-      /* 折叠：同一个会话连着来消息，通知只留最新一条（微信就是这个行为）。
-         注意 apns-collapse-id 要放在 payload 顶层，不是 aps 里面。 */
-      'apns-collapse-id': opts.collapse ? String(opts.collapse).slice(0, 64) : undefined,
       chatId: opts.chatId || '',
       fromId: opts.fromId || '',
       kind: opts.kind || '',
@@ -8929,7 +9606,8 @@ async function pushToUser(userId, opts) {
       code: opts.pairCode || opts.code || ''
     };
     const r = await apnsSend(d.token, d.env ? d.env === 'sandbox' : !!c.sandbox,
-      payload, silent ? 'background' : 'alert', silent ? '5' : '10');
+      payload, silent ? 'background' : 'alert', silent ? '5' : '10',
+      opts.collapse || '');
     if (r.ok) sent += 1;
     const bad = r.status === 400 || r.status === 410 || /BadDeviceToken|Unregistered|DeviceTokenNotForTopic/.test(String(r.reason || ''));
     pushLog({
@@ -8940,6 +9618,39 @@ async function pushToUser(userId, opts) {
   }
   return { sent, reason: 'ok' };
 }
+
+const PUSH_USER_CONCURRENCY = Math.max(
+  1, Math.min(256, Number(process.env.PUSH_USER_CONCURRENCY) || 64)
+);
+const pushUserQueue = [];
+let pushUserActive = 0;
+
+function drainPushUserQueue() {
+  while (pushUserActive < PUSH_USER_CONCURRENCY && pushUserQueue.length) {
+    const item = pushUserQueue.shift();
+    pushUserActive += 1;
+    pushToUser(item.userId, item.opts)
+      .catch(() => {})
+      .finally(() => {
+        pushUserActive = Math.max(0, pushUserActive - 1);
+        drainPushUserQueue();
+      });
+  }
+}
+
+function queuePushToUser(userId, opts) {
+  pushUserQueue.push({ userId, opts });
+  drainPushUserQueue();
+}
+
+process.once('exit', () => {
+  flushPushLogs();
+  if (pushSaveTimer) {
+    clearTimeout(pushSaveTimer);
+    pushSaveTimer = null;
+    savePush();
+  }
+});
 
 const badgePushTimers = new Map();
 function scheduleBadgePush(userId) {
@@ -9008,8 +9719,9 @@ function inQuietHours(n) {
 }
 
 function pushForMessage(sender, chat, message) {
-  const p = readPush().config;
-  if (!p.onMessage) return;
+  const push = readPush();
+  const p = push.config;
+  if (!p.onMessage || !pushReady()) return;
   /* 微信那套规则：系统消息、撤回提示不推；自己发的不推；在线的（长连接活着）不推 */
   if (!message || message.kind === 'system' || message.recalled) return;
   const title = chat.type === 'group'
@@ -9020,8 +9732,12 @@ function pushForMessage(sender, chat, message) {
     : pushPreview(message.kind, message.content);
   /* 这条消息 @ 了谁：被 @ 的人通知里带「有人@我」（微信就是这么提示的） */
   const atList = Array.isArray(message.mentions) ? message.mentions : [];
+  const tokens = push.tokens || {};
+  /* 离线推送只遍历真的有设备 token 的成员。以前会先把万人群所有成员
+     逐个查用户、查连接、写“未配置推送”日志，单条消息能卡到数秒。 */
   chat.memberIds.forEach((id) => {
     if (id === sender.id) return;
+    if (!Array.isArray(tokens[id]) || !tokens[id].length) return;
     const who = findUser(id);
     if (!who || who.bot) return;              // 机器人不用推
     if (isUserConnected(id)) return;          // 在线（连着长连接）就不推，避免重复提醒
@@ -9030,17 +9746,17 @@ function pushForMessage(sender, chat, message) {
     if ((chat.mutedFor || []).includes(id)) return;              // 这个会话开了消息免打扰
     if (inQuietHours(n)) return;                                 // 免打扰时段：不响不震也不打扰
     /* 「通知显示消息详情」关掉：只提示"你收到一条新消息"（微信就是这样） */
-    const atMe = atList.indexOf(id) >= 0;
+    const atMe = message.mentionAll === true || atList.indexOf(id) >= 0;
     const body = n.showDetail === false
       ? (atMe ? '有人@我' : '你收到一条新消息')
       : (atMe ? '[有人@我] ' + detail : detail);
-    pushToUser(id, {
+    queuePushToUser(id, {
       kind: 'message', title, body, chatId: chat.id, fromId: sender.id,
       sound: n.sound !== false,
       soundName: 'xingyan_message.wav',
       /* 同一个会话的推送折叠成一条（微信：同一个聊天连着来消息只留最新那条） */
       collapse: chat.id
-    }).catch(() => { });
+    });
   });
 }
 
@@ -9865,7 +10581,7 @@ function handleClientMessage(user, socket, raw) {
         } catch (err) { }
         return callSend(user.id, { type: 'call-error', callId, error: '先加为好友才能通话' });
       }
-      const targetOnline = onlinePresenceSet().has(target.id);
+      const targetOnline = deliveryPresenceSet().has(target.id);
       callTrace('invite ' + user.id + ' -> ' + target.id + ' media=' + (msg.media === 'video' ? 'video' : 'audio')
         + ' 对方在线=' + targetOnline
         + ' 主叫版本=' + (socket.__appBuild || '?')
@@ -10564,25 +11280,30 @@ function deliverMessage(user, chatId, kind, content, clientId, mentionHint, medi
      两条路合起来，不管哪个版本发的消息，被 @ 的人都能收到提示。
      @所有人 只有群主能用（微信的规矩）。 */
   let mentionIds = [];
+  let mentionAll = false;
   if (chat.type === 'group' && type === 'text') {
-    const want = Array.isArray(mentionHint)
+    const mentionHintProvided = Array.isArray(mentionHint);
+    const want = mentionHintProvided
       ? mentionHint.map((x) => String(x || '')).filter(Boolean).slice(0, 200)
       : [];
-    chat.memberIds.forEach((id) => {
-      if (id === user.id) return;
-      if (want.indexOf(id) >= 0) { mentionIds.push(id); return; }
-      const other = findUser(id);
-      if (!other) return;
-      /* 备注名 / 昵称 / 微信号，三种写法都认 */
-      /* 群昵称 / 备注名 / 昵称 / 微信号，几种写法都认 */
-      const names = [memberAlias(chat, id), displayNameFor(user.id, other), other.nickname, other.username]
-        .filter((n) => n && String(n).trim());
-      if (names.some((n) => body.indexOf('@' + String(n).trim()) >= 0)) mentionIds.push(id);
-    });
-    if (body.indexOf('@所有人') >= 0 && chat.ownerId === user.id) {
+    const memberSet = new Set(chat.memberIds);
+    mentionIds = Array.from(new Set(want))
+      .filter((id) => id !== user.id && memberSet.has(id));
+    /* 新客户端直接带上被 @ 的成员 ID。只有老客户端不带 hint 时才按正文
+       逐个成员匹配名字，避免每条万人群消息都遍历 10,000 个成员。 */
+    if (!mentionHintProvided) {
       chat.memberIds.forEach((id) => {
-        if (id !== user.id && mentionIds.indexOf(id) < 0) mentionIds.push(id);
+        if (id === user.id) return;
+        const other = findUser(id);
+        if (!other) return;
+        /* 群昵称 / 备注名 / 昵称 / 微信号，几种写法都认 */
+        const names = [memberAlias(chat, id), displayNameFor(user.id, other), other.nickname, other.username]
+          .filter((n) => n && String(n).trim());
+        if (names.some((n) => body.indexOf('@' + String(n).trim()) >= 0)) mentionIds.push(id);
       });
+    }
+    if (body.indexOf('@所有人') >= 0 && chat.ownerId === user.id) {
+      mentionAll = true;
     }
   }
 
@@ -10608,6 +11329,7 @@ function deliverMessage(user, chatId, kind, content, clientId, mentionHint, medi
   }
   /* 这条消息 @ 了谁：存下来，收消息的人靠它显示「有人@我」，也是老客户端的高亮依据 */
   if (mentionIds.length) message.mentions = mentionIds;
+  if (mentionAll) message.mentionAll = true;
   /* 客户端给的这条本地 id：离线重发时靠它去重（同一 clientId 只落一条） */
   if (clientId) message.clientId = String(clientId).slice(0, 60);
   /* 图片宽高（骨架落位）：发送端带上来的优先；没带（老客户端 / 服务端自己发的图）
@@ -10660,19 +11382,9 @@ function deliverMessage(user, chatId, kind, content, clientId, mentionHint, medi
   db.reads[user.id][chat.id] = message.seq;
   readsDirty = true;
 
-  // 每个接收者的未读数不同，所以摘要要按人各算一份
-  chat.memberIds.forEach((id) => {
-    /* 群里显示的名字用群昵称（微信就是这样）：收消息的人立刻就该看到改过的群昵称 */
-    const out = chat.type === 'group'
-      ? Object.assign({}, message, { senderName: groupNameFor(chat, id, user) })
-      : message;
-    sendTo(id, {
-      type: 'message',
-      message: out,
-      chat: chatSummary(chat, id, message),
-      clientId: id === user.id ? (clientId || null) : null
-    });
-  });
+  /* 只对当前在线的成员计算个性化摘要；离线成员重连后从会话列表取权威状态。
+     万人群不能对 10,000 个离线成员逐个构造完整 chatSummary。 */
+  fanoutChatMessage(chat, message, user, clientId);
   /* 手机没连着（在后台 / 被杀掉 / 没网）→ 给他推一条系统通知，微信也是这个逻辑 */
   try { pushForMessage(user, chat, message); } catch (e) { }
   /* 发给「AI 助手 / 管家」→ 机器人自动回一句（异步，不卡发送方） */
@@ -12256,6 +12968,7 @@ function recallMessage(user, chatId, messageId) {
   msg.recalled = true;
   saveMessagesFile(chat.id, messages);
   messageCache.delete(chat.id);
+  invalidateMentionIndex(chat.id);
   if (messageReliability) {
     messageReliability.recordEvent('message.recalled', msg.id, Number(msg.seq) || 0, {
       chatId: chat.id,
@@ -14073,6 +14786,11 @@ async function handleApi(req, res, pathname, query) {
       if (!order || order.kind !== event.kind || order.provider !== paymentProvider.name) {
         return fail(res, 404, '支付订单不存在或支付机构不匹配');
       }
+      if (order.amountCents !== event.amountCents
+          || order.feeCents !== event.feeCents
+          || order.currency !== event.currency) {
+        return fail(res, 409, '支付机构回调金额、手续费或币种与本机资金单不一致');
+      }
       paymentDatabase.recordProviderEvent({
         provider: paymentProvider.name,
         providerEventId: event.providerEventId,
@@ -14250,7 +14968,71 @@ async function handleApi(req, res, pathname, query) {
     if (!Array.isArray(m.channels)) m.channels = [];
     return m;
   }
-  function saveMall(m) { writeJson(path.join(DATA_DIR, 'mall.json'), m); }
+  function saveMall(m) {
+    writeJson(path.join(DATA_DIR, 'mall.json'), m);
+    invalidateMallCatalogSnapshot();
+  }
+  let mallCatalogSnapshot = null;
+  function invalidateMallCatalogSnapshot() {
+    mallCatalogSnapshot = null;
+  }
+  function currentMallCatalogSnapshot() {
+    const file = path.join(DATA_DIR, 'mall.json');
+    let stat = null;
+    try {
+      stat = fs.statSync(file);
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+    }
+    if (!stat) {
+      readMall();
+      stat = fs.statSync(file);
+    }
+    if (mallCatalogSnapshot &&
+        mallCatalogSnapshot.mtimeMs === stat.mtimeMs &&
+        mallCatalogSnapshot.size === stat.size) {
+      return mallCatalogSnapshot;
+    }
+    const payload = {
+      ok: true,
+      data: publicMall(readMall())
+    };
+    const raw = applyMediaBase(signUploadsInText(JSON.stringify(payload)));
+    const etag = '"' + crypto.createHash('sha1').update(raw).digest('hex') + '"';
+    mallCatalogSnapshot = {
+      mtimeMs: stat.mtimeMs,
+      size: stat.size,
+      raw,
+      gzip: zlib.gzipSync(raw, { level: 6 }),
+      etag
+    };
+    return mallCatalogSnapshot;
+  }
+  function sendMallCatalog(req, res) {
+    const snapshot = currentMallCatalogSnapshot();
+    const base = {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'public, max-age=15, stale-while-revalidate=60',
+      'ETag': snapshot.etag,
+      'Vary': 'Accept-Encoding',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'no-referrer'
+    };
+    const requestTags = String(req.headers['if-none-match'] || '');
+    if (requestTags.split(',').map((v) => v.trim()).includes(snapshot.etag)) {
+      res.writeHead(304, base);
+      res.end();
+      return;
+    }
+    const wantsGzip = /\bgzip\b/.test(
+      String(req.headers['accept-encoding'] || '')
+    );
+    const body = wantsGzip ? snapshot.gzip : Buffer.from(snapshot.raw);
+    if (wantsGzip) base['Content-Encoding'] = 'gzip';
+    base['Content-Length'] = body.length;
+    res.writeHead(200, base);
+    res.end(body);
+  }
   function mallAdminSeed() {
     return {
       schemaVersion: 1,
@@ -14449,7 +15231,7 @@ async function handleApi(req, res, pathname, query) {
     });
   }
   if (parts[0] === 'mall' && method === 'GET' && parts.length === 1) {
-    ok(res, publicMall(readMall()));
+    sendMallCatalog(req, res);
     return;
   }
   if (parts[0] === 'ops' && parts[1] === 'mall' && method === 'POST') {
@@ -15765,9 +16547,13 @@ async function handleApi(req, res, pathname, query) {
   if (parts[0] === 'search-hot' && method === 'GET') {
     const cfg = readJson(path.join(DATA_DIR, 'search-hot.json'), { words: null });
     const def = ['朋友圈', '聊天记录', '公众号', '视频号', '附近的人', '群聊'];
-    const words = Array.isArray(cfg.words) && cfg.words.length
+    let words = Array.isArray(cfg.words) && cfg.words.length
       ? cfg.words.map((w) => String(w || '').trim()).filter(Boolean).slice(0, 20)
       : def;
+    const me = currentUser(req);
+    if (me && searchRankingKernel) {
+      words = searchRankingKernel.suggestions(me.id, words, 20);
+    }
     ok(res, { words });
     return;
   }
@@ -16087,6 +16873,35 @@ async function handleApi(req, res, pathname, query) {
   }
 
   /* ---------------- 游戏页：只发列表，玩法在客户端 ---------------- */
+  /* 视频反馈：客户端按批上报曝光、播放、停留、完播、跳过和互动。
+     这是尽力而为旁路，服务端任何异常都不能影响下一条视频播放。 */
+  if (parts[0] === 'feed' && parts[1] === 'events' && method === 'POST') {
+    const user = currentUser(req);
+    if (!user) return fail(res, 401, '请先登录');
+    if (!videoRecommendationKernel) return fail(res, 503, '视频推荐内核暂时不可用');
+    const body = await readBody(req);
+    if (!Array.isArray(body.events) || !body.events.length) {
+      return fail(res, 422, '缺少视频反馈事件');
+    }
+    if (body.events.length > 100) return fail(res, 413, '一次最多上报 100 条事件');
+    const cfg = readJson(path.join(DATA_DIR, 'feed.json'), { items: [], posts: [] });
+    const all = (cfg.items || []).concat(cfg.posts || []);
+    const itemById = new Map(all.map((item) => [String(item.id), item]));
+    try {
+      const result = videoRecommendationKernel.recordEvents(
+        user.id,
+        body.events,
+        itemById
+      );
+      ok(res, result);
+      return;
+    } catch (error) {
+      console.log('[视频推荐] 反馈写入失败：'
+        + String(error && error.message || error));
+      return fail(res, 422, '视频反馈暂时无法写入');
+    }
+  }
+
   /* 读某条视频的评论列表（客户端点开评论面板时用）。
      注意：必须放在下面的 feed GET 之前 —— 那个路由不校验子路径，
      放后面的话 /api/feed/comments 会被当成"拉推荐流"。 */
@@ -16430,8 +17245,31 @@ async function handleApi(req, res, pathname, query) {
     };
     if (!t.title) return fail(res, 422, '缺少歌名');
     const j = readMusicNow();
-    j.users[user.id] = Object.assign({}, t, { at: Date.now() });
+    const presence = Object.assign({}, t, {
+      at: Date.now(),
+      playing: b.playing !== false,
+      position: Math.max(0, Number(b.position) || 0),
+      duration: Math.max(0, Number(b.duration) || 0),
+      deviceId: clientInfo(req).deviceId || ''
+    });
+    j.users[user.id] = presence;
     saveMusicNow(j);
+    const event = {
+      type: 'musicPresence',
+      userId: user.id,
+      name: user.nickname || user.username || '好友',
+      avatar: user.avatar || '',
+      trackId: presence.id,
+      title: presence.title,
+      artist: presence.artist,
+      cover: presence.cover,
+      url: presence.url,
+      playing: presence.playing,
+      position: presence.position,
+      duration: presence.duration,
+      at: presence.at
+    };
+    friendIds(user.id).forEach((friendId) => sendTo(friendId, event));
     ok(res, { at: j.users[user.id].at });
     return;
   }
@@ -16456,7 +17294,11 @@ async function handleApi(req, res, pathname, query) {
         artist: it.artist || '',
         cover: it.cover || '',
         url: it.url || '',
-        at: Number(it.at) || 0
+        at: Number(it.at) || 0,
+        playing: it.playing !== false,
+        position: Math.max(0, Number(it.position) || 0),
+        duration: Math.max(0, Number(it.duration) || 0),
+        deviceId: it.deviceId || ''
       });
     });
     rows.sort((a, b) => (b.at - a.at) || String(a.name).localeCompare(String(b.name)));
@@ -16994,7 +17836,44 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
-  /* 发现页的行：后台加/删/改，前端（网页版和 App）每次打开都拉一次。
+  /* 世界页功能清单：只返回签名后的模块描述，实验功能可在服务端直接撤销。 */
+  if (parts[0] === 'ui-manifest' && method === 'GET') {
+    try {
+      const defs = readJson(
+        path.join(DATA_DIR, 'icon-defaults.json'),
+        { items: [] }
+      ).items || [];
+      const overrides = readJson(path.join(DATA_DIR, ICONS_FILE), {});
+      const builtin = {};
+      defs.forEach((d) => { builtin[d.key] = d.svg || ''; });
+      const items = (db.discover || [])
+        .filter((it) => it.enabled !== false)
+        .map((it) => {
+          let svg = it.svg || overrides[it.icon] || builtin[it.icon] || '';
+          if (svg.indexOf('anim:') === 0) {
+            const bm = String(req.headers['x-app-build'] || '').match(/B(\d+)/);
+            const buildNo = bm ? Number(bm[1]) : 0;
+            if (buildNo < 723) svg = builtin[it.icon] || svg;
+          }
+          return Object.assign({}, it, { svg });
+        });
+      const now = Date.now();
+      const envelope = signFeatureManifest({
+        version: now,
+        issuedAt: new Date(now).toISOString(),
+        expiresAt: new Date(now + 5 * 60 * 1000).toISOString(),
+        items
+      });
+      res.setHeader('Cache-Control', 'no-store');
+      ok(res, envelope);
+    } catch (error) {
+      fail(res, 503, '功能清单签名服务未就绪');
+    }
+    return;
+  }
+
+  /* 发现页的旧接口保留给旧版本客户端，新版本优先使用 ui-manifest。
+     后台加/删/改，前端（网页版和 App）每次打开都拉一次。
      图标分两种：icon 写 UI 图标页里的 key（后台换过图标就用换过的），
      或者直接给一段 svg。两者都没有就留空，前端只显示文字。 */
   if (parts[0] === 'discover' && method === 'GET') {
@@ -17382,77 +18261,177 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
-  /* 搜一搜：一次搜完 联系人 / 群聊 / 朋友圈 / 视频号 / 聊天记录（和微信那个搜索页一样分组给）。
-     scope 可以是 people / groups / moments / videos / messages / all */
+  /* 搜索反馈：曝光、点击、打开、跳过和查询本身进入可衰减的个人画像。 */
+  if (parts[0] === 'search' && parts[1] === 'events' && method === 'POST') {
+    const me = currentUser(req);
+    if (!me) return fail(res, 401, '请先登录');
+    if (!searchRankingKernel) return fail(res, 503, '搜索推荐内核暂时不可用');
+    const body = await readBody(req);
+    if (!Array.isArray(body.events) || !body.events.length) {
+      return fail(res, 422, '缺少搜索反馈事件');
+    }
+    if (body.events.length > 100) return fail(res, 413, '一次最多上报 100 条事件');
+    try {
+      ok(res, searchRankingKernel.recordEvents(me.id, body.events));
+      return;
+    } catch (error) {
+      return fail(res, 422, '搜索反馈暂时无法写入');
+    }
+  }
+
+  /* 搜一搜：统一权限过滤、字段匹配、个人偏好、新鲜度和去重后分组返回。 */
   if (parts[0] === 'search' && method === 'GET') {
     const me = currentUser(req);
     if (!me) return fail(res, 401, '请先登录');
-    const nmx = (id) => { const u = findUser(String(id || '')); return u ? (u.nickname || u.username || '') : ''; };
-    const q = String(query.get('q') || '').trim().slice(0, 40);
-    const scope = String(query.get('scope') || 'all');
-    if (!q) return ok(res, { people: [], groups: [], moments: [], videos: [], messages: [] });
-    const lower = q.toLowerCase();
-    const want = (k) => scope === 'all' || scope === k;
-    const out = { people: [], groups: [], moments: [], videos: [], messages: [] };
+    const startedAt = Date.now();
+    const nmx = (id) => {
+      const u = findUser(String(id || ''));
+      return u ? (u.nickname || u.username || '') : '';
+    };
+    const q = String(query.get('q') || '').trim().slice(0, 80);
+    const scope = ['all', 'people', 'groups', 'moments', 'videos', 'messages']
+      .includes(String(query.get('scope') || ''))
+      ? String(query.get('scope'))
+      : 'all';
+    const limit = Math.max(1, Math.min(50, Number(query.get('limit')) || 20));
+    if (!q) {
+      return ok(res, {
+        people: [], groups: [], moments: [], videos: [], messages: [],
+        meta: { q: '', scope, tookMs: 0, total: 0 }
+      });
+    }
+    const want = (kind) => scope === 'all' || scope === kind;
+    const output = { people: [], groups: [], moments: [], videos: [], messages: [] };
+    const totals = { people: 0, groups: 0, moments: 0, videos: 0, messages: 0 };
+    const rank = (kind, rows, fields, idOf, recencyOf, kindLimit) => {
+      if (!searchRankingKernel) {
+        const fallback = rows.slice(0, kindLimit || limit);
+        return { rows: fallback, total: fallback.length };
+      }
+      return searchRankingKernel.rank(me.id, kind, rows, q, {
+        fields, idOf, recencyOf, limit: kindLimit || limit
+      });
+    };
+
     if (want('people')) {
-      out.people = friendIds(me.id).map(findUser).filter(Boolean)
-        .filter((u) => displayNameFor(me.id, u).toLowerCase().includes(lower)
-          || String(u.username || '').toLowerCase().includes(lower))
-        .slice(0, 20)
-        .map((u) => ({ id: u.id, name: displayNameFor(me.id, u), username: u.username || '', avatar: u.avatar || '' }));
+      const candidates = friendIds(me.id).map(findUser).filter(Boolean)
+        .map((u) => ({
+          id: u.id,
+          name: displayNameFor(me.id, u),
+          username: u.username || '',
+          avatar: u.avatar || '',
+          createdAt: u.createdAt || ''
+        }));
+      const result = rank('people', candidates,
+        (row) => [row.name, row.username],
+        (row) => row.id, (row) => row.createdAt);
+      output.people = result.rows;
+      totals.people = result.total;
     }
     if (want('groups')) {
-      out.groups = db.chats
-        .filter((c) => c.type === 'group' && (c.memberIds || []).includes(me.id)
-          && String(c.name || '').toLowerCase().includes(lower))
-        .slice(0, 20)
-        .map((c) => ({ id: c.id, name: c.name || '', avatar: c.avatar || '', members: (c.memberIds || []).length }));
+      const candidates = db.chats
+        .filter((c) => c.type === 'group' && (c.memberIds || []).includes(me.id))
+        .map((c) => ({
+          id: c.id,
+          name: c.name || '',
+          avatar: c.avatar || '',
+          members: (c.memberIds || []).length,
+          updatedAt: c.updatedAt || ''
+        }));
+      const result = rank('groups', candidates,
+        (row) => [row.name],
+        (row) => row.id, (row) => row.updatedAt);
+      output.groups = result.rows;
+      totals.groups = result.total;
     }
     if (want('moments')) {
-      out.moments = (db.moments || [])
-        .filter((m) => m && momentVisibleTo(m, me.id) && String(m.content || '').toLowerCase().includes(lower))
-        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
-        .slice(0, 20)
+      const candidates = (db.moments || [])
+        .filter((m) => m && momentVisibleTo(m, me.id))
         .map((m) => ({
-          id: m.id, authorId: m.authorId, author: nmx(m.authorId),
+          id: m.id,
+          authorId: m.authorId,
+          author: nmx(m.authorId),
           content: String(m.content || '').slice(0, 120),
-          images: (m.images || []).slice(0, 3), createdAt: m.createdAt
+          images: (m.images || []).slice(0, 3),
+          createdAt: m.createdAt || ''
         }));
+      const result = rank('moments', candidates,
+        (row) => [row.content, row.author],
+        (row) => row.id, (row) => row.createdAt);
+      output.moments = result.rows;
+      totals.moments = result.total;
     }
     if (want('videos')) {
-      const f = readJson(path.join(DATA_DIR, 'feed.json'), { items: [], posts: [] });
-      out.videos = (f.items || []).concat(f.posts || [])
-        .filter((v) => v && (String(v.title || '') + String(v.caption || '')).toLowerCase().includes(lower))
-        .slice(0, 20)
-        .map((v) => ({ id: v.id, title: v.title || v.caption || '', cover: v.cover || '', authorId: v.authorId || '', author: v.authorId ? nmx(v.authorId) : '' }));
+      const feed = readJson(path.join(DATA_DIR, 'feed.json'), { items: [], posts: [] });
+      const candidates = (feed.items || []).concat(feed.posts || [])
+        .filter((v) => v && feedVisibleTo(v, me.id))
+        .map((v) => ({
+          id: v.id,
+          title: v.title || v.caption || v.desc || '',
+          cover: v.cover || '',
+          authorId: v.authorId || '',
+          author: v.authorId ? nmx(v.authorId) : '',
+          tag: v.tag || '',
+          createdAt: v.createdAt || ''
+        }));
+      const result = rank('videos', candidates,
+        (row) => [row.title, row.author, row.tag],
+        (row) => row.id, (row) => row.createdAt);
+      output.videos = result.rows;
+      totals.videos = result.total;
     }
     if (want('messages')) {
       const hits = [];
-      for (const c of chatsOf(me.id)) {
-        if (hits.length >= 30) break;
-        const msgs = loadMessages(c.id);
-        for (let i = msgs.length - 1; i >= 0 && hits.length < 30; i -= 1) {
-          const m = msgs[i];
-          if (!m || m.recalled) continue;
-          if (!String(m.content || '').toLowerCase().includes(lower)) continue;
-          const peerId = (c.memberIds || []).find((id) => id !== me.id) || '';
+      for (const chat of chatsOf(me.id)) {
+        const peerId = (chat.memberIds || []).find((id) => id !== me.id) || '';
+        const chatTitle = chat.type === 'group' ? (chat.name || '群聊') : nmx(peerId);
+        const msgs = loadMessages(chat.id);
+        for (let i = msgs.length - 1; i >= 0 && hits.length < 500; i -= 1) {
+          const message = msgs[i];
+          if (!message || message.recalled) continue;
           hits.push({
-            chatId: c.id, isGroup: c.type === 'group',
-            chatTitle: c.type === 'group' ? (c.name || '群聊') : nmx(peerId),
-            peerId, messageId: m.id, senderId: m.senderId, sender: nmx(m.senderId),
-            text: String(m.content || '').slice(0, 120), at: m.createdAt
+            chatId: chat.id,
+            isGroup: chat.type === 'group',
+            chatTitle,
+            peerId,
+            messageId: message.id,
+            senderId: message.senderId,
+            sender: nmx(message.senderId),
+            text: String(message.content || '').slice(0, 120),
+            at: message.createdAt || ''
           });
         }
       }
-      out.messages = hits.sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 30);
+      const result = rank('messages', hits,
+        (row) => [row.text, row.chatTitle, row.sender],
+        (row) => row.messageId, (row) => row.at, Math.min(30, limit));
+      output.messages = result.rows;
+      totals.messages = result.total;
     }
-    /* 临时调试：确认搜索内部到底扫了多少会话/消息（排查完就删） */
-    out._dbg = {
-      scope: scope, q: q,
-      chats: chatsOf(me.id).length,
-      scanned: chatsOf(me.id).reduce((n, c) => n + loadMessages(c.id).length, 0)
-    };
-    ok(res, out);
+    if (searchRankingKernel) {
+      searchRankingKernel.recordEvents(me.id, [{
+        eventId: uid('se'),
+        type: 'query',
+        scope,
+        query: q,
+        at: new Date().toISOString()
+      }]);
+    }
+    const hotCfg = readJson(path.join(DATA_DIR, 'search-hot.json'), { words: [] });
+    const suggestions = searchRankingKernel
+      ? searchRankingKernel.suggestions(me.id, hotCfg.words || [], 10)
+      : (hotCfg.words || []).slice(0, 10);
+    ok(res, Object.assign(output, {
+      suggestions,
+      meta: {
+        q,
+        scope,
+        tookMs: Date.now() - startedAt,
+        total: Object.values(totals).reduce((sum, value) => sum + value, 0),
+        totals,
+        engine: 'xingyan-search-v1'
+      }
+    }));
     return;
   }
 
@@ -18328,7 +19307,7 @@ async function handleApi(req, res, pathname, query) {
     const body = await readBody(req);
     const trackId = str(body.id, 80);
     if (!trackId) return fail(res, 422, '缺少歌曲');
-    musicNowState.set(user.id, {
+    const presence = {
       track: {
         id: trackId,
         title: str(body.title, 120),
@@ -18336,8 +19315,29 @@ async function handleApi(req, res, pathname, query) {
         cover: str(body.cover, 300),
         url: str(body.url, 500)
       },
-      at: Date.now()
-    });
+      at: Date.now(),
+      playing: body.playing !== false,
+      position: Math.max(0, Number(body.position) || 0),
+      duration: Math.max(0, Number(body.duration) || 0),
+      deviceId: clientInfo(req).deviceId || ''
+    };
+    musicNowState.set(user.id, presence);
+    const event = {
+      type: 'musicPresence',
+      userId: user.id,
+      name: user.nickname || user.username || '好友',
+      avatar: user.avatar || '',
+      trackId,
+      title: presence.track.title,
+      artist: presence.track.artist,
+      cover: presence.track.cover,
+      url: presence.track.url,
+      playing: presence.playing,
+      position: presence.position,
+      duration: presence.duration,
+      at: presence.at
+    };
+    friendIds(user.id).forEach((friendId) => sendTo(friendId, event));
     if (musicNowState.size > 5000) {
       const cutoff = Date.now() - 2 * 60 * 60 * 1000;
       musicNowState.forEach((row, id) => {
@@ -18366,7 +19366,11 @@ async function handleApi(req, res, pathname, query) {
         artist: row.track.artist,
         cover: row.track.cover,
         url: row.track.url,
-        at: row.at
+        at: row.at,
+        playing: row.playing !== false,
+        position: Math.max(0, Number(row.position) || 0),
+        duration: Math.max(0, Number(row.duration) || 0),
+        deviceId: row.deviceId || ''
       });
     });
     list.sort((a, b) => Number(b.at) - Number(a.at));
@@ -19200,13 +20204,16 @@ async function handleApi(req, res, pathname, query) {
   }
 
   if (parts[0] === 'payment' && parts[1] === 'status' && method === 'GET') {
+    const readiness = paymentReadinessSnapshot();
     ok(res, {
       mode: paymentCoreMode,
       database: paymentDatabase ? 'sqlite-v1' : 'legacy',
       databaseReady: !!paymentDatabase && paymentDatabase.readiness().ok,
       providerReady: !!(paymentProvider && paymentProvider.ready()),
       provider: paymentProvider && paymentProvider.ready() ? paymentProvider.name : '',
-      realMoneyReady: paymentRealMoneyReady,
+      keyringReady: paymentKeyringReady,
+      realMoneyReady: readiness.ready,
+      blockers: readiness.blockers,
       amlEnforcement: AML_ENFORCEMENT_ENABLED
     });
     return;
@@ -20337,9 +21344,24 @@ async function handleApi(req, res, pathname, query) {
     const bank = list.find((b) => b.id === str(body.bankId, 40)) || list.find((b) => b.isDefault) || list[0] || null;
     const before = Number(user.balance) || 0;
     if (paymentCoreMode === 'enforce') {
-      if (!paymentDatabase || !paymentProvider || !paymentProvider.ready()) {
+      const readiness = paymentReadinessSnapshot();
+      if (!readiness.ready) {
         idemAbort(idem.key);
-        return fail(res, 503, '持牌支付机构尚未配置，充值已安全暂停');
+        return fail(res, 503, '真实支付上线检查未通过，充值已安全暂停', {
+          paymentBlockers: readiness.blockers
+        });
+      }
+      const aml = amlGateOrReject(res, req, user, {
+        channel: 'wallet_recharge',
+        direction: 'in',
+        amount,
+        counterpartyName: bank ? (bank.bank + '（' + bank.tail + '）') : '银行卡',
+        note: '充值到零钱',
+        requestId: idem.key
+      });
+      if (!aml) {
+        idemAbort(idem.key);
+        return;
       }
       let fundingOrder = null;
       try {
@@ -20361,6 +21383,7 @@ async function handleApi(req, res, pathname, query) {
           order.id,
           providerRef
         );
+        amlComplete(aml, true, { externalRef: providerRef || order.id });
         const payload = {
           pending: true,
           recharged: 0,
@@ -20375,6 +21398,7 @@ async function handleApi(req, res, pathname, query) {
         ok(res, payload);
         return;
       } catch (error) {
+        amlComplete(aml, false, { note: String(error && error.message || error) });
         if (fundingOrder) {
           idemFinish(idem.key, {
             pending: true,
@@ -20462,9 +21486,24 @@ async function handleApi(req, res, pathname, query) {
           + '，当前零钱 ¥' + before.toFixed(2));
     }
     if (paymentCoreMode === 'enforce') {
-      if (!paymentDatabase || !paymentProvider || !paymentProvider.ready()) {
+      const readiness = paymentReadinessSnapshot();
+      if (!readiness.ready) {
         idemAbort(idem.key);
-        return fail(res, 503, '持牌支付机构尚未配置，提现已安全暂停');
+        return fail(res, 503, '真实支付上线检查未通过，提现已安全暂停', {
+          paymentBlockers: readiness.blockers
+        });
+      }
+      const aml = amlGateOrReject(res, req, user, {
+        channel: 'wallet_withdraw',
+        direction: 'out',
+        amount,
+        counterpartyName: bank.bank + '（' + bank.tail + '）',
+        note: '零钱提现',
+        requestId: idem.key
+      });
+      if (!aml) {
+        idemAbort(idem.key);
+        return;
       }
       let fundingOrder = null;
       try {
@@ -20493,6 +21532,7 @@ async function handleApi(req, res, pathname, query) {
           order.id,
           providerRef
         );
+        amlComplete(aml, true, { externalRef: providerRef || order.id });
         const payload = {
           pending: true,
           amount,
@@ -20507,6 +21547,7 @@ async function handleApi(req, res, pathname, query) {
         ok(res, payload);
         return;
       } catch (error) {
+        amlComplete(aml, false, { note: String(error && error.message || error) });
         user.balance = paymentLedger.accountBalance('user:' + user.id);
         saveUsers();
         if (fundingOrder) {
@@ -21228,8 +22269,16 @@ async function handleApi(req, res, pathname, query) {
     const env = str(body.env, 10) === 'sandbox' ? 'sandbox' : 'prod';
     const list = p.tokens[user.id] || (p.tokens[user.id] = []);
     const exist = list.find((d) => d.token === token);
-    if (exist) { exist.env = env; exist.updatedAt = now(); }
-    else list.push({ token, env, platform: str(body.platform, 12) || 'ios', updatedAt: now() });
+    const deviceId = str(body.deviceId, 120);
+    const platform = str(body.platform, 12) || 'ios';
+    if (exist) {
+      exist.env = env;
+      exist.platform = platform;
+      if (deviceId) exist.deviceId = deviceId;
+      exist.updatedAt = now();
+    } else {
+      list.push({ token, env, platform, deviceId, updatedAt: now() });
+    }
     /* 同一台手机换个账号登录：token 从旧账号名下摘掉，免得推给错的人 */
     Object.keys(p.tokens).forEach((uid) => {
       if (uid === user.id) return;
@@ -21690,9 +22739,27 @@ async function handleApi(req, res, pathname, query) {
           if (!db.reads[user.id]) db.reads[user.id] = {};
           db.reads[user.id][chat.id] = clearedSeq;
           sendTo(user.id, { type: 'chat', action: 'deleted', chatId: chat.id });
+          if (messageReliability) {
+            messageReliability.recordEvent('chat.removed', chat.id, clearedSeq, {
+              chatId: chat.id,
+              ownerId: user.id
+            });
+          }
         }
         sendTo(user.id, { type: 'friend', action: 'removed', userId: targetId });
         sendTo(targetId, { type: 'friend', action: 'removed', userId: user.id });
+        if (messageReliability) {
+          messageReliability.recordEvent('friend.removed',
+            user.id + ':' + targetId, 1, {
+              ownerId: user.id,
+              targetId
+            });
+          messageReliability.recordEvent('friend.removed',
+            targetId + ':' + user.id, 1, {
+              ownerId: targetId,
+              targetId: user.id
+            });
+        }
       });
       if (remoteChanged) saveRemoteFriendshipCache();
       saveChats();
@@ -21741,6 +22808,12 @@ async function handleApi(req, res, pathname, query) {
       saveReads();
       saveChats();
       sendTo(user.id, { type: 'chat', action: 'deleted', chatId: chat.id });
+      if (messageReliability) {
+        messageReliability.recordEvent('chat.removed', chat.id, clearedSeq, {
+          chatId: chat.id,
+          ownerId: user.id
+        });
+      }
     }
     /* 备注之类的一并清掉 */
     const dbm = readFriendMeta();
@@ -21751,6 +22824,18 @@ async function handleApi(req, res, pathname, query) {
     sendTo(user.id, { type: 'friend', action: 'removed', userId: target.id });
     /* 对端也立即刷新，不再等客户端每 10 秒拉通讯录。 */
     sendTo(target.id, { type: 'friend', action: 'removed', userId: user.id });
+    if (messageReliability) {
+      messageReliability.recordEvent('friend.removed',
+        user.id + ':' + target.id, 1, {
+          ownerId: user.id,
+          targetId: target.id
+        });
+      messageReliability.recordEvent('friend.removed',
+        target.id + ':' + user.id, 1, {
+          ownerId: target.id,
+          targetId: user.id
+        });
+    }
     observeShardShadow('friends.remove', {
       actorId: user.id,
       targetId: target.id,
@@ -22070,6 +23155,12 @@ async function handleApi(req, res, pathname, query) {
       chat.pinnedFor = (chat.pinnedFor || []).filter((id) => id !== user.id);
       saveChats();
       sendTo(user.id, { type: 'chat', action: 'removed', chatId: chat.id });
+      if (messageReliability) {
+        messageReliability.recordEvent('chat.removed', chat.id, clearedSeq, {
+          chatId: chat.id,
+          ownerId: user.id
+        });
+      }
       observeShardShadow('chats.hide', { chatId: chat.id, ownerId: user.id, eventId: 'hide:' + user.id + ':' + chat.id });
       ok(res, { hidden: true, chatId: chat.id, bot: true, cleared: clearedSeq });
       return;
@@ -22077,6 +23168,12 @@ async function handleApi(req, res, pathname, query) {
     chat.hiddenFor = Array.from(new Set((chat.hiddenFor || []).concat([user.id])));
     saveChats();
     sendTo(user.id, { type: 'chat', action: 'removed', chatId: chat.id });
+    if (messageReliability) {
+      messageReliability.recordEvent('chat.removed', chat.id, clearedSeq, {
+        chatId: chat.id,
+        ownerId: user.id
+      });
+    }
     observeShardShadow('chats.hide', { chatId: chat.id, ownerId: user.id, eventId: 'hide:' + user.id + ':' + chat.id });
     ok(res, { hidden: true, chatId: chat.id, cleared: clearedSeq });
     return;
@@ -22532,15 +23629,28 @@ async function handleApi(req, res, pathname, query) {
     if (!chat) return fail(res, 404, '会话不存在');
     if (!chat.memberIds.includes(user.id)) return fail(res, 403, '你不在这个会话里');
     const ownerId = chat.ownerId && chat.memberIds.includes(chat.ownerId) ? chat.ownerId : '';
-    const ordered = (ownerId ? [ownerId] : []).concat(chat.memberIds.filter((id) => id !== ownerId));
+    const leadIds = Array.from(new Set([ownerId, user.id].filter(Boolean)));
+    const ordered = leadIds.concat(
+      chat.memberIds.filter((id) => !leadIds.includes(id))
+    );
+    const rawLimit = query && query.get ? Number(query.get('limit') || 0) : 0;
+    const rawCursor = query && query.get ? Number(query.get('cursor') || 0) : 0;
+    const cursor = Math.max(0, Math.floor(Number.isFinite(rawCursor) ? rawCursor : 0));
+    const limit = rawLimit > 0
+      ? Math.max(1, Math.min(500, Math.floor(rawLimit)))
+      : ordered.length;
+    const page = ordered.slice(cursor, cursor + limit);
+    const nextCursor = cursor + page.length;
     ok(res, {
       name: chat.name || '',
       avatar: chat.avatar || '',
       ownerId: ownerId,
       createdAt: chat.createdAt || '',
       memberCount: chat.memberIds.length,
+      nextCursor,
+      hasMore: nextCursor < ordered.length,
       /* alias = 群昵称（微信「设置群昵称」），没设就是空串 */
-      members: ordered.map((id) => {
+      members: page.map((id) => {
         const u = publicUser(findUser(id));
         if (!u) return null;
         u.alias = memberAlias(chat, id);
@@ -22571,9 +23681,7 @@ async function handleApi(req, res, pathname, query) {
     else delete chat.aliases[targetId];
     saveChats();
     /* 群里其他人立刻看到新的群昵称（消息里那个名字跟着变） */
-    chat.memberIds.forEach((id) => {
-      sendTo(id, { type: 'group-alias', chatId: chat.id, userId: targetId, alias });
-    });
+    sendToChat(chat, { type: 'group-alias', chatId: chat.id, userId: targetId, alias });
     ok(res, { alias, userId: targetId,
       name: alias || displayNameFor(user.id, findUser(targetId)) });
     return;
@@ -22684,11 +23792,14 @@ async function handleApi(req, res, pathname, query) {
     const chat = db.chats.find((c) => c.id === chatId && c.type === 'group');
     if (!chat || chat.dismissed) return fail(res, 404, '这个群已经不在了');
     if (chat.memberIds.includes(user.id)) return ok(res, { joined: false, already: true, chat: chatSummary(chat, user.id) });
-    if (chat.memberIds.length >= 200) return fail(res, 422, '群人数满了');
+    const joinCap = Math.max(2, Math.min(10000, Number(readIm().maxGroupMembers) || 100));
+    if (chat.memberIds.length >= joinCap) return fail(res, 422, '群人数满了');
     chat.memberIds.push(user.id);
     buildGroupAvatar(chat);
     const sys = pushSystemMessage(chat, user.nickname + ' 通过群二维码加入了群聊');
-    chat.memberIds.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
+    onlineMembersOfChat(chat).forEach((id) => sendTo(id, {
+      type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null
+    }));
     saveChats();
     ok(res, { joined: true, chat: chatSummary(chat, user.id) });
     return;
@@ -22705,7 +23816,9 @@ async function handleApi(req, res, pathname, query) {
     const body = await readBody(req);
     chat.muteAll = body.on !== false;
     const sys = pushSystemMessage(chat, chat.muteAll ? '群主开启了全员禁言' : '群主关闭了全员禁言');
-    chat.memberIds.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
+    onlineMembersOfChat(chat).forEach((id) => sendTo(id, {
+      type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null
+    }));
     saveChats();
     ok(res, { muteAll: chat.muteAll });
     return;
@@ -22752,7 +23865,9 @@ async function handleApi(req, res, pathname, query) {
     }
     if (!changed) return fail(res, 422, '没有要修改的内容');
     saveChats();
-    chat.memberIds.forEach((id) => sendTo(id, { type: 'chat', action: 'updated', chat: chatSummary(chat, id) }));
+    onlineMembersOfChat(chat).forEach((id) => sendTo(id, {
+      type: 'chat', action: 'updated', chat: chatSummary(chat, id)
+    }));
     ok(res, { name: chat.name, announce: chat.announce || '' });
     return;
   }
@@ -22816,6 +23931,7 @@ async function handleApi(req, res, pathname, query) {
       for (let i = list.length - 1; i >= 0; i--) {
         if (goneSet[list[i].id]) list.splice(i, 1);
       }
+      invalidateMentionIndex(chat.id);
       saveMessagesFile(chat.id, list);
       chat.memberIds.forEach((id) => sendTo(id, { type: 'burn', chatId: chat.id, ids: gone }));
     } else if (changed) {
@@ -22842,7 +23958,7 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
-  /* 群加人：群里任何一个成员都能拉人进来（微信默认也是这样），群上限 500。
+  /* 群加人：群里任何一个成员都能拉人进来，上限跟随后台 im.maxGroupMembers。
      注意路径不能用 invite —— 那个已经被「群二维码/邀请码」占用了。 */
   if (parts[0] === 'chats' && parts[2] === 'add-members' && method === 'POST') {
     refreshChatAccessStateFromDisk(false);
@@ -22855,7 +23971,7 @@ async function handleApi(req, res, pathname, query) {
     const want = (Array.isArray(body.userIds) ? body.userIds : []).map((x) => String(x)).slice(0, 50);
     if (!want.length) return fail(res, 422, '先选要拉进来的人');
 
-    const MAX_MEMBERS = 500;
+    const MAX_MEMBERS = Math.max(2, Math.min(10000, Number(readIm().maxGroupMembers) || 100));
     const added = [];
     let skipped = 0;
     for (const id of want) {
@@ -22875,7 +23991,9 @@ async function handleApi(req, res, pathname, query) {
     buildGroupAvatar(chat);
     const names = added.map((u) => u.nickname || u.username).join('、');
     const sys = pushSystemMessage(chat, user.nickname + ' 邀请 ' + names + ' 加入了群聊');
-    chat.memberIds.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
+    onlineMembersOfChat(chat).forEach((id) => sendTo(id, {
+      type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null
+    }));
     /* 新进来的人：推一下「你被拉进这个群了」，App 收到就刷新会话列表 */
     added.forEach((u) => sendTo(u.id, { type: 'chat', action: 'added', chatId: chat.id, chat: chatSummary(chat, u.id) }));
     saveChats();
@@ -22904,7 +24022,9 @@ async function handleApi(req, res, pathname, query) {
     chat.pinnedFor = (chat.pinnedFor || []).filter((id) => id !== target.id);
     buildGroupAvatar(chat);
     const sys = pushSystemMessage(chat, target.nickname + ' 被移出了群聊');
-    chat.memberIds.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
+    onlineMembersOfChat(chat).forEach((id) => sendTo(id, {
+      type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null
+    }));
     sendTo(target.id, { type: 'chat', action: 'removed', chatId: chat.id });
     saveChats();
     observeShardShadow('chats.kick', { chatId: chat.id, userId: target.id });
@@ -23047,6 +24167,94 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
+  /* 多端同步：按“账号 + 设备 + 会话”维护送达游标。已读属于账号级真值，
+     所以所有设备共享 readSeq；deliveredSeq 只属于当前设备。 */
+  if (parts[0] === 'sync' && parts[1] === 'state' && method === 'GET') {
+    const info = clientInfo(req);
+    const deviceId = String(info.deviceId || '').slice(0, 120);
+    if (!deviceId) return fail(res, 422, '缺少设备标识');
+    const limit = Math.min(200, Math.max(1, Number(query.get('limit')) || 50));
+    const cursor = str(query.get('cursor'), 120);
+    if (!messageReliability) {
+      ok(res, {
+        enabled: false, deviceId, items: [], nextCursor: '', hasMore: false
+      });
+      return;
+    }
+    const rows = chatsOf(user.id)
+      .filter((chat) => chat && chat.id && !chat.dismissedFor?.includes(user.id))
+      .map((chat) => {
+        const lastSeq = Math.max(0,
+          Number(messageReliability.lastSequence(chat.id)) || 0);
+        const device = messageReliability.deviceCursor(user.id, deviceId, chat.id);
+        const deliveredSeq = Math.min(lastSeq,
+          Math.max(0, Number(device.deliveredSeq) || 0));
+        const readSeq = Math.min(lastSeq,
+          Math.max(0, Number(((db.reads || {})[user.id] || {})[chat.id] || 0)));
+        return {
+          chatId: String(chat.id),
+          lastSeq,
+          deliveredSeq,
+          readSeq,
+          hasDelta: lastSeq > deliveredSeq
+        };
+      })
+      .sort((left, right) => left.chatId.localeCompare(right.chatId));
+    const cursorIndex = cursor
+      ? rows.findIndex((row) => row.chatId.localeCompare(cursor) > 0)
+      : 0;
+    const start = cursor && cursorIndex < 0 ? rows.length : Math.max(0, cursorIndex);
+    const page = rows.slice(start, start + limit);
+    const hasMore = start + page.length < rows.length;
+    ok(res, {
+      enabled: true,
+      deviceId,
+      items: page,
+      nextCursor: hasMore && page.length ? page[page.length - 1].chatId : '',
+      hasMore
+    });
+    return;
+  }
+
+  if (parts[0] === 'sync' && parts[1] === 'ack' && method === 'POST') {
+    const info = clientInfo(req);
+    const deviceId = String(info.deviceId || '').slice(0, 120);
+    if (!deviceId) return fail(res, 422, '缺少设备标识');
+    if (!messageReliability) {
+      ok(res, { acknowledged: 0, rejected: [{ reason: 'sync-disabled' }] });
+      return;
+    }
+    const body = await readBody(req);
+    const rows = Array.isArray(body.items)
+      ? body.items.slice(0, 200)
+      : [];
+    const rejected = [];
+    let acknowledged = 0;
+    rows.forEach((row) => {
+      const chatId = str(row && row.chatId, 80);
+      const requested = Math.max(0, Math.floor(Number(row && row.seq) || 0));
+      const chat = chatId ? db.chats.find((value) => value.id === chatId) : null;
+      if (!chat || !Array.isArray(chat.memberIds)
+          || !chat.memberIds.includes(user.id)) {
+        rejected.push({ chatId, reason: 'chat-not-found' });
+        return;
+      }
+      const lastSeq = Math.max(0,
+        Number(messageReliability.lastSequence(chatId)) || 0);
+      if (!requested || requested > lastSeq) {
+        rejected.push({ chatId, reason: 'sequence-out-of-range' });
+        return;
+      }
+      if (messageReliability.ackDevice(user.id, deviceId, chatId, requested)) {
+        acknowledged += 1;
+      } else {
+        rejected.push({ chatId, reason: 'ack-rejected' });
+      }
+    });
+    ok(res, { acknowledged, rejected });
+    return;
+  }
+
   if (parts[0] === 'message-events' && method === 'GET') {
     if (!messageReliability) return ok(res, { events: [], sequence: 0, hasMore: false });
     const after = Math.max(0, Number(query.get('after')) || 0);
@@ -23055,6 +24263,8 @@ async function handleApi(req, res, pathname, query) {
     const events = scanned.filter((event) => {
       const payload = event.payload || {};
       if (event.type === 'chat.cleared') return payload.userId === user.id;
+      if (event.type === 'chat.removed') return payload.ownerId === user.id;
+      if (event.type === 'friend.removed') return payload.ownerId === user.id;
       const chatId = String(payload.chatId || '');
       const chat = chatId ? db.chats.find((c) => c.id === chatId) : null;
       return !!(chat && chat.memberIds.includes(user.id));
@@ -23469,6 +24679,7 @@ async function handleApi(req, res, pathname, query) {
     if (liked) m.likes.push({ userId: user.id, at: now() });
     else m.likes.splice(idx, 1);
     saveMoments();
+    await flushMomentReplication();
     observeShardShadow('moments.like', {
       momentId: m.id,
       userId: user.id,
@@ -23507,6 +24718,7 @@ async function handleApi(req, res, pathname, query) {
     }
     if (on) m.pinned = true; else delete m.pinned;
     saveMoments();
+    await flushMomentReplication();
     ok(res, { pinned: on });
     return;
   }
@@ -23522,6 +24734,7 @@ async function handleApi(req, res, pathname, query) {
     if (c.userId !== user.id && m.authorId !== user.id) return fail(res, 403, '只能删自己的评论');
     m.comments.splice(idx, 1);
     saveMoments();
+    await flushMomentReplication();
     /* 评论删了，这条评论在「消息列表」里的那条通知也一起撤掉（微信也是删了就没） */
     for (let i = db.momentNotices.length - 1; i >= 0; i -= 1) {
       if (db.momentNotices[i].commentId === c.id) db.momentNotices.splice(i, 1);
@@ -23550,6 +24763,7 @@ async function handleApi(req, res, pathname, query) {
     if (liked) comment.likes.push({ userId: user.id, at: now() });
     else comment.likes.splice(at, 1);
     saveMoments();
+    await flushMomentReplication();
     observeShardShadow('moments.comment-like', {
       momentId: m.id,
       commentId: comment.id,
@@ -23589,6 +24803,7 @@ async function handleApi(req, res, pathname, query) {
     if (!m.comments) m.comments = [];
     m.comments.push({ id: uid('cm'), userId: user.id, content, replyTo, at: now(), likes: [] });
     saveMoments();
+    await flushMomentReplication();
     const shadowComment = m.comments[m.comments.length - 1];
     observeShardShadow('moments.comment', {
       momentId: m.id,
@@ -23744,7 +24959,10 @@ async function handleApi(req, res, pathname, query) {
     /* 客户端已导出且规格安全的聊天视频直接落盘，避免每次发送都阻塞在 ffmpeg。
        高码率、超长或尺寸过大的视频仍走原来的转码兜底。 */
     const video = ctype.indexOf('video/') === 0;
-    const videoCanPass = clientCompressed && videoCanSkipServerShrink(outPath, size);
+    /* x-chris-compressed is an explicit client contract: the media was already
+       exported for chat. Probing and synchronously transcoding after a completed
+       upload leaves the UI stuck at 100%; trust the contract and store now. */
+    const videoCanPass = clientCompressed;
     const videoTooBig = video && size > 2 * 1024 * 1024 && !videoCanPass;
     if (videoTooBig) {
       const before = size;
@@ -24306,12 +25524,11 @@ if (paymentCoreMode !== 'off' && !paymentIntentEngine && !paymentDatabase) {
 try {
   const { createPaymentProviderFromEnv } = require('./lib/payment-provider');
   paymentProvider = createPaymentProviderFromEnv(process.env);
-  paymentRealMoneyReady = paymentCoreMode === 'enforce'
-    && !!paymentDatabase
-    && paymentProvider.ready();
+  paymentRealMoneyReady = false;
   console.log('[支付机构] ' + (paymentProvider.ready()
     ? ('已配置 ' + paymentProvider.name)
-    : '未配置，真钱充值 / 提现将安全暂停'));
+    : '未通过就绪检查，真钱充值 / 提现将安全暂停：'
+      + paymentProvider.readiness().blockers.join(',')));
 } catch (error) {
   paymentProvider = null;
   paymentRealMoneyReady = false;
@@ -24319,6 +25536,16 @@ try {
     + String(error && error.message || error));
 }
 if (paymentDatabase) {
+  if (paymentProvider && paymentProvider.ready()) {
+    paymentSettlementScheduler = new PaymentSettlementScheduler({
+      provider: paymentProvider,
+      database: paymentDatabase,
+      file: path.join(DATA_DIR, 'payment-settlement-runs.json'),
+      hour: 3,
+      minute: 30
+    });
+    paymentSettlementScheduler.start();
+  }
   const scheduleOutbox = () => {
     runPaymentOutboxOnce().catch((error) => {
       console.log('[支付 outbox] ' + String(error && error.message || error));
@@ -24502,6 +25729,13 @@ if (!AML_ENFORCEMENT_ENABLED) {
     try { amlEngine.sweep(db.users, { limit: 500 }); }
     catch (error) { console.log('[AML] 定时筛查失败：' + String(error && error.message || error)); }
   }, 30 * 60 * 1000).unref();
+}
+const startupPaymentReadiness = paymentReadinessSnapshot();
+paymentRealMoneyReady = startupPaymentReadiness.ready;
+if (paymentCoreMode !== 'off') {
+  console.log('[支付上线闸门] ' + (paymentRealMoneyReady
+    ? '全部通过'
+    : '已关闭真钱入口：' + startupPaymentReadiness.blockers.join(',')));
 }
 loadSecurityState();   // 恢复「登录失败计数 / IP 封禁」（重启也不会被清掉）
 /* 钱的开工前自检：总账上每个账号最后那笔余额，必须和 users.json 对得上；
@@ -25018,10 +26252,81 @@ async function handleHttpRequest(req, res) {
            接收片必须丢掉旧缓存；否则离线后重进会话时看不到这张卡片，
            unreadCount() 也会按旧消息尾巴算出 0，红点不出现。 */
         messageCache.delete(relayChatId);
+        invalidateMentionIndex(relayChatId);
       }
       if (body.payload.type === 'moment') refreshMomentsFromDisk(true);
       if (body.payload.type === 'chat') refreshChatAccessStateFromDisk(true);
       const sent = sendToLocal(userId, body.payload);
+      return ok(res, { sent });
+    }
+    if (parsed.pathname === '/__shard/relay-batch') {
+      if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const a = Buffer.from(supplied);
+      const b = Buffer.from(expected);
+      if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      const items = Array.isArray(body.items) ? body.items : [];
+      if (!items.length || items.length > FANOUT_RELAY_BATCH_SIZE) {
+        return fail(res, 422, '分片批量事件不完整');
+      }
+      let sent = 0;
+      let invalidatedChat = '';
+      let refreshMoments = false;
+      let refreshChats = false;
+      for (const item of items) {
+        const userId = str(item.userId, 80);
+        const payload = item.payload;
+        if (!userId || !payload || typeof payload !== 'object') continue;
+        const relayType = String(payload.type || '');
+        const relayChatId = str(payload.chatId
+          || (payload.message && payload.message.chatId)
+          || '', 80);
+        if (relayChatId && !invalidatedChat
+            && ['message', 'transfer', 'redpacket', 'recall', 'burn'].includes(relayType)) {
+          invalidatedChat = relayChatId;
+        }
+        if (payload.type === 'moment') refreshMoments = true;
+        if (payload.type === 'chat') refreshChats = true;
+        sent += sendToLocal(userId, payload);
+      }
+      if (invalidatedChat) {
+        messageCache.delete(invalidatedChat);
+        invalidateMentionIndex(invalidatedChat);
+      }
+      if (refreshMoments) refreshMomentsFromDisk(true);
+      if (refreshChats) refreshChatAccessStateFromDisk(true);
+      return ok(res, { sent, items: items.length });
+    }
+    if (parsed.pathname === '/__shard/chat-broadcast') {
+      if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const a = Buffer.from(supplied);
+      const b = Buffer.from(expected);
+      if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      const chatId = str(body.chatId, 80);
+      const payload = body.payload;
+      const chat = db.chats.find((row) => row && row.id === chatId);
+      if (!chat || !payload || typeof payload !== 'object') {
+        return fail(res, 422, '分片聊天广播不完整');
+      }
+      const textCache = new Map();
+      let sent = 0;
+      chat.memberIds.forEach((id) => {
+        if (!connections.has(id)) return;
+        sent += sendToLocal(
+          id, payload, textCache, 'large-group-message'
+        );
+      });
+      messageCache.delete(chatId);
+      invalidateMentionIndex(chatId);
       return ok(res, { sent });
     }
     if (parsed.pathname === '/__shard/presence-event') {
@@ -25077,7 +26382,7 @@ async function handleHttpRequest(req, res) {
       if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
         return fail(res, 403, '禁止访问');
       }
-      return ok(res, { online: localOnlineIds() });
+      return ok(res, { online: deliveryOnlineIds() });
     }
     /* 被封的 IP：接口和上传文件一律 403；静态页面还让过，
        这样正常用户只是看到「操作失败」，不会整个 App 白屏。
@@ -25447,7 +26752,7 @@ function apiRateAllow(ip, path) {
 /* 发消息限流：每个人 10 秒最多 120 条（约 12 条/秒）。
    正常聊天绝对够；脚本刷屏、拿客户端当短信轰炸机都会被拦住。 */
 const MSG_WINDOW_MS = 10 * 1000;
-const MSG_MAX_PER_WINDOW = 60;    // 10 秒 60 条（约 6 条/秒），正常聊天够，刷屏会被卡
+const MSG_MAX_PER_WINDOW = Number(process.env.MSG_MAX_PER_WINDOW) || 60;
 const msgHits = new Map();          // userId -> { t, n }
 
 function msgRateAllow(userId) {
@@ -25461,7 +26766,7 @@ function msgRateAllow(userId) {
 
 /* 全局消息吞吐闸门：防"多个账号一起刷"把硬盘写爆 / 把 CPU 打死 */
 let globalMsgWindow = { t: Date.now(), n: 0 };
-const GLOBAL_MSG_PER_SEC = 3000;
+const GLOBAL_MSG_PER_SEC = Number(process.env.GLOBAL_MSG_PER_SEC) || 3000;
 function globalMsgAllow() {
   const now = Date.now();
   if (now - globalMsgWindow.t > 1000) globalMsgWindow = { t: now, n: 0 };
@@ -25482,6 +26787,8 @@ function sanitizeText(input) {
 
 /* 朋友圈限流：每人 1 分钟最多 20 条、1 天最多 300 条（防刷爆数据和 CPU） */
 const momentHits = new Map();       // userId -> { t, n, day, dayN }
+const MOMENT_MAX_PER_MINUTE = Number(process.env.MOMENT_MAX_PER_MINUTE) || 20;
+const MOMENT_MAX_PER_DAY = Number(process.env.MOMENT_MAX_PER_DAY) || 300;
 function momentRateAllow(userId) {
   const now = Date.now();
   const day = Math.floor(now / 86400000);
@@ -25491,7 +26798,9 @@ function momentRateAllow(userId) {
   if (r.day !== day) { r.day = day; r.dayN = 0; }
   momentHits.set(userId, r);
   if (momentHits.size > 5000) momentHits.clear();
-  return r.n < 20 && r.dayN < 300 ? (r.n += 1, r.dayN += 1, true) : false;
+  return r.n < MOMENT_MAX_PER_MINUTE && r.dayN < MOMENT_MAX_PER_DAY
+    ? (r.n += 1, r.dayN += 1, true)
+    : false;
 }
 
 /* 搜索限流：每人 10 秒最多 30 次。
@@ -25537,6 +26846,7 @@ const UPLOAD_MAX_COUNT = 60;
 const UPLOAD_MAX_BYTES = 200 * 1024 * 1024;
 const UPLOAD_DIR_MAX = 8 * 1024 * 1024 * 1024;
 const uploadHits = new Map();       // userId -> { t, n, bytes }
+let uploadDirUsageCache = { at: 0, bytes: 0 };
 
 function uploadRateAllow(userId) {
   const now = Date.now();
@@ -25547,17 +26857,27 @@ function uploadRateAllow(userId) {
 }
 function noteUpload(userId, bytes) {
   const r = uploadHits.get(userId);
-  if (!r) return;
-  r.n += 1;
-  r.bytes += bytes;
+  if (r) {
+    r.n += 1;
+    r.bytes += bytes;
+  }
+  uploadDirUsageCache = {
+    at: Date.now(),
+    bytes: Math.max(0, uploadDirUsageCache.bytes) + Math.max(0, Number(bytes) || 0)
+  };
 }
 function uploadDirFull() {
+  const now = Date.now();
+  if (now - uploadDirUsageCache.at < 5000) {
+    return uploadDirUsageCache.bytes > UPLOAD_DIR_MAX;
+  }
   try {
     const files = fs.readdirSync(UPLOAD_DIR);
     let total = 0;
     for (const f of files) {
       try { total += fs.statSync(path.join(UPLOAD_DIR, f)).size; } catch (err) { }
     }
+    uploadDirUsageCache = { at: now, bytes: total };
     return total > UPLOAD_DIR_MAX;
   } catch (err) { return false; }
 }
@@ -25574,7 +26894,11 @@ function handleWsUpgrade(req, socket) {
   const rawPeerWs = String((req.socket && req.socket.remoteAddress) || '').replace('::ffff:', '');
   const proxyHttpsWs = /^(127\.0\.0\.1|::1)$/.test(rawPeerWs)
     && String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https';
-  if (!req.socket.encrypted && !proxyHttpsWs && !isLocalOrLan(clientInfo(req).ip)) {
+  const isolatedPlainWs = process.env.CHRIS_LOCAL_ONLY === '1'
+    && process.env.ALLOW_PLAIN_WS === '1'
+    && /^127(?:\.\d{1,3}){3}$/.test(rawPeerWs);
+  if (!req.socket.encrypted && !proxyHttpsWs && !isolatedPlainWs
+      && !isLocalOrLan(clientInfo(req).ip)) {
     securityNotePlainWs(clientInfo(req).ip);
     strikeIp(clientInfo(req).ip, '明文 ws 连实时通道');
     socket.end('HTTP/1.1 403 Forbidden\r\n\r\n');
@@ -25599,7 +26923,7 @@ function handleWsUpgrade(req, socket) {
     try {
       const q = new URL(req.url, 'http://localhost');
       const data = verifyTokenData(q.searchParams.get('token'));
-      const u = data && db.users.find((x) => x.id === data.sub);
+      const u = data && findUser(data.sub);
       /* 被顶下线的旧手机：连长连接也不给连（不然它还能白收消息） */
       const phoneOk = !u ? false : (((data.k || 'phone') !== 'phone')
         || (Number(data.ps) || 0) === (Number(u.phoneSession) || 0));
@@ -25712,11 +27036,15 @@ server.listen(PORT, BIND_HOST, () => {
 process.on('SIGINT', () => {
   console.log('\n正在退出…');
   server.close(() => {
+    closeVideoRecommendationKernel();
+    closeSearchRankingKernel();
     closePaymentDatabase();
     process.exit(0);
   });
 });
 process.on('SIGTERM', () => {
+  closeVideoRecommendationKernel();
+  closeSearchRankingKernel();
   closePaymentDatabase();
   process.exit(0);
 });
@@ -28267,6 +29595,7 @@ async function handleOps(req, res, parts, query) {
     const msg = messages.find((m) => m.id === parts[2]);
     if (!msg) return fail(res, 404, '消息不存在');
     msg.recalled = true;
+    invalidateMentionIndex(chat.id);
     try {
       saveMessagesFile(chat.id, messages);
     } catch (err) { return fail(res, 500, '写入失败'); }
@@ -28291,6 +29620,7 @@ async function handleOps(req, res, parts, query) {
     const file = path.join(DATA_DIR, 'messages', chat.id + '.jsonl');
     try { fs.writeFileSync(file, ''); } catch (err) { /* 忽略 */ }
     messageCache.delete(chat.id);
+    invalidateMentionIndex(chat.id);
     if (messageReliability) messageReliability.deleteChatMessages(chat.id);
     audit(req, admin, '清空会话', chat.id, '');
     ok(res, { cleared: true });
@@ -28890,11 +30220,147 @@ async function handleOps(req, res, parts, query) {
     const result = paymentLedger.reconcile(db.users, (id) => bizOf(id, false));
     audit(req, admin, '支付账本对账', 'reconcile',
       'entries=' + result.entries + ', differences=' + result.differences.length);
-    ok(res, result);
+    ok(res, Object.assign(result, {
+      scheduledSettlement: paymentSettlementScheduler
+        ? paymentSettlementScheduler.latest()
+        : null
+    }));
     return;
   }
 
-  if (sub === 'payments' && parts[2] === 'settlement' && method === 'GET') {
+  if (sub === 'payments' && parts[2] === 'disputes'
+      && parts.length === 3 && method === 'GET') {
+    if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有查看支付争议的权限');
+    if (!paymentDatabase) return fail(res, 503, '支付数据库暂时不可用');
+    const status = String(query.get('status') || '').trim().toLowerCase();
+    const disputes = paymentDatabase.disputes(100, status);
+    ok(res, {
+      disputes,
+      open: disputes.filter((row) => row.status === 'open').length
+    });
+    return;
+  }
+
+  if (sub === 'payments' && parts[2] === 'disputes'
+      && parts.length === 3 && method === 'POST') {
+    if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有登记支付争议的权限');
+    if (!paymentDatabase) return fail(res, 503, '支付数据库暂时不可用');
+    const body = await readBody(req);
+    if (!opsConfirmOk(admin, body)) {
+      audit(req, admin, '登记支付争议被拦（密码未确认）', '', '');
+      return fail(res, 428, '登记支付争议属于资金冻结操作，请再输入一次后台密码确认');
+    }
+    const reason = str(body.reason, 500).trim();
+    if (reason.length < 4) return fail(res, 422, '请填写至少 4 个字的争议原因');
+    try {
+      const result = paymentDatabase.openDispute({
+        intentId: str(body.intentId, 128),
+        provider: str(body.provider, 120) || 'xingyan',
+        providerDisputeId: str(body.providerDisputeId, 200),
+        reason
+      });
+      audit(req, admin, '登记支付争议', result.dispute.intentId,
+        result.dispute.provider + ' · ' + reason);
+      ok(res, result);
+      return;
+    } catch (error) {
+      return fail(res, 409, String(error && error.message || error));
+    }
+  }
+
+  if (sub === 'payments' && parts[2] === 'disputes'
+      && parts[4] === 'resolve' && parts.length === 5 && method === 'POST') {
+    if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有处理支付争议的权限');
+    if (!paymentDatabase) return fail(res, 503, '支付数据库暂时不可用');
+    const body = await readBody(req);
+    if (!opsConfirmOk(admin, body)) {
+      audit(req, admin, '支付争议结案被拦（密码未确认）', str(parts[3], 120), '');
+      return fail(res, 428, '支付争议结案属于资金操作，请再输入一次后台密码确认');
+    }
+    const note = str(body.note, 500).trim();
+    if (note.length < 8) return fail(res, 422, '请填写至少 8 个字的争议处理说明');
+    try {
+      const result = paymentDatabase.resolveDispute(
+        str(parts[3], 120),
+        admin.username || admin.name || admin.id || 'admin',
+        note,
+        str(body.outcome, 40)
+      );
+      audit(req, admin, '支付争议结案', str(parts[3], 120),
+        result.dispute.outcome + ' · ' + note);
+      ok(res, result);
+      return;
+    } catch (error) {
+      return fail(res, 409, String(error && error.message || error));
+    }
+  }
+
+  if (sub === 'payments' && parts[2] === 'disputes'
+      && parts[4] === 'finalize' && parts.length === 5 && method === 'POST') {
+    if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有处理支付争议的权限');
+    if (!paymentDatabase) return fail(res, 503, '支付数据库暂时不可用');
+    const body = await readBody(req);
+    if (!opsConfirmOk(admin, body)) {
+      audit(req, admin, '支付争议核销结案被拦（密码未确认）', str(parts[3], 120), '');
+      return fail(res, 428, '支付争议资金核销属于高危操作，请再输入一次后台密码确认');
+    }
+    const note = str(body.note, 500).trim();
+    const ledgerRef = str(body.ledgerRef, 200).trim();
+    if (note.length < 8) return fail(res, 422, '请填写至少 8 个字的争议核销说明');
+    if (!ledgerRef) return fail(res, 422, '请填写已记账的争议核销流水号');
+    try {
+      const result = paymentDatabase.finalizeDisputeAdjustment(
+        str(parts[3], 120),
+        admin.username || admin.name || admin.id || 'admin',
+        note,
+        ledgerRef
+      );
+      audit(req, admin, '支付争议核销结案', str(parts[3], 120),
+        result.dispute.outcome + ' · ' + ledgerRef + ' · ' + note);
+      ok(res, result);
+      return;
+    } catch (error) {
+      return fail(res, 409, String(error && error.message || error));
+    }
+  }
+
+  if (sub === 'payments' && parts[2] === 'settlement'
+      && parts[3] === 'incidents' && parts.length === 4 && method === 'GET') {
+    if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有查看这一项的权限');
+    if (!paymentDatabase) return fail(res, 503, '支付数据库暂时不可用');
+    const status = String(query.get('status') || '').trim().toLowerCase();
+    const incidents = paymentDatabase.settlementIncidents(100, status);
+    ok(res, {
+      incidents,
+      open: incidents.filter((x) => x.status === 'open').length
+    });
+    return;
+  }
+
+  if (sub === 'payments' && parts[2] === 'settlement'
+      && parts[3] === 'incidents' && parts[5] === 'resolve'
+      && parts.length === 6 && method === 'POST') {
+    if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有处理对账差异的权限');
+    if (!paymentDatabase) return fail(res, 503, '支付数据库暂时不可用');
+    const body = await readBody(req);
+    const note = str(body.note, 500).trim();
+    if (note.length < 8) return fail(res, 422, '请填写至少 8 个字的差异处理说明');
+    try {
+      const result = paymentDatabase.resolveSettlementIncident(
+        str(parts[4], 120),
+        admin.username || admin.name || admin.id || 'admin',
+        note
+      );
+      audit(req, admin, '支付对账差异结案', str(parts[4], 120), note);
+      ok(res, result);
+      return;
+    } catch (error) {
+      return fail(res, 409, String(error && error.message || error));
+    }
+  }
+
+  if (sub === 'payments' && parts[2] === 'settlement'
+      && parts.length === 3 && method === 'GET') {
     if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有查看这一项的权限');
     if (!paymentDatabase || !paymentProvider || !paymentProvider.ready()) {
       return fail(res, 503, '支付数据库或持牌支付机构尚未就绪');
