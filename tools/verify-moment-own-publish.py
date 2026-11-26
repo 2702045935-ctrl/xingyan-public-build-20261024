@@ -48,7 +48,7 @@ require(
 )
 require(
     "var uploadError: String?" in VIEW
-    and "while nextIdx < min(3, picked.count)" in VIEW
+    and "while nextIdx < min(6, picked.count)" in VIEW
     and "if let uploadError {\n                throw APIError.message(uploadError)" in VIEW
     and "guard mResults.count == picked.count else" in VIEW
     and "图片上传不完整，请重试" in VIEW

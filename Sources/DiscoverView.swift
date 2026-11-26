@@ -3514,7 +3514,7 @@ struct MomentsView: View {
                         }
                     }
                 }
-                while nextIdx < min(3, picked.count) { addUpload(nextIdx); nextIdx += 1 }
+                while nextIdx < min(6, picked.count) { addUpload(nextIdx); nextIdx += 1 }
                 for await r in group {
                     if let error = r.5 {
                         if uploadError == nil { uploadError = error }
