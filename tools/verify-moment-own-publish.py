@@ -46,6 +46,7 @@ require(
     and "publishError = message" in VIEW,
     "publish failures must stay visible and must not silently clear the draft",
 )
+
 CARD = (ROOT / "Sources" / "MomentFeedCard.swift").read_text(encoding="utf-8")
 require(
     "HStack(spacing: -7)" in CARD
