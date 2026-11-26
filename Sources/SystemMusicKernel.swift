@@ -3,16 +3,9 @@ import Combine
 import Foundation
 import Network
 import UIKit
+import MusicModule
 
-enum MusicKernelState: String {
-    case idle
-    case loading
-    case playing
-    case paused
-    case interrupted
-    case recovering
-    case unavailable
-}
+typealias MusicKernelState = MusicPlaybackState
 
 extension Notification.Name {
     static let chrisMusicPresenceChanged =
@@ -62,13 +55,16 @@ final class SystemMusicKernel: ObservableObject {
     }
 
     var preferredForwardBuffer: Double {
-        if networkConstrained { return 8 }
-        if networkExpensive { return 5 }
-        return 3
+        playbackPolicy.preferredForwardBuffer
     }
 
     var waitsToMinimizeStalling: Bool {
-        networkConstrained || networkExpensive
+        playbackPolicy.waitsToMinimizeStalling
+    }
+
+    private var playbackPolicy: MusicPlaybackPolicy {
+        MusicPlaybackPolicy(networkConstrained: networkConstrained,
+                            networkExpensive: networkExpensive)
     }
 
     @discardableResult

@@ -5,6 +5,7 @@ import UIKit
 import QuickLook
 import QuickLookThumbnailing
 import CoreImage
+import PaymentModule
 
 private struct ChatTypingDots: View {
     let color: Color
@@ -8542,8 +8543,10 @@ struct MessageRow: View {
         let amount = (o["amount"] as? Double) ?? 0
         let note = (o["note"] as? String) ?? ""
         let status = (o["status"] as? String) ?? "pending"
-        let pending = status == "pending"
-        let received = status == "received"
+        let lifecycle = PaymentTransferLifecycle(rawValue: status) ?? .pending
+        let pending = lifecycle == .pending
+        let received = lifecycle == .received
+        let paymentMoney = PaymentMoney(cents: Int64((amount * 100).rounded()))
         let accent = received ? PayVisual.success
             : (pending ? PayVisual.warning : PayVisual.secondaryInk)
         let statusText = received ? Tr("已收款")
@@ -8572,7 +8575,7 @@ struct MessageRow: View {
                     Text(mine ? Tr("你转给对方") : Tr("转账给你"))
                         .font(pf(11.5, .medium))
                         .foregroundColor(PayVisual.secondaryInk)
-                    Text("¥\(moneyFmt(amount))")
+                    Text("¥" + paymentMoney.formatted)
                         .font(pfMoney(23, .semibold))
                         .foregroundColor(C.label)
                         .lineLimit(1)

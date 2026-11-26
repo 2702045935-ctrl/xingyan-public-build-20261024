@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import PaymentModule
 
 struct TransferView: View {
     let chat: Chat
@@ -37,7 +38,16 @@ struct TransferView: View {
 
     @State private var peerRealName = ""
 
-    private var amount: Double { Double(digits) ?? 0 }
+    private var amountMoney: PaymentMoney {
+        PaymentMoney(decimalString: digits) ?? .zero
+    }
+    private var amount: Double { amountMoney.amount }
+    private var payInset: CGFloat {
+        CGFloat(PaymentApplePayLayout.horizontalInset)
+    }
+    private var payControlHeight: CGFloat {
+        CGFloat(PaymentApplePayLayout.primaryControlHeight)
+    }
     private var peerAvatar: String { chat.avatar ?? "" }
 
     private var peerTitle: String {
@@ -181,7 +191,7 @@ struct TransferView: View {
             }
             .foregroundStyle(amount > 0 ? C.cardBg : PayVisual.secondaryInk)
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
+            .frame(height: payControlHeight)
             .background(
                 amount > 0 ? C.label : PayVisual.secondaryInk.opacity(0.12),
                 in: RoundedRectangle(cornerRadius: 17, style: .continuous)
@@ -196,7 +206,7 @@ struct TransferView: View {
         }
         .buttonStyle(AppleCheckoutButtonStyle())
         .disabled(amount <= 0)
-        .padding(.horizontal, 20)
+        .padding(.horizontal, payInset)
         .padding(.top, 12)
         .padding(.bottom, max(14, L.safeBottom))
     }
@@ -345,7 +355,7 @@ struct TransferView: View {
         }
         .shadow(color: .black.opacity(scheme == .dark ? 0.18 : 0.06),
                 radius: 18, y: 8)
-        .padding(.horizontal, 20)
+        .padding(.horizontal, payInset)
         .padding(.top, 12)
     }
 
@@ -434,7 +444,7 @@ struct TransferView: View {
                         passwordPanel
                     }
                 }
-                .padding(.horizontal, 20)
+        .padding(.horizontal, payInset)
                 .padding(.top, 12)
                 .padding(.bottom, 18)
             }

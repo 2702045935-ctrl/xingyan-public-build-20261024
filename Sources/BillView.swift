@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import PaymentModule
 
 struct TransferInfo {
     var id = ""
@@ -53,6 +54,18 @@ struct TransferInfo {
     var refundClosed: Bool {
         guard !receivedAt.isEmpty, let d = TimeFmt.date(receivedAt) else { return false }
         return Date().timeIntervalSince(d) > 5 * 60 * 60
+    }
+
+    var lifecycle: PaymentTransferLifecycle {
+        PaymentTransferLifecycle(rawValue: status) ?? .pending
+    }
+
+    var paymentMoney: PaymentMoney {
+        PaymentMoney(cents: Int64((amount * 100).rounded()))
+    }
+
+    func direction(mine: Bool) -> PaymentTransferDirection {
+        mine ? .outgoing : .incoming
     }
 
     func statusText(mine: Bool) -> String {

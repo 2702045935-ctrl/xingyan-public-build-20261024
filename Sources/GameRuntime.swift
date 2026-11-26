@@ -1,5 +1,6 @@
 import UIKit
 import WebKit
+import GameModule
 
 enum GameRuntimeAssets {
     static func download(_ files: [String],
@@ -19,7 +20,7 @@ enum GameRuntimeAssets {
             pending.append(file)
         }
 
-        let window = 4
+        let window = GameRuntimeBudget.assetDownloadConcurrency
         for start in stride(from: 0, to: pending.count, by: window) {
             let end = min(pending.count, start + window)
             let batch = Array(pending[start..<end])
@@ -126,13 +127,13 @@ enum GameRuntimeWarmup {
 }
 
 enum GameRuntimeJavaScript {
-    static let performance = """
+    static var performance: String { """
     (() => {
       'use strict';
       if (window.__chrisGameRuntime) return;
       window.__chrisGameRuntime = true;
 
-      const capDpr = 2;
+      const capDpr = \(GameRuntimeBudget.maximumDevicePixelRatio);
       const nativeDpr = Number(window.devicePixelRatio) || 1;
       if (nativeDpr > capDpr) {
         try {
@@ -190,5 +191,5 @@ enum GameRuntimeJavaScript {
       document.addEventListener('dblclick', event => event.preventDefault(),
                                 { passive: false });
     })();
-    """
+    """ }
 }

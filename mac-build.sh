@@ -85,19 +85,28 @@ ls -lh "$APP/default.metallib" 2>/dev/null || echo "（没有 metallib，语音�
 cp -R WebRTCKit/WebRTC.xcframework/ios-arm64/WebRTC.framework "$APP/Frameworks/WebRTC.framework"
 
 echo "=== 4) 编译原生 App（十几分钟，第一次最慢）==="
-mkdir -p /tmp/XingyanMallCore
-xcrun --sdk iphoneos swiftc \
-  -sdk "$SDK" \
-  -target arm64-apple-ios16.0 \
-  -swift-version 5 \
-  -parse-as-library \
-  -O \
-  -emit-module \
-  -emit-library -static \
-  -module-name XingyanMallCore \
-  -emit-module-path /tmp/XingyanMallCore/XingyanMallCore.swiftmodule \
-  -o /tmp/XingyanMallCore/libXingyanMallCore.a \
-  Modules/MallModule/MallModule.swift
+build_module() {
+  MODULE="$1"
+  SOURCE="$2"
+  OUT="/tmp/$MODULE"
+  mkdir -p "$OUT"
+  xcrun --sdk iphoneos swiftc \
+    -sdk "$SDK" \
+    -target arm64-apple-ios16.0 \
+    -swift-version 5 \
+    -parse-as-library \
+    -O \
+    -emit-module \
+    -emit-library -static \
+    -module-name "$MODULE" \
+    -emit-module-path "$OUT/$MODULE.swiftmodule" \
+    -o "$OUT/lib$MODULE.a" \
+    "$SOURCE"
+}
+build_module XingyanMallCore Modules/MallModule/MallModule.swift
+build_module XingyanPaymentCore Modules/PaymentModule/PaymentModule.swift
+build_module XingyanMusicCore Modules/MusicModule/MusicModule.swift
+build_module XingyanGameCore Modules/GameModule/GameModule.swift
 xcrun --sdk iphoneos swiftc \
   -sdk "$SDK" \
   -target arm64-apple-ios16.0 \
@@ -108,10 +117,19 @@ xcrun --sdk iphoneos swiftc \
   -F "$SDK/System/Library/Frameworks" \
   -F WebRTCKit/WebRTC.xcframework/ios-arm64 \
   -I /tmp/XingyanMallCore \
+  -I /tmp/XingyanPaymentCore \
+  -I /tmp/XingyanMusicCore \
+  -I /tmp/XingyanGameCore \
   -L /tmp/XingyanMallCore \
+  -L /tmp/XingyanPaymentCore \
+  -L /tmp/XingyanMusicCore \
+  -L /tmp/XingyanGameCore \
   -o "$APP/CHRIS" \
   Sources/*.swift \
   -lXingyanMallCore \
+  -lXingyanPaymentCore \
+  -lXingyanMusicCore \
+  -lXingyanGameCore \
   -framework SwiftUI -framework UIKit -framework Foundation \
   -framework LocalAuthentication -framework AVFoundation \
   -framework WebRTC \

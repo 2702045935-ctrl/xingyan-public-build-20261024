@@ -34,16 +34,25 @@ jobs:
         run: |
           set -o pipefail
           SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
-          mkdir -p /tmp/XingyanMallCore
-          xcrun --sdk iphoneos swiftc \
-            -sdk "$SDK" \
-            -target arm64-apple-ios16.0 \
-            -swift-version 5 \
-            -parse-as-library \
-            -emit-module \
-            -module-name XingyanMallCore \
-            -emit-module-path /tmp/XingyanMallCore/XingyanMallCore.swiftmodule \
-            Modules/MallModule/MallModule.swift
+          build_module() {
+            MODULE="$1"
+            SOURCE="$2"
+            OUT="/tmp/$MODULE"
+            mkdir -p "$OUT"
+            xcrun --sdk iphoneos swiftc \
+              -sdk "$SDK" \
+              -target arm64-apple-ios16.0 \
+              -swift-version 5 \
+              -parse-as-library \
+              -emit-module \
+              -module-name "$MODULE" \
+              -emit-module-path "$OUT/$MODULE.swiftmodule" \
+              "$SOURCE"
+          }
+          build_module XingyanMallCore Modules/MallModule/MallModule.swift
+          build_module XingyanPaymentCore Modules/PaymentModule/PaymentModule.swift
+          build_module XingyanMusicCore Modules/MusicModule/MusicModule.swift
+          build_module XingyanGameCore Modules/GameModule/GameModule.swift
           xcrun --sdk iphoneos swiftc \
             -sdk "$SDK" \
             -target arm64-apple-ios16.0 \
@@ -53,6 +62,9 @@ jobs:
             -F "$SDK/System/Library/Frameworks" \
             -F WebRTCKit/WebRTC.xcframework/ios-arm64 \
             -I /tmp/XingyanMallCore \
+            -I /tmp/XingyanPaymentCore \
+            -I /tmp/XingyanMusicCore \
+            -I /tmp/XingyanGameCore \
             Sources/*.swift 2>&1 | tee /tmp/ios-typecheck.log
           ! grep -q "error:" /tmp/ios-typecheck.log
 

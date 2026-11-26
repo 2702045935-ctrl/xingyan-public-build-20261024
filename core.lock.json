@@ -103,8 +103,8 @@
     },
     {
       "path": "Sources/SystemMusicKernel.swift",
-      "size": 9989,
-      "sha256": "aaa2fa193bd27a8bf4f3aa61d87954853f4261090d18b631c771918823aba9d8"
+      "size": 10034,
+      "sha256": "5c664546fa1e5bae3dbaf03164caefc8c3b98801c49dad6fe46d6dcc9511f5aa"
     },
     {
       "path": "Sources/MultiImageMosaic.swift",
