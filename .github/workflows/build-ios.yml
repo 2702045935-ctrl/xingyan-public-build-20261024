@@ -120,6 +120,7 @@ jobs:
           python3 tools/verify-chat-top-title.py
           python3 tools/verify-group-preview.py
           python3 tools/verify-contacts-whatsapp.py
+          python3 tools/verify-contact-flow-layout.py
           python3 tools/verify-chat-menu-icon.py
           python3 tools/verify-no-top-green-glow.py
           python3 tools/verify-no-splash-page.py

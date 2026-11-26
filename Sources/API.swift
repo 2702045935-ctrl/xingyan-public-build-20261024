@@ -73,6 +73,7 @@ struct User: Codable, Identifiable, Hashable {
     var momentsRange: String?
 
     var requestMessage: String?
+    var createdAt: String?
 
     var remark: String?
 
