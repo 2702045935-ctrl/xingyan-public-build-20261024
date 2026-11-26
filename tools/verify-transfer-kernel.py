@@ -19,6 +19,12 @@ DIRECT_UPLOAD_BASES = API.split("static let directUploadBases = [", 1)[1].split(
 UPLOAD_DATA = API.split("private func uploadData(", 1)[1].split(
     "private func uploadRawJPEG(", 1
 )[0]
+UPLOAD_BINARY = API.split("func uploadBinary(", 1)[1].split(
+    "func uploadBinaryFile(", 1
+)[0]
+UPLOAD_BINARY_FILE = API.split("func uploadBinaryFile(", 1)[1].split(
+    "func uploadOriginal(", 1
+)[0]
 
 
 def require(condition: bool, message: str) -> None:
@@ -30,13 +36,14 @@ require(
     'static let directUploadBases = [' in API
     and '"https://43.242.194.89:8443"' in DIRECT_UPLOAD_BASES
     and '"https://43.242.194.89:5443"' not in DIRECT_UPLOAD_BASES
-    and "private func uploadRaw(source: RawUploadSource" in API
-    and "var roots = API.directUploadBases" in API
-    and "roots.append(base)" not in API
+    and 'API.directUploadBases[0] + "/api/upload/raw"' in UPLOAD_BINARY
+    and "req.timeoutInterval = 180" in UPLOAD_BINARY
+    and 'API.directUploadBases[0] + "/api/upload/raw"' in UPLOAD_BINARY_FILE
+    and "req.timeoutInterval = 600" in UPLOAD_BINARY_FILE
+    and "private func uploadRaw(" not in API
+    and "RawUploadSource" not in API
     and "uploadSession" not in API
-    and "req.timeoutInterval = timeout" in API
-    and "min(timeout, index == 0 ? 2 : 3)" not in API
-    and API.count("session.upload") >= 4,
+    and API.count("session.upload") >= 3,
     "uploads must use the 11/20 direct session and origin only",
 )
 require(
@@ -51,22 +58,22 @@ require(
     "chat uploads must keep the faster raw path while the resumable kernel remains diagnostic",
 )
 require(
-    "case .data(let data):" in API
-    and "case .file(let file):" in API
-    and "fromFile: file,\n                            delegate: delegate" in API
-    and "from: data,\n                            delegate: delegate" in API,
-    "the shared upload transport must stream data and files through the restored session",
+    "req.httpBody = data" in UPLOAD_BINARY
+    and "session.upload(" in UPLOAD_BINARY_FILE
+    and "fromFile: file,\n            delegate: delegate" in UPLOAD_BINARY_FILE,
+    "binary and file uploads must use the restored 11/20 session and request bodies",
 )
 require(
     "private func uploadRawJPEG(" in API
-    and 'mime: "image/jpeg"' in API
-    and "compressed: true" in API
+    and 'req.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")' in API
+    and "req.timeoutInterval = 120" in API
     and 'req.setValue("1", forHTTPHeaderField: "x-chris-compressed")' in API
     and 'if let url = try? await uploadRawJPEG(data' in API
     and "let b64 = data.base64EncodedString()" in API
-    and 'API.directUploadBases[0] + "/api/upload"' in UPLOAD_DATA
+    and 'path: String = "/api/upload"' in UPLOAD_DATA
+    and "API.directUploadBases[0] + path" in UPLOAD_DATA
     and 'post("/api/upload"' not in UPLOAD_DATA
-    and "let payload = try await directUploadPayload(body)" in API
+    and "let payload: UploadPayload = try await postDirectUpload(body)" in API
     and 'post("/api/upload"' not in API,
     "all 11/20 base64 uploads must use the direct origin",
 )
