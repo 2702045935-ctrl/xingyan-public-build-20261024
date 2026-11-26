@@ -3908,18 +3908,10 @@ struct ChatDetailView: View {
                     .lineLimit(6)
                     .multilineTextAlignment(.leading)
                     .padding(.leading, 12)
-                    .padding(.trailing, p.failed ? 12 : 26)
+                    .padding(.trailing, 12)
                     .padding(.vertical, 9)
                     .background(BubbleFill(mine: true, tail: false))
                     .opacity(p.failed ? 0.9 : 1)
-                    .overlay(alignment: .bottomTrailing) {
-                        if !p.failed {
-                            WhatsAppMessageTicks(count: 1,
-                                                 color: Color.white.opacity(0.72))
-                                .padding(.trailing, 7)
-                                .padding(.bottom, 5)
-                        }
-                    }
             }
             if p.failed, let reason = p.failureReason, !reason.isEmpty {
                 deliveryFailureCard(DeliveryFailureCopy.make(reason: reason))
@@ -7676,23 +7668,6 @@ struct QuoteInspectSheet: View {
     }
 }
 
-private struct WhatsAppMessageTicks: View {
-    let count: Int
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: -4.4) {
-            ForEach(0..<max(1, min(2, count)), id: \.self) { index in
-                Image(systemName: "checkmark")
-                    .font(.system(size: 8.2, weight: .bold))
-                    .foregroundStyle(color)
-            }
-        }
-        .frame(height: 10)
-        .accessibilityHidden(true)
-    }
-}
-
 enum MessageDeliveryState: Equatable {
     case sent
     case delivered
@@ -7873,22 +7848,6 @@ struct MessageRow: View {
                 .padding(.leading, 4)
             }
             content
-
-            if mine,
-               !message.isRecalled,
-               !message.isCallRecord,
-               message.kindName != "system",
-               message.kindName != "pat" {
-                HStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    WhatsAppMessageTicks(count: deliveryState.tickCount,
-                                         color: deliveryState.color)
-                }
-                .padding(.trailing, 4)
-                .offset(y: -2)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(deliveryState.accessibilityText)
-            }
 
             if asrBusy || !asrText.isEmpty {
                 asrLine
