@@ -28,8 +28,8 @@
     },
     {
       "path": "Sources/ChatMediaBubbles.swift",
-      "size": 31975,
-      "sha256": "0ab2f78bd8d4bd88ef34a9aae553d8d7c9bfa7f786e645297de50ef12c39fc61"
+      "size": 32716,
+      "sha256": "ebea6b9946c6d359d9228a6e4c3d56537695bcb4cdf23a22942032623e732d2d"
     },
     {
       "path": "Sources/ChatStressFixture.swift",
@@ -38,8 +38,8 @@
     },
     {
       "path": "Sources/ChatThemes.swift",
-      "size": 21662,
-      "sha256": "afbb47e746185992fddc13cb69be53535cbe995d1f47a8756275e1597e57f48a"
+      "size": 21335,
+      "sha256": "faf72e025232fcf910aa27fcab10dbd97e6185166ea3f10e1b237a1daf79820e"
     },
     {
       "path": "Sources/ChatWallpaperEffect.swift",
