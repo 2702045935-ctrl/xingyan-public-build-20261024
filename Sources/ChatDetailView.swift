@@ -4308,6 +4308,11 @@ struct ChatDetailView: View {
                         frameBox.frames[message.id] = contentFrame
                     }
             })
+            .onDisappear {
+                if voicePlayer.playingID == message.id {
+                    voicePlayer.stop()
+                }
+            }
     }
 
     private func mineFor(_ message: Message) -> Bool {

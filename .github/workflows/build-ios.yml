@@ -114,6 +114,8 @@ jobs:
           python3 tools/verify-chat-top-title.py
           python3 tools/verify-notes-system.py
           python3 tools/verify-chat-theme-system.py
+          python3 tools/verify-sent-media-instant.py
+          python3 tools/verify-media-visible-pause.py
           python3 tools/verify-group-preview.py
           python3 tools/verify-contacts-whatsapp.py
           python3 tools/verify-contact-flow-layout.py

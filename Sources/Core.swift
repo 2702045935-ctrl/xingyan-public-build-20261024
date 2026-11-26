@@ -1264,6 +1264,30 @@ struct RemoteImage: View {
             return
         }
 
+        let localBytes: Data? = await Task.detached(priority: .userInitiated) { () -> Data? in
+            LocalStore.read(requestedPath)
+        }.value
+        guard !Task.isCancelled,
+              Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
+        if let localBytes = localBytes {
+            let localImage: UIImage? = await Task.detached(priority: .userInitiated) { () -> UIImage? in
+                RemoteImage.downsampled(localBytes, maxSide: side)
+            }.value
+            guard !Task.isCancelled,
+                  Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
+            if let localImage = localImage {
+                ImageStore.shared.put(memoryKey, localImage)
+                if icon == "person.fill" {
+                    ImageStore.shared.putAvatar(memoryKey, localImage)
+                }
+                ImageStore.shared.diskWrite(ImageCacheKey.stablePath(requestedKey), localBytes)
+                image = localImage
+                loadedPath = requestedKey
+                onLoaded?(localImage)
+                return
+            }
+        }
+
         let diskBytes: Data? = await Task.detached(priority: .userInitiated) { () -> Data? in
             ImageStore.shared.diskRead(ImageCacheKey.stablePath(requestedKey))
         }.value

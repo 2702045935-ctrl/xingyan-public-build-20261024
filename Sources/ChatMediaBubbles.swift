@@ -166,6 +166,15 @@ func videoBubbleSize(w: Int, h: Int) -> CGSize {
     return CGSize(width: cw.rounded(), height: ch.rounded())
 }
 
+private func localOrRemoteMediaURL(_ path: String) -> URL? {
+    if let local = LocalStore.localURL(path),
+       FileManager.default.fileExists(atPath: local.path) {
+        return local
+    }
+    let full = path.hasPrefix("http") ? path : API.shared.base + path
+    return URL(string: full)
+}
+
 struct VideoBubble: View {
     let message: Message
     let mine: Bool
@@ -184,9 +193,7 @@ struct VideoBubble: View {
 
     var body: some View {
         Button {
-            let u = info.url
-            let full = u.hasPrefix("http") ? u : API.shared.base + u
-            if let url = URL(string: full) { onOpen(url, nil) }
+            if let url = localOrRemoteMediaURL(info.url) { onOpen(url, nil) }
         } label: {
             ZStack {
                 coverLayer
@@ -246,9 +253,7 @@ struct LivePhotoBubble: View {
 
     var body: some View {
         Button {
-            let v = info.video
-            let full = v.hasPrefix("http") ? v : API.shared.base + v
-            if let url = URL(string: full) { onPlay(url) }
+            if let url = localOrRemoteMediaURL(info.video) { onPlay(url) }
         } label: {
             ZStack(alignment: .topLeading) {
                 RemoteImage(path: info.image, mode: .fill, maxSide: 1600)
