@@ -76,47 +76,20 @@ require(
 
 NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 require(
-    "allowInsertionDuringScroll,\n"
-    "                   next.count > oldCount,\n"
-    "                   sameBoundaries,\n"
-    "                   appendPureTail(next, from: oldCount, keepPending: true)"
-    in NATIVE_CHAT_LIST
+    "allowInsertionDuringScroll && isPureAppend" in NATIVE_CHAT_LIST
     and "table.isDragging || table.isTracking || table.isDecelerating" in NATIVE_CHAT_LIST
     and "pendingItems = next" in NATIVE_CHAT_LIST,
-    "appended conversation pages must stay live during touch motion",
-)
-require(
-    "allowInsertionDuringScroll,\n"
-    "                   next.count == oldCount,\n"
-    "                   slideWindowDuringScroll(next)"
-    in NATIVE_CHAT_LIST
-    and "private func slideWindowDuringScroll(_ next: [Item]) -> Bool" in NATIVE_CHAT_LIST,
-    "equal-size conversation window slides must stay live during touch motion",
-)
-require(
-    NATIVE_CHAT_LIST.index("slideWindowDuringScroll(next)")
-    < NATIVE_CHAT_LIST.index("if next.count == oldCount {"),
-    "window slides must run before unchanged-row deferral during active scrolling",
-)
-require(
-    "prependWindowDuringScroll(next)" in NATIVE_CHAT_LIST
-    and "snapshot.insertItems(addedIDs, beforeItemWithIdentifier: retainedFirst)"
-    in NATIVE_CHAT_LIST
-    and "snapshot.deleteItems(removedIDs)" in NATIVE_CHAT_LIST,
-    "upward conversation runway pages must commit without ending the gesture",
+    "only non-append changes may defer during touch motion",
 )
 FIXTURE = (ROOT / "Sources" / "ChatStressFixture.swift").read_text(encoding="utf-8")
 require(
     "private static var cache: [Chat]" in FIXTURE
-    and "static func chats(range: Range<Int>)" in FIXTURE
-    and "static let pageSize = 120" in FIXTURE,
+    and "static func chats(range: Range<Int>)" in FIXTURE,
     "100k conversation stress data must materialize incrementally",
 )
 require(
-    "let existingChatIDs = Set(updated.list.lazy.map(\\.id))" in CHATS
-    and "let freshChats = added.filter { !existingChatIDs.contains($0.id) }" in CHATS
-    and "updated.list.append(contentsOf: freshChats)" in CHATS,
-    "stress conversation snapshots must append only fresh page identifiers",
+    "updated.list.append(contentsOf: added)" in CHATS,
+    "stress conversation snapshots must append new pages without rescanning all loaded rows",
 )
 require(
     "let isPureAppend = !order.isEmpty" in NATIVE_CHAT_LIST

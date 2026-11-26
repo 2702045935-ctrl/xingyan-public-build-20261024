@@ -6,25 +6,18 @@ private enum ChatListVisual {
     static var rowHeight: CGFloat { NativeChatRowMetrics.rowHeight }
     static let rowLeading: CGFloat = 16
     static let headerLeading: CGFloat = 12
-    static let trailing: CGFloat = 17
-    static let minimumTimeWidth: CGFloat = 52
-    static let avatarSize: CGFloat = 48
-    static let avatarGap: CGFloat = 12
+    static let trailing: CGFloat = 16
+    static let avatarSize: CGFloat = 50
+    static let avatarGap: CGFloat = 11
     static let dividerLeading: CGFloat = 77
 
-    static let ink = Color.dyn(0x1A1A1A, 0xEBEBF0)
-    static let previewInk = Color.dyn(0x8A8A8A, 0x8A8F93)
-    static let conversationPreviewInk = Color.dyn(0x999999, 0x8C8C8C)
-    static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
-    static let timeInk = Color.dyn(0xB2B2B2, 0x6E6E6E)
+    static let ink = Color.dyn(0x1A1A1A, 0xE9EDEF)
+    static let previewInk = Color.dyn(0xB2B2B2, 0x8696A0)
+    static let timeInk = Color.dyn(0xCCCCCC, 0x8696A0)
     static let rule = Color(UIColor { trait in
-        // WeChat measures 48,48,48 on its 25,25,25 canvas. Our canvas is
-        // 10,10,10, so the same perceived weight needs a darker separator.
-        trait.userInterfaceStyle == .dark
-            ? UIColor(hex: 0x232326)
-            : UIColor(hex: 0xE9EDEF)
+        trait.userInterfaceStyle == .dark ? .clear : UIColor(hex: 0xE9EDEF)
     })
-    static let badgeRing = Color.dyn(0xFFFFFF, 0x0A0A0A)
+    static let badgeRing = Color.dyn(0xFFFFFF, 0x000000)
     static let chipInk = Color.dyn(0x62636A, 0xA8A9AF)
     static let selectedChipFill = Color.dyn(0x161823, 0xF1F1F3)
     static let selectedChipInk = Color.dyn(0xFFFFFF, 0x17171A)
@@ -378,7 +371,7 @@ struct ChatRow: View, Equatable {
                 }
 
                 mentionPreview
-                    .font(pfStyled(size: 14,
+                    .font(pfStyled(size: scheme == .dark ? 14 : 15,
                                    weight: .regular))
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -386,16 +379,15 @@ struct ChatRow: View, Equatable {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text(TimeFmt.listConversation(chat.listTimestamp))
+                Text(TimeFmt.listApple(chat.listTimestamp))
                     .font(pfStyled(size: 12,
                                    weight: .regular))
                     .foregroundStyle(ChatListVisual.timeInk)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.78)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .fixedSize(horizontal: true, vertical: false)
                 unreadAvatarBadge
             }
-            .frame(minWidth: ChatListVisual.minimumTimeWidth, alignment: .trailing)
+            .frame(minWidth: 64, alignment: .trailing)
         }
     }
 
@@ -413,7 +405,7 @@ struct ChatRow: View, Equatable {
                     zh: "\(count)人星友连接",
                     en: "\(count) Xingyan friends connected",
                     ru: "\(count) подключений Xingyan"
-                )).foregroundColor(ChatListVisual.conversationPreviewInk)
+                )).foregroundColor(ChatListVisual.previewInk)
             }
         }
         let kind = chat.lastMessage?.kind ?? ""
@@ -428,7 +420,7 @@ struct ChatRow: View, Equatable {
             zh: "[有人@我] ",
             en: "[Mentioned you] ",
             ru: "[Упомянули вас] "
-        )).foregroundColor(ChatListVisual.previewAccentInk) + body
+        )).foregroundColor(Color(.systemRed)) + body
     }
 
     private func sessionCopy(zh: String, en: String, ru: String) -> String {
@@ -454,22 +446,12 @@ struct ChatRow: View, Equatable {
             return (patPreviewText(value), mentioned)
         }
         guard !value.isEmpty else { return (fallbackPreview(kind), mentioned) }
-        if looksLikeStructuredPayload(value) {
+        if value.hasPrefix("{") || value.hasPrefix("[")
+            || value.contains("\"kind\":") || value.contains("[object Object]") {
             return (fallbackPreview(kind), mentioned)
         }
         guard Lang.isEnglish || Lang.isRussian else { return (value, mentioned) }
         return (localizedGeneratedPreview(value), mentioned)
-    }
-
-    private func looksLikeStructuredPayload(_ value: String) -> Bool {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
-        if trimmed.hasPrefix("{") || trimmed.hasPrefix("[{") {
-            return (try? JSONSerialization.jsonObject(
-                with: Data(trimmed.utf8)
-            )) != nil
-        }
-        return trimmed == "[object Object]"
     }
 
     private static let generatedPreviewTags: [(zh: String, en: String, ru: String)] = [
@@ -571,18 +553,30 @@ struct ChatRow: View, Equatable {
                              "草稿：", "草稿:", "Draft: ", "Черновик: "]
         if let prefix = draftPrefixes.first(where: { preview.hasPrefix($0) }) {
             let content = String(preview.dropFirst(prefix.count))
-            return Text(prefix).foregroundColor(ChatListVisual.previewAccentInk)
-                + Text(content).foregroundColor(ChatListVisual.conversationPreviewInk)
+            return Text(prefix).foregroundColor(Color(.systemRed))
+                + Text(content).foregroundColor(ChatListVisual.previewInk)
         }
         if redPrefixes.contains(where: { preview.hasPrefix($0) }) {
-            return Text(preview).foregroundColor(ChatListVisual.previewAccentInk)
+            return Text(preview).foregroundColor(Color(.systemRed))
         }
-        if preview.contains("发送失败")
-            || preview.localizedCaseInsensitiveContains("failed to send")
-            || preview.localizedCaseInsensitiveContains("не удалось отправить") {
-            return Text(preview).foregroundColor(ChatListVisual.previewAccentInk)
+        let color: Color
+        switch kind {
+        case "image", "images", "video", "livephoto", "file", "audio", "voice",
+             "location", "card", "miniapp", "mini", "mall", "music":
+            color = ChatListVisual.previewInk
+        case "transfer", "redpacket", "gift":
+            color = Color.dyn(0xB06B00, 0xF4B44C)
+        case "call", "voicecall", "videocall":
+            color = Color.dyn(0x18835F, 0x58D49B)
+        case "file", "music", "location", "card", "miniapp", "mini", "mall":
+            color = Color.dyn(0x2C73C9, 0x74B7FF)
+        case "channels", "channel", "feed", "shortvideo":
+            color = Color.dyn(0x6B5BCB, 0xAD9CFF)
+        case "pat":
+            color = Color.dyn(0x0C7A70, 0x52D6C7)
+        default:
+            color = ChatListVisual.previewInk
         }
-        let color = ChatListVisual.conversationPreviewInk
         guard highlightMentions, preview.contains("@") else {
             return Text(preview).foregroundColor(color)
         }
@@ -603,7 +597,7 @@ struct ChatRow: View, Equatable {
                 end = preview.index(after: end)
             }
             output = output + Text(String(preview[at..<end]))
-                .foregroundColor(ChatListVisual.previewAccentInk)
+                .foregroundColor(Color(.systemRed))
             cursor = end
         }
         if cursor < preview.endIndex {
@@ -834,7 +828,7 @@ struct SwipeChatRow: View {
     }
     private var rowBg: Color {
         if cardStyle { return .clear }
-        if isDark { return Color(hex: 0x0A0A0A) }
+        if isDark { return Color(hex: 0x000000) }
         return UIConfig.colorIfSet("chatsRowBg")
             ?? UIConfig.colorIfSet("chatRowBg")
             ?? .white
@@ -894,7 +888,7 @@ struct SwipeChatRow: View {
                 .background(rowBg)
                 .overlay(alignment: .bottom) {
                     Rectangle()
-                        .fill(ChatListVisual.rule)
+                        .fill(isDark ? Color.clear : ChatListVisual.rule)
                         .frame(height: 0.5)
                         .padding(.leading, ChatListVisual.dividerLeading)
                 }
@@ -1128,45 +1122,6 @@ private struct RowSwipeActionButtonStyle: ButtonStyle {
     }
 }
 
-private struct ChatChromeIconPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background {
-                Circle()
-                    .fill(Color.primary.opacity(configuration.isPressed ? 0.06 : 0))
-            }
-            .scaleEffect(configuration.isPressed ? 0.94 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
-                       value: configuration.isPressed)
-    }
-}
-
-private struct ChatFilterChipPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .opacity(configuration.isPressed ? 0.82 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
-                       value: configuration.isPressed)
-    }
-}
-
-private struct ChatSearchPressStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .overlay {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(Color.primary.opacity(configuration.isPressed ? 0.055 : 0))
-                    .allowsHitTesting(false)
-            }
-            .animation(.easeOut(duration: 0.09), value: configuration.isPressed)
-    }
-}
-
 private struct NativeChatEntry: Identifiable, Equatable {
     enum Kind: Equatable {
         case top
@@ -1222,7 +1177,6 @@ struct ChatsView: View {
     }
 
     @ObservedObject private var lang = LangStore.shared
-    @ObservedObject private var musicPresence = MusicPresenceStore.shared
 
     @ObservedObject private var eyes = EyesStore.shared
     @EnvironmentObject var app: AppState
@@ -1236,17 +1190,14 @@ struct ChatsView: View {
     private var chatsContentMaxWidth: CGFloat { L.width }
     private var chatsContentSideInset: CGFloat { 0 }
     private var chatFilterH: CGFloat { 42 }
-    private var chatsHeaderH: CGFloat { 44 }
-    private var chatsSearchH: CGFloat { 36 }
+    private var chatsHeaderH: CGFloat { 52 }
+    private var chatsSearchH: CGFloat { 48 }
     private var chatFilterVisible: Bool { UIConfig.num("chatsOrbitFilter", 0) > 0 }
     private var chatFilterOffset: CGFloat { chatFilterVisible ? chatFilterH : 0 }
     private var chatsCardStyle: Bool { false }
     private var chatsCardInset: CGFloat { max(8, UIConfig.num("chatsOrbitInset", 12)) }
     private var chatsCardRadius: CGFloat { max(16, UIConfig.num("chatsOrbitRadius", 22)) }
     private var chatsIsDark: Bool {
-        // Explicit appearance is the source of truth. SwiftUI can deliver the
-        // preferred color scheme environment one transaction later; OR-ing it
-        // here made dark -> light conversations remain dark for an extra frame.
         switch app.appearance {
         case "dark":
             return true
@@ -1257,25 +1208,17 @@ struct ChatsView: View {
         }
     }
     private var chatsPageFill: Color {
-        // WhatsApp's current dark canvas and native row share one near-black
-        // surface. Search and cards keep their raised tone.
-        chatsIsDark
-            ? Color(hex: 0x0A0A0A)
-            : UIConfig.fixedLight("chatsPageBg", 0xFFFFFF)
+        // WhatsApp / iOS dark hierarchy: the list canvas and native row are
+        // the same true-black surface. Search and cards keep their raised tone.
+        chatsIsDark ? Color(hex: 0x000000) : UIConfig.fixedLight("chatsPageBg", 0xFFFFFF)
     }
     private var chatsRule: Color {
-        chatsIsDark ? Color(hex: 0x232326) : Color(hex: 0xE9EDEF)
+        chatsIsDark ? .clear : ChatListVisual.rule
     }
     private var chatsSearchFill: Color {
         chatsIsDark
-            ? Color(hex: 0x111111)
+            ? C.searchBg
             : Color(hex: 0xF0F2F5)
-    }
-    private var chatsSearchBorder: Color {
-        chatsIsDark ? Color.white.opacity(0.045) : Color.clear
-    }
-    private var chatsSearchInk: Color {
-        chatsIsDark ? Color(hex: 0x6E7378) : Color(hex: 0x8A8A8A)
     }
     private var chatsCardFill: Color { chatsPageFill }
 
@@ -1313,12 +1256,8 @@ struct ChatsView: View {
     }
     @State private var path = NavigationPath()
     @State private var stressAutoOpened = false
-    @State private var stressWindowStart = 0
     @State private var stressLoadedCount = ChatStressFixture.initialWindow
-    @State private var stressCountedEnd = ChatStressFixture.initialWindow
     @State private var stressChatEntries: [NativeChatEntry] = []
-    @State private var cachedChatEntries: [NativeChatEntry] = []
-    @State private var cachedChatEntriesRevision = 0
 
     @State private var oaOpenId = ""
     @State private var showOA = false
@@ -1354,9 +1293,7 @@ struct ChatsView: View {
 
     private var activeChatSource: [Chat] {
         if ChatStressFixture.isActive {
-            let conversations = ChatStressFixture.chats(
-                range: stressWindowStart..<stressLoadedCount
-            )
+            let conversations = ChatStressFixture.chats(prefix: stressLoadedCount)
             return MessageStressFixture.isActive
                 ? MessageStressFixture.chats + conversations
                 : conversations
@@ -1367,85 +1304,34 @@ struct ChatsView: View {
 
     private func loadMoreStressChatsIfNeeded() {
         guard ChatStressFixture.isActive else { return }
-        let previousEnd = stressLoadedCount
-        let nextEnd = min(ChatStressFixture.count,
-                          previousEnd + ChatStressFixture.pageSize)
-        guard nextEnd > previousEnd else { return }
-        let nextStart = min(
-            nextEnd,
-            max(
-                stressWindowStart,
-                nextEnd - ChatStressFixture.maxActiveWindow
-            )
-        )
-        let removedCount = nextStart - stressWindowStart
-        let added = ChatStressFixture.chats(range: previousEnd..<nextEnd)
-        stressWindowStart = nextStart
-        stressLoadedCount = nextEnd
+        let previous = stressLoadedCount
+        let next = min(ChatStressFixture.count,
+                       previous + ChatStressFixture.pageSize)
+        guard next > previous else { return }
+        let added = ChatStressFixture.chats(range: previous..<next)
+        stressLoadedCount = next
         guard chatFilter == .all, keyword.isEmpty else {
-            refreshChatListCache(chatSnapshot())
+            cachedSnapshot = chatSnapshot()
             return
         }
         var counts = cachedSnapshot.unreadCounts
         var updated = cachedSnapshot
-        if previousEnd >= stressCountedEnd {
-            for chat in added {
-                let n = max(0, chat.unreadCount)
-                counts[.all, default: 0] += n
-                counts[.unread, default: 0] += n
-                if chat.type == "group" || (chat.memberCount ?? 0) > 2 {
-                    counts[.group, default: 0] += n
-                }
-                if !(chat.oaId ?? "").isEmpty || chat.oaDigest == true {
-                    counts[.official, default: 0] += n
-                }
-                if chat.pinned == true { counts[.pinned, default: 0] += n }
+        for chat in added {
+            let n = max(0, chat.unreadCount)
+            counts[.all, default: 0] += n
+            counts[.unread, default: 0] += n
+            if chat.type == "group" || (chat.memberCount ?? 0) > 2 {
+                counts[.group, default: 0] += n
             }
-            stressCountedEnd = nextEnd
+            if !(chat.oaId ?? "").isEmpty || chat.oaDigest == true {
+                counts[.official, default: 0] += n
+            }
+            if chat.pinned == true { counts[.pinned, default: 0] += n }
         }
-        let existingChatIDs = Set(updated.list.lazy.map(\.id))
-        let freshChats = added.filter { !existingChatIDs.contains($0.id) }
-        if removedCount > 0 {
-            updated.list.removeFirst(min(removedCount, updated.list.count))
-        }
-        updated.list.append(contentsOf: freshChats)
+        updated.list.append(contentsOf: added)
         updated.unreadCounts = counts
-        let existingEntryIDs = Set(stressChatEntries.lazy.map(\.id))
-        if removedCount > 0 {
-            stressChatEntries.removeFirst(min(removedCount, stressChatEntries.count))
-        }
-        stressChatEntries.append(contentsOf: added
-            .map(nativeChatEntry(for:))
-            .filter { !existingEntryIDs.contains($0.id) })
+        stressChatEntries.append(contentsOf: added.map(nativeChatEntry(for:)))
         cachedSnapshot = updated
-        refreshCachedChatEntries(updated)
-    }
-
-    private func loadPreviousStressChatsIfNeeded() {
-        guard ChatStressFixture.isActive, stressWindowStart > 0 else { return }
-        let newStart = max(0, stressWindowStart - ChatStressFixture.pageSize)
-        let inserted = ChatStressFixture.chats(range: newStart..<stressWindowStart)
-        guard !inserted.isEmpty else { return }
-        stressWindowStart = newStart
-
-        var updated = cachedSnapshot
-        updated.list.insert(contentsOf: inserted, at: 0)
-        stressChatEntries.insert(contentsOf: inserted.map(nativeChatEntry(for:)), at: 0)
-
-        let removedTail = max(
-            0,
-            stressLoadedCount - min(
-                ChatStressFixture.count,
-                newStart + ChatStressFixture.maxActiveWindow
-            )
-        )
-        if removedTail > 0 {
-            updated.list.removeLast(min(removedTail, updated.list.count))
-            stressChatEntries.removeLast(min(removedTail, stressChatEntries.count))
-            stressLoadedCount -= removedTail
-        }
-        cachedSnapshot = updated
-        refreshCachedChatEntries(updated)
     }
 
     private func chatSnapshot() -> ChatFilterSnapshot {
@@ -1614,7 +1500,7 @@ struct ChatsView: View {
                             }
                             .contentShape(Capsule())
                         }
-                        .buttonStyle(ChatFilterChipPressStyle())
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 8)
@@ -1671,23 +1557,6 @@ struct ChatsView: View {
         (Lang.isEnglish || Lang.isRussian) ? "Star chat" : "星言"
     }
 
-    @ViewBuilder
-    private func chatListMetaSlot<Content: View>(
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        if app.me?.ops == true {
-            Color.clear
-                .frame(width: ChatListVisual.minimumTimeWidth)
-        } else {
-            content()
-                .font(pfStyled(size: 12, weight: .regular))
-                .foregroundStyle(ChatListVisual.timeInk)
-                .lineLimit(1)
-                .minimumScaleFactor(0.78)
-                .frame(minWidth: ChatListVisual.minimumTimeWidth, alignment: .trailing)
-        }
-    }
-
     private var navTitle: String {
 
         if app.offline {
@@ -1709,10 +1578,14 @@ struct ChatsView: View {
     private var chatTopHeader: some View {
         ZStack {
             HStack(spacing: 7) {
-                Text(navTitle)
+                Text(chatTopTitle)
                     .font(pf(17, .semibold))
                     .foregroundStyle(C.label)
-                    .accessibilityLabel(navTitle)
+                    .accessibilityLabel(chatTopTitle)
+
+                if unreadTotal > 0 {
+                    nativeUnreadTotalBadge
+                }
 
                 if chatFilter != .all {
                     Text(Tr(chatFilter.rawValue))
@@ -1741,8 +1614,8 @@ struct ChatsView: View {
                         )
                         .frame(width: 44, height: 44)
                 }
-                .buttonStyle(ChatChromeIconPressStyle())
-                .accessibilityLabel(Tr("打开账户侧边栏"))
+                .buttonStyle(.plain)
+                .accessibilityLabel(Tr("切换账号"))
 
                 if app.offline {
                     Text(Tr("离线"))
@@ -1771,7 +1644,7 @@ struct ChatsView: View {
                         JarvisEyesAvatar(size: 26, tint: eyesTint)
                             .frame(width: 34, height: 34)
                     }
-                    .buttonStyle(ChatChromeIconPressStyle())
+                    .buttonStyle(.plain)
                 }
 
                 Button {
@@ -1793,7 +1666,6 @@ struct ChatsView: View {
         .frame(maxWidth: chatsContentMaxWidth)
         .frame(maxWidth: .infinity)
         .frame(height: chatsHeaderH)
-        .offset(y: -13)
     }
 
     private var nativeUnreadTotalBadge: some View {
@@ -1820,7 +1692,7 @@ struct ChatsView: View {
                 Text(Tr("搜索"))
                     .font(pfStyled(size: 15, weight: .regular))
             }
-            .foregroundStyle(chatsSearchInk)
+            .foregroundStyle(ChatListVisual.previewInk)
             .frame(maxWidth: .infinity)
             .frame(height: 36)
             .background {
@@ -1828,18 +1700,17 @@ struct ChatsView: View {
                     .fill(chatsSearchFill)
                     .overlay {
                         RoundedRectangle(cornerRadius: 9, style: .continuous)
-                            .stroke(chatsSearchBorder, lineWidth: 0.5)
+                            .stroke(C.searchBorderChats, lineWidth: 0.6)
                     }
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(ChatSearchPressStyle())
+        .buttonStyle(.plain)
         .accessibilityLabel(Tr("搜索"))
         .padding(.horizontal, 16)
         .frame(maxWidth: chatsContentMaxWidth)
         .frame(maxWidth: .infinity)
         .frame(height: chatsSearchH)
-        .offset(y: -6)
     }
 
     private var pullDots: some View {
@@ -2263,7 +2134,7 @@ struct ChatsView: View {
 
     private func officialRowTime(_ key: String) -> String {
         let stamp = officialRowStamp(key)
-        return TimeFmt.listConversation(stamp)
+        return TimeFmt.listApple(stamp)
     }
 
     private func markOfficialRowTime(_ key: String) {
@@ -2316,15 +2187,18 @@ struct ChatsView: View {
                                 .lineLimit(1)
                         }
                         Text(officialRowSubtitle)
-                            .font(pfStyled(size: 14,
+                            .font(pfStyled(size: scheme == .dark ? 14 : 15,
                                            weight: .regular))
-                            .foregroundStyle(ChatListVisual.conversationPreviewInk)
+                            .foregroundStyle(ChatListVisual.previewInk)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 8)
 
-                    chatListMetaSlot {
+                    if app.me?.ops != true {
                         Text(officialRowTime("official"))
+                            .font(pfStyled(size: 12, weight: .regular))
+                            .foregroundStyle(ChatListVisual.timeInk)
+                            .lineLimit(1)
                     }
                 }
                 .padding(.leading, ChatListVisual.rowLeading)
@@ -2426,14 +2300,17 @@ struct ChatsView: View {
                                 .foregroundStyle(PayVisual.tint)
                         }
                         Text(payOfficialRowSubtitle)
-                            .font(pfStyled(size: 14,
+                            .font(pfStyled(size: scheme == .dark ? 14 : 15,
                                            weight: .regular))
-                            .foregroundStyle(ChatListVisual.conversationPreviewInk)
+                            .foregroundStyle(ChatListVisual.previewInk)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 8)
-                    chatListMetaSlot {
+                    if app.me?.ops != true {
                         Text(officialRowTime("pay"))
+                            .font(pfStyled(size: 12, weight: .regular))
+                            .foregroundStyle(ChatListVisual.timeInk)
+                            .lineLimit(1)
                     }
                 }
                 .padding(.leading, ChatListVisual.rowLeading)
@@ -2513,14 +2390,17 @@ struct ChatsView: View {
                                 .lineLimit(1)
                         }
                         Text(weatherRowSubtitle)
-                            .font(pfStyled(size: 14,
+                            .font(pfStyled(size: scheme == .dark ? 14 : 15,
                                            weight: .regular))
-                            .foregroundStyle(ChatListVisual.conversationPreviewInk)
+                            .foregroundStyle(ChatListVisual.previewInk)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 8)
-                    chatListMetaSlot {
+                    if app.me?.ops != true {
                         Text(officialRowTime("weather"))
+                            .font(pfStyled(size: 12, weight: .regular))
+                            .foregroundStyle(ChatListVisual.timeInk)
+                            .lineLimit(1)
                     }
                 }
                 .padding(.leading, ChatListVisual.rowLeading)
@@ -2619,7 +2499,7 @@ struct ChatsView: View {
             entries.append(NativeChatEntry(
                 id: "empty",
                 kind: .empty,
-                signature: "\(appearance)-\(chatListEmptyTitle)-\(chatListEmptyDetail)-\(app.loadError != nil)"
+                signature: "\(appearance)-\(Tr("这个分类暂时没有会话"))"
             ))
         } else {
             entries.append(contentsOf: ChatStressFixture.isActive
@@ -2651,17 +2531,6 @@ struct ChatsView: View {
     private func rebuildStressChatEntries(_ snapshot: ChatFilterSnapshot) {
         guard ChatStressFixture.isActive else { return }
         stressChatEntries = snapshot.list.map(nativeChatEntry(for:))
-    }
-
-    private func refreshChatListCache(_ snapshot: ChatFilterSnapshot) {
-        cachedSnapshot = snapshot
-        rebuildStressChatEntries(snapshot)
-        refreshCachedChatEntries(snapshot)
-    }
-
-    private func refreshCachedChatEntries(_ snapshot: ChatFilterSnapshot) {
-        cachedChatEntries = nativeChatEntries(snapshot)
-        cachedChatEntriesRevision &+= 1
     }
 
     private func chatContactVisualSignature(_ chat: Chat) -> String {
@@ -2710,7 +2579,11 @@ struct ChatsView: View {
                 )
             }
         case .empty:
-            chatListEmptyState
+            Text(Tr("这个分类暂时没有会话"))
+                .font(pf(14))
+                .foregroundColor(C.subLabel)
+                .frame(maxWidth: .infinity)
+                .frame(height: 126)
         case .weather:
             weatherConversationRow
                 .frame(width: chatsContentMaxWidth)
@@ -2729,7 +2602,7 @@ struct ChatsView: View {
         case .official, .pay, .chat, .weather:
             return ChatListVisual.rowHeight
         case .empty:
-            return 96
+            return 126
         case .bottom:
             return L.tabH + L.safeBottom + 10
         }
@@ -2751,11 +2624,6 @@ struct ChatsView: View {
                 id != app.me?.id && app.contact(for: id)?.online == true
             }
         )
-        let musicListening = isGroup
-            ? (chat.memberIds ?? []).contains {
-                musicPresence.item(for: $0)?.playing == true
-            }
-            : (peerId.map { musicPresence.item(for: $0)?.playing == true } ?? false)
         let rawAvatar = (chat.avatar ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let displayAvatar = rawAvatar.isEmpty ? (peer?.avatarPath ?? "") : rawAvatar
         let mosaic = isGroup && (rawAvatar.isEmpty || rawAvatar.contains("/uploads/group-"))
@@ -2806,11 +2674,11 @@ struct ChatsView: View {
         let isDark = chatsIsDark
         let titleColor: UIColor = chat.showsOfficialMark
             ? UIColor(hex: 0x25D366)
-            : UIColor(hex: isDark ? 0xEBEBF0 : 0x191919)
-        let previewColor = UIColor(hex: isDark ? 0x8C8C8C : 0x999999)
+            : .label
+        let previewColor: UIColor = .secondaryLabel
         let memberColor = nativePeerColor(chat.memberColor)
-        let rowBg: UIColor = isDark ? UIColor(hex: 0x0A0A0A) : UIColor.white
-        let timeColor = UIColor(hex: isDark ? 0x6E6E6E : 0xB2B2B2)
+        let rowBg: UIColor = isDark ? UIColor(hex: 0x000000) : UIColor.white
+        let timeColor: UIColor = .tertiaryLabel
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
 
@@ -2823,20 +2691,17 @@ struct ChatsView: View {
             previewKind: draft.isEmpty ? kind : "draft",
             highlightMention: !mentionPrefix.isEmpty,
             previewColor: previewColor,
-            time: TimeFmt.listConversation(chat.listTimestamp),
+            time: TimeFmt.listApple(chat.listTimestamp),
             timeColor: timeColor,
             rowBackground: rowBg,
-            dividerColor: isDark
-                ? UIColor(hex: 0x232326)
-                : UIColor(hex: 0xE9EDEF),
-            showsDivider: true,
-            badgeRing: isDark ? UIColor(hex: 0x0A0A0A) : .white,
+            dividerColor: isDark ? .clear : UIColor(hex: 0xE9EDEF),
+            showsDivider: !isDark,
+            badgeRing: isDark ? .black : .white,
             chatId: chat.id,
             avatarPaths: avatarPaths,
             groupMemberIds: chat.memberIds ?? [],
             avatarIsGroup: mosaic,
             showOnline: !isGroup && peer?.online == true || groupHasOnline,
-            musicListening: musicListening,
             moodIcon: chat.moodIcon ?? "",
             unread: chat.unreadCount,
             unreadMuted: chat.muted == true,
@@ -2939,46 +2804,53 @@ struct ChatsView: View {
         return NavigationStack(path: $path) {
 
             ZStack(alignment: .top) {
-                NativeChatList(
-                    items: cachedChatEntries,
-                    revision: cachedChatEntriesRevision,
-                    dark: chatsIsDark,
-                    height: { entry in
-                        nativeChatHeight(entry)
-                    },
-                    nativeRow: { entry in
-                        guard entry.kind == .chat, let chat = entry.chat else { return nil }
-                        return nativeChatRowConfiguration(chat)
-                    },
-                    onScrollStateChange: { scrolling in
-                        guard chatsScrollActive != scrolling else { return }
-                        withAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
-                            chatsScrollActive = scrolling
-                        }
-                    },
-                    onOffsetChange: { y in
-                        let next: CGFloat = y > 8 ? 1 : 0
-                        if chatTopScrolled != next { chatTopScrolled = next }
-                    },
-                    onZoneChange: { zone in
-                        handleScrollZone(zone)
-                    },
-                    onApproachingStart: {
-                        loadPreviousStressChatsIfNeeded()
-                    },
-                    onApproachingEnd: {
-                        loadMoreStressChatsIfNeeded()
-                    },
-                    onRefresh: {
-                        Task { await app.loadChats() }
-                    },
-                    allowInsertionDuringScroll: true
-                ) { entry in
-                    nativeChatEntry(entry)
+                if snapshot.list.isEmpty {
+                    VStack(spacing: 0) {
+                        Color.clear.frame(height: L.safeTop + chatsHeaderH
+                                          + chatFilterOffset)
+                        chatsSearchBar
+                        systemOfficialRows
+                            .frame(width: chatsContentMaxWidth)
+                        emptyView
+                        Spacer(minLength: 0)
+                    }
+                } else {
+                    NativeChatList(
+                        items: nativeChatEntries(snapshot),
+                        height: { entry in
+                            nativeChatHeight(entry)
+                        },
+                        nativeRow: { entry in
+                            guard entry.kind == .chat, let chat = entry.chat else { return nil }
+                            return nativeChatRowConfiguration(chat)
+                        },
+                        onScrollStateChange: { scrolling in
+                            guard chatsScrollActive != scrolling else { return }
+                            withAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
+                                chatsScrollActive = scrolling
+                            }
+                        },
+                        onOffsetChange: { y in
+                            let next = y > 8 ? y : 0
+                            if chatTopScrolled != next { chatTopScrolled = next }
+                        },
+                        onZoneChange: { zone in
+                            handleScrollZone(zone)
+                        },
+                        onApproachingEnd: {
+                            loadMoreStressChatsIfNeeded()
+                        },
+                        onRefresh: {
+                            Task { await app.loadChats() }
+                        },
+                        allowInsertionDuringScroll: true
+                    ) { entry in
+                        nativeChatEntry(entry)
+                    }
+                    .id(chatFilter)
+                    .ignoresSafeArea(edges: .top)
+                    .background(Color.clear)
                 }
-                .id("\(app.me?.id ?? "")-\(chatFilter)")
-                .ignoresSafeArea(edges: .top)
-                .background(Color.clear)
 
                 if pullDown > 0.5 || floorUp {
                     ZStack(alignment: .top) {
@@ -3025,9 +2897,7 @@ struct ChatsView: View {
                                     Color.clear
                                         .contentShape(Rectangle())
                                 }
-                                NativeChatsTopEdgeChrome(scrolled: chatTopScrolled,
-                                                         dark: chatsIsDark,
-                                                         background: chatsPageFill)
+                                NativeChatsTopEdgeChrome(scrolled: chatTopScrolled)
                             }
                         }
                         .opacity(navFadeForFloor)
@@ -3057,7 +2927,7 @@ struct ChatsView: View {
                 .zIndex(3)
             }
 
-            .background(chatsPageFill.ignoresSafeArea())
+            .background(chatsPageFill.ignoresSafeArea(edges: .bottom))
             .fullScreenCover(isPresented: $showSearch) {
                 SearchPage(onOpenChat: { c in
                     app.prepareChatForImmediatePresentation(c)
@@ -3068,6 +2938,7 @@ struct ChatsView: View {
             .sheet(isPresented: $showChatFilterSheet) {
                 chatFilterSheet
             }
+            .background(chatsPageFill.ignoresSafeArea(edges: .top))
             .navigationTitle(chatListBrandTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
@@ -3078,7 +2949,8 @@ struct ChatsView: View {
 
             .onAppear {
                 let next = chatSnapshot()
-                refreshChatListCache(next)
+                cachedSnapshot = next
+                rebuildStressChatEntries(next)
                 if MessageStressFixture.autoOpen,
                    !stressAutoOpened,
                    let first = MessageStressFixture.firstChat {
@@ -3090,21 +2962,23 @@ struct ChatsView: View {
                 localWeatherRowAvatar = UserDefaults.standard.string(forKey: "chris.accountIcon.weatherRowAvatar") ?? ""
             }
             .onChange(of: app.chats) { _ in
-                guard !ChatStressFixture.isActive else { return }
                 let next = chatSnapshot()
-                refreshChatListCache(next)
+                cachedSnapshot = next
+                rebuildStressChatEntries(next)
             }
             .onChange(of: chatFilter) { _ in
                 let next = chatSnapshot()
-                refreshChatListCache(next)
+                cachedSnapshot = next
+                rebuildStressChatEntries(next)
             }
             .onChange(of: keyword) { _ in
                 let next = chatSnapshot()
-                refreshChatListCache(next)
+                cachedSnapshot = next
+                rebuildStressChatEntries(next)
             }
             .onChange(of: stressLoadedCount) { _ in
                 if !ChatStressFixture.isActive {
-                    refreshChatListCache(chatSnapshot())
+                    cachedSnapshot = chatSnapshot()
                 }
             }
 
@@ -3334,94 +3208,21 @@ struct ChatsView: View {
         if key == "weatherRowAvatar" { localWeatherRowAvatar = "" }
     }
 
-    private var chatListEmptyTitle: String {
-        if app.loadError != nil {
-            return sessionCopy(zh: "会话加载失败",
-                               en: "Couldn't load conversations",
-                               ru: "Не удалось загрузить чаты")
-        }
-        if app.loadingChats && app.chats.isEmpty {
-            return sessionCopy(zh: "正在加载会话…",
-                               en: "Loading conversations…",
-                               ru: "Загрузка чатов…")
-        }
-        if !keyword.isEmpty {
-            return sessionCopy(zh: "未找到相关会话",
-                               en: "No conversations found",
-                               ru: "Чаты не найдены")
-        }
-        switch chatFilter {
-        case .all:
-            return sessionCopy(zh: "暂无会话",
-                               en: "No conversations",
-                               ru: "Нет чатов")
-        case .unread:
-            return sessionCopy(zh: "暂无未读会话",
-                               en: "No unread conversations",
-                               ru: "Нет непрочитанных чатов")
-        case .group:
-            return sessionCopy(zh: "暂无群聊",
-                               en: "No group chats",
-                               ru: "Нет групповых чатов")
-        case .official:
-            return sessionCopy(zh: "暂无公众号会话",
-                               en: "No official account chats",
-                               ru: "Нет чатов официальных аккаунтов")
-        case .pinned:
-            return sessionCopy(zh: "暂无置顶会话",
-                               en: "No pinned conversations",
-                               ru: "Нет закрепленных чатов")
-        }
-    }
-
-    private var chatListEmptyDetail: String {
-        if app.loadError != nil {
-            return sessionCopy(zh: "下拉可重新同步",
-                               en: "Pull down to try again",
-                               ru: "Потяните вниз, чтобы повторить")
-        }
-        if app.loadingChats && app.chats.isEmpty {
-            return ""
-        }
-        if !keyword.isEmpty {
-            return sessionCopy(zh: "换个关键词试试",
-                               en: "Try another search",
-                               ru: "Попробуйте другой запрос")
-        }
-        if chatFilter != .all {
-            return sessionCopy(zh: "新会话会显示在这里",
-                               en: "New conversations will appear here",
-                               ru: "Новые чаты появятся здесь")
-        }
-        return app.chats.isEmpty
-            ? sessionCopy(zh: "收到的新消息会显示在这里",
-                          en: "New messages will appear here",
-                          ru: "Новые сообщения появятся здесь")
-            : ""
-    }
-
-    private var chatListEmptyState: some View {
-        VStack(spacing: 4) {
-            if app.loadingChats && app.chats.isEmpty && app.loadError == nil {
-                ProgressView()
-                    .controlSize(.small)
-                    .padding(.bottom, 2)
-            }
-            Text(chatListEmptyTitle)
+    private var emptyView: some View {
+        VStack(spacing: 10) {
+            Spacer()
+            Text(app.loadError ?? "正在加载会话…")
                 .font(pf(14))
                 .foregroundColor(C.subLabel)
-                .multilineTextAlignment(.center)
-            if !chatListEmptyDetail.isEmpty {
-                Text(chatListEmptyDetail)
-                    .font(pf(12))
-                    .foregroundColor(Color(.tertiaryLabel))
-                    .multilineTextAlignment(.center)
+            if app.loadError != nil {
+                Button(Tr("重试")) { Task { await app.loadChats() } }
+                    .font(pf(15))
+                    .foregroundColor(C.green)
             }
+            Spacer()
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 96)
-        .background(Color.clear)
-        .accessibilityElement(children: .combine)
+        .background(OrbitTheme.canvas)
     }
 
     private func markUnread(_ chat: Chat) {

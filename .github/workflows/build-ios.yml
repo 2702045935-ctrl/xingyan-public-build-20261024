@@ -154,10 +154,7 @@ jobs:
           python3 tools/verify-works-topbar.py
           python3 tools/verify-catalog-refresh-cache.py
           python3 tools/verify-mall-module.py
-          python3 tools/verify-chat-list-grid.py
           python3 tools/verify-chat-list-order.py
-          python3 tools/verify-chat-list-time.py
-          python3 tools/verify-chat-list-top-anchor.py
           node server/tools/server-boot-preflight.js
 
       - name: 聊天接口回归

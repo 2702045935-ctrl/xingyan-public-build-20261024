@@ -12,19 +12,18 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "Text(navTitle)\n                    .font(pf(17, .semibold))" in CHATS,
-    "the chat top title must use the compact 17pt semibold navigation title",
+    "Text(chatTopTitle)\n                    .font(pf(17, .semibold))" in CHATS,
+    "the chat top title must use the WhatsApp-style 17pt semibold navigation title",
 )
 require(
     "Text(chatTopTitle)\n                    .font(pf(22, .bold))" not in CHATS,
     "the oversized chat top title must not return",
 )
 require(
-    'return unreadTotal > 0 ? "\\(chatListBrandTitle)(\\(unreadTotal))" : chatListBrandTitle'
-    in CHATS
-    and "chatsHeaderH: CGFloat { 44 }" in CHATS
-    and "chatsSearchH: CGFloat { 36 }" in CHATS,
-    "the title unread count must stay inline with compact header spacing",
+    ".background(Capsule().fill(Color(.systemRed)))" in CHATS
+    and ".overlay(Capsule().stroke(ChatListVisual.badgeRing, lineWidth: 1.5))" in CHATS
+    and "nativeUnreadTotalBadge" in CHATS,
+    "the title unread count must use the native chat-list badge treatment",
 )
 
 print("chat-top-title: passed")
