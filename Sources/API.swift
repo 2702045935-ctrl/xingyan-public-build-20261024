@@ -1817,7 +1817,7 @@ final class API {
 
     private(set) var token: String = ""
 
-    private(set) var server: String = API.publicIngressServer
+    private(set) var server: String = API.legacyDirectServer
 
     private(set) var backups: [String] = API.builtinBackups
 
@@ -1865,7 +1865,6 @@ final class API {
 
     static let builtinBackups: [String] = []
     private static let retiredEndpoints: Set<String> = [
-        "43.242.194.89:8443",
         "43.242.194.89:443",
         "43.242.194.89:5443",
         "u.598218.xyz:8443",
@@ -1901,10 +1900,10 @@ final class API {
            !saved.isEmpty,
            !legacyServers.contains(API.normalizeServer(saved)),
            !API.retiredEndpoints.contains(API.normalizeServer(saved)),
-           API.trustedHost(saved) {
+            API.trustedHost(saved) {
             let normalized = API.normalizeServer(saved)
-            if normalized == API.legacyDirectServer {
-                server = API.publicIngressServer
+            if normalized == API.publicIngressServer {
+                server = API.legacyDirectServer
                 UserDefaults.standard.set(server, forKey: "chris.server")
             } else {
                 server = normalized
