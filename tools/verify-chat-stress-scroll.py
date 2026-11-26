@@ -76,10 +76,22 @@ require(
 
 NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 require(
-    "allowInsertionDuringScroll && isPureAppend" in NATIVE_CHAT_LIST
+    "allowInsertionDuringScroll,\n"
+    "                   next.count > oldCount,\n"
+    "                   sameBoundaries,\n"
+    "                   appendPureTail(next, from: oldCount, keepPending: true)"
+    in NATIVE_CHAT_LIST
     and "table.isDragging || table.isTracking || table.isDecelerating" in NATIVE_CHAT_LIST
     and "pendingItems = next" in NATIVE_CHAT_LIST,
-    "only non-append changes may defer during touch motion",
+    "appended conversation pages must stay live during touch motion",
+)
+require(
+    "allowInsertionDuringScroll,\n"
+    "                   next.count == oldCount,\n"
+    "                   slideWindowDuringScroll(next)"
+    in NATIVE_CHAT_LIST
+    and "private func slideWindowDuringScroll(_ next: [Item]) -> Bool" in NATIVE_CHAT_LIST,
+    "equal-size conversation window slides must stay live during touch motion",
 )
 FIXTURE = (ROOT / "Sources" / "ChatStressFixture.swift").read_text(encoding="utf-8")
 require(
@@ -88,8 +100,10 @@ require(
     "100k conversation stress data must materialize incrementally",
 )
 require(
-    "updated.list.append(contentsOf: added)" in CHATS,
-    "stress conversation snapshots must append new pages without rescanning all loaded rows",
+    "let existingChatIDs = Set(updated.list.lazy.map(\\.id))" in CHATS
+    and "let freshChats = added.filter { !existingChatIDs.contains($0.id) }" in CHATS
+    and "updated.list.append(contentsOf: freshChats)" in CHATS,
+    "stress conversation snapshots must append only fresh page identifiers",
 )
 require(
     "let isPureAppend = !order.isEmpty" in NATIVE_CHAT_LIST
