@@ -1356,6 +1356,7 @@ struct ChatsView: View {
     @State private var openRow: String?
 
     @State private var showSearch = false
+    @State private var manualChatSync = false
     @State private var showChatFilterSheet = false
     @State private var showOfficialConversation = false
     @State private var showOfficialAdminEditor = false
@@ -1734,20 +1735,10 @@ struct ChatsView: View {
 
     private var chatTopHeader: some View {
         ZStack {
-            HStack(spacing: 7) {
-                Text(navTitle)
-                    .font(pf(17, .semibold))
-                    .foregroundStyle(C.label)
-                    .accessibilityLabel(navTitle)
-
-                if chatFilter != .all {
-                    Text(Tr(chatFilter.rawValue))
-                        .font(pfStyled(size: 10.5, weight: .semibold))
-                        .foregroundStyle(ChatListVisual.previewInk)
-                        .padding(.horizontal, 7)
-                        .frame(height: 18)
-                        .background(Capsule().fill(ChatListVisual.rule.opacity(0.7)))
-                }
+            HStack {
+                Spacer(minLength: 0)
+                chatHeaderMenu
+                Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity)
 
@@ -1820,6 +1811,108 @@ struct ChatsView: View {
         .frame(maxWidth: .infinity)
         .frame(height: chatsHeaderH)
         .offset(y: -13)
+    }
+
+    private var chatHeaderMenu: some View {
+        Menu {
+            Section(Tr("会话分类")) {
+                ForEach(ChatFilter.allCases) { item in
+                    Button {
+                        chooseFilter(item)
+                    } label: {
+                        Label(
+                            Tr(item.rawValue),
+                            systemImage: chatFilter == item
+                                ? "checkmark.circle.fill"
+                                : "circle"
+                        )
+                    }
+                }
+            }
+
+            Divider()
+
+            Button {
+                showSearch = true
+            } label: {
+                Label(Tr("搜索会话"), systemImage: "magnifyingglass")
+            }
+
+            Button {
+                scrollChatsToTop()
+            } label: {
+                Label(Tr("回到顶部"), systemImage: "arrow.up.to.line")
+            }
+
+            Button {
+                syncChatsFromTitle()
+            } label: {
+                Label(
+                    chatHeaderIsSyncing ? Tr("正在同步…") : Tr("同步会话"),
+                    systemImage: "arrow.triangle.2.circlepath"
+                )
+            }
+            .disabled(chatHeaderIsSyncing)
+        } label: {
+            HStack(spacing: 7) {
+                Text(navTitle)
+                    .font(pf(17, .semibold))
+                    .foregroundStyle(C.label)
+                    .lineLimit(1)
+
+                if chatFilter != .all {
+                    Text(Tr(chatFilter.rawValue))
+                        .font(pfStyled(size: 10.5, weight: .semibold))
+                        .foregroundStyle(ChatListVisual.previewInk)
+                        .padding(.horizontal, 7)
+                        .frame(height: 18)
+                        .background(Capsule().fill(ChatListVisual.rule.opacity(0.7)))
+                }
+
+                if chatHeaderIsSyncing && !app.offline {
+                    Text(Tr("同步中"))
+                        .font(pfStyled(size: 10.5, weight: .semibold))
+                        .foregroundStyle(ChatListVisual.previewInk)
+                        .padding(.horizontal, 7)
+                        .frame(height: 18)
+                        .background(Capsule().fill(ChatListVisual.rule.opacity(0.7)))
+                        .transition(.opacity)
+                }
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(ChatListVisual.utilityIconInk)
+            }
+            .contentShape(Rectangle())
+            .accessibilityLabel(navTitle)
+            .accessibilityHint(Tr("切换会话分类、搜索、同步或回到顶部"))
+            .accessibilityAddTraits(.isHeader)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var chatHeaderIsSyncing: Bool {
+        app.syncing || manualChatSync
+    }
+
+    private func scrollChatsToTop() {
+        guard let scroll = NativeChatListScrollRegistry.shared.chats else { return }
+        let top = CGPoint(x: scroll.contentOffset.x,
+                          y: -scroll.adjustedContentInset.top)
+        scroll.setContentOffset(top, animated: true)
+        UISelectionFeedbackGenerator().selectionChanged()
+    }
+
+    private func syncChatsFromTitle() {
+        guard !chatHeaderIsSyncing else { return }
+        manualChatSync = true
+        UISelectionFeedbackGenerator().selectionChanged()
+        Task {
+            await app.loadChats()
+            await app.syncRecentMessages(chatCount: 20, limit: 50)
+            await app.syncDeviceChats()
+            manualChatSync = false
+        }
     }
 
     private var nativeUnreadTotalBadge: some View {

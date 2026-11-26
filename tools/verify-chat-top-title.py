@@ -26,5 +26,24 @@ require(
     and "chatsSearchH: CGFloat { 36 }" in CHATS,
     "the title unread count must stay inline with compact header spacing",
 )
+require(
+    "private var chatHeaderMenu: some View" in CHATS
+    and "ForEach(ChatFilter.allCases)" in CHATS
+    and "chooseFilter(item)" in CHATS,
+    "the title must expose every conversation category and change the active filter",
+)
+require(
+    "showSearch = true" in CHATS
+    and "scrollChatsToTop()" in CHATS
+    and "NativeChatListScrollRegistry.shared.chats" in CHATS,
+    "the title menu must open search and scroll the native conversation list to the top",
+)
+require(
+    "private var chatHeaderIsSyncing: Bool" in CHATS
+    and "manualChatSync" in CHATS
+    and "await app.syncRecentMessages(chatCount: 20, limit: 50)" in CHATS
+    and "await app.syncDeviceChats()" in CHATS,
+    "the title must reflect sync state and reuse the existing conversation sync pipeline",
+)
 
 print("chat-top-title: passed")
