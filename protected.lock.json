@@ -34,7 +34,7 @@
     {
       "path": "Sources/ChatStressFixture.swift",
       "size": 3171,
-      "sha256": "5c3a04d73abbff8e90127f0637319b0bbe2f51fdf8186c849bae4a5d711e8d7a"
+      "sha256": "a7ef48649427d7ad5c20174932d6ff84a8299134a380e8a6dda64a0038610b43"
     },
     {
       "path": "Sources/ChatThemes.swift",
@@ -53,8 +53,8 @@
     },
     {
       "path": "Sources/NativeChatList.swift",
-      "size": 33781,
-      "sha256": "663de34591d83683b9ffaea55a28c38a888cbeb18f471a0c6b4c5f5488fc009f"
+      "size": 36593,
+      "sha256": "1e1969107a98246694be7db1e32946ff11fd8fd1f53dff536aa2ca9c7f6d459a"
     },
     {
       "path": "Sources/NativeChatRowCell.swift",

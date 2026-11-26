@@ -308,6 +308,11 @@ where Item.ID: Hashable {
                     && next[oldCount - 1].id == order[oldCount - 1]
                 if allowInsertionDuringScroll,
                    next.count == oldCount,
+                   prependWindowDuringScroll(next) {
+                    return
+                }
+                if allowInsertionDuringScroll,
+                   next.count == oldCount,
                    slideWindowDuringScroll(next) {
                     return
                 }
@@ -453,6 +458,63 @@ where Item.ID: Hashable {
                 target.y = keepsTopAnchor ? minimumY : previousOffset.y
                 target.y = min(max(target.y, minimumY), maximumY)
                 table.setContentOffset(target, animated: false)
+            }
+            return true
+        }
+
+        @discardableResult
+        private func prependWindowDuringScroll(_ next: [Item]) -> Bool {
+            guard next.count == order.count,
+                  let oldFirst = order.first,
+                  let insertedCount = next.firstIndex(where: { $0.id == oldFirst }),
+                  insertedCount > 0,
+                  let dataSource,
+                  let table else { return false }
+
+            let nextOrder = next.map(\.id)
+            let retainedCount = nextOrder.count - insertedCount
+            guard retainedCount > 0,
+                  nextOrder[insertedCount...].elementsEqual(order.prefix(retainedCount))
+            else { return false }
+
+            let added = Array(next.prefix(insertedCount))
+            let addedIDs = added.map(\.id)
+            let removedIDs = Array(order.suffix(insertedCount))
+            let retainedFirst = nextOrder[insertedCount]
+            let visibleRow = table.indexPathsForVisibleRows?.min()
+            let visibleID = visibleRow.flatMap { dataSource.itemIdentifier(for: $0) }
+            let visibleDelta = visibleRow.map {
+                table.rectForRow(at: $0).minY - table.contentOffset.y
+            }
+            let previousOffset = table.contentOffset
+            for id in removedIDs { lookup.removeValue(forKey: id) }
+            for item in added { lookup[item.id] = item }
+            order = nextOrder
+            appliedItemCount = order.count
+            endRequestInFlight = false
+            pendingItems = nil
+            applyGeneration += 1
+            let generation = applyGeneration
+
+            var snapshot = dataSource.snapshot()
+            snapshot.insertItems(addedIDs, beforeItemWithIdentifier: retainedFirst)
+            snapshot.deleteItems(removedIDs)
+            dataSource.apply(snapshot, animatingDifferences: false) {
+                [weak self, weak table] in
+                guard let self, let table,
+                      generation == self.applyGeneration,
+                      self.table === table else { return }
+                table.layoutIfNeeded()
+                self.revealInitialTableIfNeeded(table)
+                self.prefetchEndRunwayIfNeeded(table)
+                if let visibleID, let indexPath = dataSource.indexPath(for: visibleID),
+                   let delta = visibleDelta {
+                    let targetY = table.rectForRow(at: indexPath).minY - delta
+                    table.setContentOffset(
+                        CGPoint(x: previousOffset.x, y: targetY),
+                        animated: false
+                    )
+                }
             }
             return true
         }

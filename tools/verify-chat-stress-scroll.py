@@ -98,10 +98,18 @@ require(
     < NATIVE_CHAT_LIST.index("if next.count == oldCount {"),
     "window slides must run before unchanged-row deferral during active scrolling",
 )
+require(
+    "prependWindowDuringScroll(next)" in NATIVE_CHAT_LIST
+    and "snapshot.insertItems(addedIDs, beforeItemWithIdentifier: retainedFirst)"
+    in NATIVE_CHAT_LIST
+    and "snapshot.deleteItems(removedIDs)" in NATIVE_CHAT_LIST,
+    "upward conversation runway pages must commit without ending the gesture",
+)
 FIXTURE = (ROOT / "Sources" / "ChatStressFixture.swift").read_text(encoding="utf-8")
 require(
     "private static var cache: [Chat]" in FIXTURE
-    and "static func chats(range: Range<Int>)" in FIXTURE,
+    and "static func chats(range: Range<Int>)" in FIXTURE
+    and "static let pageSize = 120" in FIXTURE,
     "100k conversation stress data must materialize incrementally",
 )
 require(
