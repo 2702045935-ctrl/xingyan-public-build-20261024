@@ -7950,6 +7950,8 @@ struct MessageRow: View {
             content
 
             if mine,
+               !usesInlineTextMetadata,
+               showsOutsideDeliveryMetadata,
                !message.isRecalled,
                !message.isCallRecord,
                message.kindName != "system",
@@ -8026,7 +8028,8 @@ struct MessageRow: View {
                 .stroke(C.green.opacity(0.22), lineWidth: 0.8)
         )
         .shadow(color: Color.black.opacity(0.06), radius: 5, x: 0, y: 2)
-        .frame(maxWidth: 240, alignment: .leading)
+        .frame(maxWidth: min(maxBubbleWidth, max(210, L.width * 0.62)),
+               alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture {
             guard !asrText.isEmpty else { return }
@@ -8081,6 +8084,34 @@ struct MessageRow: View {
 
     private var bubbleLinkInk: Color {
         mine ? Color(hex: 0xEFFFFC) : ChatTheme.link
+    }
+
+    private var usesInlineTextMetadata: Bool {
+        message.kindName == "text"
+    }
+
+    private var showsOutsideDeliveryMetadata: Bool {
+        !["image", "images", "video", "livephoto", "transfer", "audio"]
+            .contains(message.kindName)
+    }
+
+    private func textWithInlineMetadata(_ raw: String) -> AttributedString {
+        var out = richBody(raw)
+        guard usesInlineTextMetadata else { return out }
+
+        var meta = AttributedString("  " + TimeFmt.messageClock(message.createdAt))
+        meta.font = pfStyled(size: 10.5, weight: .medium)
+        meta.foregroundColor = bubbleSecondaryInk.opacity(0.92)
+        out.append(meta)
+
+        if mine {
+            let count = deliveryState.tickCount
+            var ticks = AttributedString("  " + String(repeating: "✓", count: count))
+            ticks.font = .system(size: 10, weight: .semibold)
+            ticks.foregroundColor = deliveryState.color
+            out.append(ticks)
+        }
+        return out
     }
 
     private var quoteSurface: Color {
@@ -8255,7 +8286,7 @@ struct MessageRow: View {
         default:
 
             if message.body.hasPrefix("{") {
-                Text(unknownCardText(message.body))
+                Text(textWithInlineMetadata(unknownCardText(message.body)))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
                     .padding(.horizontal, L.bubblePadH)
@@ -8266,7 +8297,7 @@ struct MessageRow: View {
             quotedTextBubble(q, raw: message.body)
                 } else {
 
-            Text(richBody(message.body))
+            Text(textWithInlineMetadata(message.body))
                 .font(pf(L.chatFontSize))
 
                 .foregroundColor(bubblePrimaryInk)
@@ -8284,7 +8315,7 @@ struct MessageRow: View {
 
     private func quotedTextBubble(_ q: QuoteRef, raw: String) -> some View {
         VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
-            Text(richBody(raw))
+            Text(textWithInlineMetadata(raw))
                 .font(pf(L.chatFontSize))
                 .foregroundColor(bubblePrimaryInk)
                 .lineSpacing(textLineSpacing(raw))
@@ -8339,7 +8370,8 @@ struct MessageRow: View {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .stroke(quoteBorder, lineWidth: 0.5)
             }
-            .frame(maxWidth: 250, alignment: mine ? .trailing : .leading)
+            .frame(maxWidth: min(maxBubbleWidth, max(220, L.width * 0.62)),
+                   alignment: mine ? .trailing : .leading)
         }
     }
 
@@ -8491,6 +8523,7 @@ struct MessageRow: View {
         let name = (o["name"] as? String) ?? "位置"
         let addr = (o["addr"] as? String) ?? ""
         let pt = LocationPoint(lat: lat, lng: lng, name: name, addr: addr)
+        let cardWidth = min(maxBubbleWidth, max(200, L.width * 0.58))
         return VStack(spacing: 0) {
 
             MapSnapshotView(point: pt, width: 216, height: 136)
@@ -8503,7 +8536,7 @@ struct MessageRow: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
         }
-        .frame(width: 216)
+        .frame(width: cardWidth)
 
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
 
@@ -9046,7 +9079,9 @@ struct MessageRow: View {
                 .foregroundColor(ChatTheme.secondary.opacity(0.7))
         }
         .padding(.horizontal, 13)
-        .frame(width: min(224, maxBubbleWidth), height: 72, alignment: .leading)
+        .frame(width: min(maxBubbleWidth, max(210, L.width * 0.56)),
+               height: 72,
+               alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 15, style: .continuous)
                 .fill(.regularMaterial)

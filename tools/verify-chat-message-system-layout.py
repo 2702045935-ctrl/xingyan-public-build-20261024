@@ -40,6 +40,22 @@ require(
     "message status, avatar and vertical rhythm must share the system token set",
 )
 require(
+    "private var usesInlineTextMetadata: Bool" in CHAT
+    and "private func textWithInlineMetadata(_ raw: String) -> AttributedString" in CHAT
+    and "Text(textWithInlineMetadata(message.body))" in CHAT
+    and "Text(textWithInlineMetadata(raw))" in CHAT
+    and "showsOutsideDeliveryMetadata" in CHAT
+    and '"image", "images", "video", "livephoto", "transfer", "audio"' in CHAT,
+    "text metadata must flow with the message while media keeps a clean card",
+)
+require(
+    "min(maxBubbleWidth, max(210, L.width * 0.62))" in CHAT
+    and "min(maxBubbleWidth, max(220, L.width * 0.62))" in CHAT
+    and "let cardWidth = min(maxBubbleWidth, max(200, L.width * 0.58))" in CHAT
+    and "min(maxBubbleWidth, max(210, L.width * 0.56))" in CHAT,
+    "cards and utility bubbles must adapt to available screen width",
+)
+require(
     "python3 tools/verify-chat-message-system-layout.py" in WORKFLOW,
     "chat message layout regression must run in the iOS gate",
 )
