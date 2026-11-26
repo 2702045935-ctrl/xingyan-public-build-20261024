@@ -2,6 +2,10 @@ import Combine
 import Foundation
 import SwiftUI
 
+extension Notification.Name {
+    static let chrisMusicPresenceChanged = Notification.Name("chris.musicPresenceChanged")
+}
+
 @MainActor
 final class MusicPresenceStore: ObservableObject {
     static let shared = MusicPresenceStore()
