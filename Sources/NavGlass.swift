@@ -178,6 +178,38 @@ struct NativeFrostedHeaderMaterial: UIViewRepresentable {
 }
 #endif
 
+private struct NativeGraphiteChromeTexture: View {
+    let base: Color
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            LinearGradient(
+                stops: [
+                    .init(color: base.opacity(0.97), location: 0),
+                    .init(color: base.opacity(0.97), location: 0.76),
+                    .init(color: base.opacity(0.82), location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            LinearGradient(
+                stops: [
+                    .init(color: Color.white.opacity(0.022), location: 0),
+                    .init(color: Color.clear, location: 0.34)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            Rectangle()
+                .fill(Color.white.opacity(0.028))
+                .frame(height: 0.5)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
 struct NativeTopGlassMask: View {
     var active: Bool
 
@@ -190,6 +222,11 @@ struct NativeTopGlassMask: View {
                 Color.clear
             } else if reduceTransparency {
                 Color(uiColor: .systemBackground)
+            } else if scheme == .dark {
+                ZStack {
+                    NativeFrostedHeaderMaterial()
+                    NativeGraphiteChromeTexture(base: C.pageBg)
+                }
             } else {
                 NativeFrostedHeaderMaterial()
             }
@@ -218,10 +255,16 @@ struct NativeChatsTopEdgeChrome: View {
     private var isDark: Bool { dark ?? (scheme == .dark) }
 
     var body: some View {
-        ZStack {
-            (background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground)))
-                .opacity(scrolled > 0 ? 1 : 0)
+        Group {
+            if isDark {
+                NativeGraphiteChromeTexture(
+                    base: background ?? C.pageBg
+                )
+            } else {
+                background ?? Color(uiColor: .systemBackground)
+            }
         }
+        .opacity(scrolled > 0 ? 1 : 0)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.16),
                    value: scrolled > 0)
         .ignoresSafeArea(edges: .top)

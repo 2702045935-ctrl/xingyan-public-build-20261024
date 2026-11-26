@@ -40,8 +40,9 @@ for key, light, dark in (
         f"{key} must share the graphite dark canvas",
     )
 require(
-    "background ?? (isDark ? C.pageBg" in NAV,
-    "the dark native chrome fallback must use the app-wide canvas",
+    "NativeGraphiteChromeTexture(base: C.pageBg)" in NAV
+    and "base: background ?? C.pageBg" in NAV,
+    "the dark native chrome fallback must use the shared graphite texture",
 )
 require(
     "let fill = scheme == .dark\n            ? C.tabBg" in MAIN_TAB
