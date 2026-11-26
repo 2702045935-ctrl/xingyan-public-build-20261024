@@ -93,6 +93,11 @@ require(
     and "private func slideWindowDuringScroll(_ next: [Item]) -> Bool" in NATIVE_CHAT_LIST,
     "equal-size conversation window slides must stay live during touch motion",
 )
+require(
+    NATIVE_CHAT_LIST.index("slideWindowDuringScroll(next)")
+    < NATIVE_CHAT_LIST.index("if next.count == oldCount {"),
+    "window slides must run before unchanged-row deferral during active scrolling",
+)
 FIXTURE = (ROOT / "Sources" / "ChatStressFixture.swift").read_text(encoding="utf-8")
 require(
     "private static var cache: [Chat]" in FIXTURE

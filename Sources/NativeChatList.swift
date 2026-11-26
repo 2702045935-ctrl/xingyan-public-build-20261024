@@ -306,6 +306,11 @@ where Item.ID: Hashable {
                 let sameBoundaries = next.count >= oldCount
                     && next.first?.id == order.first
                     && next[oldCount - 1].id == order[oldCount - 1]
+                if allowInsertionDuringScroll,
+                   next.count == oldCount,
+                   slideWindowDuringScroll(next) {
+                    return
+                }
                 if next.count == oldCount {
                     /* 滚动期间不为未变化的 13k+ 行做全量相等比较。
                        可见行状态变化在手指停止后统一 flush。 */
@@ -316,11 +321,6 @@ where Item.ID: Hashable {
                    next.count > oldCount,
                    sameBoundaries,
                    appendPureTail(next, from: oldCount, keepPending: true) {
-                    return
-                }
-                if allowInsertionDuringScroll,
-                   next.count == oldCount,
-                   slideWindowDuringScroll(next) {
                     return
                 }
                 pendingItems = next
