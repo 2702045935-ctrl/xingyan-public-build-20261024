@@ -14,7 +14,7 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "chatsIsDark\n            ? Color(hex: 0x0D0F11)\n            : UIConfig.fixedLight(\"chatsPageBg\", 0xFFFFFF)" in CHATS
+    "chatsIsDark\n            ? Color(hex: 0x0D0F11)\n            : C.pageBg" in CHATS
     and "if isDark { return Color(hex: 0x0D0F11) }" in CHATS
     and "let rowBg: UIColor = isDark ? UIColor(hex: 0x0D0F11) : UIColor.white" in CHATS,
     "chat canvas must resolve explicit dark and light surfaces without environment delay",
@@ -49,9 +49,10 @@ require(
 require(
     "? Color(hex: 0x15181B)" in CHATS
     and "Color.white.opacity(0.045)" in CHATS
+    and "Color(hex: 0xE2E4E6)" in CHATS
     and "Color(hex: 0x6E7378)" in CHATS
     and ".stroke(chatsSearchBorder, lineWidth: 0.5)" in CHATS,
-    "dark search must sit quietly on the graphite canvas instead of using a raised light card",
+    "search must preserve a visible surface hierarchy in both themes",
 )
 require(
     '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS
@@ -62,6 +63,15 @@ require(
     and "cell.contentConfiguration = UIHostingConfiguration" in NATIVE_LIST
     and "table.reloadRows" not in NATIVE_LIST,
     "native and hosted rows must repaint together without a table update transaction",
+)
+require(
+    "onScrollStateChange" not in NATIVE_LIST
+    and "publishScrollState" not in NATIVE_LIST
+    and "chatsScrollActive" not in CHATS
+    and "@State private var scrolled" not in CHATS
+    and "if !hasInitializedChatCache" in CHATS
+    and "try? await Task.sleep(nanoseconds: 900_000_000)" in CHATS,
+    "first-scroll and tab re-entry paths must avoid redundant SwiftUI state invalidation",
 )
 require(
     "if snapshot.list.isEmpty {\n                    VStack" not in CHATS

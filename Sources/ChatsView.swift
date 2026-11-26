@@ -1303,9 +1303,7 @@ struct ChatsView: View {
     }
     private var chatsCardFill: Color { chatsPageFill }
 
-    @State private var scrolled: CGFloat = 0
     @State private var chatTopScrolled: CGFloat = 0
-    @State private var chatsScrollActive = false
     @State private var filterHidden = false
 
     @State private var pullDown: CGFloat = 0
@@ -1341,6 +1339,7 @@ struct ChatsView: View {
     @State private var stressLoadedCount = ChatStressFixture.initialWindow
     @State private var stressCountedEnd = ChatStressFixture.initialWindow
     @State private var stressChatEntries: [NativeChatEntry] = []
+    @State private var hasInitializedChatCache = false
     @State private var cachedChatEntries: [NativeChatEntry] = []
     @State private var cachedChatEntriesRevision = 0
 
@@ -1539,7 +1538,6 @@ struct ChatsView: View {
     private func chooseFilter(_ item: ChatFilter) {
         guard chatFilter != item else { return }
         NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
-        scrolled = 0
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         withAnimation(.spring(response: 0.30, dampingFraction: 0.92)) {
             chatFilter = item
@@ -1673,16 +1671,13 @@ struct ChatsView: View {
     }
 
     private func handleScrollZone(_ zone: Int) {
-        let wasNearTop = scrolled <= 8
-        if zone >= 2, wasNearTop {
+        if zone == 2 {
             NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
         }
 
         if zone == 0 {
-            if scrolled != 0 { scrolled = 0 }
             setFilterHidden(false)
         } else if zone >= 2 {
-            if scrolled != 9 { scrolled = 9 }
             setFilterHidden(true)
         }
 
@@ -3005,12 +3000,6 @@ struct ChatsView: View {
                         guard entry.kind == .chat, let chat = entry.chat else { return nil }
                         return nativeChatRowConfiguration(chat)
                     },
-                    onScrollStateChange: { scrolling in
-                        guard chatsScrollActive != scrolling else { return }
-                        withAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
-                            chatsScrollActive = scrolling
-                        }
-                    },
                     onOffsetChange: { y in
                         let next: CGFloat = y > 8 ? 1 : 0
                         if chatTopScrolled != next { chatTopScrolled = next }
@@ -3132,8 +3121,10 @@ struct ChatsView: View {
             }
 
             .onAppear {
-                let next = chatSnapshot()
-                refreshChatListCache(next)
+                if !hasInitializedChatCache {
+                    refreshChatListCache(chatSnapshot())
+                    hasInitializedChatCache = true
+                }
                 if MessageStressFixture.autoOpen,
                    !stressAutoOpened,
                    let first = MessageStressFixture.firstChat {
@@ -3320,8 +3311,23 @@ struct ChatsView: View {
         }
         .task {
             HitchWatch.shared.start("会话列表")
+            if app.chats.isEmpty {
+                await app.loadChats()
+            }
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            while !Task.isCancelled {
+                let pollSeconds: UInt64 = Realtime.shared.connected ? 60 : 4
+                try? await Task.sleep(nanoseconds: pollSeconds * 1_000_000_000)
+                guard !Task.isCancelled else { break }
+                await app.loadChats()
+            }
+        }
+        .task {
+            try? await Task.sleep(nanoseconds: 900_000_000)
+            guard !Task.isCancelled else { return }
 
             let got = await API.shared.miniApps()
+            guard !Task.isCancelled else { return }
             if !got.isEmpty {
                 floorApps = got
                 if let d = try? JSONEncoder().encode(got) {
@@ -3334,12 +3340,6 @@ struct ChatsView: View {
             }
 
             MallWeather.shared.refresh()
-
-            while !Task.isCancelled {
-                await app.loadChats()
-                let pollSeconds: UInt64 = Realtime.shared.connected ? 60 : 4
-                try? await Task.sleep(nanoseconds: pollSeconds * 1_000_000_000)
-            }
         }
 
     }
