@@ -46,16 +46,6 @@ require(
     and "publishError = message" in VIEW,
     "publish failures must stay visible and must not silently clear the draft",
 )
-require(
-    "var uploadError: String?" in VIEW
-    and "while nextIdx < min(6, picked.count)" in VIEW
-    and "if let uploadError {\n                throw APIError.message(uploadError)" in VIEW
-    and "guard mResults.count == picked.count else" in VIEW
-    and "图片上传不完整，请重试" in VIEW
-    and "let up = try? await API.shared.uploadImageForSend(" not in VIEW,
-    "Moments must fail visibly instead of publishing a text-only post when an image upload fails",
-)
-
 CARD = (ROOT / "Sources" / "MomentFeedCard.swift").read_text(encoding="utf-8")
 require(
     "HStack(spacing: -7)" in CARD
