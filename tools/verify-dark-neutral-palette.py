@@ -41,19 +41,17 @@ for key, light, dark in (
     )
 require(
     "NativeGraphiteChromeTexture" not in NAV
-    and "NativeFrostedHeaderMaterial()" in NAV
-    and ".fill((background ?? C.pageBg)\n                            .opacity(0.22))" in NAV,
-    "dark native chrome must use adaptive translucent glass instead of an opaque graphite mask",
+    and "background ?? (isDark ? C.pageBg" in NAV
+    and ".opacity(scrolled > 0 ? 1 : 0)" in NAV,
+    "native chrome must restore the b2611270050 themed edge surface",
 )
 require(
     "let fill = scheme == .dark\n            ? C.tabBg" in MAIN_TAB
-    and "appearance.configureWithTransparentBackground()" in TAB
-    and "appearance.backgroundColor = .clear" in TAB
-    and "private func tabBarGlassEffect() -> UIBlurEffect" in TAB
+    and "appearance.configureWithDefaultBackground()" in TAB
     and "UIBlurEffect(style: .systemChromeMaterial)" in TAB
     and "systemUltraThinMaterialDark" not in TAB
     and "TabGlassBackdrop" not in TAB,
-    "tab surfaces must use an explicit native glass effect instead of fallback solid chrome",
+    "tab surfaces must restore b2611270050 native system chrome",
 )
 require(
     "private enum NativeTabBarVisual" in TAB

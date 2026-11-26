@@ -31,24 +31,23 @@ require(
     "chat list must keep the system scroll-edge line hidden to prevent a first-frame flash",
 )
 require(
-    "NativeScrollEdgeElementBridge(" not in CONTACTS
-    and "NativeScrollEdgeElementBridge(" not in DISCOVER
+    "NativeScrollEdgeElementBridge(" in CONTACTS
+    and "NativeScrollEdgeElementBridge(" in DISCOVER
     and ".ignoresSafeArea(edges: .top)" in NAV
     and "NativeChatsTopEdgeChrome(scrolled: chatTopScrolled," in CHATS
     and "dark: chatsIsDark" in CHATS
     and "background: chatsPageFill" in CHATS
     and "onOffsetChange:" in CHATS
     and "NativeTopGlassMask(active: scrolled > 0)" not in CHATS,
-    "chat header must use the opaque themed surface without a system edge overlay",
+    "chat header must restore the b2611270050 themed edge surface",
 )
 require(
     "NativeChatsTopEdgeChrome" in NAV
     and "NativeGraphiteChromeTexture" not in NAV
     and "private var isDark" in NAV
-    and "NativeFrostedHeaderMaterial()" in NAV
-    and ".fill((background ?? C.pageBg)\n                            .opacity(0.22))" in NAV
+    and "(background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground)))" in NAV
     and ".opacity(scrolled > 0 ? 1 : 0)" in NAV,
-    "dark chrome must remain translucent system glass instead of drawing an opaque graphite mask",
+    "chat chrome must restore the b2611270050 edge implementation",
 )
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         and "NativeTopScrollObserver" in CONTACTS
@@ -60,18 +59,18 @@ require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         "contacts must observe the native scroll view and remove its custom top material")
 require("NativeTopGlassMask(active: navScrolled > 0)" in DISCOVER
         and "NativeTopScrollObserver" in DISCOVER
-        and "NativeScrollEdgeElementBridge(" not in DISCOVER
+        and "NativeScrollEdgeElementBridge(" in DISCOVER
         and "topScrollTracking($navScrolled" not in DISCOVER
         and "TopGlassBar(" not in DISCOVER
         and "TopGlassLine(" not in DISCOVER,
-        "world top bar must observe the native scroll view and use the shared material")
+        "world top bar must observe the native scroll view and restore the b2611270050 edge bridge")
 
 require(
     "ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)" in CHAT
-    and "ChatBottomGlassBackdrop(lightInk: composerUsesLightInk)" in CHAT
-    and "private struct ChatBottomGlassBackdrop" in CHAT
-    and "ChatImmersiveEdgeMask(path:" not in CHAT,
-    "chat top and composer edges must use native fading glass rather than wallpaper masks",
+    and "ChatBottomGlassBackdrop" not in CHAT
+    and "ChatImmersiveEdgeMask(path:" in CHAT
+    and "else if scheme == .light" in CHAT,
+    "chat top and composer edges must restore the b2611270050 wallpaper-aware masks",
 )
 
 print("native-top-masks: passed")

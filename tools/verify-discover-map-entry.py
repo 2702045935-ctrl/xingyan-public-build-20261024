@@ -74,8 +74,8 @@ check(
     ).read_text(encoding="utf-8")
     and "NativeTopScrollRegistry.shared.discover" in DISCOVER
     and "NativeTopGlassMask(active: navScrolled > 0)" in DISCOVER
-    and "NativeScrollEdgeElementBridge(" not in DISCOVER,
-    "the world header must use one shared glass mask without a duplicate system edge overlay",
+    and "NativeScrollEdgeElementBridge(" in DISCOVER,
+    "the world header must restore the b2611270050 native scroll-edge bridge",
 )
 
 print("discover-map-entry: passed")

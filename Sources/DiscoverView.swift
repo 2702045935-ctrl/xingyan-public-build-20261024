@@ -718,7 +718,14 @@ struct DiscoverView: View {
                 discoverTopHeader
                     .measure("discover.nav")
                     .background {
-                        NativeTopGlassMask(active: navScrolled > 0)
+                        ZStack {
+                            NativeTopGlassMask(active: navScrolled > 0)
+                            if #available(iOS 26.0, *) {
+                                NativeScrollEdgeElementBridge(
+                                    scrollView: { NativeTopScrollRegistry.shared.discover }
+                                )
+                            }
+                        }
                         .ignoresSafeArea(edges: .top)
                     }
                     .contentShape(Rectangle())

@@ -183,6 +183,7 @@ struct NativeTopGlassMask: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     var body: some View {
         Group {
             if !active {
@@ -217,19 +218,10 @@ struct NativeChatsTopEdgeChrome: View {
     private var isDark: Bool { dark ?? (scheme == .dark) }
 
     var body: some View {
-        Group {
-            if isDark {
-                ZStack {
-                    NativeFrostedHeaderMaterial()
-                    Rectangle()
-                        .fill((background ?? C.pageBg)
-                            .opacity(0.22))
-                }
-            } else {
-                background ?? Color(uiColor: .systemBackground)
-            }
+        ZStack {
+            (background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground)))
+                .opacity(scrolled > 0 ? 1 : 0)
         }
-        .opacity(scrolled > 0 ? 1 : 0)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.16),
                    value: scrolled > 0)
         .ignoresSafeArea(edges: .top)

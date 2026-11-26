@@ -520,38 +520,6 @@ private struct ChatTopGlassBackdrop: View {
     }
 }
 
-private struct ChatBottomGlassBackdrop: View {
-    let lightInk: Bool
-
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    var body: some View {
-        Group {
-            if reduceTransparency {
-                Rectangle()
-                    .fill(lightInk
-                          ? Color.black.opacity(0.94)
-                          : Color(uiColor: .systemBackground).opacity(0.97))
-            } else {
-                NativeGlassHeaderMaterial(forcedDark: lightInk)
-                    .mask {
-                        LinearGradient(
-                            stops: [
-                                .init(color: .clear, location: 0),
-                                .init(color: .black.opacity(0.96), location: 0.16),
-                                .init(color: .black, location: 1)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    }
-            }
-        }
-        .ignoresSafeArea(edges: .bottom)
-        .allowsHitTesting(false)
-    }
-}
-
 private struct ChatHeaderGlassGroup<Content: View>: View {
     let lightInk: Bool
     private let content: Content
@@ -2257,6 +2225,14 @@ struct ChatDetailView: View {
                 Group {
                     if isStarWorld && newsMode {
                         newsMaskColor
+                    } else if scheme == .light {
+                        ChatImmersiveEdgeMask(path: backgroundPath,
+                                              edge: .top,
+                                              tint: wallpaperTopTint,
+                                              dark: topBarUsesLightInk,
+                                              effect: backgroundEffect,
+                                              preset: ChatTheme.preset,
+                                              themeVersion: chatTheme.version)
                     } else {
                         ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)
                     }
@@ -5676,7 +5652,13 @@ struct ChatDetailView: View {
                     if isStarWorld && newsMode {
                         newsMaskColor
                     } else {
-                        ChatBottomGlassBackdrop(lightInk: composerUsesLightInk)
+                        ChatImmersiveEdgeMask(path: backgroundPath,
+                                              edge: .bottom,
+                                              tint: wallpaperBottomTint,
+                                              dark: composerUsesLightInk,
+                                              effect: backgroundEffect,
+                                              preset: ChatTheme.preset,
+                                              themeVersion: chatTheme.version)
                     }
                 }
                 .ignoresSafeArea(edges: .bottom)
