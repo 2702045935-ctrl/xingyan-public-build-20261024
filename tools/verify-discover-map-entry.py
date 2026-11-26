@@ -55,12 +55,15 @@ check(
     and "static let commerce = [" in DISCOVER
     and "static let local = [" in DISCOVER
     and "static let entertainment = [" in DISCOVER
+    and '"music", "games", "channels", "look", "miniapps"' in DISCOVER
+    and "static func keepsOriginalIcon(_ action: String?) -> Bool" in DISCOVER
+    and "if keepsOriginalIcon {" in DISCOVER
     and "if let raw = color?.trimmingCharacters(in: .whitespacesAndNewlines)" in DISCOVER
     and "let custom = Color(hexString: raw, fallback: 0x4A90D9)" in DISCOVER
     and "for: item.color,\n            action: item.action" in DISCOVER
     and ".strokeBorder(Color.white.opacity(0.16), lineWidth: 0.7)" in DISCOVER
-    and ".shadow(color: colors[1].opacity(0.18), radius: 4.5, y: 2)" in DISCOVER,
-    "world entry icons must share one semantic token system and icon surface",
+    and ".shadow(color: keepsOriginalIcon" in DISCOVER,
+    "world entry icons must preserve branded artwork while normalizing generic tools",
 )
 check(
     "weak var discover: UIScrollView?" in (

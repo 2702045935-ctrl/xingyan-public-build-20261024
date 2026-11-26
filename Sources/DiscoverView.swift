@@ -189,6 +189,14 @@ private enum WorldVisual {
     static var topIconInk: Color { Color.dyn(0x3A3A3C, 0xC7C7CC) }
     static var scanInk: Color { social[1] }
     static var chevronInk: Color { Color.dyn(0xA2A2A7, 0x6E6E73) }
+    static let originalIconActions: Set<String> = [
+        "music", "games", "channels", "look", "miniapps",
+        "news", "live", "nearby", "shake", "bottle"
+    ]
+
+    static func keepsOriginalIcon(_ action: String?) -> Bool {
+        originalIconActions.contains((action ?? "").lowercased())
+    }
 
     static func colors(for color: String?,
                        action: String?,
@@ -516,6 +524,7 @@ struct DiscoverView: View {
             action: item.action,
             label: item.label
         )
+        let keepsOriginalIcon = WorldVisual.keepsOriginalIcon(item.action)
         let artwork = worldArtworkPath(item)
 
         return Button {
@@ -523,25 +532,31 @@ struct DiscoverView: View {
         } label: {
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
-                                     style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: colors,
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                    if keepsOriginalIcon {
+                        RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
+                                         style: .continuous)
+                            .fill(colors[0])
+                    } else {
+                        RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
+                                         style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: colors,
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
 
-                    RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
-                                     style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.18), .clear],
-                                startPoint: .top,
-                                endPoint: .center
+                        RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
+                                         style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.18), .clear],
+                                    startPoint: .top,
+                                    endPoint: .center
+                                )
                             )
-                        )
+                    }
 
                     if !artwork.isEmpty {
                         RemoteImage(path: artwork, mode: .fill, maxSide: 180)
@@ -552,19 +567,29 @@ struct DiscoverView: View {
                     } else {
                         Image(systemName: RowIcon.sf(action: item.action,
                                                      label: item.label))
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.97))
-                            .shadow(color: Color.black.opacity(0.16),
-                                    radius: 0.8, y: 0.6)
+                            .font(.system(size: keepsOriginalIcon ? 21 : 20,
+                                          weight: .semibold))
+                            .foregroundStyle(.white)
+                            .shadow(color: keepsOriginalIcon
+                                    ? .clear
+                                    : Color.black.opacity(0.16),
+                                    radius: keepsOriginalIcon ? 0 : 0.8,
+                                    y: keepsOriginalIcon ? 0 : 0.6)
                     }
 
-                    RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
-                                     style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.7)
+                    if !keepsOriginalIcon {
+                        RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
+                                         style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.7)
+                    }
                 }
                 .frame(width: WorldVisual.iconSize,
                        height: WorldVisual.iconSize)
-                .shadow(color: colors[1].opacity(0.18), radius: 4.5, y: 2)
+                .shadow(color: keepsOriginalIcon
+                        ? .clear
+                        : colors[1].opacity(0.18),
+                        radius: keepsOriginalIcon ? 0 : 4.5,
+                        y: keepsOriginalIcon ? 0 : 2)
 
                 VStack(alignment: .leading, spacing: scheme == .dark ? 3 : 4) {
                     Text(Tr(item.label))
