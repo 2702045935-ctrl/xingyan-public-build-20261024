@@ -1,6 +1,12 @@
 import SwiftUI
 import UIKit
 
+private enum NativeTabBarVisual {
+    static var normalInk: Color { Color.dyn(0x6E6E73, 0x8E8E93) }
+    static var selectedInk: Color { Color.dyn(0x0F8B65, 0x36CA95) }
+    static let badge = UIColor.systemRed
+}
+
 private final class BrandTabBadgeView: UIView {
     enum Kind {
         case count
@@ -238,62 +244,35 @@ struct NativeTabBar: UIViewRepresentable {
         bar.delegate = context.coordinator
         bar.itemPositioning = .fill
         bar.items = [
-            UITabBarItem(title: C.tabText0, image: UIImage(systemName: "message"),
-                         selectedImage: Self.messageIconWithEyes()),
-            UITabBarItem(title: C.tabText1, image: UIImage(systemName: "person.2"),
-                         selectedImage: UIImage(systemName: "person.2.fill")),
-            UITabBarItem(title: C.tabTextVideo, image: UIImage(systemName: "play.rectangle"),
-                         selectedImage: UIImage(systemName: "play.rectangle.fill")),
-            UITabBarItem(title: C.tabText2, image: UIImage(systemName: "safari"),
-                         selectedImage: Self.worldIconWithOrbit()),
-            UITabBarItem(title: C.tabText3, image: UIImage(systemName: "person.crop.circle"),
+            UITabBarItem(title: C.tabText0,
+                         image: UIImage(systemName: "message")?
+                            .withRenderingMode(.alwaysTemplate),
+                         selectedImage: UIImage(systemName: "message.fill")?
+                            .withRenderingMode(.alwaysTemplate)),
+            UITabBarItem(title: C.tabText1,
+                         image: UIImage(systemName: "person.2")?
+                            .withRenderingMode(.alwaysTemplate),
+                         selectedImage: UIImage(systemName: "person.2.fill")?
+                            .withRenderingMode(.alwaysTemplate)),
+            UITabBarItem(title: C.tabTextVideo,
+                         image: UIImage(systemName: "play.rectangle")?
+                            .withRenderingMode(.alwaysTemplate),
+                         selectedImage: UIImage(systemName: "play.rectangle.fill")?
+                            .withRenderingMode(.alwaysTemplate)),
+            UITabBarItem(title: C.tabText2,
+                         image: UIImage(systemName: "safari")?
+                            .withRenderingMode(.alwaysTemplate),
+                         selectedImage: UIImage(systemName: "safari.fill")?
+                            .withRenderingMode(.alwaysTemplate)),
+            UITabBarItem(title: C.tabText3,
+                         image: UIImage(systemName: "person.crop.circle")?
+                            .withRenderingMode(.alwaysTemplate),
                          selectedImage: UIImage(systemName: "person.crop.circle.fill")?
                             .withRenderingMode(.alwaysTemplate))
         ]
         applyColors(bar)
         refresh(bar)
         return bar
-    }
-
-    private static func messageIconWithEyes() -> UIImage? {
-        guard let bubble = UIImage(systemName: "message.fill")?
-            .withTintColor(.black, renderingMode: .alwaysOriginal) else { return nil }
-        let side: CGFloat = 28
-        let size = CGSize(width: side, height: side)
-        return UIGraphicsImageRenderer(size: size).image { renderer in
-            bubble.draw(in: CGRect(origin: .zero, size: size))
-            let context = renderer.cgContext
-            context.setBlendMode(.clear)
-            context.setFillColor(UIColor.clear.cgColor)
-            context.fillEllipse(in: CGRect(x: 9.2, y: 11.3, width: 3.4, height: 3.4))
-            context.fillEllipse(in: CGRect(x: 15.4, y: 11.3, width: 3.4, height: 3.4))
-        }
-        .withRenderingMode(.alwaysTemplate)
-    }
-
-    private static func worldIconWithOrbit() -> UIImage? {
-        guard let safari = UIImage(systemName: "safari.fill")?
-            .withTintColor(.black, renderingMode: .alwaysOriginal) else { return nil }
-        let side: CGFloat = 30
-        let size = CGSize(width: side, height: side)
-        return UIGraphicsImageRenderer(size: size).image { renderer in
-            safari.draw(in: CGRect(x: 3, y: 3, width: 24, height: 24))
-
-            let context = renderer.cgContext
-            context.saveGState()
-            context.translateBy(x: 15, y: 15)
-            context.rotate(by: -.pi / 9)
-            context.setStrokeColor(UIColor.black.cgColor)
-            context.setLineWidth(0.9)
-            context.strokeEllipse(in: CGRect(x: -12.5, y: -4.2, width: 25, height: 8.4))
-            context.restoreGState()
-
-            if let sparkle = UIImage(systemName: "sparkle")?
-                .withTintColor(.black, renderingMode: .alwaysOriginal) {
-                sparkle.draw(in: CGRect(x: 22.5, y: 2.5, width: 5.5, height: 5.5))
-            }
-        }
-        .withRenderingMode(.alwaysTemplate)
     }
 
     func updateUIView(_ bar: UITabBar, context: Context) {
@@ -314,14 +293,15 @@ struct NativeTabBar: UIViewRepresentable {
             in: bar,
             loader: avatarLoader,
             revision: avatarLoader.revision,
-            avatarPath: avatarPath
+            avatarPath: avatarPath,
+            selected: selection == 4
         )
         refresh(bar)
     }
 
     private func applyColors(_ bar: UITabBar) {
-        bar.tintColor = UIColor(OrbitTheme.jade)
-        bar.unselectedItemTintColor = UIColor(OrbitTheme.secondary)
+        bar.tintColor = UIColor(NativeTabBarVisual.selectedInk)
+        bar.unselectedItemTintColor = UIColor(NativeTabBarVisual.normalInk)
 
         let appearance = UITabBarAppearance()
         if reduceTransparency {
@@ -345,19 +325,19 @@ struct NativeTabBar: UIViewRepresentable {
             appearance.backgroundColor = UIColor(themed).withAlphaComponent(0.72)
         }
         let normalTitle: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(OrbitTheme.secondary),
-            .font: pfUIFont(10.5, .medium)
+            .foregroundColor: UIColor(NativeTabBarVisual.normalInk),
+            .font: pfUIFont(10, .medium)
         ]
         let selectedTitle: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(OrbitTheme.jade),
-            .font: pfUIFont(10.5, .semibold)
+            .foregroundColor: UIColor(NativeTabBarVisual.selectedInk),
+            .font: pfUIFont(10, .semibold)
         ]
         let selectedMyTitle: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(OrbitTheme.jade),
-            .font: pfUIFont(10.5, .semibold)
+            .foregroundColor: UIColor(NativeTabBarVisual.selectedInk),
+            .font: pfUIFont(10, .semibold)
         ]
-        let normalIcon = UIColor(OrbitTheme.secondary)
-        let selectedIcon = UIColor(OrbitTheme.jade)
+        let normalIcon = UIColor(NativeTabBarVisual.normalInk)
+        let selectedIcon = UIColor(NativeTabBarVisual.selectedInk)
         for itemAppearance in [
             appearance.stackedLayoutAppearance,
             appearance.inlineLayoutAppearance,
@@ -368,12 +348,13 @@ struct NativeTabBar: UIViewRepresentable {
             itemAppearance.selected.iconColor = selectedIcon
             itemAppearance.selected.titleTextAttributes = selectedTitle
         }
-        appearance.stackedLayoutAppearance.normal.badgeBackgroundColor = .systemRed
-        appearance.stackedLayoutAppearance.selected.badgeBackgroundColor = .systemRed
-        appearance.inlineLayoutAppearance.normal.badgeBackgroundColor = .systemRed
-        appearance.inlineLayoutAppearance.selected.badgeBackgroundColor = .systemRed
-        appearance.compactInlineLayoutAppearance.normal.badgeBackgroundColor = .systemRed
-        appearance.compactInlineLayoutAppearance.selected.badgeBackgroundColor = .systemRed
+        appearance.stackedLayoutAppearance.normal.badgeBackgroundColor = NativeTabBarVisual.badge
+        appearance.stackedLayoutAppearance.selected.badgeBackgroundColor = NativeTabBarVisual.badge
+        appearance.inlineLayoutAppearance.normal.badgeBackgroundColor = NativeTabBarVisual.badge
+        appearance.inlineLayoutAppearance.selected.badgeBackgroundColor = NativeTabBarVisual.badge
+        appearance.compactInlineLayoutAppearance.normal.badgeBackgroundColor = NativeTabBarVisual.badge
+        appearance.compactInlineLayoutAppearance.selected.badgeBackgroundColor = NativeTabBarVisual.badge
+        appearance.shadowColor = .clear
         if let items = bar.items, items.count == 5 {
             items[4].setTitleTextAttributes(normalTitle, for: .normal)
             items[4].setTitleTextAttributes(selectedMyTitle, for: .selected)
@@ -403,7 +384,7 @@ struct NativeTabBar: UIViewRepresentable {
         items[2].badgeValue = nil
         items[3].badgeValue = momentsDot ? "" : nil
         items[4].badgeValue = meDot ? "" : nil
-        items.forEach { $0.badgeColor = .systemRed }
+        items.forEach { $0.badgeColor = NativeTabBarVisual.badge }
         if let bar = bar as? CompactDotTabBar {
             bar.badgeCount = 0
             bar.dotIndexes = []
@@ -432,9 +413,10 @@ struct NativeTabBar: UIViewRepresentable {
         }
 
         fileprivate func applyAvatar(in bar: UITabBar, loader: TabAvatarLoader,
-                                     revision: Int, avatarPath: String) {
+                                     revision: Int, avatarPath: String,
+                                     selected: Bool) {
             guard let items = bar.items, items.count == 5 else { return }
-            let key = "\(revision)|\(avatarPath)"
+            let key = "\(revision)|\(avatarPath)|\(selected ? 1 : 0)"
             guard key != appliedAvatarKey else { return }
 
             guard !avatarPath.isEmpty, let avatar = loader.image(for: avatarPath) else {
@@ -446,25 +428,40 @@ struct NativeTabBar: UIViewRepresentable {
                 return
             }
 
-            let circled = circularAvatar(avatar)
+            let circled = circularAvatar(avatar, selected: selected)
             items[4].image = circled.withRenderingMode(.alwaysOriginal)
             items[4].selectedImage = circled.withRenderingMode(.alwaysOriginal)
             appliedAvatarKey = key
         }
 
-        private func circularAvatar(_ image: UIImage) -> UIImage {
+        private func circularAvatar(_ image: UIImage, selected: Bool) -> UIImage {
             let side: CGFloat = 25
             let size = CGSize(width: side, height: side)
-            return UIGraphicsImageRenderer(size: size).image { _ in
-                UIBezierPath(ovalIn: CGRect(origin: .zero, size: size)).addClip()
-                let scale = max(size.width / max(1, image.size.width),
-                                size.height / max(1, image.size.height))
+            return UIGraphicsImageRenderer(size: size).image { context in
+                let inset: CGFloat = selected ? 1.4 : 0
+                let imageRect = CGRect(origin: .zero, size: size)
+                    .insetBy(dx: inset, dy: inset)
+                let path = UIBezierPath(ovalIn: imageRect)
+                context.cgContext.saveGState()
+                path.addClip()
+                let scale = max(imageRect.width / max(1, image.size.width),
+                                imageRect.height / max(1, image.size.height))
                 let drawSize = CGSize(width: image.size.width * scale,
                                       height: image.size.height * scale)
-                image.draw(in: CGRect(x: (side - drawSize.width) / 2,
-                                      y: (side - drawSize.height) / 2,
+                image.draw(in: CGRect(x: imageRect.midX - drawSize.width / 2,
+                                      y: imageRect.midY - drawSize.height / 2,
                                       width: drawSize.width,
                                       height: drawSize.height))
+                context.cgContext.restoreGState()
+                if selected {
+                    let ring = UIBezierPath(
+                        ovalIn: CGRect(origin: .zero, size: size)
+                            .insetBy(dx: 0.75, dy: 0.75)
+                    )
+                    UIColor(NativeTabBarVisual.selectedInk).setStroke()
+                    ring.lineWidth = 1.5
+                    ring.stroke()
+                }
             }
         }
     }

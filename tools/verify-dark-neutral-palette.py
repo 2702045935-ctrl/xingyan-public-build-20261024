@@ -50,13 +50,18 @@ require(
     "dark navigation and tab surfaces must ignore legacy remote black overrides",
 )
 require(
-    "let normalIcon = UIColor(OrbitTheme.secondary)" in TAB
-    and "let selectedIcon = UIColor(OrbitTheme.jade)" in TAB
+    "private enum NativeTabBarVisual" in TAB
+    and "static var normalInk: Color { Color.dyn(0x6E6E73, 0x8E8E93) }" in TAB
+    and "static var selectedInk: Color { Color.dyn(0x0F8B65, 0x36CA95) }" in TAB
+    and "let normalIcon = UIColor(NativeTabBarVisual.normalInk)" in TAB
+    and "let selectedIcon = UIColor(NativeTabBarVisual.selectedInk)" in TAB
     and "appearance.inlineLayoutAppearance" in TAB
     and "appearance.compactInlineLayoutAppearance" in TAB
     and ".withRenderingMode(.alwaysTemplate)" in TAB
-    and "UIColor(OrbitTheme.jade),\n                                           renderingMode: .alwaysOriginal"
-    not in TAB,
+    and "messageIconWithEyes" not in TAB
+    and "worldIconWithOrbit" not in TAB
+    and "circularAvatar(avatar, selected: selected)" in TAB
+    and "ring.lineWidth = 1.5" in TAB,
     "tab icons must share one template tint hierarchy in every layout",
 )
 
