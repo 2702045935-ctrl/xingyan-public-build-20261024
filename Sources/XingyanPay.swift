@@ -41,17 +41,17 @@ struct XYPaySheet: View {
         VStack(spacing: 0) {
             bar
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 14) {
-                    cardFace
-                    paymentJourney
+                VStack(spacing: 16) {
                     amountBlock
+                    cardFace
+                    applePayPaymentDetails
                     if stage == 2 { successBlock }
                     else if stage == 1 { pwdBlock }
                     else { verifyBlock }
                     Spacer().frame(height: 4)
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 12)
+                .padding(.top, 16)
             }
         }
         .background(PayVisual.canvas.ignoresSafeArea())
@@ -66,17 +66,15 @@ struct XYPaySheet: View {
             Text(XYPay.name).font(pf(17, .semibold)).foregroundColor(C.label)
             Spacer(minLength: 0)
             Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(C.subLabel)
-                    .frame(width: 40, height: 40)
-                    .contentShape(Rectangle())
+                Text(Tr("取消"))
+                    .font(pf(16, .medium))
+                    .foregroundColor(PayVisual.tint)
+                    .frame(height: 40)
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 6)
-        .overlay(HairLine(), alignment: .bottom)
+        .padding(.horizontal, 20)
+        .padding(.top, 4)
     }
 
     private var cardFace: some View {
@@ -121,70 +119,58 @@ struct XYPaySheet: View {
 
     private var amountBlock: some View {
         VStack(spacing: 6) {
-            Text(Tr("付款金额")).font(pf(12.5)).foregroundColor(C.subLabel)
-            StarPayAmount(value: amount, role: .sheet, color: C.label)
+            Text(target.isEmpty ? XYPay.name : target)
+                .font(pf(15, .semibold))
+                .foregroundColor(C.label)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .padding(.horizontal, 20)
             if !target.isEmpty {
-                Text(target).font(pf(13)).foregroundColor(C.subLabel)
-                    .multilineTextAlignment(.center).lineLimit(2)
-                    .padding(.horizontal, 20)
+                Text(Tr("付款金额"))
+                    .font(pf(12.5))
+                    .foregroundColor(C.subLabel)
             }
+            StarPayAmount(value: amount, role: .sheet, color: C.label)
             if !note.isEmpty {
                 Text(note).font(pf(11.5)).foregroundColor(C.subLabel.opacity(0.85))
             }
         }
         .padding(.top, 4)
+        .frame(maxWidth: .infinity)
     }
 
-    private var paymentJourney: some View {
-        HStack(spacing: 0) {
-            journeyStep(index: 0, title: Tr("确认"), symbol: "creditcard.fill")
-            journeyLine(active: stage >= 1)
-            journeyStep(index: 1, title: Tr("验证"), symbol: "faceid")
-            journeyLine(active: stage >= 2)
-            journeyStep(index: 2, title: Tr("完成"), symbol: "checkmark")
+    private var applePayPaymentDetails: some View {
+        PayGroupCard {
+            VStack(spacing: 0) {
+                PayDetailRow(title: Tr("付款方式"),
+                             value: XYPay.cardLine + "  •" + tail)
+                if !target.isEmpty {
+                    HairLine(inset: 18)
+                    PayDetailRow(title: Tr("对方"), value: target)
+                }
+                if !note.isEmpty {
+                    HairLine(inset: 18)
+                    PayDetailRow(title: Tr("备注"), value: note)
+                }
+                HairLine(inset: 18)
+                PayDetailRow(title: Tr("安全验证"),
+                             value: Biometrics.available
+                                ? Biometrics.label
+                                : Tr("支付密码"))
+            }
         }
-        .padding(.horizontal, 8)
-    }
-
-    private func journeyStep(index: Int, title: String, symbol: String) -> some View {
-        let complete = stage > index
-        let active = stage == index
-        let tint = complete || active ? PayVisual.tint : PayVisual.secondaryInk.opacity(0.42)
-        return VStack(spacing: 5) {
-            Image(systemName: complete ? "checkmark" : symbol)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(complete || active ? Color.white : tint)
-                .frame(width: 28, height: 28)
-                .background(
-                    Circle().fill(complete || active
-                                  ? PayVisual.tint
-                                  : PayVisual.secondaryInk.opacity(0.10))
-                )
-            Text(title)
-                .font(pf(10.5, active ? .semibold : .medium))
-                .foregroundStyle(active ? C.label : PayVisual.secondaryInk)
-        }
-        .frame(width: 64)
-    }
-
-    private func journeyLine(active: Bool) -> some View {
-        Capsule(style: .continuous)
-            .fill(active ? PayVisual.tint.opacity(0.72) : PayVisual.separator)
-            .frame(maxWidth: .infinity)
-            .frame(height: 1.5)
-            .padding(.bottom, 18)
     }
 
     private var verifyBlock: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 12) {
             Button { facePay() } label: {
                 HStack(spacing: 8) {
                     Image(systemName: Biometrics.available ? "faceid" : "lock.shield.fill")
-                        .font(.system(size: 17))
+                        .font(.system(size: 18, weight: .semibold))
                     Text(busy ? Tr("正在验证…") : Tr(Biometrics.label + "支付"))
                 }
             }
-            .buttonStyle(PayPrimaryButtonStyle(tint: PayVisual.tint))
+            .buttonStyle(ApplePayAuthorizationButtonStyle(enabled: !busy))
             .disabled(busy)
 
             Button {
@@ -192,9 +178,13 @@ struct XYPaySheet: View {
                 withAnimation(.easeOut(duration: 0.18)) { stage = 1 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { focusPwd = true }
             } label: {
-                Text(Tr("用支付密码支付")).font(pf(14.5)).foregroundColor(C.label)
+                Text(Tr("用支付密码支付"))
+                    .font(pf(15, .medium))
+                    .foregroundColor(PayVisual.tint)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 42)
             }
-            .buttonStyle(PaySecondaryButtonStyle(tint: PayVisual.tint))
+            .buttonStyle(.plain)
 
             if !hint.isEmpty {
                 Text(hint).font(pf(12.5)).foregroundColor(C.red)

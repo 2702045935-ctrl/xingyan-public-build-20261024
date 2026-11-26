@@ -2,11 +2,11 @@ import SwiftUI
 import UIKit
 
 enum PayVisual {
-    static let tint = Color(hex: 0x0A84FF)
-    static let success = Color(hex: 0x30D158)
-    static let warning = Color(hex: 0xFF9F0A)
-    static let danger = Color(hex: 0xFF453A)
-    static let gold = Color(hex: 0xD9A441)
+    static var tint: Color { Color.dyn(0x007AFF, 0x0A84FF) }
+    static var success: Color { Color.dyn(0x34C759, 0x30D158) }
+    static var warning: Color { Color.dyn(0xFF9500, 0xFF9F0A) }
+    static var danger: Color { Color.dyn(0xFF3B30, 0xFF453A) }
+    static var gold: Color { Color.dyn(0xC99432, 0xD8AA4D) }
 
     static var canvas: Color { Color.dyn(0xF2F2F7, 0x000000) }
     static var card: Color { Color.dyn(0xFFFFFF, 0x1C1C1E) }
@@ -744,6 +744,28 @@ struct PaySecondaryButtonStyle: ButtonStyle {
     }
 }
 
+struct ApplePayAuthorizationButtonStyle: ButtonStyle {
+    var enabled = true
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(pf(17, .semibold))
+            .foregroundStyle(Color.dyn(0xFFFFFF, 0x000000))
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(
+                enabled
+                    ? Color.dyn(0x000000, 0xFFFFFF)
+                    : PayVisual.secondaryInk.opacity(0.28),
+                in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+            )
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .scaleEffect(configuration.isPressed ? 0.992 : 1)
+            .animation(.easeOut(duration: 0.10),
+                       value: configuration.isPressed)
+    }
+}
+
 private struct PayPrimaryActionPressStyle: ButtonStyle {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -1004,27 +1026,27 @@ struct PayOfficialView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NavBar(title: name, back: { dismiss() })
+            appleWalletHeader
 
             ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: 18) {
+                LazyVStack(spacing: 16) {
                     paymentHero
                     paymentPrimaryActions
-                    quickActions
-                    ledgerSummaryStrip
-                    if goldUnlocked {
-                        goldCardSection
-                    }
-
                     transactionFeed
 
                     if loading {
                         ProgressView().padding(.vertical, 20)
                     }
 
+                    quickActions
+                    ledgerSummaryStrip
+                    if goldUnlocked {
+                        goldCardSection
+                    }
+
                     Color.clear.frame(height: max(20, L.safeBottom + 12))
                 }
-                .padding(.top, 8)
+                .padding(.top, 4)
             }
         }
         .background(PayVisual.canvas.ignoresSafeArea())
@@ -1058,6 +1080,51 @@ struct PayOfficialView: View {
                 balanceVisible = false
             }
         }
+    }
+
+    private var appleWalletHeader: some View {
+        HStack(spacing: 12) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(C.label)
+                    .frame(width: 36, height: 36)
+                    .background(PayVisual.card, in: Circle())
+                    .overlay {
+                        Circle().stroke(PayVisual.separator, lineWidth: 0.6)
+                    }
+            }
+            .buttonStyle(PayPrimaryActionPressStyle())
+            .accessibilityLabel(Tr("返回"))
+
+            Text(name)
+                .font(pf(34, .bold))
+                .tracking(-0.7)
+                .foregroundStyle(C.label)
+                .lineLimit(1)
+
+            Spacer(minLength: 8)
+
+            NavigationLink {
+                CardsView()
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(C.label)
+                    .frame(width: 36, height: 36)
+                    .background(PayVisual.card, in: Circle())
+                    .overlay {
+                        Circle().stroke(PayVisual.separator, lineWidth: 0.6)
+                    }
+            }
+            .buttonStyle(PayPrimaryActionPressStyle())
+            .accessibilityLabel(Tr("卡包"))
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
     }
 
     private var paymentHero: some View {
@@ -1177,69 +1244,52 @@ struct PayOfficialView: View {
     }
 
     private var paymentPrimaryActions: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             NavigationLink {
                 PayCodePage()
             } label: {
-                paymentActionTile(
-                    title: Tr("付款"),
-                    subtitle: Tr("向商家出示付款码"),
-                    symbol: "wave.3.right.circle.fill",
-                    ink: Color.dyn(0xFFFFFF, 0x111111),
-                    fill: Color.dyn(0x111111, 0xFFFFFF).opacity(0.97),
-                    accent: Color.dyn(0xFFFFFF, 0x111111)
+                HStack(spacing: 10) {
+                    Image(systemName: "wave.3.right.circle.fill")
+                        .font(.system(size: 19, weight: .semibold))
+                    Text(Tr("付款"))
+                        .font(pf(17, .semibold))
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .bold))
+                        .opacity(0.56)
+                }
+                .foregroundStyle(Color.dyn(0xFFFFFF, 0x000000))
+                .padding(.horizontal, 17)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(
+                    Color.dyn(0x000000, 0xFFFFFF),
+                    in: RoundedRectangle(cornerRadius: 13, style: .continuous)
                 )
             }
             .buttonStyle(PayPrimaryActionPressStyle())
+            .accessibilityLabel(Tr("付款"))
 
             NavigationLink {
                 ReceiveCodePage()
             } label: {
-                paymentActionTile(
-                    title: Tr("收款"),
-                    subtitle: Tr("展示我的收款码"),
-                    symbol: "qrcode",
-                    ink: C.label,
-                    fill: PayVisual.card,
-                    accent: PayVisual.tint
-                )
+                Image(systemName: "qrcode")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(C.label)
+                    .frame(width: 50, height: 50)
+                    .background(
+                        PayVisual.card,
+                        in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .stroke(PayVisual.separator, lineWidth: 0.7)
+                    }
             }
             .buttonStyle(PayPrimaryActionPressStyle())
+            .accessibilityLabel(Tr("收款"))
         }
         .padding(.horizontal, 16)
-    }
-
-    private func paymentActionTile(title: String, subtitle: String,
-                                   symbol: String, ink: Color,
-                                   fill: Color, accent: Color) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol)
-                .font(.system(size: 21, weight: .semibold))
-                .foregroundStyle(accent)
-                .frame(width: 46, height: 46)
-                .background(
-                    Circle().fill(accent.opacity(0.10))
-                )
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(pf(17, .semibold))
-                    .foregroundStyle(ink)
-                Text(subtitle)
-                    .font(pf(10.5, .regular))
-                    .foregroundStyle(ink.opacity(0.56))
-                    .lineLimit(1)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 14)
-        .frame(maxWidth: .infinity, minHeight: 74)
-        .background(fill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.primary.opacity(0.055), lineWidth: 0.6)
-        }
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private var goldCardSection: some View {
@@ -1331,37 +1381,48 @@ struct PayOfficialView: View {
     }
 
     private var quickActions: some View {
-        PayGroupCard {
-            HStack(spacing: 0) {
-                NavigationLink {
-                    BillsView()
-                } label: {
-                    quickAction(Tr("账单"), "doc.text.magnifyingglass", PayVisual.success)
+        VStack(alignment: .leading, spacing: 8) {
+            PaySectionLabel(text: Tr("钱包"))
+
+            PayGroupCard {
+                VStack(spacing: 0) {
+                    NavigationLink {
+                        BillsView()
+                    } label: {
+                        quickActionRow(Tr("账单"),
+                                       symbol: "list.bullet.rectangle.portrait.fill",
+                                       tint: PayVisual.success)
+                    }
+                    .buttonStyle(MenuPressStyle())
+                    HairLine(inset: 58)
+                    NavigationLink {
+                        CardsView()
+                    } label: {
+                        quickActionRow(Tr("卡包"),
+                                       symbol: "rectangle.stack.fill",
+                                       tint: PayVisual.gold)
+                    }
+                    .buttonStyle(MenuPressStyle())
+                    HairLine(inset: 58)
+                    NavigationLink {
+                        AccountSecurityView()
+                    } label: {
+                        quickActionRow(Tr("支付安全"),
+                                       symbol: "lock.shield.fill",
+                                       tint: PayVisual.warning)
+                    }
+                    .buttonStyle(MenuPressStyle())
+                    HairLine(inset: 58)
+                    NavigationLink {
+                        VirtualCardView()
+                    } label: {
+                        quickActionRow(Tr("虚拟卡"),
+                                       symbol: "creditcard.fill",
+                                       tint: PayVisual.tint)
+                    }
+                    .buttonStyle(MenuPressStyle())
                 }
-                .buttonStyle(MenuPressStyle())
-                actionDivider
-                NavigationLink {
-                    CardsView()
-                } label: {
-                    quickAction(Tr("卡包"), "rectangle.stack.fill", PayVisual.gold)
-                }
-                .buttonStyle(MenuPressStyle())
-                actionDivider
-                NavigationLink {
-                    AccountSecurityView()
-                } label: {
-                    quickAction(Tr("支付安全"), "lock.shield.fill", PayVisual.warning)
-                }
-                .buttonStyle(MenuPressStyle())
-                actionDivider
-                NavigationLink {
-                    VirtualCardView()
-                } label: {
-                    quickAction(Tr("虚拟卡"), "creditcard.fill", PayVisual.gold)
-                }
-                .buttonStyle(MenuPressStyle())
             }
-            .padding(.vertical, 16)
         }
         .padding(.horizontal, 16)
     }
@@ -1396,25 +1457,27 @@ struct PayOfficialView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var actionDivider: some View {
-        Rectangle()
-            .fill(PayVisual.separator)
-            .frame(width: 0.5, height: 48)
-    }
-
-    private func quickAction(_ title: String, _ symbol: String, _ tint: Color) -> some View {
-        VStack(spacing: 8) {
+    private func quickActionRow(_ title: String,
+                                symbol: String,
+                                tint: Color) -> some View {
+        HStack(spacing: 12) {
             Image(systemName: symbol)
-                .font(.system(size: 19, weight: .semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(tint)
-                .frame(width: 46, height: 46)
-                .background(tint.opacity(0.12), in: Circle())
+                .frame(width: 30, height: 30)
+                .background(tint.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             Text(title)
-                .font(pf(11.5, .medium))
+                .font(pf(16))
                 .foregroundStyle(C.label)
                 .lineLimit(1)
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(PayVisual.secondaryInk.opacity(0.72))
         }
-        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 16)
+        .frame(height: 52)
         .contentShape(Rectangle())
     }
 
@@ -1479,57 +1542,37 @@ struct PayOfficialView: View {
             selectedLedger = entry
         } label: {
             HStack(spacing: 12) {
-                ZStack(alignment: .bottomTrailing) {
-                    Group {
-                        if avatar.isEmpty {
-                            StarPayAvatar(size: 38)
-                        } else {
-                            Avatar(path: avatar, size: 38, radius: 19, circle: true)
-                        }
-                    }
+                Image(systemName: incoming
+                      ? "arrow.down.left"
+                      : "creditcard.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(incoming ? PayVisual.success : PayVisual.tint)
                     .frame(width: 38, height: 38)
-                    .overlay {
-                        Circle().stroke(Color.primary.opacity(0.08), lineWidth: 0.7)
-                    }
-
-                    Image(systemName: incoming ? "arrow.down.left" : "arrow.up.right")
-                        .font(.system(size: 7.5, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 15, height: 15)
-                        .background(incoming ? PayVisual.success : PayVisual.tint, in: Circle())
-                        .overlay {
-                            Circle().stroke(PayVisual.canvas, lineWidth: 1.4)
-                        }
-                        .offset(x: 2, y: 2)
-                }
-                .frame(width: 42, height: 40, alignment: .leading)
+                    .background(
+                        (incoming ? PayVisual.success : PayVisual.tint).opacity(0.11),
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    )
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(entry.reason.isEmpty ? (incoming ? Tr("收款") : Tr("付款")) : entry.reason)
-                        .font(pf(15.5, .semibold))
+                        .font(pf(15.5))
                         .foregroundColor(C.label)
                         .lineLimit(1)
                     Text(clock(entry.at) + " · " + Tr("交易成功"))
-                        .font(pf(11.5, .medium))
+                        .font(pf(11.5))
                         .foregroundColor(PayVisual.secondaryInk)
                         .lineLimit(1)
                 }
 
                 Spacer(minLength: 8)
 
-                VStack(alignment: .trailing, spacing: 4) {
-                    StarPayAmount(value: entry.delta,
-                                  role: .row,
-                                  color: incoming ? PayVisual.success : C.label,
-                                  sign: incoming ? "+" : "-")
-                    Text(Tr("余额") + " ¥" + moneyFmt(entry.after))
-                        .font(pf(10.5, .medium))
-                        .foregroundColor(PayVisual.secondaryInk)
-                        .monospacedDigit()
-                }
+                StarPayAmount(value: entry.delta,
+                              role: .row,
+                              color: incoming ? PayVisual.success : C.label,
+                              sign: incoming ? "+" : "-")
             }
             .padding(.horizontal, 16)
-            .frame(minHeight: 66)
+            .frame(minHeight: 62)
             .contentShape(Rectangle())
         }
         .buttonStyle(MenuPressStyle())

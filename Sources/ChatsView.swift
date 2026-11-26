@@ -13,6 +13,8 @@ private enum ChatListVisual {
     static let dividerLeading: CGFloat = 77
 
     static let ink = Color.dyn(0x1A1A1A, 0xD1D1D1)
+    static let iconInk = Color.dyn(0x3A3A3C, 0xC7C7CC)
+    static let utilityIconInk = Color.dyn(0x8A8A8E, 0x8E8E93)
     static let previewInk = Color.dyn(0x8A8A8A, 0x8A8F93)
     static let conversationPreviewInk = Color.dyn(0x999999, 0x5E5E5E)
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
@@ -685,13 +687,13 @@ struct ChatRow: View, Equatable {
         if chat.flagged == true, chat.bot != "qqnews" {
             Image(systemName: "bell.fill")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(ChatListVisual.timeInk)
+                .foregroundStyle(ChatListVisual.utilityIconInk)
                 .frame(width: 16, height: 16)
                 .accessibilityLabel(Tr("标为未读"))
         } else if chat.unreadCount > 0 {
             if chat.muted == true, chat.bot != "qqnews" {
                 Circle()
-                    .fill(ChatListVisual.timeInk)
+                    .fill(ChatListVisual.utilityIconInk)
                     .frame(width: 8, height: 8)
                     .overlay(Circle().stroke(ChatListVisual.badgeRing, lineWidth: 1.5))
             } else {
@@ -1780,12 +1782,12 @@ struct ChatsView: View {
                     }
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(ChatListVisual.ink)
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(ChatListVisual.iconInk)
                         .frame(width: 40, height: 40)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(NavPlusPressStyle())
+                .buttonStyle(ChatChromeIconPressStyle())
                 .accessibilityLabel(Tr("更多"))
             }
         }
@@ -1816,11 +1818,12 @@ struct ChatsView: View {
         } label: {
             HStack(spacing: 7) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(ChatListVisual.utilityIconInk)
                 Text(Tr("搜索"))
                     .font(pfStyled(size: 15, weight: .regular))
+                    .foregroundStyle(chatsSearchInk)
             }
-            .foregroundStyle(chatsSearchInk)
             .frame(maxWidth: .infinity)
             .frame(height: 36)
             .background {
@@ -3520,27 +3523,12 @@ struct ChatsView: View {
 struct NavPlusPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.92 : 1)
-
-            .overlay {
-                ZStack {
-                    RadialGradient(colors: [Color.white.opacity(0.95),
-                                            Color.white.opacity(0.30),
-                                            Color.white.opacity(0)],
-                                   center: .center, startRadius: 0, endRadius: 34)
-                    Circle()
-                        .fill(Color.white.opacity(0.55))
-                        .frame(width: 16, height: 16)
-                        .blur(radius: 7)
-                }
-                .blendMode(.plusLighter)
-                .opacity(configuration.isPressed ? 1 : 0)
-                .clipShape(Capsule(style: .continuous))
-                .allowsHitTesting(false)
+            .background {
+                Circle()
+                    .fill(Color.primary.opacity(configuration.isPressed ? 0.055 : 0))
             }
-            .brightness(configuration.isPressed ? 0.10 : 0)
-            .shadow(color: Color.white.opacity(configuration.isPressed ? 0.5 : 0), radius: 10)
-            .animation(.easeOut(duration: 0.13), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(.easeOut(duration: 0.10), value: configuration.isPressed)
     }
 }
 

@@ -35,14 +35,21 @@ require(
     "paymentPrimaryActions" in PAY
     and "PayCodePage()" in PAY
     and "ReceiveCodePage()" in PAY
-    and "private struct PayPrimaryActionPressStyle" in PAY,
-    "Star Pay home must lead with dedicated pay and receive actions",
+    and "private struct PayPrimaryActionPressStyle" in PAY
+    and "Color.dyn(0x000000, 0xFFFFFF)" in PAY
+    and "Color.dyn(0xFFFFFF, 0x000000)" in PAY,
+    "Star Pay home must use Apple Wallet's high-contrast compact pay action",
 )
 require(
-    'quickAction(Tr("卡包"), "rectangle.stack.fill", PayVisual.gold)' in PAY
+    "private var appleWalletHeader" in PAY
+    and "Text(name)\n                .font(pf(34, .bold))" in PAY
+    and 'Image(systemName: "plus")' in PAY
+    and "private func quickActionRow" in PAY
+    and 'quickActionRow(Tr("卡包")' in PAY
     and "CardsView()" in PAY
-    and 'quickAction(Tr("收付款"), "qrcode", PayVisual.tint)' not in PAY,
-    "Star Pay quick actions must open the wallet and must not duplicate the primary pay action",
+    and 'quickActionRow(Tr("支付安全")' in PAY
+    and 'quickActionRow(Tr("虚拟卡")' in PAY,
+    "Star Pay must use a large Wallet title and grouped account rows",
 )
 require(
     "private struct StarPayGuideView" in PAY
@@ -58,15 +65,18 @@ require(
     "multi-card wallet guidance must appear once and dismiss after the first deck interaction",
 )
 require(
-    "private var paymentJourney" in PAY_SHEET
-    and 'journeyStep(index: 0, title: Tr("确认")' in PAY_SHEET
-    and 'journeyStep(index: 1, title: Tr("验证")' in PAY_SHEET
-    and 'journeyStep(index: 2, title: Tr("完成")' in PAY_SHEET,
-    "the payment sheet must explain confirmation, verification and completion",
+    "amountBlock\n                    cardFace\n                    applePayPaymentDetails" in PAY_SHEET
+    and "private var applePayPaymentDetails" in PAY_SHEET
+    and "PayDetailRow(title: Tr(\"付款方式\")" in PAY_SHEET
+    and "PayDetailRow(title: Tr(\"安全验证\")" in PAY_SHEET
+    and "ApplePayAuthorizationButtonStyle(enabled: !busy)" in PAY_SHEET,
+    "the payment sheet must follow Apple Pay amount, card, details and authorization order",
 )
 require(
-    "paymentHero\n                    paymentPrimaryActions\n                    quickActions" in PAY,
-    "Star Pay home must follow Wallet hierarchy: card, primary actions, then utilities",
+    "paymentHero\n                    paymentPrimaryActions\n                    transactionFeed" in PAY
+    and "transactionFeed\n\n                    if loading" in PAY
+    and "quickActions\n                    ledgerSummaryStrip" in PAY,
+    "Star Pay home must follow Wallet hierarchy: card, payment action, transactions, then utilities",
 )
 require(
     "python3 tools/verify-wallet-layout.py" in WORKFLOW,
