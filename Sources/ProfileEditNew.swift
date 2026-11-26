@@ -31,22 +31,76 @@ struct ProfileEditView: View {
 
     private let gold = Color(hex: 0xF0C24B)
 
+    private var cleanNickname: String {
+        nickname.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var cleanBio: String {
+        bio.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var cleanPatText: String {
+        patText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var hasUnsavedChanges: Bool {
+        cleanNickname != (baselineProfile["nickname"] ?? "")
+            || cleanBio != (baselineProfile["bio"] ?? "")
+            || cleanPatText != (baselineProfile["patText"] ?? "")
+            || region != (baselineProfile["region"] ?? "")
+            || gender != (baselineProfile["gender"] ?? "")
+            || birthday != (baselineProfile["birthday"] ?? "")
+    }
+
+    private var canSave: Bool {
+        !busy
+            && !cleanNickname.isEmpty
+            && cleanNickname.count <= 16
+            && cleanPatText.count <= 10
+            && hasUnsavedChanges
+    }
+
     var body: some View {
         Form {
             Section {
                 Button { showPhoto = true } label: {
-                    HStack(spacing: 12) {
-                        Text(Tr("头像"))
-                            .foregroundStyle(.primary)
+                    HStack(spacing: 14) {
+                        Avatar(path: app.me?.avatarPath ?? "",
+                               size: 54, radius: 27,
+                               circle: true,
+                               level: growth.shownLevel)
+                            .overlay(alignment: .bottomTrailing) {
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 20, height: 20)
+                                    .background(Circle().fill(Color.accentColor))
+                                    .overlay(Circle().stroke(Color(uiColor: .systemBackground),
+                                                             lineWidth: 2))
+                                    .offset(x: 2, y: 2)
+                            }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(app.me?.name ?? Tr("头像"))
+                                .font(.body)
+                                .foregroundStyle(.primary)
+                                .lineLimit(1)
+                            Text(Tr("更换头像"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
                         Spacer(minLength: 12)
-                        Avatar(path: app.me?.avatarPath ?? "", size: 44, radius: 8,
-                               circle: false, level: growth.shownLevel)
+
                         Image(systemName: "chevron.right")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(.tertiary)
                     }
+                    .padding(.vertical, 3)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Tr("更换头像"))
             }
 
             Section {
@@ -56,6 +110,9 @@ struct ProfileEditView: View {
                         .textInputAutocapitalization(.never)
                 }
 
+                nativeValueRow(Tr("我的二维码"), Tr("查看")) {
+                    showMyQR = true
+                }
                 nativeValueRow(Tr("星言号"),
                                (app.me?.username?.isEmpty == false) ? (app.me?.username ?? "—") : "—") {
                     showUsername = true
@@ -87,6 +144,7 @@ struct ProfileEditView: View {
                 LabeledContent(Tr("个性签名")) {
                     TextField(Tr("写一句介绍自己"), text: $bio)
                         .multilineTextAlignment(.trailing)
+                        .lineLimit(1)
                 }
             } header: {
                 Text(Tr("个人介绍"))
@@ -101,6 +159,8 @@ struct ProfileEditView: View {
                 nativeValueRow(Tr("来电铃声"), ring.currentName) {
                     showRingtone = true
                 }
+            } header: {
+                Text(Tr("联系方式"))
             }
         }
         .scrollContentBackground(.hidden)
@@ -110,8 +170,16 @@ struct ProfileEditView: View {
         .toolbar(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(busy ? Tr("保存中…") : Tr("保存")) { save() }
-                    .disabled(busy)
+                Button {
+                    save()
+                } label: {
+                    if busy {
+                        ProgressView()
+                    } else {
+                        Text(Tr("保存")).fontWeight(.semibold)
+                    }
+                }
+                .disabled(!canSave)
             }
         }
         .hidesTabBar()
@@ -176,8 +244,10 @@ struct ProfileEditView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.tertiary)
             }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(title), \(value)")
     }
 
     private func fillFromMe(force: Bool) {
@@ -537,13 +607,13 @@ struct ProfileEditView: View {
         busy = true
         Task {
             var fields: [String: Any] = [
-                "nickname": nickname,
-                "bio": bio,
+                "nickname": cleanNickname,
+                "bio": cleanBio,
                 "region": region,
                 "gender": gender,
                 "birthday": birthday,
 
-                "patText": patText
+                "patText": cleanPatText
             ]
             if !phone.isEmpty && phone != (app.me?.phone ?? "") { fields["phone"] = phone }
             do {

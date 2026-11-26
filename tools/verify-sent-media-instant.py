@@ -24,7 +24,9 @@ require(
 require(
     "private func localOrRemoteMediaURL(_ path: String) -> URL?" in MEDIA
     and "localOrRemoteMediaURL(info.url)" in MEDIA
-    and "localOrRemoteMediaURL(info.video)" in MEDIA,
+    and "localOrRemoteMediaURL(info.video)" in MEDIA
+    and "VideoForwardPicker(link: sourceLink, videoContent: forwardContent)" in MEDIA
+    and "sourceRemoteURL?.absoluteString ?? url.absoluteString" in MEDIA,
     "video and Live Photo bubbles must open their local file immediately when available",
 )
 require(

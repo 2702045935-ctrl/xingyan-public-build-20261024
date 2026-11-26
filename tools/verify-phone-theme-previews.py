@@ -16,15 +16,22 @@ def require(condition: bool, message: str) -> None:
 
 require(
     ".frame(width: 128, height: 238)" in PRIVACY,
-    "appearance choices must use a portrait phone preview",
+    "appearance choices must use a refined portrait phone preview",
 )
 require(
-    ".frame(width: 214, height: 408)" in THEMES,
-    "chat theme detail preview must use a phone-shaped canvas",
+    "RoundedRectangle(cornerRadius: 25, style: .continuous)" in PRIVACY
+    and "Capsule()\n                .fill(Color.black)\n                .frame(width: 31, height: 8)"
+    in PRIVACY
+    and "private var appGrid: some View" in PRIVACY,
+    "the appearance phone previews must include a device frame, Dynamic Island, and home screen",
 )
 require(
-    ".frame(width: 54, height: 86)" in THEMES,
-    "each theme row must include a miniature phone preview",
+    ".frame(maxWidth: .infinity)\n        .frame(height: 214)" in THEMES,
+    "chat theme detail preview must use a responsive full-width canvas",
+)
+require(
+    ".frame(width: 50, height: 68)" in THEMES,
+    "each theme row must include a compact miniature phone preview",
 )
 require(
     ".frame(width: 214, height: 408)" in WALLPAPER,

@@ -467,7 +467,7 @@ struct VideoPlayerSheet: View {
             player = nil
         }
         .sheet(isPresented: $showForward) {
-            VideoForwardPicker(link: url.absoluteString, videoContent: forwardContent)
+            VideoForwardPicker(link: sourceLink, videoContent: forwardContent)
                 .environmentObject(app)
         }
         .sheet(isPresented: $showShare) {
@@ -476,10 +476,25 @@ struct VideoPlayerSheet: View {
     }
 
     private var shareItems: [Any] {
+        if url.isFileURL, FileManager.default.fileExists(atPath: url.path) {
+            return [url]
+        }
         if let local = LocalStore.localURL(url.path), FileManager.default.fileExists(atPath: local.path) {
             return [local]
         }
-        return [url.absoluteString]
+        return [sourceLink]
+    }
+
+    private var sourceRemoteURL: URL? {
+        guard let data = forwardContent.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let path = object["url"] as? String, !path.isEmpty else { return nil }
+        let full = path.hasPrefix("http") ? path : API.shared.base + path
+        return URL(string: full)
+    }
+
+    private var sourceLink: String {
+        sourceRemoteURL?.absoluteString ?? url.absoluteString
     }
 
     private var frac: Double {

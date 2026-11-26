@@ -373,166 +373,272 @@ private struct AppearanceHomePreview: View {
     let dark: Bool
     let selected: Bool
 
+    private var ink: Color {
+        dark ? .white : .black
+    }
+
     private var panel: Color {
-        dark ? Color(white: 0.10) : Color(white: 0.97)
+        dark ? Color.white.opacity(0.16) : Color.white.opacity(0.66)
+    }
+
+    private var wallpaper: LinearGradient {
+        LinearGradient(
+            colors: dark
+                ? [Color(hex: 0x26345F), Color(hex: 0x10162E), Color(hex: 0x050711)]
+                : [Color(hex: 0x8FC5FF), Color(hex: 0xD7E7FF), Color(hex: 0xF7FAFF)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
+            RoundedRectangle(cornerRadius: 29, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(hex: 0x777A80),
-                            Color(hex: 0x202126),
-                            Color(hex: 0x4B4D52),
-                            Color(hex: 0x111216)
+                            Color(hex: 0xD9DCE2),
+                            Color(hex: 0x5E626A),
+                            Color(hex: 0x24272C),
+                            Color(hex: 0x0C0D10)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
                 .overlay {
-                    RoundedRectangle(cornerRadius: 30, style: .continuous)
-                        .stroke(Color.white.opacity(0.28), lineWidth: 0.8)
+                    RoundedRectangle(cornerRadius: 29, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.78),
+                                    Color.white.opacity(0.12),
+                                    Color.black.opacity(0.54)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 0.9
+                        )
                 }
 
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: dark
-                            ? [Color(red: 0.10, green: 0.15, blue: 0.31),
-                               Color(red: 0.02, green: 0.03, blue: 0.07)]
-                            : [Color(red: 0.53, green: 0.74, blue: 0.98),
-                               Color(red: 0.92, green: 0.96, blue: 1.00)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay {
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.18), .clear, Color.clear],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-                }
-                .padding(6)
+            screen
+                .padding(4.5)
 
-            VStack(spacing: 8) {
-                HStack {
-                    Text("9:41")
-                        .font(.system(size: 7.5, weight: .semibold, design: .rounded))
+            VStack(spacing: 0) {
+                Spacer()
+                HStack(spacing: 12) {
+                    sideButton(height: 18, offset: 10)
                     Spacer()
-                    HStack(spacing: 2.5) {
-                        Image(systemName: "cellularbars")
-                        Image(systemName: "wifi")
-                        Image(systemName: "battery.75")
-                    }
-                    .font(.system(size: 6.5, weight: .semibold))
+                    sideButton(height: 28, offset: 14)
                 }
-                .foregroundStyle(dark ? Color.white : Color.black)
-                .padding(.horizontal, 13)
-                .padding(.top, 10)
+            }
+            .padding(.vertical, 45)
+        }
+        .frame(width: 128, height: 238)
+        .overlay {
+            RoundedRectangle(cornerRadius: 29, style: .continuous)
+                .stroke(
+                    selected ? Color.accentColor : Color.white.opacity(0.10),
+                    lineWidth: selected ? 1.8 : 0.7
+                )
+        }
+        .shadow(color: Color.black.opacity(dark ? 0.32 : 0.18), radius: 12, y: 6)
+    }
 
-                HStack {
+    private var screen: some View {
+        ZStack(alignment: .top) {
+            RoundedRectangle(cornerRadius: 25, style: .continuous)
+                .fill(wallpaper)
+
+            RadialGradient(
+                colors: [
+                    (dark ? Color.blue : Color.white).opacity(dark ? 0.20 : 0.42),
+                    Color.clear
+                ],
+                center: UnitPoint(x: 0.10, y: 0.08),
+                startRadius: 1,
+                endRadius: 94
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+
+            VStack(spacing: 6) {
+                statusBar
+                    .padding(.horizontal, 9)
+                    .padding(.top, 7)
+
+                HStack(spacing: 4) {
                     previewWidget(icon: "clock.fill", tint: .orange)
                     previewWidget(icon: "calendar", tint: .red)
                 }
-                .padding(.horizontal, 10)
-                HStack {
+                .padding(.horizontal, 7)
+
+                HStack(spacing: 4) {
                     previewWidget(icon: "message.fill", tint: .green)
                     previewWidget(icon: "camera.fill", tint: .gray)
                 }
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 7)
 
-                HStack(spacing: 5) {
-                    Circle().fill(Color.white.opacity(0.82))
-                    Circle().fill(Color.white.opacity(0.38))
-                }
-                .frame(width: 17, height: 5)
+                appGrid
+                    .padding(.horizontal, 8)
+                    .padding(.top, 1)
 
                 Spacer(minLength: 0)
 
-                HStack(spacing: 9) {
-                    miniAppIcon("message.fill", tint: .green)
-                    miniAppIcon("person.2.fill", tint: .blue)
-                    miniAppIcon("safari.fill", tint: .cyan)
-                    miniAppIcon("person.crop.circle.fill", tint: .gray)
+                HStack(spacing: 5) {
+                    Circle().fill(ink.opacity(0.92)).frame(width: 3, height: 3)
+                    Circle().fill(ink.opacity(0.36)).frame(width: 3, height: 3)
                 }
-                .padding(.horizontal, 10)
-                .frame(height: 42)
-                .background(panel.opacity(0.62),
-                            in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .padding(.horizontal, 9)
+
+                dock
+                    .padding(.horizontal, 7)
 
                 Capsule()
-                    .fill(dark ? Color.white.opacity(0.78) : Color.black.opacity(0.68))
-                    .frame(width: 39, height: 3)
-                    .padding(.bottom, 6)
+                    .fill(ink.opacity(0.78))
+                    .frame(width: 36, height: 2.6)
+                    .padding(.top, 5)
+                    .padding(.bottom, 5)
             }
+            .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
 
             Capsule()
                 .fill(Color.black)
-                .frame(width: 35, height: 10)
-                .offset(y: -105)
-
-            VStack {
-                HStack {
-                    Capsule()
-                        .fill(Color(hex: 0x3F4146))
-                        .frame(width: 2.5, height: 19)
-                        .offset(x: -1.2, y: -42)
-                    Spacer()
-                    Capsule()
-                        .fill(Color(hex: 0x4A4C51))
-                        .frame(width: 2.5, height: 30)
-                        .offset(x: 1.2, y: -35)
+                .frame(width: 31, height: 8)
+                .overlay(alignment: .trailing) {
+                    Circle()
+                        .fill(Color(hex: 0x0C182A))
+                        .frame(width: 3.2, height: 3.2)
+                        .overlay(Circle().stroke(Color.white.opacity(0.10), lineWidth: 0.4))
+                        .padding(.trailing, 2)
                 }
-                Spacer()
-            }
+                .padding(.top, 7)
+
+            LinearGradient(
+                colors: [Color.white.opacity(0.20), .clear, Color.clear],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+            .allowsHitTesting(false)
         }
-        .frame(width: 128, height: 238)
-        .overlay(alignment: .topTrailing) {
-            if selected {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 20, weight: .semibold))
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(.white, Color.accentColor)
-                    .padding(6)
-            }
+        .overlay {
+            RoundedRectangle(cornerRadius: 25, style: .continuous)
+                .stroke(Color.black.opacity(0.62), lineWidth: 2.2)
         }
-        .shadow(color: Color.black.opacity(dark ? 0.30 : 0.18), radius: 11, y: 5)
+    }
+
+    private var statusBar: some View {
+        HStack {
+            Text("9:41")
+                .font(.system(size: 7.3, weight: .semibold, design: .rounded))
+            Spacer()
+            HStack(spacing: 2) {
+                Image(systemName: "cellularbars")
+                Image(systemName: "wifi")
+                Image(systemName: "battery.75")
+            }
+            .font(.system(size: 6.2, weight: .semibold))
+        }
+        .foregroundStyle(ink)
     }
 
     private func previewWidget(icon: String, tint: Color) -> some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 4) {
             Image(systemName: icon)
-                .font(.system(size: 9, weight: .semibold))
+                .font(.system(size: 8, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 20, height: 20)
-                .background(tint, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
-            VStack(alignment: .leading, spacing: 3) {
-                Capsule().fill(Color.primary.opacity(0.25)).frame(width: 26, height: 3)
-                Capsule().fill(Color.primary.opacity(0.13)).frame(width: 18, height: 3)
+                .frame(width: 17, height: 17)
+                .background(tint.gradient, in: RoundedRectangle(cornerRadius: 4.5, style: .continuous))
+            VStack(alignment: .leading, spacing: 2.5) {
+                Capsule().fill(ink.opacity(0.28)).frame(width: 23, height: 2.5)
+                Capsule().fill(ink.opacity(0.13)).frame(width: 16, height: 2.5)
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 6)
+        .padding(.horizontal, 5)
         .frame(maxWidth: .infinity)
-        .frame(height: 31)
-        .background(panel.opacity(0.90), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .frame(height: 27)
+        .background(panel, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .stroke(Color.white.opacity(dark ? 0.10 : 0.36), lineWidth: 0.4)
+        }
     }
 
-    private func miniAppIcon(_ symbol: String, tint: Color) -> some View {
-        RoundedRectangle(cornerRadius: 6, style: .continuous)
-            .fill(tint.opacity(0.86))
-            .frame(width: 19, height: 19)
+    private var appGrid: some View {
+        VStack(spacing: 6) {
+            HStack {
+                miniAppIcon("message.fill", tint: .green)
+                Spacer(minLength: 0)
+                miniAppIcon("person.2.fill", tint: .blue)
+                Spacer(minLength: 0)
+                miniAppIcon("safari.fill", tint: .cyan)
+                Spacer(minLength: 0)
+                miniAppIcon("play.fill", tint: .red)
+            }
+            HStack {
+                miniAppIcon("camera.fill", tint: .gray)
+                Spacer(minLength: 0)
+                miniAppIcon("music.note", tint: .pink)
+                Spacer(minLength: 0)
+                miniAppIcon("map.fill", tint: .green)
+                Spacer(minLength: 0)
+                miniAppIcon("gear", tint: .gray)
+            }
+        }
+    }
+
+    private var dock: some View {
+        HStack {
+            miniAppIcon("phone.fill", tint: .green, size: 17)
+            Spacer(minLength: 0)
+            miniAppIcon("message.fill", tint: .green, size: 17)
+            Spacer(minLength: 0)
+            miniAppIcon("safari.fill", tint: .cyan, size: 17)
+            Spacer(minLength: 0)
+            miniAppIcon("music.note", tint: .pink, size: 17)
+        }
+        .padding(.horizontal, 7)
+        .frame(height: 31)
+        .background(panel, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.white.opacity(dark ? 0.12 : 0.42), lineWidth: 0.45)
+        }
+    }
+
+    private func miniAppIcon(_ symbol: String, tint: Color, size: CGFloat = 15) -> some View {
+        RoundedRectangle(cornerRadius: size * 0.27, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [tint.opacity(0.95), tint.opacity(0.72)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .frame(width: size, height: size)
             .overlay {
                 Image(systemName: symbol)
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(.system(size: size * 0.44, weight: .semibold))
                     .foregroundStyle(.white)
             }
+            .overlay {
+                RoundedRectangle(cornerRadius: size * 0.27, style: .continuous)
+                    .stroke(Color.white.opacity(0.20), lineWidth: 0.4)
+            }
+    }
+
+    private func sideButton(height: CGFloat, offset: CGFloat) -> some View {
+        Capsule()
+            .fill(
+                LinearGradient(
+                    colors: [Color(hex: 0x70747B), Color(hex: 0x24262A)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .frame(width: 2.2, height: height)
+            .offset(y: offset)
     }
 }
 
