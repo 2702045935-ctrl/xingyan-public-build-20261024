@@ -350,70 +350,15 @@ struct BubbleFill: View {
     var seed: Double = 0
 
     var glass: Bool = true
-    @Environment(\.colorScheme) private var scheme
-    @Environment(\.bubbleUsesLightInk) private var wallpaperUsesLightInk
-    private var usesDarkBackdrop: Bool { wallpaperUsesLightInk ?? (scheme == .dark) }
-
-    private var gloss: Color {
-        return Color.white.opacity(UIConfig.num("bubbleGloss", 0))
-    }
-    private var shade: Color {
-        Color.black.opacity(UIConfig.num("bubbleShade", 0))
-    }
-
-    private var edgeAlpha: CGFloat { UIConfig.num("bubbleEdge", 0) }
-
-    private var mineFill: LinearGradient {
-        LinearGradient(
-            colors: [
-                ChatTheme.bubbleMine,
-                ChatTheme.bubbleMine.opacity(0.88)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
 
     var body: some View {
         ZStack {
             if mine {
                 BubbleShape(mine: mine, tail: tail, pill: pill)
-                    .fill(mineFill)
+                    .fill(ChatTheme.bubbleMine)
             } else {
                 BubbleShape(mine: mine, tail: tail, pill: pill)
                     .fill(ChatTheme.bubbleOther)
-            }
-
-            if UIConfig.num("bubbleGloss", 0) > 0
-                || UIConfig.num("bubbleShade", 0) > 0 {
-                BubbleShape(mine: mine, tail: tail, pill: pill)
-                    .fill(LinearGradient(stops: [
-                        .init(color: gloss, location: 0),
-                        .init(color: Color.clear, location: 0.42),
-                        .init(color: Color.clear, location: 0.68),
-                        .init(color: shade, location: 1)
-                    ], startPoint: .top, endPoint: .bottom))
-            }
-
-            if edgeAlpha > 0 {
-                BubbleShape(mine: mine, tail: tail, pill: pill)
-                    .stroke(Color.white.opacity(edgeAlpha), lineWidth: 0.9)
-            }
-
-            if UIConfig.num("bubbleIridescent", 0) > 0 {
-                BubbleShape(mine: mine, tail: tail, pill: pill)
-                    .stroke(AngularGradient(
-                        colors: [
-                            Color(red: 0.32, green: 0.86, blue: 1.00).opacity(0.55),
-                            Color(red: 0.72, green: 0.58, blue: 1.00).opacity(0.50),
-                            Color(red: 1.00, green: 0.58, blue: 0.78).opacity(0.46),
-                            Color(red: 1.00, green: 0.86, blue: 0.48).opacity(0.50),
-                            Color(red: 0.55, green: 1.00, blue: 0.72).opacity(0.46),
-                            Color(red: 0.32, green: 0.86, blue: 1.00).opacity(0.55)
-                        ],
-                        center: .center,
-                        angle: .degrees(seed * 360)),
-                            lineWidth: 1.1)
             }
         }
         .allowsHitTesting(false)
@@ -7990,17 +7935,8 @@ struct MessageRow: View {
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
-        .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(.thinMaterial)
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(
-                        LinearGradient(colors: [C.green.opacity(0.16), C.green.opacity(0.04)],
-                                       startPoint: .topLeading, endPoint: .bottomTrailing)
-                    )
-            }
-        )
+        .background(C.cardBg,
+                    in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 11, style: .continuous)
                 .stroke(C.green.opacity(0.22), lineWidth: 0.8)
@@ -8404,7 +8340,17 @@ struct MessageRow: View {
 
     private func richBody(_ raw: String) -> AttributedString {
 
-        let cacheKey = message.id + "|" + raw
+        let cacheKey = [
+            message.id,
+            raw,
+            mine ? "mine" : "other",
+            senderNameUsesLightInk ? "light" : "adaptive",
+            ChatTheme.preset.rawValue,
+            String(format: "%.2f", fontScale),
+            String(format: "%.2f", CareMode.scale),
+            currentNickname,
+            currentUsername
+        ].joined(separator: "|")
         if let hit = RichBodyCache.get(cacheKey) { return hit }
 
         let s = ClassicEmojiSet.expand(raw).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -9043,7 +8989,7 @@ struct MessageRow: View {
         .frame(width: min(224, maxBubbleWidth), height: 72, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .fill(.regularMaterial)
+                .fill(C.cardBg)
                 .overlay {
                     RoundedRectangle(cornerRadius: 15, style: .continuous)
                         .stroke(Color.primary.opacity(0.07), lineWidth: 0.6)
