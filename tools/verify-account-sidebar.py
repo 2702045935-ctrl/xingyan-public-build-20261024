@@ -19,10 +19,10 @@ def require(condition: bool, message: str) -> None:
 require(
     "static let maxWidth: CGFloat = 320" in SIDEBAR
     and "static let minimumTrailingReveal: CGFloat = 48" in SIDEBAR
-    and "proxy.size.width - AccountSidebarMetrics.minimumTrailingReveal" in SIDEBAR
+    and "static func width(for screenWidth: CGFloat) -> CGFloat" in SIDEBAR
     and "static let cornerRadius: CGFloat = 24" in SIDEBAR
     and "struct AccountSidebarShape: Shape" in SIDEBAR,
-    "account sidebar must remain a 320-point overlay with visible main-page reveal",
+    "account sidebar must expose one shared drawer-width calculation",
 )
 require(
     "static let rowHeight: CGFloat = 52" in SIDEBAR
@@ -36,10 +36,12 @@ require(
 require(
     "AccountSidebarOverlay(" in MAIN
     and ".onReceive(NotificationCenter.default.publisher(for: .chrisOpenAccountSidebar))" in MAIN
+    and "AccountSidebarMetrics.width(for: proxy.size.width)" in MAIN
+    and ".offset(x: showAccountSidebar ? drawerWidth : 0)" in MAIN
     and "NotificationCenter.default.post(\n                        name: .chrisOpenAccountSidebar" in CHATS
     and "showAccounts = true" not in CHATS
     and ".sheet(isPresented: $showAccounts)" not in CHATS,
-    "the avatar must open the global non-full-screen account drawer",
+    "opening the drawer must push the real conversation page to the right",
 )
 require(
     "isOpen ? dragTranslation : -width - 24" in SIDEBAR
@@ -49,22 +51,17 @@ require(
     "the drawer must support scrim dismissal and a restrained swipe-close gesture",
 )
 require(
-    "struct AccountSidebarAvatarRail: View" in SIDEBAR
-    and "accounts: railAccounts" in SIDEBAR
-    and ".frame(width: AccountSidebarMetrics.minimumTrailingReveal)" in SIDEBAR
-    and ".offset(x: isOpen ? 0 : AccountSidebarMetrics.minimumTrailingReveal)" in SIDEBAR
-    and ".scaleEffect(isOpen ? 1 : 0.96, anchor: .trailing)" in SIDEBAR
-    and "Rectangle().fill(.regularMaterial)" in SIDEBAR
-    and "ForEach(Array(accounts.enumerated()), id: \\.element.username)" in SIDEBAR,
-    "the exposed trailing edge must cover conversation metadata with an avatar rail",
+    "AccountSidebarAvatarRail" not in SIDEBAR
+    and "railAccounts" not in SIDEBAR
+    and "Color.clear\n                    .ignoresSafeArea()" in SIDEBAR
+    and ".offset(x: showAccountSidebar ? drawerWidth : 0)" in MAIN,
+    "the exposed trailing edge must be the real conversation page, not a fake avatar rail",
 )
 require(
     "Color.black.opacity(0.42)" in SIDEBAR
     and "Color.white.opacity(0.62)" in SIDEBAR
     and "private var panelColorGlow: LinearGradient" in SIDEBAR
     and "accent.opacity(0.07)" in SIDEBAR
-    and "Color.black.opacity(0.20)" in SIDEBAR
-    and "Color.white.opacity(0.34)" in SIDEBAR
     and "Color.dyn(0x0F8B65, 0x36CA95)" in SIDEBAR,
     "sidebar material must remain visibly frosted and color-tinted",
 )

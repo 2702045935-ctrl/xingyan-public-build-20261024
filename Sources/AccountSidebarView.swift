@@ -5,7 +5,7 @@ extension Notification.Name {
     static let chrisOpenAccountSidebar = Notification.Name("chris.openAccountSidebar")
 }
 
-private enum AccountSidebarMetrics {
+enum AccountSidebarMetrics {
     static let maxWidth: CGFloat = 320
     static let minimumTrailingReveal: CGFloat = 48
     static let horizontal: CGFloat = 16
@@ -15,6 +15,10 @@ private enum AccountSidebarMetrics {
     static let avatarSize: CGFloat = 56
     static let textOrigin: CGFloat = 84
     static let cornerRadius: CGFloat = 24
+
+    static func width(for screenWidth: CGFloat) -> CGFloat {
+        min(maxWidth, max(240, screenWidth - minimumTrailingReveal))
+    }
 }
 
 private struct AccountSidebarShape: Shape {
@@ -56,34 +60,13 @@ struct AccountSidebarOverlay: View {
     let onOpenProfile: () -> Void
 
     @GestureState private var dragTranslation: CGFloat = 0
-    @State private var showRailAccounts = false
-
-    private var railAccounts: [SavedAccount] {
-        var rows: [SavedAccount] = []
-        if let me = app.me {
-            rows.append(SavedAccount(
-                username: me.username ?? me.id,
-                nickname: me.name,
-                avatar: me.avatarPath ?? me.avatar ?? ""
-            ))
-        }
-        var seen = Set(rows.map(\.username))
-        for account in app.accounts where seen.insert(account.username).inserted {
-            rows.append(account)
-        }
-        return rows
-    }
 
     var body: some View {
         GeometryReader { proxy in
-            let width = min(
-                AccountSidebarMetrics.maxWidth,
-                max(240, proxy.size.width - AccountSidebarMetrics.minimumTrailingReveal)
-            )
+            let width = AccountSidebarMetrics.width(for: proxy.size.width)
 
             ZStack(alignment: .leading) {
-                Color.black
-                    .opacity(isOpen ? (scheme == .dark ? 0.30 : 0.18) : 0)
+                Color.clear
                     .ignoresSafeArea()
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -121,17 +104,6 @@ struct AccountSidebarOverlay: View {
                             }
                         }
                 )
-
-                AccountSidebarAvatarRail(
-                    accounts: railAccounts,
-                    onSelect: openRailAccounts
-                )
-                .frame(width: AccountSidebarMetrics.minimumTrailingReveal)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .opacity(isOpen ? 1 : 0)
-                .offset(x: isOpen ? 0 : AccountSidebarMetrics.minimumTrailingReveal)
-                .scaleEffect(isOpen ? 1 : 0.96, anchor: .trailing)
-                .zIndex(3)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -139,12 +111,6 @@ struct AccountSidebarOverlay: View {
         .allowsHitTesting(isOpen)
         .accessibilityHidden(!isOpen)
         .animation(.spring(response: 0.26, dampingFraction: 0.88), value: isOpen)
-        .sheet(isPresented: $showRailAccounts) {
-            NavigationStack {
-                SwitchAccountView()
-                    .environmentObject(app)
-            }
-        }
     }
 
     private func close() {
@@ -160,79 +126,6 @@ struct AccountSidebarOverlay: View {
         }
     }
 
-    private func openRailAccounts() {
-        UISelectionFeedbackGenerator().selectionChanged()
-        close()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
-            showRailAccounts = true
-        }
-    }
-}
-
-private struct AccountSidebarAvatarRail: View {
-    @Environment(\.colorScheme) private var scheme
-
-    let accounts: [SavedAccount]
-    let onSelect: () -> Void
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 8) {
-                ForEach(Array(accounts.enumerated()), id: \.element.username) { index, account in
-                    Button(action: onSelect) {
-                        Avatar(
-                            path: account.avatar,
-                            size: 34,
-                            radius: 17,
-                            circle: true
-                        )
-                        .frame(width: 46, height: 46)
-                        .overlay(alignment: .bottomTrailing) {
-                            if index == 0 {
-                                Circle()
-                                    .fill(Color.dyn(0x0F8B65, 0x36CA95))
-                                    .frame(width: 8, height: 8)
-                                    .overlay(Circle().stroke(
-                                        scheme == .dark ? Color(hex: 0x1A1A1A) : .white,
-                                        lineWidth: 1.5
-                                    ))
-                                    .offset(x: -5, y: -5)
-                            }
-                        }
-                        .contentShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(account.nickname)
-                }
-            }
-            .padding(.vertical, 10)
-        }
-        .background {
-            ZStack {
-                Rectangle().fill(.regularMaterial)
-                Rectangle().fill(
-                    LinearGradient(
-                        colors: [
-                            Color.dyn(0x0F8B65, 0x36CA95)
-                                .opacity(scheme == .dark ? 0.08 : 0.05),
-                            Color.clear
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-            }
-            Rectangle().fill(
-                scheme == .dark ? Color.black.opacity(0.20) : Color.white.opacity(0.34)
-            )
-        }
-        .overlay(alignment: .leading) {
-            Rectangle()
-                .fill(Color.primary.opacity(scheme == .dark ? 0.10 : 0.06))
-                .frame(width: 0.5)
-        }
-        .accessibilityHidden(accounts.isEmpty)
-    }
 }
 
 private struct AccountSidebarPanel: View {

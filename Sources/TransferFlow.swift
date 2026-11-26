@@ -204,7 +204,9 @@ struct TransferView: View {
     private var head: some View {
         VStack(spacing: 0) {
             ZStack {
-                Text("")
+                Text(Tr("转账"))
+                    .font(pf(16.5, .semibold))
+                    .foregroundColor(C.label)
                 HStack {
                     Button { dismiss() } label: {
                         SVGIcon(markup: I.backCover, size: 20, color: C.label)
@@ -216,28 +218,48 @@ struct TransferView: View {
             }
             .frame(height: L.navH)
 
-            HStack(spacing: L.v(10, 3.2, 13)) {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(Lang.isEnglish ? "Transfer to \(peerTitle)" : "转账给 \(peerTitle)")
-                        .font(pf(17.5, .semibold))
-                        .foregroundColor(C.label)
-                    Text(Lang.isEnglish ? "Account: \(chat.name)" : "账号：\(chat.name)")
-                        .font(pf(12))
-                        .foregroundColor(C.subLabel)
-                }
-                Spacer(minLength: 0)
-                Avatar(path: peerAvatar,
-                       size: L.tfAvatar,
-                       radius: L.tfAvatar / 2)
-                    .overlay {
-                        Circle().stroke(Color.white.opacity(scheme == .dark ? 0.20 : 0.72),
-                                        lineWidth: 0.8)
+            HStack(spacing: 13) {
+                    Avatar(path: peerAvatar,
+                           size: 46,
+                           radius: 23)
+                        .overlay {
+                            Circle().stroke(Color.white.opacity(scheme == .dark ? 0.20 : 0.72),
+                                            lineWidth: 0.8)
+                        }
+                        .shadow(color: .black.opacity(0.10), radius: 6, y: 2)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(Tr("转账给"))
+                            .font(pf(11, .medium))
+                            .foregroundColor(PayVisual.secondaryInk)
+                        Text(peerTitle)
+                            .font(pf(17, .semibold))
+                            .foregroundColor(C.label)
+                            .lineLimit(1)
+                        Text(Lang.isEnglish ? "Account: \(chat.name)" : "账号：\(chat.name)")
+                            .font(pf(12.5))
+                            .foregroundColor(C.subLabel)
+                            .lineLimit(1)
                     }
-                    .shadow(color: .black.opacity(0.12), radius: 7, y: 3)
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: peerRealName.isEmpty ? "person.crop.circle" : "checkmark.shield.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(peerRealName.isEmpty ? PayVisual.secondaryInk : PayVisual.success)
+                        .frame(width: 34, height: 34)
+                        .background(C.fieldBg, in: Circle())
+                }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(PayVisual.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(C.hairline.opacity(0.72), lineWidth: 0.6)
             }
-            .padding(.top, L.v(10, 4.8, 20))
-            .padding(.horizontal, L.v(16, 5, 20))
-            .padding(.bottom, L.v(12, 4.4, 18))
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 2)
         }
         .background(PayVisual.canvas)
     }
@@ -283,19 +305,30 @@ struct TransferView: View {
             .padding(.top, L.v(2, 1, 4))
             .padding(.horizontal, L.v(16, 5, 20))
 
+            HairLine(inset: 16)
+
             Button {
                 noteEditing = true
             } label: {
-                Text(note.isEmpty ? Tr("添加转账说明") : note)
-                    .font(pf(16.5))
-                    .foregroundColor(Color.dyn(0x1E4FA3, 0x6F9BE0))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, L.v(10, 3.4, 16))
-                    .padding(.horizontal, L.v(16, 5, 20))
-                .padding(.bottom, L.v(14, 4.4, 18))
-                   .contentShape(Rectangle())
+                HStack(spacing: 10) {
+                    Image(systemName: "text.bubble")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(PayVisual.tint)
+                    Text(note.isEmpty ? Tr("添加转账说明") : note)
+                        .font(pf(15.5))
+                        .foregroundColor(C.label)
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(PayVisual.secondaryInk)
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 48)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+
         }
 
         .background {

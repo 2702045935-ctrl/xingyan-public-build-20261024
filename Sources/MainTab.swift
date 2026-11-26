@@ -44,8 +44,11 @@ struct MainTabView: View {
     }
 
     var body: some View {
+        GeometryReader { proxy in
+            let drawerWidth = AccountSidebarMetrics.width(for: proxy.size.width)
 
-        ZStack(alignment: .bottom) {
+            ZStack {
+                ZStack(alignment: .bottom) {
 
             ZStack {
                 Group {
@@ -143,25 +146,43 @@ struct MainTabView: View {
                 }
             }
 
-        }
-
-        .background(C.pageBg.ignoresSafeArea())
-        .overlay {
-            AccountSidebarOverlay(
-                isOpen: showAccountSidebar,
-                onClose: {
-                    withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) {
-                        showAccountSidebar = false
-                    }
-                },
-                onOpenProfile: {
-                    selectTab(4)
                 }
-            )
-            .environmentObject(app)
-            .zIndex(200)
+
+                .background(C.pageBg.ignoresSafeArea())
+                .offset(x: showAccountSidebar ? drawerWidth : 0)
+                .clipShape(
+                    RoundedRectangle(
+                        cornerRadius: showAccountSidebar ? 20 : 0,
+                        style: .continuous
+                    )
+                )
+                .shadow(
+                    color: .black.opacity(showAccountSidebar ? 0.16 : 0),
+                    radius: 18,
+                    x: 8,
+                    y: 0
+                )
+                .allowsHitTesting(!showAccountSidebar)
+                .accessibilityHidden(showAccountSidebar)
+                .animation(.spring(response: 0.26, dampingFraction: 0.88),
+                           value: showAccountSidebar)
+                .overlay(CallOverlay())
+
+                AccountSidebarOverlay(
+                    isOpen: showAccountSidebar,
+                    onClose: {
+                        withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) {
+                            showAccountSidebar = false
+                        }
+                    },
+                    onOpenProfile: {
+                        selectTab(4)
+                    }
+                )
+                .environmentObject(app)
+                .zIndex(200)
+            }
         }
-        .overlay(CallOverlay())
 
         .onReceive(NotificationCenter.default.publisher(for: .chrisOpenAccountSidebar)) { _ in
             guard !showAccountSidebar else { return }

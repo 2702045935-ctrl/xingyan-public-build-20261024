@@ -23,6 +23,14 @@ require(
     "checkout must offer a primary biometric action with an explicit password fallback",
 )
 require(
+    'Text(Tr("转账给"))' in TRANSFER
+    and "size: 46" in TRANSFER
+    and "RoundedRectangle(cornerRadius: 20, style: .continuous)" in TRANSFER
+    and 'Image(systemName: "text.bubble")' in TRANSFER
+    and ".frame(height: 48)" in TRANSFER,
+    "the transfer desk must present a compact payee identity card and a full-width note row",
+)
+require(
     ".sheet(isPresented: $showPay)" in TRANSFER
     and ".presentationDetents([.large])" in TRANSFER
     and ".interactiveDismissDisabled(busy)" in TRANSFER
