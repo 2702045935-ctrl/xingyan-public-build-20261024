@@ -1,9 +1,11 @@
 import SwiftUI
 
 extension WeChatMessageCard {
-    init(mine: Bool,
+    init(width: CGFloat = 268,
+         padding: CGFloat = 13,
+         mine: Bool,
          showTail: Bool,
          @ViewBuilder content: () -> Content) {
-        self.init(content: content)
+        self.init(width: width, padding: padding, content: content)
     }
 }
