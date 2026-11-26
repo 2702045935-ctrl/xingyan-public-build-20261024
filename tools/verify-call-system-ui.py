@@ -17,7 +17,9 @@ def require(condition: bool, message: str) -> None:
 require(
     "Avatar(path: call.peerAvatar, size: 112, radius: 56, circle: true)" in CALL
     and 'font(pfExact(29, .semibold))' in CALL
-    and 'font(pfExact(15.5, .medium))' in CALL,
+    and "private var callStatusPill: some View" in CALL
+    and ".frame(width: 184, height: 184)" in CALL
+    and "Color.black.opacity(0.78)" in CALL,
     "the active call must use a large circular identity with system title and status hierarchy",
 )
 require(

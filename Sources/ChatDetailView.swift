@@ -7551,6 +7551,24 @@ struct CallRecordBubble: View {
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
+        callCard
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(message.callText + "，" + callSubtitle + "，" + Tr("重拨"))
+    }
+
+    private var callCard: some View {
+        callCardContent
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: min(L.bubbleMaxW, 286),
+                   alignment: mine ? .trailing : .leading)
+            .background { callCardSurface }
+            .overlay { callCardBorder }
+            .shadow(color: Color.black.opacity(scheme == .dark ? 0.20 : 0.07),
+                    radius: 10, y: 3)
+    }
+
+    private var callCardContent: some View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 11, style: .continuous)
@@ -7584,47 +7602,43 @@ struct CallRecordBubble: View {
             .background(accent.opacity(scheme == .dark ? 0.12 : 0.075),
                         in: Capsule(style: .continuous))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .frame(maxWidth: min(L.bubbleMaxW, 286), alignment: mine ? .trailing : .leading)
-        .background {
-            ZStack {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.dyn(0xFFFFFF, 0x101214).opacity(scheme == .dark ? 0.30 : 0.52))
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                accent.opacity(scheme == .dark ? 0.08 : 0.045),
-                                Color.clear,
-                                Color.black.opacity(scheme == .dark ? 0.08 : 0.015)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            }
-        }
-        .overlay {
+    }
+
+    private var callCardSurface: some View {
+        ZStack {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(
+                .fill(.ultraThinMaterial)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.dyn(0xFFFFFF, 0x101214)
+                    .opacity(scheme == .dark ? 0.30 : 0.52))
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(scheme == .dark ? 0.16 : 0.58),
-                            Color.primary.opacity(scheme == .dark ? 0.08 : 0.055)
+                            accent.opacity(scheme == .dark ? 0.08 : 0.045),
+                            Color.clear,
+                            Color.black.opacity(scheme == .dark ? 0.08 : 0.015)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.7
+                    )
                 )
         }
-        .shadow(color: Color.black.opacity(scheme == .dark ? 0.20 : 0.07),
-                radius: 10, y: 3)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(message.callText + "，" + callSubtitle + "，" + Tr("重拨"))
+    }
+
+    private var callCardBorder: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .stroke(
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(scheme == .dark ? 0.16 : 0.58),
+                        Color.primary.opacity(scheme == .dark ? 0.08 : 0.055)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 0.7
+            )
     }
 
     private var callSubtitle: String {

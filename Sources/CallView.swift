@@ -265,7 +265,25 @@ struct CallView: View {
                     .blur(radius: blurRadius)
                     .scaleEffect(1.25)
             }
-            Color.black.opacity(tint)
+            Color.black.opacity(tint * 0.72)
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(0.16),
+                    Color.black.opacity(0.02),
+                    Color.black.opacity(0.78)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            RadialGradient(
+                colors: [
+                    Color.clear,
+                    Color.black.opacity(0.34)
+                ],
+                center: UnitPoint(x: 0.5, y: 0.36),
+                startRadius: 72,
+                endRadius: 390
+            )
         }
         .ignoresSafeArea()
     }
@@ -274,23 +292,44 @@ struct CallView: View {
         VStack(spacing: 0) {
             Spacer().frame(height: max(58, 176 - L.safeTop))
 
-            Avatar(path: call.peerAvatar, size: 112, radius: 56, circle: true)
-                .overlay {
-                    Circle()
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.44),
-                                    Color.white.opacity(0.08),
-                                    Color.black.opacity(0.20)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 0.9
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.white.opacity(0.15),
+                                Color.white.opacity(0.035),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 48,
+                            endRadius: 92
                         )
-                }
-                .shadow(color: .black.opacity(0.34), radius: 24, y: 10)
+                    )
+                    .frame(width: 184, height: 184)
+
+                Circle()
+                    .stroke(Color.white.opacity(0.13), lineWidth: 0.8)
+                    .frame(width: 148, height: 148)
+
+                Avatar(path: call.peerAvatar, size: 112, radius: 56, circle: true)
+                    .overlay {
+                        Circle()
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.52),
+                                        Color.white.opacity(0.10),
+                                        Color.black.opacity(0.20)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 0.9
+                            )
+                    }
+                    .shadow(color: .black.opacity(0.38), radius: 24, y: 10)
+            }
 
             Text(call.peerName)
                 .font(pfExact(29, .semibold))
@@ -299,10 +338,8 @@ struct CallView: View {
                 .minimumScaleFactor(0.76)
                 .padding(.top, 20)
 
-            Text(statusText)
-                .font(pfExact(15.5, .medium))
-                .foregroundColor(.white.opacity(0.66))
-                .padding(.top, 7)
+            callStatusPill
+                .padding(.top, 9)
 
             if let err = call.errorText, !err.isEmpty, call.phase == .outgoing {
                 Text(err)
@@ -324,6 +361,33 @@ struct CallView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var callStatusPill: some View {
+        HStack(spacing: 7) {
+            if call.phase == .active {
+                Circle()
+                    .fill(Color(hex: 0x30D158))
+                    .frame(width: 6, height: 6)
+            } else {
+                Image(systemName: call.isVideo ? "video.fill" : "phone.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.66))
+            }
+
+            Text(statusText)
+                .font(pfExact(14.5, .medium))
+                .foregroundColor(.white.opacity(0.74))
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 30)
+        .background {
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay(Capsule().fill(Color.black.opacity(0.18)))
+                .overlay(Capsule().stroke(Color.white.opacity(0.22),
+                                           lineWidth: 0.7))
+        }
     }
 
     private var videoLayer: some View {
