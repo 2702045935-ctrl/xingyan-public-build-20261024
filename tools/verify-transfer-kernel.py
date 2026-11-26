@@ -50,12 +50,10 @@ require(
     "fileSize >= 4 * 1024 * 1024" not in API
     and "TransferUploader.shared.uploadFile(" not in API
     and "TransferUploaderError.unsupported" not in API
-    and 'request.httpMethod = "PUT"' in (
-        ROOT / "Sources" / "TransferUploader.swift"
-    ).read_text(encoding="utf-8")
-    and "process.env.ENABLE_TRANSFER_KERNEL !== '0'" in SERVER
-    and "(method === 'POST' || method === 'PUT')" in SERVER,
-    "chat uploads must keep the faster raw path while the resumable kernel remains diagnostic",
+    and not (ROOT / "Sources" / "TransferUploader.swift").exists()
+    and "ENABLE_TRANSFER_KERNEL" not in SERVER
+    and "parts[0] === 'transfer'" not in SERVER,
+    "the post-1120 resumable upload kernel must not remain in the production path",
 )
 require(
     "req.httpBody = data" in UPLOAD_BINARY
@@ -117,15 +115,15 @@ require(
 require(
     "fs.createWriteStream(outPath)" in SERVER
     and "req.pipe(ws2)" in SERVER
-    and "req.pipe(uploadCipher).pipe(ws2)" in SERVER
-    and "const streamEncrypted = ctype.indexOf('image/') !== 0" in SERVER
-    and "const head = Buffer.alloc(4)" in SERVER
-    and "async function sealUploadInPlaceStreaming(name)" in SERVER
-    and "await sealUploadInPlaceStreaming(name)" in SERVER
-    and "await fs.promises.writeFile(outPath, sealUploadBuffer(name, final2))" in SERVER
+    and "req.pipe(uploadCipher).pipe(ws2)" not in SERVER
+    and "streamEncrypted" not in SERVER
+    and "sealUploadInPlaceStreaming" not in SERVER
+    and "fs.readFileSync(outPath)" in SERVER
+    and "fs.writeFileSync(outPath, final2)" in SERVER
+    and "const tmpIn = path.join(os.tmpdir()" in SERVER
     and "sealUploadInPlace(name)" in SERVER
-    and "receiveEncryptedRaw" not in SERVER,
-    "the server upload path must match the 11/21 receive, validate and encrypt flow",
+    and "parts[0] === 'transfer'" not in SERVER,
+    "the server upload path must match the 1120 receive, validate and encrypt flow",
 )
 require(
     "private let fileTapButton = UIButton(type: .custom)" in MEDIA_ROW
@@ -138,8 +136,8 @@ require(
     "uploaded file cards must expose a native button that opens the local or downloaded file preview",
 )
 require(
-    "node server/test/transfer-kernel.test.js" in WORKFLOW,
-    "the iOS build must retain transfer regression coverage",
+    "node server/test/transfer-kernel.test.js" not in WORKFLOW,
+    "the iOS build must not run the removed transfer-kernel path",
 )
 
 print("upload-baseline-1121: passed")

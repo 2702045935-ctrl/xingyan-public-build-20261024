@@ -46,7 +46,6 @@ const { PaymentIntentEngine } = require('./lib/payment-intent-engine');
 const { VideoRecommendationKernel } = require('./lib/video-recommendation');
 const { SearchRankingKernel } = require('./lib/search-ranking');
 const { PaymentSettlementScheduler } = require('./lib/payment-settlement-scheduler');
-const { createTransferKernel, TransferError } = require('./transfer-kernel');
 const {
   normalizeBillTimeZone,
   billMonthKey,
@@ -71,7 +70,6 @@ const SHARED_SHARD_DATA_ROOT = process.env.DUAL_CELL_DATA_ROOT
   : '';
 const MSG_DIR = path.join(DATA_DIR, 'messages');
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
-let transferKernelInstance = null;
 let shardShadow = null;
 let shardShadowAuditTimer = null;
 let messageReliability = null;
@@ -5674,158 +5672,14 @@ function saveUploadPlain(plainBuf, ext) {
 function sealUploadInPlace(name) {
   const file = path.join(UPLOAD_DIR, name);
   try {
-    const fd = fs.openSync(file, 'r');
-    const head = Buffer.alloc(4);
-    let got = 0;
-    try {
-      got = fs.readSync(fd, head, 0, 4, 0);
-    } finally {
-      fs.closeSync(fd);
-    }
-    if (got === 4 && head.equals(UPLOAD_MAGIC)) {
-      return fs.statSync(file).size;
-    }
     const raw = fs.readFileSync(file);
+    if (raw.length >= 20 && raw.subarray(0, 4).equals(UPLOAD_MAGIC)) return raw.length;
     fs.writeFileSync(file + '.tmp', sealUploadBuffer(name, raw));
     fs.renameSync(file + '.tmp', file);
     return fs.statSync(file).size;
   } catch (err) {
     return 0;
   }
-}
-
-/** 上传请求内使用：整块 I/O 不阻塞事件循环，也只有必要文件才走第二遍。 */
-async function sealUploadInPlaceStreaming(name) {
-  const file = path.join(UPLOAD_DIR, name);
-  const fd = await fs.promises.open(file, 'r');
-  const head = Buffer.alloc(4);
-  let got = 0;
-  try {
-    got = (await fd.read(head, 0, 4, 0)).bytesRead;
-  } finally {
-    await fd.close();
-  }
-  if (got === 4 && head.equals(UPLOAD_MAGIC)) {
-    return (await fs.promises.stat(file)).size;
-  }
-
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv('aes-256-ctr', uploadFileKey(name), iv);
-  const temp = file + '.seal-' + crypto.randomBytes(6).toString('hex');
-  await new Promise((resolve, reject) => {
-    const reader = fs.createReadStream(file);
-    const writer = fs.createWriteStream(temp);
-    const finish = (error) => {
-      if (error) reject(error);
-      else resolve();
-    };
-    reader.on('error', finish);
-    cipher.on('error', finish);
-    writer.on('error', finish);
-    writer.on('finish', () => finish());
-    writer.write(Buffer.concat([UPLOAD_MAGIC, iv]));
-    reader.pipe(cipher).pipe(writer);
-  }).catch(async (error) => {
-    try { await fs.promises.unlink(temp); } catch (_) { }
-    throw error;
-  });
-  await fs.promises.rename(temp, file);
-  return (await fs.promises.stat(file)).size;
-}
-
-function getTransferKernel() {
-  if (!transferKernelInstance) {
-    transferKernelInstance = createTransferKernel({
-      dataDir: DATA_DIR,
-      uploadDir: UPLOAD_DIR,
-      secret: db.secret
-    });
-  }
-  return transferKernelInstance;
-}
-
-async function inspectTransferFile(job) {
-  const file = path.join(UPLOAD_DIR, job.fileName);
-  if (job.mime.indexOf('image/') !== 0) {
-    job.storedBytes = job.size;
-    return;
-  }
-  const original = readUploadPlain(file);
-  const mime = sniffImageMime(original) || job.mime;
-  const checked = checkImage(original, mime);
-  if (!checked.ok) throw new TransferError(422, checked.error || '图片校验失败');
-  let final = checked.buffer;
-  if (checked.needShrink) {
-    const shrunk = shrinkImageBuffer(checked.buffer, path.extname(job.fileName));
-    if (shrunk && shrunk.length) final = shrunk;
-  }
-  fs.writeFileSync(file, sealUploadBuffer(job.fileName, final));
-  uploadPlainCache.delete(job.fileName);
-  job.storedBytes = final.length;
-}
-
-function queueTransferTranscode(job) {
-  if (job.mime.indexOf('video/') !== 0 || job.skipTranscode === true || job.size <= 2 * 1024 * 1024) {
-    return;
-  }
-  setImmediate(async () => {
-    const kernel = getTransferKernel();
-    const startedAt = new Date().toISOString();
-    let input = '';
-    let output = '';
-    try {
-      await kernel.update(job.ownerId, job.id, {
-        processing: { kind: 'video-transcode', status: 'running', startedAt: startedAt }
-      });
-      input = uploadTempPlain(job.fileName);
-      output = input + '.small.mp4';
-      const result = await runFfAsync(ffmpegExe(), [
-        '-y', '-loglevel', 'error', '-i', input,
-        '-vf', "scale='if(gt(iw,ih),min(1280,iw),-2)':'if(gt(iw,ih),-2,min(1280,ih))'",
-        '-c:v', 'libx264', '-profile:v', 'high', '-preset', 'veryfast',
-        '-b:v', '1200k', '-maxrate', '1500k', '-bufsize', '3000k',
-        '-r', '30', '-g', '60', '-keyint_min', '60', '-sc_threshold', '0',
-        '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '96k', '-ac', '1',
-        '-movflags', '+faststart', output
-      ], 600000);
-      if (!result.ok || !fs.existsSync(output)) {
-        throw new Error(String(result.err || 'ffmpeg failed').slice(0, 240));
-      }
-      const optimized = fs.readFileSync(output);
-      if (!optimized.length) throw new Error('转码结果为空');
-      const finalFile = path.join(UPLOAD_DIR, job.fileName);
-      const sealedTemp = path.join(UPLOAD_DIR, '.' + job.fileName + '.transcode.tmp');
-      fs.writeFileSync(sealedTemp, sealUploadBuffer(job.fileName, optimized));
-      fs.renameSync(sealedTemp, finalFile);
-      uploadPlainCache.delete(job.fileName);
-      await kernel.update(job.ownerId, job.id, {
-        storedBytes: optimized.length,
-        processing: {
-          kind: 'video-transcode',
-          status: 'done',
-          startedAt: startedAt,
-          finishedAt: new Date().toISOString(),
-          bytes: optimized.length
-        }
-      });
-    } catch (error) {
-      try {
-        await kernel.update(job.ownerId, job.id, {
-          processing: {
-            kind: 'video-transcode',
-            status: 'failed',
-            startedAt: startedAt,
-            finishedAt: new Date().toISOString(),
-            error: String(error && error.message || error).slice(0, 240)
-          }
-        });
-      } catch (_) { }
-      callTrace('传输后台转码失败：' + String(error && error.message || error).slice(0, 160));
-    } finally {
-      if (input) { try { fs.unlinkSync(input); } catch (_) { } }
-      if (output) { try { fs.unlinkSync(output); } catch (_) { } }
-    }
-  });
 }
 
 /** ffmpeg 读不了加密文件：先解到临时文件，跑完必须删掉（调用方负责） */
@@ -25011,92 +24865,10 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
-  /* 可恢复传输内核：先声明任务，再幂等写分片，最后统一校验。
-     分片直接以 AES-256-CTR 写入最终加密文件，不会先落一份明文。 */
-  if (process.env.ENABLE_TRANSFER_KERNEL !== '0'
-      && parts[0] === 'transfer' && parts.length >= 2) {
-    const kernel = getTransferKernel();
-    try {
-      if (parts[1] === 'capabilities' && method === 'GET') {
-        ok(res, {
-          version: 1,
-          chunked: true,
-          resumable: true,
-          maxChunkBytes: 16 * 1024 * 1024
-        });
-        return;
-      }
-      if (parts[1] === 'init' && method === 'POST') {
-        if (!uploadRateAllow(user.id)) {
-          return fail(res, 429, '上传太频繁了，歇一会儿再传');
-        }
-        if (uploadDirFull()) return fail(res, 507, '服务器空间不够了，先清理上传目录');
-        const body = await readBody(req);
-        const transfer = await kernel.init({
-          ownerId: user.id,
-          size: body.size,
-          sha256: body.sha256,
-          mime: body.mime,
-          name: body.name,
-          skipTranscode: body.skipTranscode === true
-        });
-        ok(res, { transfer: transfer });
-        return;
-      }
-
-      const transferId = String(parts[1] || '');
-      if (parts.length === 2 && method === 'GET') {
-        const transfer = await kernel.status(user.id, transferId);
-        ok(res, { transfer: transfer });
-        return;
-      }
-      if (parts.length === 2 && method === 'DELETE') {
-        const transfer = await kernel.cancel(user.id, transferId);
-        ok(res, { transfer: transfer });
-        return;
-      }
-      if (parts[2] === 'chunk' && parts.length === 3
-          && (method === 'POST' || method === 'PUT')) {
-        const result = await kernel.putChunk({
-          ownerId: user.id,
-          id: transferId,
-          index: Number(req.headers['x-transfer-chunk-index']),
-          sha256: String(req.headers['x-transfer-chunk-sha256'] || ''),
-          req: req
-        });
-        ok(res, result);
-        return;
-      }
-      if (parts[2] === 'complete' && parts.length === 3 && method === 'POST') {
-        const result = await kernel.complete({
-          ownerId: user.id,
-          id: transferId,
-          inspect: inspectTransferFile,
-          onComplete: async (job) => {
-            noteUpload(user.id, Math.max(0, Number(job.storedBytes) || job.size));
-            queueTransferTranscode(job);
-          }
-        });
-        ok(res, result);
-        return;
-      }
-      return fail(res, 404, '传输接口不存在');
-    } catch (error) {
-      if (error instanceof TransferError) {
-        return fail(res, error.status || 422, error.message, error.details);
-      }
-      console.error('[transfer] ' + String(error && error.stack || error));
-      return fail(res, 500, '传输服务暂时不可用');
-    }
-  }
-
-  /* 11/21 稳定上传模式：App 的图片、视频、文件全部直接走这里。
-     分片内核仅作为显式诊断能力保留，生产默认关闭。
-     视频/图片直接把原始字节 PUT 上来，不再塞 base64
+  /* 二进制直传：视频/图片直接把原始字节 PUT 上来，不再塞 base64
      （base64 会多传 33%，一条 5MB 视频要多跑 1.7MB 流量 → 手机上就是多等十几秒） */
   if (parts[0] === 'upload' && parts[1] === 'raw' && method === 'POST') {
     const clientSaidCompressed = String(req.headers['x-chris-compressed'] || '').trim() === '1';   // CHRIS_UPLOAD_SKIP_SHRINK_V1
-    const clientCompressed = clientSaidCompressed;
     if (!uploadRateAllow(user.id)) {
       return fail(res, 429, '上传太频繁了，歇一会儿再传');
     }
@@ -25110,16 +24882,7 @@ async function handleApi(req, res, pathname, query) {
     const outPath = path.join(UPLOAD_DIR, name);
     const MAX = 60 * 1024 * 1024;
     let size = 0, tooBig = false;
-    const isVideoUpload = ctype.indexOf('video/') === 0;
-    const streamEncrypted = ctype.indexOf('image/') !== 0
-      && (!isVideoUpload || clientCompressed);
     const ws2 = fs.createWriteStream(outPath);
-    let uploadCipher = null;
-    if (streamEncrypted) {
-      const iv = crypto.randomBytes(16);
-      uploadCipher = crypto.createCipheriv('aes-256-ctr', uploadFileKey(name), iv);
-      ws2.write(Buffer.concat([UPLOAD_MAGIC, iv]));
-    }
     try {
       await new Promise((resolve, reject) => {
       let done = false;
@@ -25140,10 +24903,8 @@ async function handleApi(req, res, pathname, query) {
       });
       req.on('error', finish);
       ws2.on('error', finish);
-      if (uploadCipher) uploadCipher.on('error', finish);
       ws2.on('finish', () => finish());
-      if (uploadCipher) req.pipe(uploadCipher).pipe(ws2);
-      else req.pipe(ws2);
+      req.pipe(ws2);
       });
     } catch (err) {
       try { ws2.destroy(); } catch (_) { }
@@ -25156,7 +24917,7 @@ async function handleApi(req, res, pathname, query) {
        现在图片一律过一遍尺寸体检：超限直接拒，大图自动缩小。 */
     if (ctype.indexOf('image/') === 0) {
       try {
-        const buf2 = await fs.promises.readFile(outPath);
+        const buf2 = fs.readFileSync(outPath);
         const mime2 = sniffImageMime(buf2) || (ctype.indexOf('png') >= 0 ? 'image/png' : 'image/jpeg');
         const img2 = checkImage(buf2, mime2);
         if (!img2.ok) { try { fs.unlinkSync(outPath); } catch (err) { } return fail(res, 422, img2.error); }
@@ -25165,7 +24926,7 @@ async function handleApi(req, res, pathname, query) {
           const small2 = shrinkImageBuffer(img2.buffer, '.' + ext);
           if (small2 && small2.length) final2 = small2;
         }
-        await fs.promises.writeFile(outPath, sealUploadBuffer(name, final2));
+        fs.writeFileSync(outPath, final2);
         size = final2.length;
       } catch (err) {
         try { fs.unlinkSync(outPath); } catch (err2) { }
@@ -25176,18 +24937,19 @@ async function handleApi(req, res, pathname, query) {
        以前「传多大存多大」—— 聊天里一条 10MB 的视频，对方手机上要转十几秒才出画面。 */
     /* App 端已经自己压好的视频（带 x-chris-compressed: 1）就别再压一遍：
        服务端再压一遍 = 用户白等十几秒 + 画质再掉一层。2026-09-25 */
+    const clientCompressed = String(req.headers['x-chris-compressed'] || '').trim() === '1';
     /* 客户端已导出且规格安全的聊天视频直接落盘，避免每次发送都阻塞在 ffmpeg。
        高码率、超长或尺寸过大的视频仍走原来的转码兜底。 */
-    const video = isVideoUpload;
-    const videoTooBig = video && !streamEncrypted && size > 2 * 1024 * 1024;
+    const video = ctype.indexOf('video/') === 0;
+    const videoCanPass = clientCompressed && videoCanSkipServerShrink(outPath, size);
+    const videoTooBig = video && size > 2 * 1024 * 1024 && !videoCanPass;
     if (videoTooBig) {
       const before = size;
       try {
-        const outTmp = path.join(
-          os.tmpdir(),
-          'chris-up-' + crypto.randomBytes(6).toString('hex') + '.small.mp4'
-        );
-        const rr = await runFfAsync(ffmpegExe(), ['-y', '-loglevel', 'error', '-i', outPath,
+        const tmpIn = path.join(os.tmpdir(), 'chris-up-' + crypto.randomBytes(6).toString('hex') + '.' + ext);
+        const outTmp = tmpIn + '.small.mp4';
+        fs.writeFileSync(tmpIn, fs.readFileSync(outPath));
+        const rr = await runFfAsync(ffmpegExe(), ['-y', '-loglevel', 'error', '-i', tmpIn,
           '-vf', "scale='if(gt(iw,ih),min(1280,iw),-2)':'if(gt(iw,ih),-2,min(1280,ih))'",
           '-c:v', 'libx264', '-profile:v', 'high', '-preset', 'veryfast',
           '-b:v', '1200k', '-maxrate', '1500k', '-bufsize', '3000k',
@@ -25204,17 +24966,13 @@ async function handleApi(req, res, pathname, query) {
           callTrace('聊天视频压缩 ' + Math.round(before / 1024) + 'KB → ' + Math.round(size / 1024) + 'KB');
         }
         try { fs.unlinkSync(outTmp); } catch (err) { }
+        try { fs.unlinkSync(tmpIn); } catch (err) { }
       } catch (err) {
         callTrace('聊天视频压缩失败，用原文件：' + String(err && err.message || err).slice(0, 120));
       }
     }
     /* 上传目录里的东西一律加密落盘（以前这个口是直接写明文，重启才补加密） */
-    try {
-      await sealUploadInPlaceStreaming(name);
-    } catch (err) {
-      try { fs.unlinkSync(path.join(UPLOAD_DIR, name)); } catch (_) { }
-      return fail(res, 422, '文件加密落盘失败，请重试');
-    }
+    sealUploadInPlace(name);
     try {
       const uploaded = fs.statSync(path.join(UPLOAD_DIR, name));
       if (!uploaded.isFile() || uploaded.size <= 20) {

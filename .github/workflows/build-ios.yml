@@ -98,7 +98,6 @@ jobs:
           python3 tools/verify-search-recommendation.py
           python3 tools/verify-search-all.py
           python3 tools/verify-transfer-checkout.py
-          node server/test/transfer-kernel.test.js
           python3 tools/verify-transfer-kernel.py
           python3 tools/verify-payment-gold-card.py
           python3 tools/verify-wallet-layout.py
