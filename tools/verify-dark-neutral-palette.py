@@ -49,7 +49,7 @@ require(
     "let fill = scheme == .dark\n            ? C.tabBg" in MAIN_TAB
     and "appearance.configureWithTransparentBackground()" in TAB
     and "appearance.backgroundColor = .clear" in TAB
-    and "UIGlassEffect(style: .regular)" in TAB
+    and "private func tabBarGlassEffect() -> UIBlurEffect" in TAB
     and "UIBlurEffect(style: .systemChromeMaterial)" in TAB
     and "systemUltraThinMaterialDark" not in TAB
     and "TabGlassBackdrop" not in TAB,

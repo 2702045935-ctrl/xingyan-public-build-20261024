@@ -370,15 +370,7 @@ struct NativeTabBar: UIViewRepresentable {
         (bar as? CompactDotTabBar)?.clearsNativeBackdrop = false
     }
 
-    private func tabBarGlassEffect() -> UIVisualEffect {
-        if #available(iOS 26.0, *) {
-            let effect = UIGlassEffect(style: .regular)
-            effect.isInteractive = false
-            effect.tintColor = UIColor.white.withAlphaComponent(
-                scheme == .dark ? 0.018 : 0.045
-            )
-            return effect
-        }
+    private func tabBarGlassEffect() -> UIBlurEffect {
         return UIBlurEffect(style: .systemChromeMaterial)
     }
 
