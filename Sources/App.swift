@@ -2503,10 +2503,19 @@ final class AppState: ObservableObject {
     var unreadForIcon: Int {
         if let authoritativeUnreadTotal {
             let hiddenUnread = locallyHiddenUnread.values.reduce(0, +)
-            return min(999, max(0, authoritativeUnreadTotal - hiddenUnread))
+            let systemBotUnread = chats.reduce(0) { total, chat in
+                guard chat.botRank == 0, chat.muted != true else { return total }
+                return total + max(0, chat.unreadCount)
+            }
+            return min(
+                999,
+                max(0, authoritativeUnreadTotal - hiddenUnread - systemBotUnread)
+            )
         }
         var n = 0
-        for c in chats where c.muted != true { n += c.unreadCount }
+        for c in chats where c.muted != true && c.botRank != 0 {
+            n += c.unreadCount
+        }
         return min(999, max(0, n))
     }
 

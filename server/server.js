@@ -9660,6 +9660,9 @@ function unreadTotalOf(userId) {
   let n = 0;
   chatsOf(userId).forEach((c) => {
     if ((c.mutedFor || []).includes(userId)) return;
+    // botRank 0 is the assistant surface, not a row in the conversation list.
+    // Counting it creates a badge with no visible conversation to open.
+    if (Number(c.botRank) === 0) return;
     n += unreadCount(userId, c);
   });
   return Math.min(999, Math.max(0, n));

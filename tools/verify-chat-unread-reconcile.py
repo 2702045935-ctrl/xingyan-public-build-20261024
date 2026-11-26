@@ -50,8 +50,9 @@ require(
     "realtime chat changes must preserve the server total and apply only their own delta",
 )
 require(
-    "for c in chats where c.muted != true { n += c.unreadCount }" in APP,
-    "the fallback badge total must keep the same muted-session rule as the server",
+    "for c in chats where c.muted != true && c.botRank != 0" in APP
+    and "if (Number(c.botRank) === 0) return;" in SERVER,
+    "hidden assistant chats must not create a badge without a visible row",
 )
 require(
     "private var locallyHiddenUnread: [String: Int] = [:]" in APP
