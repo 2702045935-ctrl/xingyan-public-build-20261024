@@ -11,53 +11,36 @@ WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
 
 def require(condition: bool, message: str) -> None:
     if not condition:
-        raise SystemExit("chat message layout verification failed: " + message)
+        raise SystemExit("chat rich-text verification failed: " + message)
 
 
 require(
-    "private enum MessageRowVisual" in CHAT
-    and "static let senderFontSize: CGFloat = 11.5" in CHAT
-    and "pf(MessageRowVisual.senderFontSize, .medium)" in CHAT
-    and "spacing: MessageRowVisual.columnSpacing" in CHAT
-    and "static let sameRunGap: CGFloat = 4" in CHAT
-    and "static let runGap: CGFloat = 12" in CHAT,
-    "message rows must share one restrained sender and run-spacing grid",
+    "linked[range].font = pfStyled(size: richBaseFontSize, weight: .medium)" in CHAT
+    and "linked[range].underlineStyle = .single" in CHAT
+    and "private var richBaseFontSize: CGFloat" in CHAT
+    and "seg.font = pfStyled(size: richBaseFontSize, weight: .medium)" in CHAT
+    and "Color.dyn(0x0068D9, 0x64D2FF)" in CHAT
+    and "Color.dyn(0x0F8B65, 0x36CA95)" in CHAT
+    and "seg.foregroundColor = bubblePrimaryInk" in CHAT,
+    "links, mentions and code-like text must share one adaptive rich-text hierarchy",
 )
 require(
-    CHAT.count("padding(.horizontal, L.bubblePadH)") >= 8
-    and "L.bubblePadHPill" not in CHAT
-    and "padding(.vertical, L.bubblePadV)" in CHAT
-    and "return 2.5" in CHAT,
-    "text and generic cards must use one 13/10 padding and fixed 2.5 line rhythm",
+    "private func textLineSpacing(_ raw: String) -> CGFloat" in CHAT
+    and "let isLong = raw.count >= 120 || lineCount >= 5" in CHAT
+    and "padding(.horizontal, L.bubblePadHPill)" in CHAT
+    and "textWithInlineMetadata" not in CHAT
+    and "MessageRowVisual" not in CHAT,
+    "plain text, images and multi-image layout must remain on the stable baseline",
 )
 require(
-    "MessageRowVisual.onlineDot" in CHAT
-    and "MessageRowVisual.unreadBadge" in CHAT
-    and "MessageRowVisual.sameRunGap" in CHAT
-    and "MessageRowVisual.runGap" in CHAT
-    and "MessageRowVisual.directSameGap" in CHAT
-    and "MessageRowVisual.directRunGap" in CHAT,
-    "message status, avatar and vertical rhythm must share the system token set",
-)
-require(
-    "private var usesInlineTextMetadata: Bool" in CHAT
-    and "private func textWithInlineMetadata(_ raw: String) -> AttributedString" in CHAT
-    and "Text(textWithInlineMetadata(message.body))" in CHAT
-    and "Text(textWithInlineMetadata(raw))" in CHAT
-    and "showsOutsideDeliveryMetadata" in CHAT
-    and '"image", "images", "video", "livephoto", "transfer", "audio"' in CHAT,
-    "text metadata must flow with the message while media keeps a clean card",
-)
-require(
-    "min(maxBubbleWidth, max(210, L.width * 0.62))" in CHAT
-    and "min(maxBubbleWidth, max(220, L.width * 0.62))" in CHAT
-    and "let cardWidth = min(maxBubbleWidth, max(200, L.width * 0.58))" in CHAT
-    and "min(maxBubbleWidth, max(210, L.width * 0.56))" in CHAT,
-    "cards and utility bubbles must adapt to available screen width",
+    "ImageBubble(path: message.imagePath" in CHAT
+    and "imagesGridBubble" in CHAT
+    and "VideoBubble(message: message" in CHAT,
+    "image, multi-image and video message rendering must remain unchanged",
 )
 require(
     "python3 tools/verify-chat-message-system-layout.py" in WORKFLOW,
-    "chat message layout regression must run in the iOS gate",
+    "chat rich-text regression must run in the iOS gate",
 )
 
 print("chat-message-system-layout: passed")

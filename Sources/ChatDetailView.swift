@@ -4581,20 +4581,14 @@ struct ChatDetailView: View {
         guard i + 1 < messages.count else { return 4 }
         let next = messages[i + 1]
         if showTime(for: next) { return 0 }
-        if next.kindName == "system" || next.kindName == "pat" || next.isRecalled {
-            return MessageRowVisual.runGap
-        }
-        if message.kindName == "system" || message.kindName == "pat" || message.isRecalled {
-            return MessageRowVisual.runGap
-        }
+        if next.kindName == "system" || next.kindName == "pat" || next.isRecalled { return 12 }
+        if message.kindName == "system" || message.kindName == "pat" || message.isRecalled { return 12 }
         let same = (next.senderId ?? "") == (message.senderId ?? "")
 
         if isGroup {
-            return same ? MessageRowVisual.sameRunGap : MessageRowVisual.runGap
+            return same ? 4 : 12
         }
-        return same
-            ? UIConfig.num("msgGapSame", MessageRowVisual.directSameGap)
-            : UIConfig.num("msgGapOther", MessageRowVisual.directRunGap)
+        return same ? UIConfig.num("msgGapSame", 7) : UIConfig.num("msgGapOther", 15)
     }
 
     private var leftUnreadBadge: AnyView? {
@@ -4612,7 +4606,7 @@ struct ChatDetailView: View {
                     .frame(minWidth: 20, minHeight: 20)
                     .background(
                         Capsule(style: .continuous)
-                            .fill(MessageRowVisual.unreadBadge)
+                            .fill(Color(hex: 0x25D366))
                     )
                     .overlay(
                         Capsule(style: .continuous)
@@ -7737,19 +7731,6 @@ struct QuoteInspectSheet: View {
     }
 }
 
-private enum MessageRowVisual {
-    static var onlineDot: Color { Color.dyn(0x1FAE79, 0x36CA95) }
-    static var unreadBadge: Color { Color.dyn(0x0F8B65, 0x36CA95) }
-    static let senderFontSize: CGFloat = 11.5
-    static let senderLeading: CGFloat = 5
-    static let columnSpacing: CGFloat = 4
-    static let tickTrailing: CGFloat = 5
-    static let sameRunGap: CGFloat = 4
-    static let runGap: CGFloat = 12
-    static let directSameGap: CGFloat = 7
-    static let directRunGap: CGFloat = 15
-}
-
 private struct WhatsAppMessageTicks: View {
     let count: Int
     let color: Color
@@ -7899,7 +7880,7 @@ struct MessageRow: View {
             .overlay(alignment: .bottomTrailing) {
                 if senderOnline {
                     Circle()
-                        .fill(MessageRowVisual.onlineDot)
+                        .fill(Color(hex: 0x4FD229))
                         .frame(width: max(9, avatarSize * 0.27),
                                height: max(9, avatarSize * 0.27))
                         .overlay {
@@ -7928,13 +7909,12 @@ struct MessageRow: View {
     }
 
     private var bubbleColumn: some View {
-        VStack(alignment: mine ? .trailing : .leading,
-               spacing: MessageRowVisual.columnSpacing) {
+        VStack(alignment: mine ? .trailing : .leading, spacing: 2) {
             if !senderName.isEmpty {
 
                 HStack(spacing: 4) {
                     Text(senderName)
-                        .font(pf(MessageRowVisual.senderFontSize, .medium))
+                        .font(pf(12, .regular))
                         .foregroundColor(senderNameColor ?? (senderNameUsesLightInk
                                          ? ChatTheme.groupSenderNameOnDark
                                          : ChatTheme.groupSenderNameOnLight))
@@ -7945,13 +7925,11 @@ struct MessageRow: View {
                         QQLevelBadge(level: senderQQLevel, size: 11, maxIcons: 2).fixedSize()
                     }
                 }
-                .padding(.leading, MessageRowVisual.senderLeading)
+                .padding(.leading, 4)
             }
             content
 
             if mine,
-               !usesInlineTextMetadata,
-               showsOutsideDeliveryMetadata,
                !message.isRecalled,
                !message.isCallRecord,
                message.kindName != "system",
@@ -7961,8 +7939,8 @@ struct MessageRow: View {
                     WhatsAppMessageTicks(count: deliveryState.tickCount,
                                          color: deliveryState.color)
                 }
-                .padding(.trailing, MessageRowVisual.tickTrailing)
-                .offset(y: -1)
+                .padding(.trailing, 4)
+                .offset(y: -2)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(deliveryState.accessibilityText)
             }
@@ -8028,8 +8006,7 @@ struct MessageRow: View {
                 .stroke(C.green.opacity(0.22), lineWidth: 0.8)
         )
         .shadow(color: Color.black.opacity(0.06), radius: 5, x: 0, y: 2)
-        .frame(maxWidth: min(maxBubbleWidth, max(210, L.width * 0.62)),
-               alignment: .leading)
+        .frame(maxWidth: 240, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture {
             guard !asrText.isEmpty else { return }
@@ -8078,40 +8055,14 @@ struct MessageRow: View {
 
     private var bubbleMentionInk: Color {
         mine
-            ? Color.white.opacity(0.96)
-            : Color.dyn(0x576B95, 0x7D90A9)
+            ? Color.white.opacity(0.98)
+            : Color.dyn(0x0F8B65, 0x36CA95)
     }
 
     private var bubbleLinkInk: Color {
-        mine ? Color(hex: 0xEFFFFC) : ChatTheme.link
-    }
-
-    private var usesInlineTextMetadata: Bool {
-        message.kindName == "text"
-    }
-
-    private var showsOutsideDeliveryMetadata: Bool {
-        !["image", "images", "video", "livephoto", "transfer", "audio"]
-            .contains(message.kindName)
-    }
-
-    private func textWithInlineMetadata(_ raw: String) -> AttributedString {
-        var out = richBody(raw)
-        guard usesInlineTextMetadata else { return out }
-
-        var meta = AttributedString("  " + TimeFmt.messageClock(message.createdAt))
-        meta.font = pfStyled(size: 10.5, weight: .medium)
-        meta.foregroundColor = bubbleSecondaryInk.opacity(0.92)
-        out.append(meta)
-
-        if mine {
-            let count = deliveryState.tickCount
-            var ticks = AttributedString("  " + String(repeating: "✓", count: count))
-            ticks.font = .system(size: 10, weight: .semibold)
-            ticks.foregroundColor = deliveryState.color
-            out.append(ticks)
-        }
-        return out
+        mine
+            ? Color.white.opacity(0.98)
+            : Color.dyn(0x0068D9, 0x64D2FF)
     }
 
     private var quoteSurface: Color {
@@ -8170,7 +8121,7 @@ struct MessageRow: View {
                 Text(linkFallbackText(message.body))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadH)
+                    .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                 .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
@@ -8200,7 +8151,7 @@ struct MessageRow: View {
                      : Tr("[名片]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadH)
+                    .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
@@ -8217,7 +8168,7 @@ struct MessageRow: View {
                 Text(Tr("[音乐]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadH)
+                    .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
@@ -8232,7 +8183,7 @@ struct MessageRow: View {
                 Text(Tr("[商品]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadH)
+                    .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
@@ -8256,7 +8207,7 @@ struct MessageRow: View {
                 Text(Tr("[小游戏]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadH)
+                    .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
@@ -8269,7 +8220,7 @@ struct MessageRow: View {
                 Text(Tr("[通知]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadH)
+                    .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
@@ -8286,10 +8237,10 @@ struct MessageRow: View {
         default:
 
             if message.body.hasPrefix("{") {
-                Text(textWithInlineMetadata(unknownCardText(message.body)))
+                Text(unknownCardText(message.body))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadH)
+                    .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
                 } else if let q = message.quote {
@@ -8297,14 +8248,14 @@ struct MessageRow: View {
             quotedTextBubble(q, raw: message.body)
                 } else {
 
-            Text(textWithInlineMetadata(message.body))
+            Text(richBody(message.body))
                 .font(pf(L.chatFontSize))
 
                 .foregroundColor(bubblePrimaryInk)
                 .lineSpacing(textLineSpacing(message.body))
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, L.bubblePadH)
+                .padding(.horizontal, L.bubblePadHPill)
                 .padding(.vertical, L.bubblePadV)
                 .background(
                     BubbleFill(mine: mine, tail: showTail, glass: false)
@@ -8315,13 +8266,13 @@ struct MessageRow: View {
 
     private func quotedTextBubble(_ q: QuoteRef, raw: String) -> some View {
         VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
-            Text(textWithInlineMetadata(raw))
+            Text(richBody(raw))
                 .font(pf(L.chatFontSize))
                 .foregroundColor(bubblePrimaryInk)
                 .lineSpacing(textLineSpacing(raw))
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, L.bubblePadH)
+                .padding(.horizontal, L.bubblePadHPill)
                 .padding(.vertical, L.bubblePadV)
                 .background(BubbleFill(mine: mine, tail: showTail, glass: false))
 
@@ -8370,8 +8321,7 @@ struct MessageRow: View {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .stroke(quoteBorder, lineWidth: 0.5)
             }
-            .frame(maxWidth: min(maxBubbleWidth, max(220, L.width * 0.62)),
-                   alignment: mine ? .trailing : .leading)
+            .frame(maxWidth: 250, alignment: mine ? .trailing : .leading)
         }
     }
 
@@ -8407,9 +8357,17 @@ struct MessageRow: View {
         let linkRanges = linked.runs.compactMap { $0.link == nil ? nil : $0.range }
         for range in linkRanges {
             linked[range].foregroundColor = bubbleLinkInk
+            linked[range].font = pfStyled(size: richBaseFontSize, weight: .medium)
             linked[range].underlineStyle = .single
         }
         return linked
+    }
+
+    private var richBaseFontSize: CGFloat {
+        let preferredSize = L.chatFontSize * fontScale * CareMode.scale
+        return max(12, UIFontMetrics(forTextStyle: .body)
+            .scaledValue(for: preferredSize)
+            .rounded())
     }
 
     private func linkFallbackText(_ raw: String) -> String {
@@ -8434,8 +8392,14 @@ struct MessageRow: View {
         return Tr("[卡片消息]")
     }
 
-    private func textLineSpacing(_: String) -> CGFloat {
-        return 2.5
+    private func textLineSpacing(_ raw: String) -> CGFloat {
+        let lineCount = raw.reduce(1) { count, character in
+            count + (character == "\n" ? 1 : 0)
+        }
+        let isLong = raw.count >= 120 || lineCount >= 5
+        let preferred: CGFloat = isLong ? 3.2 : 2.4
+        let configured = max(2.2, min(3.2, L.msgLineSpacing))
+        return min(preferred, configured)
     }
 
     private func richBody(_ raw: String) -> AttributedString {
@@ -8447,10 +8411,7 @@ struct MessageRow: View {
         let atMe = message.mentionsUser(myId)
         let mineNames = atMe ? myMentionNames : []
 
-        let preferredSize = L.chatFontSize * fontScale * CareMode.scale
-        let baseSize = max(12, UIFontMetrics(forTextStyle: .body)
-            .scaledValue(for: preferredSize)
-            .rounded())
+        let baseSize = richBaseFontSize
         let mono = Font.system(size: baseSize, weight: .regular, design: .monospaced)
         let base = pfStyled(baseSize)
         var out = AttributedString()
@@ -8460,10 +8421,10 @@ struct MessageRow: View {
             if RichText.looksLikeCode(line) {
                 var seg = AttributedString(line)
                 seg.font = mono
+                seg.foregroundColor = bubblePrimaryInk
                 out += seg
             } else if line.contains("@") || line.contains("http") {
-                var seg = decorateLine(line, atMe: atMe, mineNames: mineNames)
-                seg.font = base
+                let seg = decorateLine(line, atMe: atMe, mineNames: mineNames)
                 out += seg
             } else {
                 var seg = AttributedString(line)
@@ -8485,6 +8446,7 @@ struct MessageRow: View {
                 while j < s.endIndex, !isMentionStop(s[j]) { j = s.index(after: j) }
                 let token = String(s[i..<j])
                 var seg = AttributedString(token)
+                seg.font = pfStyled(size: richBaseFontSize, weight: .medium)
                 let name = String(token.dropFirst())
                 if atMe && mineNames.contains(name) {
                     seg.foregroundColor = bubbleMentionInk
@@ -8523,7 +8485,6 @@ struct MessageRow: View {
         let name = (o["name"] as? String) ?? "位置"
         let addr = (o["addr"] as? String) ?? ""
         let pt = LocationPoint(lat: lat, lng: lng, name: name, addr: addr)
-        let cardWidth = min(maxBubbleWidth, max(200, L.width * 0.58))
         return VStack(spacing: 0) {
 
             MapSnapshotView(point: pt, width: 216, height: 136)
@@ -8536,7 +8497,7 @@ struct MessageRow: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
         }
-        .frame(width: cardWidth)
+        .frame(width: 216)
 
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
 
@@ -9079,9 +9040,7 @@ struct MessageRow: View {
                 .foregroundColor(ChatTheme.secondary.opacity(0.7))
         }
         .padding(.horizontal, 13)
-        .frame(width: min(maxBubbleWidth, max(210, L.width * 0.56)),
-               height: 72,
-               alignment: .leading)
+        .frame(width: min(224, maxBubbleWidth), height: 72, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 15, style: .continuous)
                 .fill(.regularMaterial)
@@ -9112,7 +9071,7 @@ struct MessageRow: View {
                 }
             }
         }
-        .padding(.horizontal, L.bubblePadH)
+        .padding(.horizontal, L.bubblePadHPill)
         .padding(.vertical, L.bubblePadV)
         .background(
             BubbleFill(mine: mine, tail: showTail)
