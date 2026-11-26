@@ -118,6 +118,7 @@ jobs:
           python3 tools/verify-sent-media-instant.py
           python3 tools/verify-media-visible-pause.py
           python3 tools/verify-media-glass-controls.py
+          python3 tools/verify-call-record-material.py
           python3 tools/verify-profile-info-system.py
           python3 tools/verify-group-preview.py
           python3 tools/verify-contacts-whatsapp.py

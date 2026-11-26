@@ -6096,7 +6096,7 @@ private struct StarredPayload: Decodable {
         return (url, payload.name ?? "", payload.bytes ?? 0)
     }
 
-    struct TransferPayment: Decodable, Identifiable, Hashable {
+    struct TransferPayment: Codable, Identifiable, Hashable {
         var id: String
         var chatId: String?
         var fromId: String?

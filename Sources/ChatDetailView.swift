@@ -7548,26 +7548,115 @@ struct CallRecordBubble: View {
     let message: Message
     let mine: Bool
 
+    @Environment(\.colorScheme) private var scheme
+
     var body: some View {
-        HStack(spacing: 6) {
-            Text(message.callText)
-                .font(pf(L.chatFontSize))
-                .foregroundColor(ink)
-            callIcon
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(accent.opacity(scheme == .dark ? 0.17 : 0.10))
+                    .frame(width: 38, height: 38)
+                callIcon
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(message.callText)
+                    .font(pf(14.5, .medium))
+                    .foregroundColor(ChatTheme.ink)
+                    .lineLimit(2)
+                Text(callSubtitle)
+                    .font(pf(11.5))
+                    .foregroundColor(PayVisual.secondaryInk)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(Tr("重拨"))
+                    .font(pf(11.5, .medium))
+            }
+            .foregroundColor(accent)
+            .padding(.horizontal, 8)
+            .frame(height: 26)
+            .background(accent.opacity(scheme == .dark ? 0.12 : 0.075),
+                        in: Capsule(style: .continuous))
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .background(BubbleFill(mine: mine))
-        .frame(maxWidth: L.bubbleMaxW, alignment: mine ? .trailing : .leading)
+        .padding(.vertical, 10)
+        .frame(maxWidth: min(L.bubbleMaxW, 286), alignment: mine ? .trailing : .leading)
+        .background {
+            ZStack {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.dyn(0xFFFFFF, 0x101214).opacity(scheme == .dark ? 0.30 : 0.52))
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                accent.opacity(scheme == .dark ? 0.08 : 0.045),
+                                Color.clear,
+                                Color.black.opacity(scheme == .dark ? 0.08 : 0.015)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(scheme == .dark ? 0.16 : 0.58),
+                            Color.primary.opacity(scheme == .dark ? 0.08 : 0.055)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.7
+                )
+        }
+        .shadow(color: Color.black.opacity(scheme == .dark ? 0.20 : 0.07),
+                radius: 10, y: 3)
         .accessibilityElement(children: .combine)
+        .accessibilityLabel(message.callText + "，" + callSubtitle + "，" + Tr("重拨"))
+    }
+
+    private var callSubtitle: String {
+        let media = message.isVideoCall ? Tr("视频通话") : Tr("语音通话")
+        return media + " · " + (mine ? Tr("呼出") : Tr("呼入"))
+    }
+
+    private var accent: Color {
+        let source = message.body + " " + (message.call?.state ?? "")
+        if source.contains("通话时长") || source.contains("hangup") {
+            return PayVisual.success
+        }
+        if source.contains("忙线") || source.contains("无应答")
+            || source.contains("不在线") || source.contains("busy")
+            || source.contains("offline") || source.contains("timeout") {
+            return PayVisual.warning
+        }
+        if source.contains("已取消") || source.contains("cancel") {
+            return PayVisual.secondaryInk
+        }
+        if message.isBadCallRecord {
+            return PayVisual.danger
+        }
+        return PayVisual.tint
     }
 
     private var callIcon: some View {
         CallIcon(key: callIconKey,
                  symbol: message.isVideoCall ? "video.fill" : "phone.fill",
                  builtin: callIconMarkup,
-                 size: 15,
-                 color: ink)
+                 size: 16,
+                 color: accent)
     }
 
     private var callIconKey: String {
@@ -7584,9 +7673,6 @@ struct CallRecordBubble: View {
         return message.isVideoCall ? I.callRecordVideo : I.callRecord
     }
 
-    private var ink: Color {
-        message.isBadCallRecord ? ChatTheme.mentionMe : ChatTheme.ink
-    }
 }
 
 private struct QuoteInspectItem: Identifiable {
@@ -7720,6 +7806,8 @@ struct MessageRow: View {
     let message: Message
     let mine: Bool
     var deliveryState: MessageDeliveryState = .sent
+
+    @Environment(\.colorScheme) private var scheme
 
     var myId: String = ""
     var senderName: String = ""
