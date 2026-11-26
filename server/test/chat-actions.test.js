@@ -87,6 +87,46 @@ async function login(base, username) {
   return { cookie, user: response.data.user };
 }
 
+function openSocket(base, cookie) {
+  const pair = String(cookie || '').split(';')
+    .map((part) => part.trim())
+    .find((part) => part.includes('=')) || '';
+  const token = pair.slice(pair.indexOf('=') + 1);
+  assert.ok(token, '登录 Cookie 中没有实时通道令牌');
+  const events = [];
+  const socket = new WebSocket(
+    base.replace(/^http/, 'ws') + '/?token=' + encodeURIComponent(token)
+  );
+  socket.addEventListener('message', (event) => {
+    try { events.push(JSON.parse(String(event.data || ''))); } catch (_) {}
+  });
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('实时通道连接超时')), 5000);
+    socket.addEventListener('error', () => {
+      clearTimeout(timer);
+      reject(new Error('实时通道连接失败'));
+    });
+    socket.addEventListener('message', (event) => {
+      try {
+        if (JSON.parse(String(event.data || '')).type === 'ready') {
+          clearTimeout(timer);
+          resolve({ socket, events });
+        }
+      } catch (_) {}
+    });
+  });
+}
+
+async function waitForEvent(events, predicate, timeoutMs) {
+  const deadline = Date.now() + (timeoutMs || 2000);
+  while (Date.now() < deadline) {
+    const event = events.find(predicate);
+    if (event) return event;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error('等待实时消息事件超时');
+}
+
 async function main() {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'chris-chat-actions-'));
   const port = await freePort();
@@ -197,6 +237,34 @@ async function main() {
     assert.equal(response.status, 200, JSON.stringify(response.data));
     assert.ok((response.data.moments || []).some((moment) => moment.id === friendMomentId),
       '好友发布的动态必须出现在生活圈：' + JSON.stringify(response.data));
+
+    const invisibleDelivery = await openSocket(base, alice.cookie);
+    try {
+      response = await call(base, alice.cookie, 'POST', '/api/me/status', {
+        status: 'invisible'
+      });
+      assert.equal(response.status, 200, JSON.stringify(response.data));
+      response = await call(base, bob.cookie, 'POST',
+        '/api/chats/' + directId + '/messages',
+        { kind: 'text', content: '隐身状态实时送达回归' });
+      assert.equal(response.status, 200, JSON.stringify(response.data));
+      await waitForEvent(
+        invisibleDelivery.events,
+        (event) => event.type === 'message'
+          && event.message
+          && event.message.content === '隐身状态实时送达回归',
+        1500
+      );
+    } finally {
+      invisibleDelivery.socket.close();
+      response = await call(base, alice.cookie, 'POST', '/api/me/status', {
+        status: 'online'
+      });
+      assert.equal(response.status, 200, JSON.stringify(response.data));
+    }
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/' + directId + '/read', {});
+    assert.equal(response.status, 200, JSON.stringify(response.data));
 
     response = await call(base, alice.cookie, 'GET', '/api/chats');
     assert.equal(response.status, 200, JSON.stringify(response.data));

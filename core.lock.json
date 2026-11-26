@@ -8,8 +8,8 @@
     },
     {
       "path": "Sources/App.swift",
-      "size": 210674,
-      "sha256": "63a98c46c6c8be6b6a6989fea5e112411066c468a5e86e2153d5e5b83ca04481"
+      "size": 212748,
+      "sha256": "f5016af4962f0ef43835e0c675d85f02dcc58f84c3fd04dab3efbb49b984f80f"
     },
     {
       "path": "Sources/Realtime.swift",
@@ -155,6 +155,11 @@
       "path": "Sources/WhatsAppChatLayout.swift",
       "size": 4914,
       "sha256": "8fde3efba73ebe9663f268b2b6c82830ea2f01a2aa922732146272d8ca01069f"
+    },
+    {
+      "path": "Sources/ChatUnreadKernel.swift",
+      "size": 3063,
+      "sha256": "59f66a96f27e668309b78e5c449d6c3ae4fc3d1afddb4468f366ebe91b127005"
     }
   ]
 }

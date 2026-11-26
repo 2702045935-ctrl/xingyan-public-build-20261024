@@ -8966,6 +8966,23 @@ function localOnlineIds() {
   );
 }
 
+/** Delivery truth must not depend on a user's visible presence mode. */
+function deliveryOnlineIds() {
+  const out = [];
+  connections.forEach((set, userId) => {
+    let alive = false;
+    set.forEach((socket) => { if (socket && !socket.destroyed) alive = true; });
+    if (alive) out.push(userId);
+  });
+  return out;
+}
+
+function deliveryPresenceSet() {
+  const out = new Set(deliveryOnlineIds());
+  peerOnlineCache.forEach((set) => set.forEach((id) => out.add(id)));
+  return out;
+}
+
 function onlinePresenceSet() {
   const out = new Set(localOnlineIds());
   peerOnlineCache.forEach((set) => set.forEach((id) => out.add(id)));
@@ -8985,7 +9002,7 @@ function onlineShardPorts(userId) {
 }
 
 function onlineMembersOfChat(chat, online) {
-  const presence = online || onlinePresenceSet();
+  const presence = online || deliveryPresenceSet();
   const memberIds = (chat && Array.isArray(chat.memberIds)) ? chat.memberIds : [];
   if (memberIds.length <= presence.size) {
     return memberIds.filter((id) => presence.has(id));
@@ -9101,12 +9118,13 @@ function sendToChat(chat, payload, exceptUserId) {
 }
 
 function fanoutChatMessage(chat, message, sender, clientId) {
-  const online = onlinePresenceSet();
+  const deliveryOnline = deliveryPresenceSet();
+  const visibleOnline = onlinePresenceSet();
   const memberPreviewIds = chat.type === 'group'
     ? chat.memberIds.slice(0, 64)
     : chat.memberIds;
-  const recipients = onlineMembersOfChat(chat, online);
-  const sharedOnlineMemberIds = memberPreviewIds.filter((id) => online.has(id));
+  const recipients = onlineMembersOfChat(chat, deliveryOnline);
+  const sharedOnlineMemberIds = memberPreviewIds.filter((id) => visibleOnline.has(id));
   if (chat.type === 'group' && chat.memberIds.length > 512) {
     const senderName = memberAlias(chat, sender.id)
       || sender.nickname
@@ -9118,7 +9136,7 @@ function fanoutChatMessage(chat, message, sender, clientId) {
   }
   const messageRows = loadMessages(chat.id);
   const summaryContext = {
-    online,
+    online: visibleOnline,
     memberPreviewIds,
     messageRows
   };
@@ -10563,7 +10581,7 @@ function handleClientMessage(user, socket, raw) {
         } catch (err) { }
         return callSend(user.id, { type: 'call-error', callId, error: '先加为好友才能通话' });
       }
-      const targetOnline = onlinePresenceSet().has(target.id);
+      const targetOnline = deliveryPresenceSet().has(target.id);
       callTrace('invite ' + user.id + ' -> ' + target.id + ' media=' + (msg.media === 'video' ? 'video' : 'audio')
         + ' 对方在线=' + targetOnline
         + ' 主叫版本=' + (socket.__appBuild || '?')
@@ -26361,7 +26379,7 @@ async function handleHttpRequest(req, res) {
       if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
         return fail(res, 403, '禁止访问');
       }
-      return ok(res, { online: localOnlineIds() });
+      return ok(res, { online: deliveryOnlineIds() });
     }
     /* 被封的 IP：接口和上传文件一律 403；静态页面还让过，
        这样正常用户只是看到「操作失败」，不会整个 App 白屏。

@@ -539,7 +539,6 @@ final class AppState: ObservableObject {
             }
 
             let cid = ev.chatId
-            let isOpenChat = !cid.isEmpty && openChat?.id == cid
             if let incoming = ev.chat {
                 if isDismissedGroup(incoming) {
                     hideChatLocally(incoming.id)
@@ -559,15 +558,9 @@ final class AppState: ObservableObject {
             let immediate = ev.chat ?? (cid.isEmpty
                 ? nil
                 : chats.first(where: { $0.id == cid }))
-            if immediate != nil, !isOpenChat {
-                notifyIncomingRow(immediate)
-            } else if immediate == nil {
+            if immediate == nil {
                 coalesce { [weak self] in
                     await self?.loadChats()
-                    guard let self else { return }
-                    self.notifyIncomingRow(cid.isEmpty
-                        ? nil
-                        : self.chats.first(where: { $0.id == cid }))
                 }
             }
         case "transfer":
@@ -669,6 +662,18 @@ final class AppState: ObservableObject {
         default:
             break
         }
+    }
+
+    private func reconcileIncomingNotification(previous: Chat?,
+                                               current: Chat?,
+                                               allowNewChat: Bool) {
+        guard ChatUnreadKernel.shouldNotify(
+            previous: previous,
+            current: current,
+            openChatId: openChat?.id,
+            allowNewChat: allowNewChat
+        ) else { return }
+        notifyIncomingRow(current)
     }
 
     private func notifyIncomingRow(_ c: Chat?) {
@@ -1070,7 +1075,9 @@ final class AppState: ObservableObject {
             while !Task.isCancelled {
                 await self?.refreshDotCounts()
                 let active = UIApplication.shared.applicationState == .active
-                let delay: UInt64 = active ? 3_000_000_000 : 15_000_000_000
+                let delay = active
+                    ? ChatUnreadKernel.foregroundRecoveryDelay
+                    : ChatUnreadKernel.backgroundRecoveryDelay
                 try? await Task.sleep(nanoseconds: delay)
             }
         }
@@ -1079,6 +1086,7 @@ final class AppState: ObservableObject {
         let epoch = accountEpoch
         guard isCurrentAccount(epoch), let d = await API.shared.badgeCounts() else { return }
         guard isCurrentAccount(epoch) else { return }
+        let previousById = Dictionary(uniqueKeysWithValues: chats.map { ($0.id, $0) })
         if d.friendRequests != friendRequests {
             friendRequests = d.friendRequests
             await loadContacts()
@@ -1110,6 +1118,13 @@ final class AppState: ObservableObject {
             let merged = applyLocalRemarksToChats(orderedChatsForList(combined))
             if !AppState.sameChats(chats, merged) {
                 chats = merged
+            }
+            for row in merged where serverRows[row.id] != nil {
+                reconcileIncomingNotification(
+                    previous: previousById[row.id],
+                    current: row,
+                    allowNewChat: true
+                )
             }
         }
         authoritativeUnreadTotal = d.unreadTotal
@@ -1353,7 +1368,13 @@ final class AppState: ObservableObject {
 
                     if let latestChat,
                        let index = chats.firstIndex(where: { $0.id == latestChat.id }) {
-                        chats[index] = mergeServerChat(latestChat, local: chats[index])
+                        let previousRow = chats[index]
+                        chats[index] = mergeServerChat(latestChat, local: previousRow)
+                        reconcileIncomingNotification(
+                            previous: previousRow,
+                            current: chats[index],
+                            allowNewChat: false
+                        )
                     }
 
                     guard reachedTip, !fetched.isEmpty else { continue }
@@ -1447,6 +1468,7 @@ final class AppState: ObservableObject {
 
     func loadChats() async {
         let epoch = accountEpoch
+        let previousById = Dictionary(uniqueKeysWithValues: chats.map { ($0.id, $0) })
         let chatGeneration = beginChatSnapshot()
         let showInitialLoading = chats.isEmpty && !loadingChats
         if showInitialLoading { loadingChats = true }
@@ -1476,6 +1498,13 @@ final class AppState: ObservableObject {
             if !AppState.sameChats(chats, merged) { chats = merged }
             LocalStore.saveChatList(chats, userId: userId)
             prefetchChatAvatars(merged)
+            for row in merged {
+                reconcileIncomingNotification(
+                    previous: previousById[row.id],
+                    current: row,
+                    allowNewChat: false
+                )
+            }
             loadError = nil
         } catch {
             loadError = nil
@@ -2275,23 +2304,22 @@ final class AppState: ObservableObject {
         locallyHiddenUnread.removeValue(forKey: incoming.id)
         var rows = chats
         let previous = rows.first(where: { $0.id == incoming.id })
-        let chatIsOpen = openChat?.id == incoming.id
         var updated = incoming
         if let index = rows.firstIndex(where: { $0.id == incoming.id }) {
             let current = rows[index]
             let currentMid = current.lastMessage?.id ?? ""
             let incomingMid = incoming.lastMessage?.id ?? ""
             var merged = mergeServerChat(incoming, local: current)
-            if chatIsOpen {
-                merged.unread = 0
-                merged.flagged = false
-            } else if let sender = incoming.lastMessage?.senderId, sender != me?.id,
-               !incomingMid.isEmpty, incomingMid != currentMid,
-               incoming.unreadCount <= current.unreadCount {
-                merged.unread = current.unreadCount + 1
-            } else {
-                merged.unread = max(current.unreadCount, incoming.unreadCount)
-            }
+            merged.unread = ChatUnreadKernel.realtimeUnread(
+                current: current.unreadCount,
+                incoming: incoming.unreadCount,
+                previousMessageId: currentMid,
+                newMessageId: incomingMid,
+                senderIsMe: incoming.lastMessage?.senderId == me?.id,
+                openChatId: openChat?.id,
+                chatId: incoming.id
+            )
+            if openChat?.id == incoming.id { merged.flagged = false }
             rows[index] = merged
             updated = merged
             if let sender = incoming.lastMessage?.senderId, sender != me?.id {
@@ -2299,10 +2327,16 @@ final class AppState: ObservableObject {
                 optimisticAt[incoming.id] = Date()
             }
         } else {
-            if chatIsOpen {
-                updated.unread = 0
-                updated.flagged = false
-            }
+            updated.unread = ChatUnreadKernel.realtimeUnread(
+                current: 0,
+                incoming: incoming.unreadCount,
+                previousMessageId: "",
+                newMessageId: incoming.lastMessage?.id ?? "",
+                senderIsMe: incoming.lastMessage?.senderId == me?.id,
+                openChatId: openChat?.id,
+                chatId: incoming.id
+            )
+            if openChat?.id == incoming.id { updated.flagged = false }
             rows.insert(updated, at: 0)
             if let sender = incoming.lastMessage?.senderId, sender != me?.id {
                 optimisticChats[incoming.id] = updated
@@ -2312,6 +2346,11 @@ final class AppState: ObservableObject {
         chats = orderedChatsForList(rows)
         adjustAuthoritativeUnread(from: previous, to: updated)
         syncIconBadge()
+        reconcileIncomingNotification(
+            previous: previous,
+            current: updated,
+            allowNewChat: true
+        )
     }
 
     /// 兼容只带 message、没有 chat 摘要的实时事件。
@@ -2323,14 +2362,26 @@ final class AppState: ObservableObject {
               chats[index].lastMessage?.id == message.id,
               chats[index].unreadCount == 0 else { return }
         let before = chats[index]
-        chats[index].unread = 1
+        let nextUnread = ChatUnreadKernel.unreadAfterReceivingMessage(
+            current: 0,
+            isNewMessage: true,
+            senderIsMe: false,
+            openChatId: openChat?.id,
+            chatId: id
+        )
+        chats[index].unread = nextUnread
         adjustAuthoritativeUnread(from: before, to: chats[index])
         if var optimistic = optimisticChats[id],
            optimistic.lastMessage?.id == message.id {
-            optimistic.unread = 1
+            optimistic.unread = nextUnread
             optimisticChats[id] = optimistic
         }
         syncIconBadge()
+        reconcileIncomingNotification(
+            previous: before,
+            current: chats[index],
+            allowNewChat: false
+        )
     }
 
     private func applyRealtimeMessage(_ message: Message, chatId: String,
@@ -2355,9 +2406,14 @@ final class AppState: ObservableObject {
         guard shouldAdvance else { return }
 
         var row = before
-        if countUnread, !sameMessage, message.senderId != me?.id,
-           openChat?.id != id {
-            row.unread = row.unreadCount + 1
+        if countUnread {
+            row.unread = ChatUnreadKernel.unreadAfterReceivingMessage(
+                current: row.unreadCount,
+                isNewMessage: !sameMessage,
+                senderIsMe: message.senderId == me?.id,
+                openChatId: openChat?.id,
+                chatId: id
+            )
         }
         var preview = Self.realtimePreview(message)
         if row.type == "group", message.senderId != me?.id,
@@ -2382,6 +2438,11 @@ final class AppState: ObservableObject {
         optimisticChats[id] = row
         optimisticAt[id] = Date()
         syncIconBadge()
+        reconcileIncomingNotification(
+            previous: before,
+            current: row,
+            allowNewChat: false
+        )
     }
 
     private static func realtimePreview(_ message: Message) -> String {
@@ -2514,18 +2575,11 @@ final class AppState: ObservableObject {
     }
 
     var unreadForIcon: Int {
-        if let authoritativeUnreadTotal {
-            let hiddenUnread = locallyHiddenUnread.values.reduce(0, +)
-            return min(
-                999,
-                max(0, authoritativeUnreadTotal - hiddenUnread)
-            )
-        }
-        var n = 0
-        for c in chats where c.muted != true && c.botRank != 0 {
-            n += c.unreadCount
-        }
-        return min(999, max(0, n))
+        ChatUnreadKernel.iconValue(
+            authoritativeTotal: authoritativeUnreadTotal,
+            locallyHiddenUnread: locallyHiddenUnread.values.reduce(0, +),
+            chats: chats
+        )
     }
 
     func syncIconBadge() {

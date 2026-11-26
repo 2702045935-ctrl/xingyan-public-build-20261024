@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
+KERNEL = (ROOT / "Sources" / "ChatUnreadKernel.swift").read_text(encoding="utf-8")
 REALTIME = (ROOT / "Sources" / "Realtime.swift").read_text(encoding="utf-8")
 LOCAL_NOTIFY = (ROOT / "Sources" / "LocalNotify.swift").read_text(encoding="utf-8")
 SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
@@ -56,26 +57,45 @@ require(
     "older conversation-list responses must not overwrite a newer live state",
 )
 require(
-    "let delay: UInt64 = active ? 3_000_000_000 : 15_000_000_000" in APP
+    "static let foregroundRecoveryDelay: UInt64 = 3_000_000_000" in KERNEL
+    and "static let backgroundRecoveryDelay: UInt64 = 15_000_000_000" in KERNEL
+    and "ChatUnreadKernel.foregroundRecoveryDelay" in APP
+    and "ChatUnreadKernel.backgroundRecoveryDelay" in APP
     and "await self?.refreshDotCounts()\n                await self?.syncRecentMessages"
     in APP,
     "foreground badge recovery must be fast and run immediately after realtime reconnect",
 )
 require(
-    "let chatIsOpen = openChat?.id == incoming.id" in APP
-    and "if chatIsOpen {\n                merged.unread = 0" in APP
-    and "openChat?.id != id" in APP
-    and "if immediate != nil, !isOpenChat" in APP,
-    "messages for the visible conversation must never flash an unread badge or notification",
+    "static func realtimeUnread(" in KERNEL
+    and "guard openChatId != chatId else { return 0 }" in KERNEL
+    and "ChatUnreadKernel.realtimeUnread(" in APP
+    and "ChatUnreadKernel.unreadAfterReceivingMessage(" in APP
+    and "private func reconcileIncomingNotification(" in APP
+    and "ChatUnreadKernel.shouldNotify(" in APP
+    and APP.count("reconcileIncomingNotification(") >= 5
+    and "notifyIncomingRow(immediate)" not in APP,
+    "all native message sources must share one unread and notification transition kernel",
 )
 require(
-    "max(0, authoritativeUnreadTotal - hiddenUnread)" in APP
-    and "authoritativeUnreadTotal - hiddenUnread - systemBotUnread" not in APP,
-    "the server badge total must be authoritative without subtracting excluded chats twice",
+    "static func iconValue(" in KERNEL
+    and "return clamp(authoritativeTotal - max(0, locallyHiddenUnread))" in KERNEL
+    and "ChatUnreadKernel.iconValue(" in APP
+    and "systemBotUnread" not in APP,
+    "all badge surfaces must use the authoritative native unread kernel",
 )
 require(
     "let iconBadge = max(0, min(999, badge))" in LOCAL_NOTIFY,
     "a zero badge must clear instead of being forced back to one",
+)
+require(
+    "function deliveryOnlineIds()" in SERVER
+    and "function deliveryPresenceSet()" in SERVER
+    and "const deliveryOnline = deliveryPresenceSet();" in SERVER
+    and "const visibleOnline = onlinePresenceSet();" in SERVER
+    and "const recipients = onlineMembersOfChat(chat, deliveryOnline);" in SERVER
+    and "online: visibleOnline," in SERVER
+    and "return ok(res, { online: deliveryOnlineIds() });" in SERVER,
+    "message delivery must be independent from visible online-status mode",
 )
 require(
     "const index = (summaryContext && summaryContext.mentionIndex)" in SERVER
