@@ -23,7 +23,9 @@ require("let recent = mergeServerChats(d.recentChats)" in APP
         and "combined.append(row)" in APP,
         "foreground badge polling must reconcile partial recent snapshots without dropping chats")
 require(
-    "let serverRows = Dictionary(uniqueKeysWithValues: d.recentChats.map { ($0.id, $0) })" in APP
+    "let serverRows = Dictionary(" in APP
+    and "d.recentChats.map { ($0.id, $0) }" in APP
+    and "uniquingKeysWith: { _, latest in latest }" in APP
     and "out.unread = server.unread" in APP
     and "out.flagged = server.flagged" in APP
     and "optimisticChats[row.id] = nil" in APP,
