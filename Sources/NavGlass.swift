@@ -215,6 +215,7 @@ struct NativeTopGlassMask: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         Group {
