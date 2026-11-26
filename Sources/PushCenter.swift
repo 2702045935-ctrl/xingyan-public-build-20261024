@@ -23,16 +23,6 @@ final class PushCenter: NSObject, ObservableObject, UIApplicationDelegate, UNUse
     }
 
     func application(_ application: UIApplication,
-                     handleEventsForBackgroundURLSession identifier: String,
-                     completionHandler: @escaping () -> Void) {
-        guard identifier == "com.chris.chatnative.transfer" else {
-            completionHandler()
-            return
-        }
-        TransferBackgroundSession.shared.handleEventsCompletion(completionHandler)
-    }
-
-    func application(_ application: UIApplication,
                      supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
         Self.supportedOrientations
     }
