@@ -1817,7 +1817,7 @@ final class API {
 
     private(set) var token: String = ""
 
-    private(set) var server: String = API.legacyDirectServer
+    private(set) var server: String = API.publicIngressServer
 
     private(set) var backups: [String] = API.builtinBackups
 
@@ -1865,6 +1865,7 @@ final class API {
 
     static let builtinBackups: [String] = []
     private static let retiredEndpoints: Set<String> = [
+        "43.242.194.89:8443",
         "43.242.194.89:443",
         "43.242.194.89:5443",
         "u.598218.xyz:8443",
@@ -1902,8 +1903,8 @@ final class API {
            !API.retiredEndpoints.contains(API.normalizeServer(saved)),
             API.trustedHost(saved) {
             let normalized = API.normalizeServer(saved)
-            if normalized == API.publicIngressServer {
-                server = API.legacyDirectServer
+            if normalized == API.legacyDirectServer {
+                server = API.publicIngressServer
                 UserDefaults.standard.set(server, forKey: "chris.server")
             } else {
                 server = normalized
@@ -2191,8 +2192,13 @@ final class API {
 
     var diagCandidates: [String] { candidates }
 
-    private func request(_ method: String, _ path: String, body: [String: Any]? = nil, retried: Bool = false) async throws -> Any {
-        guard let url = URL(string: base + path) else {
+    private func request(_ method: String,
+                         _ path: String,
+                         body: [String: Any]? = nil,
+                         retried: Bool = false,
+                         direct: Bool = false) async throws -> Any {
+        let root = direct ? API.directUploadBases[0] : base
+        guard let url = URL(string: root + path) else {
             throw APIError.message("服务器地址不正确")
         }
         let requestToken = token
@@ -2225,7 +2231,7 @@ final class API {
             offline = false
         } catch {
 
-            if !retried, API.isConnectivity(error), rotateEndpoint() {
+            if !retried, API.isConnectivity(error), !direct, rotateEndpoint() {
                 return try await request(method, path, body: body, retried: true)
             }
             if API.isConnectivity(error) { offline = true }
@@ -2403,8 +2409,10 @@ final class API {
         return dir.appendingPathComponent("chris-offline", isDirectory: true)
     }
 
-    private func post<T: Decodable>(_ path: String, _ body: [String: Any], as type: T.Type) async throws -> T {
-        let any = try await request("POST", path, body: body)
+    private func post<T: Decodable>(_ path: String, _ body: [String: Any],
+                                    as type: T.Type,
+                                    direct: Bool = false) async throws -> T {
+        let any = try await request("POST", path, body: body, direct: direct)
         return try decode(any, as: T.self)
     }
 
@@ -4159,7 +4167,8 @@ private struct StarredPayload: Decodable {
     func send(chatId: String, text: String) async throws -> Message? {
         let payload: MessagePayload = try await post("/api/chats/\(chatId)/messages",
                                                      ["kind": "text", "content": text],
-                                                     as: MessagePayload.self)
+                                                     as: MessagePayload.self,
+                                                     direct: true)
         return payload.message
     }
 
@@ -5886,7 +5895,8 @@ private struct StarredPayload: Decodable {
         if let q = quote, !q.isEmpty { body["quote"] = q }
         let payload: MessagePayload = try await post("/api/chats/\(chatId)/messages",
                                                      body,
-                                                     as: MessagePayload.self)
+                                                     as: MessagePayload.self,
+                                                     direct: true)
         return payload.message
     }
 
@@ -5899,7 +5909,8 @@ private struct StarredPayload: Decodable {
         if let q = quote, !q.isEmpty { body["quote"] = q }
         let payload: MessagePayload = try await post("/api/chats/\(chatId)/messages",
                                                      body,
-                                                     as: MessagePayload.self)
+                                                     as: MessagePayload.self,
+                                                     direct: true)
         return payload.message
     }
 
@@ -6008,7 +6019,7 @@ private struct StarredPayload: Decodable {
             body["videoW"] = videoW
             body["videoH"] = videoH
         }
-        let raw = try await request("POST", "/api/moments", body: body)
+        let raw = try await request("POST", "/api/moments", body: body, direct: true)
         return (try? decode(raw, as: MomentCreatePayload.self))?.moment
     }
 

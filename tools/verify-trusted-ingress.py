@@ -15,7 +15,11 @@ def check(condition: bool, message: str) -> None:
 
 check(
     'static let publicIngressServer = "mail.xingyanmail.site:443"' in API,
-    "the client must default to the publicly trusted ingress",
+    "the public ingress must remain available",
+)
+check(
+    'private(set) var server: String = API.publicIngressServer' in API,
+    "unrelated screens must keep the current public read path",
 )
 check(
     'static let publicIngressPath = "/xy"' in API,
@@ -32,6 +36,11 @@ check(
 check(
     "pinnedCertificate.contains(digest)" in API,
     "the direct Cell endpoint must retain certificate pinning",
+)
+check(
+    API.count("direct: true") >= 4
+    and 'request("POST", "/api/moments", body: body, direct: true)' in API,
+    "chat sends and Moments publishing must use the recorded direct write path",
 )
 check(
     "API.shared.realtimePathPrefix" in REALTIME,
