@@ -49,6 +49,18 @@ check(
     "world sections and rows must use compact spacing with visible group separation",
 )
 check(
+    "private enum WorldVisual" in DISCOVER
+    and "static let social = [" in DISCOVER
+    and "static let utility = [" in DISCOVER
+    and "static let commerce = [" in DISCOVER
+    and "static let local = [" in DISCOVER
+    and "static let entertainment = [" in DISCOVER
+    and "let colors = WorldVisual.colors(for: item.action, label: item.label)" in DISCOVER
+    and ".strokeBorder(Color.white.opacity(0.16), lineWidth: 0.7)" in DISCOVER
+    and ".shadow(color: colors[1].opacity(0.18), radius: 4.5, y: 2)" in DISCOVER,
+    "world entry icons must share one semantic token system and icon surface",
+)
+check(
     "weak var discover: UIScrollView?" in (
         ROOT / "Sources" / "NavGlass.swift"
     ).read_text(encoding="utf-8")

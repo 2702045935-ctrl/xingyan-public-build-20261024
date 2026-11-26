@@ -157,6 +157,71 @@ private struct WorldTopIconPressStyle: ButtonStyle {
     }
 }
 
+private enum WorldVisual {
+    static let iconSize: CGFloat = 52
+    static let iconRadius: CGFloat = 14
+
+    static let social = [
+        Color(hex: 0x28B987),
+        Color(hex: 0x0E7D62)
+    ]
+    static let utility = [
+        Color(hex: 0x4A9EFF),
+        Color(hex: 0x176BD3)
+    ]
+    static let commerce = [
+        Color(hex: 0xE89032),
+        Color(hex: 0xB84C16)
+    ]
+    static let local = [
+        Color(hex: 0x25B8B1),
+        Color(hex: 0x0D7C82)
+    ]
+    static let entertainment = [
+        Color(hex: 0x7C72F2),
+        Color(hex: 0x4E47C8)
+    ]
+    static let neutral = [
+        Color(hex: 0x8A919C),
+        Color(hex: 0x59616D)
+    ]
+
+    static var topIconInk: Color { Color.dyn(0x3A3A3C, 0xC7C7CC) }
+    static var scanInk: Color { social[1] }
+    static var chevronInk: Color { Color.dyn(0xA2A2A7, 0x6E6E73) }
+
+    static func colors(for action: String?, label: String = "") -> [Color] {
+        let key = (action ?? "").lowercased()
+        let title = label.lowercased()
+        if ["shop", "mall", "order", "payment"].contains(where: {
+            key == $0 || title.contains($0)
+        }) {
+            return commerce
+        }
+        if ["nearby", "map", "shake", "bottle", "live", "local"].contains(where: {
+            key == $0 || title.contains($0)
+        }) {
+            return local
+        }
+        if ["games", "game", "music", "channels", "video", "works"].contains(where: {
+            key == $0 || title.contains($0)
+        }) {
+            return entertainment
+        }
+        if ["moments", "favorites", "look", "cards", "friend", "social"].contains(where: {
+            key == $0 || title.contains($0)
+        }) {
+            return social
+        }
+        if ["settings", "general", "privacy"].contains(where: {
+            key == $0 || title.contains($0)
+        }) {
+            return neutral
+        }
+        return utility
+    }
+}
+
 private struct XingyanMallMark: View {
     var size: CGFloat = 52
 
@@ -303,8 +368,8 @@ struct DiscoverView: View {
                     path.append("search")
                 } label: {
                     Image(systemName: "magnifyingglass")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(OrbitTheme.ink)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(WorldVisual.topIconInk)
                         .frame(width: 42, height: 42)
                         .contentShape(Rectangle())
                 }
@@ -315,8 +380,8 @@ struct DiscoverView: View {
                     showScan = true
                 } label: {
                     Image(systemName: "qrcode.viewfinder")
-                        .font(.system(size: 19, weight: .semibold))
-                        .foregroundStyle(OrbitTheme.jadeDeep)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(WorldVisual.scanInk)
                         .frame(width: 42, height: 42)
                         .contentShape(Rectangle())
                 }
@@ -380,7 +445,7 @@ struct DiscoverView: View {
                     Circle()
                         .stroke(
                             LinearGradient(
-                                colors: [OrbitTheme.jadeDeep, Color(hex: 0x6FD84B)],
+                                colors: WorldVisual.social,
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -402,7 +467,7 @@ struct DiscoverView: View {
                 VStack(alignment: .leading, spacing: scheme == .dark ? 4 : 5) {
                     Text(Tr(item.label))
                         .font(pfStyled(size: scheme == .dark ? 16.5 : 17,
-                                       weight: .semibold))
+                                       weight: .medium))
                         .foregroundStyle(OrbitTheme.ink)
                         .lineLimit(1)
                     Text(heroStatusText)
@@ -420,7 +485,7 @@ struct DiscoverView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, app.moments.count > 9 ? 6 : 0)
                         .frame(minWidth: 20, minHeight: 20)
-                        .background(Capsule().fill(OrbitTheme.jadeDeep))
+                        .background(Capsule().fill(WorldVisual.social[1]))
                 }
             }
             .padding(.horizontal, 16)
@@ -439,7 +504,7 @@ struct DiscoverView: View {
     }
 
     private func worldFlatRow(_ item: DiscoverItem) -> some View {
-        let accent = Color(hexString: item.color ?? "#4A90D9", fallback: 0x4A90D9)
+        let colors = WorldVisual.colors(for: item.action, label: item.label)
         let artwork = worldArtworkPath(item)
 
         return Button {
@@ -447,27 +512,53 @@ struct DiscoverView: View {
         } label: {
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(accent)
+                    RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
+                                     style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: colors,
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+
+                    RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
+                                     style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.18), .clear],
+                                startPoint: .top,
+                                endPoint: .center
+                            )
+                        )
 
                     if !artwork.isEmpty {
                         RemoteImage(path: artwork, mode: .fill, maxSide: 180)
-                            .frame(width: 52, height: 52)
-                            .clipShape(RoundedRectangle(cornerRadius: 14,
+                            .frame(width: WorldVisual.iconSize,
+                                   height: WorldVisual.iconSize)
+                            .clipShape(RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
                                                        style: .continuous))
                     } else {
                         Image(systemName: RowIcon.sf(action: item.action,
                                                      label: item.label))
-                            .font(.system(size: 21, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.97))
+                            .shadow(color: Color.black.opacity(0.16),
+                                    radius: 0.8, y: 0.6)
                     }
+
+                    RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
+                                     style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.7)
                 }
-                .frame(width: 52, height: 52)
+                .frame(width: WorldVisual.iconSize,
+                       height: WorldVisual.iconSize)
+                .shadow(color: colors[1].opacity(0.18), radius: 4.5, y: 2)
 
                 VStack(alignment: .leading, spacing: scheme == .dark ? 3 : 4) {
                     Text(Tr(item.label))
                         .font(pfStyled(size: 16.5,
-                                       weight: scheme == .dark ? .semibold : .medium))
+                                       weight: .medium))
                         .foregroundStyle(OrbitTheme.ink)
                         .lineLimit(1)
                     Text(worldSubtitle(item))
@@ -481,7 +572,7 @@ struct DiscoverView: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(OrbitTheme.tertiary)
+                    .foregroundStyle(WorldVisual.chevronInk)
             }
             .padding(.horizontal, 16)
             .frame(height: 64)
@@ -518,7 +609,7 @@ struct DiscoverView: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(OrbitTheme.tertiary)
+                    .foregroundStyle(WorldVisual.chevronInk)
             }
             .padding(.horizontal, 16)
             .frame(height: 64)
@@ -712,7 +803,7 @@ struct DiscoverView: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 22)
                     .frame(height: 42)
-                    .background(OrbitTheme.jade, in: Capsule())
+                    .background(WorldVisual.social[1], in: Capsule())
             }
             .buttonStyle(.plain)
         }

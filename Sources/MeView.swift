@@ -1,5 +1,26 @@
 import SwiftUI
 
+private enum MeVisual {
+    static let blue = [Color(hex: 0x4A9EFF), Color(hex: 0x176BD3)]
+    static let green = [Color(hex: 0x28B987), Color(hex: 0x0E7D62)]
+    static let amber = [Color(hex: 0xE89032), Color(hex: 0xB84C16)]
+    static let violet = [Color(hex: 0x7C72F2), Color(hex: 0x4E47C8)]
+    static let teal = [Color(hex: 0x25B8B1), Color(hex: 0x0D7C82)]
+    static let graphite = [Color(hex: 0x8A919C), Color(hex: 0x59616D)]
+
+    static func colors(for action: String?) -> [Color] {
+        switch (action ?? "").lowercased() {
+        case "service": return blue
+        case "moments": return green
+        case "works", "channels": return violet
+        case "cards": return teal
+        case "shop", "mall": return amber
+        case "settings": return graphite
+        default: return blue
+        }
+    }
+}
+
 struct MeView: View {
     @ObservedObject private var lang = LangStore.shared
     @State private var showMyQR = false
@@ -49,12 +70,14 @@ struct MeView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showMyQR = true } label: {
                     Image(systemName: "qrcode")
+                        .foregroundStyle(C.label)
                 }
                 .accessibilityLabel(Tr("我的二维码"))
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { path.append("settings") } label: {
                     Image(systemName: "gearshape")
+                        .foregroundStyle(C.label)
                 }
                 .accessibilityLabel(Tr("设置"))
             }
@@ -122,12 +145,12 @@ struct MeView: View {
                 NavigationLink(value: "manage") {
                     nativeSettingsIconRow(Tr("用户管理"),
                                           symbol: "person.2.badge.gearshape.fill",
-                                          color: .indigo)
+                                          colors: MeVisual.violet)
                 }
                 NavigationLink(value: "faces") {
                     nativeSettingsIconRow(Tr("人脸比对"),
                                           symbol: "face.smiling",
-                                          color: C.green)
+                                          colors: MeVisual.green)
                 }
             } header: {
                 meSectionHeader(Tr("管理"))
@@ -154,8 +177,11 @@ struct MeView: View {
 
     private func nativeMeItemRow(_ item: DiscoverItem) -> some View {
         let symbol = RowIcon.sf(action: item.action, label: item.label)
-        let color = Color(hexString: item.color ?? "#4A90D9", fallback: 0x4A90D9)
-        return nativeSettingsIconRow(meEntryLabel(item), symbol: symbol, color: color)
+        return nativeSettingsIconRow(
+            meEntryLabel(item),
+            symbol: symbol,
+            colors: MeVisual.colors(for: item.action)
+        )
     }
 
     private func meEntryLabel(_ item: DiscoverItem) -> String {
@@ -164,7 +190,7 @@ struct MeView: View {
     }
 
     private func nativeSettingsIconRow(_ title: String, symbol: String,
-                                       color: Color) -> some View {
+                                       colors: [Color]) -> some View {
         Label {
             Text(title)
                 .font(.body)
@@ -173,21 +199,33 @@ struct MeView: View {
         } icon: {
             Image(systemName: symbol)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.white.opacity(0.97))
                 .frame(width: 29, height: 29)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(
                             LinearGradient(
-                                colors: [color.opacity(0.96), color],
+                                colors: colors,
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.white.opacity(0.16), .clear],
+                                        startPoint: .top,
+                                        endPoint: .center
+                                    )
+                                )
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
                                 .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
                         )
+                        .shadow(color: colors[1].opacity(0.16),
+                                radius: 2.5, y: 1)
                 )
         }
     }
