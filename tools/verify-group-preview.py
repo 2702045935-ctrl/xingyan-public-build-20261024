@@ -34,21 +34,24 @@ require(
 require(
     "if step == .participants" in PROFILE
     and "groupDetails\n                    .transition(.opacity)" in PROFILE
-    and 'Text(picked.isEmpty ? Tr("完成") : "\\(Tr("完成")) \\(picked.count)")' in PROFILE,
+    and 'Text(Tr("完成"))' in PROFILE
+    and "private var participantPicker" in PROFILE,
     "group creation must use the WeChat-style participant then details flow",
 )
 require(
     "private func defaultGroupName()" in PROFILE
     and "selectedContacts.prefix(3).map(\\.name)" in PROFILE
-    and "private var selectedPeopleStrip" in PROFILE,
-    "group creation must show selected members compactly and seed a usable default name",
+    and 'Tr("选择一个已有的群")' in PROFILE
+    and 'Tr("创建新群聊")' in PROFILE
+    and "private func groupOptionRow" in PROFILE,
+    "group creation must expose the measured group picker entry points and seed a usable default name",
 )
 require(
-    ".frame(height: 60)" in PROFILE
-    and ".padding(.leading, 70)" in PROFILE
+    ".frame(height: 64)" in PROFILE
+    and ".padding(.leading, 109)" in PROFILE
     and "buttonStyle(MenuPressStyle())" in PROFILE
     and ".safeAreaInset(edge: .bottom, spacing: 0) { createDock }" not in PROFILE,
-    "participant rows must use compact single-line rows without the old bottom action dock",
+    "participant rows must use the 64pt selection grid without the old bottom action dock",
 )
 
 print("group-preview: passed")
