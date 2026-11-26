@@ -42,7 +42,7 @@ require(
 require(
     "scheme == .dark || app.appearance == \"dark\"" not in CHATS
     and "switch app.appearance" in CHATS
-    and "UIConfig.fixedLight(\"chatsPageBg\", 0xFFFFFF)" in CHATS,
+    and ": C.pageBg" in CHATS,
     "explicit conversation appearance must take priority over delayed environment updates",
 )
 require(
