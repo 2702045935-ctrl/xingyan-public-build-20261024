@@ -98,8 +98,8 @@
     },
     {
       "path": "Sources/MusicPresenceStore.swift",
-      "size": 4147,
-      "sha256": "ff16ee57bb37688b38fc79110760f2ec18ba551083d57c8dd2cb9b51ac7aefee"
+      "size": 4023,
+      "sha256": "c7a0d86842d371b73be20ae024a088f1468f4973a5706441bb6a8a74a7972a72"
     },
     {
       "path": "Sources/NativeStaticList.swift",
