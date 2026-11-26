@@ -538,27 +538,15 @@ final class AppState: ObservableObject {
                 hideChatLocally(ev.chatId)
             }
 
-            let cid = ev.chatId
-            if let incoming = ev.chat {
-                if isDismissedGroup(incoming) {
-                    hideChatLocally(incoming.id)
-                    coalesce { [weak self] in await self?.loadChats() }
-                    return
-                }
-                applyRealtimeChat(incoming)
-                if let message = ev.message {
-                    collectAdminSticker(from: message)
-                    ensureIncomingUnread(message, chatId: ev.chatId)
-                    applyRealtimeMessage(message, chatId: ev.chatId, countUnread: false)
-                }
-            } else if let message = ev.message {
+            if let message = ev.message {
                 collectAdminSticker(from: message)
-                applyRealtimeMessage(message, chatId: ev.chatId)
             }
-            let immediate = ev.chat ?? (cid.isEmpty
-                ? nil
-                : chats.first(where: { $0.id == cid }))
-            if immediate == nil {
+            let applied = applyRealtimeDelivery(
+                chat: ev.chat,
+                message: ev.message,
+                chatId: ev.chatId
+            )
+            if !applied {
                 coalesce { [weak self] in
                     await self?.loadChats()
                 }
@@ -2286,163 +2274,114 @@ final class AppState: ObservableObject {
         return out
     }
 
-    /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。
-    private func applyRealtimeChat(_ incoming: Chat) {
+    /// One atomic reducer for every realtime conversation delivery.
+    @discardableResult
+    private func applyRealtimeDelivery(chat incomingChat: Chat?,
+                                       message: Message?,
+                                       chatId: String) -> Bool {
         invalidateChatSnapshots()
-        guard !isDismissedGroup(incoming) else {
-            hideChatLocally(incoming.id)
-            return
+        let ids = [incomingChat?.id ?? "", message?.chatId ?? "", chatId]
+        guard let id = ids.first(where: { !$0.isEmpty }) else { return false }
+        if let incomingChat, isDismissedGroup(incomingChat) {
+            hideChatLocally(incomingChat.id)
+            return true
         }
-        if locallyHiddenChats.contains(incoming.id),
-           !hiddenChatHasNewerActivity(incoming) {
-            return
-        }
-        locallyHiddenChats.remove(incoming.id)
-        locallyHiddenAt.removeValue(forKey: incoming.id)
-        locallyHiddenLastMessage.removeValue(forKey: incoming.id)
-        locallyHiddenLastMessageAt.removeValue(forKey: incoming.id)
-        locallyHiddenUnread.removeValue(forKey: incoming.id)
+
         var rows = chats
-        let previous = rows.first(where: { $0.id == incoming.id })
-        var updated = incoming
-        if let index = rows.firstIndex(where: { $0.id == incoming.id }) {
-            let current = rows[index]
-            let currentMid = current.lastMessage?.id ?? ""
-            let incomingMid = incoming.lastMessage?.id ?? ""
-            var merged = mergeServerChat(incoming, local: current)
-            merged.unread = ChatUnreadKernel.realtimeUnread(
-                current: current.unreadCount,
-                incoming: incoming.unreadCount,
-                previousMessageId: currentMid,
-                newMessageId: incomingMid,
-                senderIsMe: incoming.lastMessage?.senderId == me?.id,
-                openChatId: openChat?.id,
-                chatId: incoming.id
-            )
-            if openChat?.id == incoming.id { merged.flagged = false }
-            rows[index] = merged
-            updated = merged
-            if let sender = incoming.lastMessage?.senderId, sender != me?.id {
-                optimisticChats[incoming.id] = merged
-                optimisticAt[incoming.id] = Date()
-            }
-        } else {
-            updated.unread = ChatUnreadKernel.realtimeUnread(
-                current: 0,
-                incoming: incoming.unreadCount,
-                previousMessageId: "",
-                newMessageId: incoming.lastMessage?.id ?? "",
-                senderIsMe: incoming.lastMessage?.senderId == me?.id,
-                openChatId: openChat?.id,
-                chatId: incoming.id
-            )
-            if openChat?.id == incoming.id { updated.flagged = false }
-            rows.insert(updated, at: 0)
-            if let sender = incoming.lastMessage?.senderId, sender != me?.id {
-                optimisticChats[incoming.id] = updated
-                optimisticAt[incoming.id] = Date()
-            }
+        let previous = rows.first(where: { $0.id == id })
+        if let incomingChat,
+           locallyHiddenChats.contains(id),
+           !hiddenChatHasNewerActivity(incomingChat) {
+            return true
         }
-        chats = orderedChatsForList(rows)
-        adjustAuthoritativeUnread(from: previous, to: updated)
-        syncIconBadge()
-        reconcileIncomingNotification(
-            previous: previous,
-            current: updated,
-            allowNewChat: true
-        )
-    }
+        guard previous != nil || incomingChat != nil else { return false }
 
-    /// 兼容只带 message、没有 chat 摘要的实时事件。
-    private func ensureIncomingUnread(_ message: Message, chatId: String) {
-        guard message.senderId != me?.id else { return }
-        let ids = [message.chatId ?? "", chatId]
-        guard let id = ids.first(where: { !$0.isEmpty }),
-              let index = chats.firstIndex(where: { $0.id == id }),
-              chats[index].lastMessage?.id == message.id,
-              chats[index].unreadCount == 0 else { return }
-        let before = chats[index]
-        let nextUnread = ChatUnreadKernel.unreadAfterReceivingMessage(
-            current: 0,
-            isNewMessage: true,
-            senderIsMe: false,
-            openChatId: openChat?.id,
-            chatId: id
-        )
-        chats[index].unread = nextUnread
-        adjustAuthoritativeUnread(from: before, to: chats[index])
-        if var optimistic = optimisticChats[id],
-           optimistic.lastMessage?.id == message.id {
-            optimistic.unread = nextUnread
-            optimisticChats[id] = optimistic
-        }
-        syncIconBadge()
-        reconcileIncomingNotification(
-            previous: before,
-            current: chats[index],
-            allowNewChat: false
-        )
-    }
+        locallyHiddenChats.remove(id)
+        locallyHiddenAt.removeValue(forKey: id)
+        locallyHiddenLastMessage.removeValue(forKey: id)
+        locallyHiddenLastMessageAt.removeValue(forKey: id)
+        locallyHiddenUnread.removeValue(forKey: id)
 
-    private func applyRealtimeMessage(_ message: Message, chatId: String,
-                                      countUnread: Bool = true) {
-        invalidateChatSnapshots()
-        let ids = [message.chatId ?? "", chatId]
-        guard let id = ids.first(where: { !$0.isEmpty }),
-              let index = chats.firstIndex(where: { $0.id == id }) else { return }
-        let before = chats[index]
-        let sameMessage = before.lastMessage?.id == message.id
-        let incomingAt = TimeFmt.date(message.createdAt)
-        let currentAt = TimeFmt.date(before.lastMessage?.createdAt ?? "")
-        let shouldAdvance: Bool
-        if before.lastMessage == nil || sameMessage {
-            shouldAdvance = true
-        } else if let incomingAt, let currentAt {
-            shouldAdvance = incomingAt >= currentAt
-        } else {
-            // 历史数据可能缺 createdAt；有完整新消息时宁可前进，不能永远丢预览。
-            shouldAdvance = true
-        }
-        guard shouldAdvance else { return }
-
-        var row = before
-        if countUnread {
-            row.unread = ChatUnreadKernel.unreadAfterReceivingMessage(
-                current: row.unreadCount,
-                isNewMessage: !sameMessage,
-                senderIsMe: message.senderId == me?.id,
+        var row: Chat
+        if let incomingChat {
+            row = previous.map { mergeServerChat(incomingChat, local: $0) } ?? incomingChat
+            row.unread = ChatUnreadKernel.realtimeUnread(
+                current: previous?.unreadCount ?? 0,
+                incoming: incomingChat.unreadCount,
+                previousMessageId: previous?.lastMessage?.id ?? "",
+                newMessageId: incomingChat.lastMessage?.id ?? "",
+                senderIsMe: incomingChat.lastMessage?.senderId == me?.id,
                 openChatId: openChat?.id,
                 chatId: id
             )
+        } else if let previous {
+            row = previous
+        } else {
+            return false
         }
-        var preview = Self.realtimePreview(message)
-        if row.type == "group", message.senderId != me?.id,
-           let sender = message.senderName, !sender.isEmpty, !preview.isEmpty {
-            preview = sender + "：" + preview
+
+        if let message {
+            let sameMessage = row.lastMessage?.id == message.id
+            let incomingAt = TimeFmt.date(message.createdAt)
+            let currentAt = TimeFmt.date(row.lastMessage?.createdAt ?? "")
+            let advances: Bool
+            if row.lastMessage == nil || sameMessage {
+                advances = true
+            } else if let incomingAt, let currentAt {
+                advances = incomingAt >= currentAt
+            } else {
+                advances = true
+            }
+            if advances {
+                var preview = Self.realtimePreview(message)
+                if row.type == "group", message.senderId != me?.id,
+                   let sender = message.senderName,
+                   !sender.isEmpty, !preview.isEmpty {
+                    preview = sender + "：" + preview
+                }
+                if incomingChat == nil {
+                    row.unread = ChatUnreadKernel.unreadAfterReceivingMessage(
+                        current: row.unreadCount,
+                        isNewMessage: !sameMessage,
+                        senderIsMe: message.senderId == me?.id,
+                        openChatId: openChat?.id,
+                        chatId: id
+                    )
+                }
+                row.lastMessage = LastMessage(
+                    id: message.id,
+                    senderId: message.senderId,
+                    senderName: message.senderName,
+                    kind: message.kindName,
+                    preview: preview,
+                    createdAt: message.createdAt,
+                    mentionMe: message.mentionsUser(me?.id ?? "")
+                        || (row.unreadCount > 0
+                            && previous?.lastMessage?.mentionMe == true)
+                )
+                row.updatedAt = message.createdAt ?? row.updatedAt
+            }
         }
-        row.lastMessage = LastMessage(
-            id: message.id,
-            senderId: message.senderId,
-            senderName: message.senderName,
-            kind: message.kindName,
-            preview: preview,
-            createdAt: message.createdAt,
-            mentionMe: message.mentionsUser(me?.id ?? "")
-                || (row.unreadCount > 0 && before.lastMessage?.mentionMe == true)
-        )
-        row.updatedAt = message.createdAt ?? row.updatedAt
-        var rows = chats
-        rows[index] = row
+
+        if openChat?.id == id { row.flagged = false }
+        if let index = rows.firstIndex(where: { $0.id == id }) {
+            rows[index] = row
+        } else {
+            rows.insert(row, at: 0)
+        }
         chats = orderedChatsForList(rows)
-        adjustAuthoritativeUnread(from: before, to: row)
-        optimisticChats[id] = row
-        optimisticAt[id] = Date()
+        adjustAuthoritativeUnread(from: previous, to: row)
+        if row.lastMessage?.senderId != me?.id {
+            optimisticChats[id] = row
+            optimisticAt[id] = Date()
+        }
         syncIconBadge()
         reconcileIncomingNotification(
-            previous: before,
+            previous: previous,
             current: row,
-            allowNewChat: false
+            allowNewChat: true
         )
+        return true
     }
 
     private static func realtimePreview(_ message: Message) -> String {

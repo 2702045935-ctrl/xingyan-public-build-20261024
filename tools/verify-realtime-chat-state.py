@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
 KERNEL = (ROOT / "Sources" / "ChatUnreadKernel.swift").read_text(encoding="utf-8")
 REALTIME = (ROOT / "Sources" / "Realtime.swift").read_text(encoding="utf-8")
+NATIVE_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
+NATIVE_ROW = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
 LOCAL_NOTIFY = (ROOT / "Sources" / "LocalNotify.swift").read_text(encoding="utf-8")
 SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
 MENTION_INDEX = (ROOT / "server" / "lib" / "mention-index.js").read_text(
@@ -35,16 +37,19 @@ require(
     "every event that mutates the conversation list must use the direct handler",
 )
 require(
-    "var merged = mergeServerChat(incoming, local: current)" in APP
-    and "let shouldAdvance: Bool" in APP
-    and "guard shouldAdvance else { return }" in APP,
-    "late realtime summaries must not roll a conversation row backwards",
+    "private func applyRealtimeDelivery(chat incomingChat: Chat?," in APP
+    and "let advances: Bool" in APP
+    and "applyRealtimeDelivery(\n                chat: ev.chat," in APP
+    and "private func applyRealtimeChat(" not in APP
+    and "private func applyRealtimeMessage(" not in APP
+    and "private func ensureIncomingUnread(" not in APP,
+    "realtime chat and message state must have one native atomic reducer",
 )
 require(
     "private func mergeSameMessageSummary(" in APP
     and "private func hasUnresolvedMention(server: Chat, local: Chat) -> Bool" in APP
     and "!hasUnresolvedMention(server: server, local: local)" in APP
-    and "|| (row.unreadCount > 0 && before.lastMessage?.mentionMe == true)" in APP
+    and "&& previous?.lastMessage?.mentionMe == true)" in APP
     and "if (x.lastMessage?.mentionMe ?? false)"
     in APP,
     "same-message snapshots must preserve a pending mention until the server catches up",
@@ -55,6 +60,11 @@ require(
     and "guard acceptsChatSnapshot(chatGeneration) else { return }" in APP
     and APP.count("invalidateChatSnapshots()") >= 7,
     "older conversation-list responses must not overwrite a newer live state",
+)
+require(
+    all(marker not in APP + KERNEL + REALTIME + NATIVE_LIST + NATIVE_ROW
+        for marker in ("CHRIS_", "FIX_V", "补丁")),
+    "chat delivery and native list code must not retain versioned patch markers",
 )
 require(
     "static let foregroundRecoveryDelay: UInt64 = 3_000_000_000" in KERNEL
