@@ -1743,7 +1743,7 @@ struct ChatsView: View {
                     .font(pf(17, .semibold))
                     .foregroundStyle(C.label)
                     .lineLimit(1)
-                    .contentTransition(.numericText())
+                    .contentTransition(.opacity)
                     .animation(.easeOut(duration: 0.18), value: navTitle)
                     .accessibilityAddTraits(.isHeader)
             }

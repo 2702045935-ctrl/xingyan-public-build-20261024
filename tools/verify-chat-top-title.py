@@ -29,7 +29,7 @@ require(
 require(
     "private var chatHeaderMenu" not in CHATS
     and "manualChatSync" not in CHATS
-    and "contentTransition(.numericText())" in CHATS,
+    and "contentTransition(.opacity)" in CHATS,
     "the WeChat-style title must be a passive status label, not an expandable menu",
 )
 require(
