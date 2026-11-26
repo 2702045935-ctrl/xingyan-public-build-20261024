@@ -49,12 +49,13 @@ require(
     "official account rows must use conversation time instead of chevrons",
 )
 require(
-    "withAnimation(chatKeyboardAnimation(n)) { kbHeight = h }" in DETAIL
-    and "keyboardAnimationDurationUserInfoKey" in DETAIL
-    and "keyboardAnimationCurveUserInfoKey" in DETAIL
+    ".safeAreaInset(edge: .bottom, spacing: 0)" in DETAIL
+    and "chatKeyboardAnimation" not in DETAIL
+    and "chatKeyboardManual" not in DETAIL
+    and "kbHeight" not in DETAIL
     and "private func openActions(_ m: Message, bubbleFrame: CGRect? = nil)" in DETAIL
     and "onLongPress: { [weak view] in" in DETAIL,
-    "composer and message menus must follow native keyboard and bubble geometry",
+    "the composer must use system keyboard avoidance while message menus keep native geometry",
 )
 require(
     "final class NativeChatTextRowView: UIView, UIGestureRecognizerDelegate" in TEXT_ROW

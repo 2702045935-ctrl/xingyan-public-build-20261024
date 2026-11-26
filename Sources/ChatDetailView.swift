@@ -296,25 +296,6 @@ private struct NativeGroupItem: Identifiable, Equatable {
     let kind: NativeGroupItemKind
 }
 
-private func chatKeyboardAnimation(_ notification: Notification) -> Animation {
-    let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
-        as? Double ?? 0.25
-    let rawCurve = notification.userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey]
-        as? Int ?? UIView.AnimationCurve.easeInOut.rawValue
-    switch UIView.AnimationCurve(rawValue: rawCurve) ?? .easeInOut {
-    case .easeIn:
-        return .easeIn(duration: duration)
-    case .easeOut:
-        return .easeOut(duration: duration)
-    case .linear:
-        return .linear(duration: duration)
-    case .easeInOut:
-        return .easeInOut(duration: duration)
-    @unknown default:
-        return .easeInOut(duration: duration)
-    }
-}
-
 func bubbleSeed(_ id: String) -> Double {
     var h = 5381
     for u in id.unicodeScalars { h = (h &* 33) &+ Int(u.value) }
@@ -776,19 +757,6 @@ private struct ChatHeaderGlassGroup<Content: View>: View {
     }
 }
 
-struct KeyboardLiftDisable: ViewModifier {
-    let enabled: Bool
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if enabled {
-            content.ignoresSafeArea(.keyboard, edges: .bottom)
-        } else {
-            content
-        }
-    }
-}
-
 private struct QuickIconButtonStyle: ButtonStyle {
     let ink: Color
 
@@ -1087,8 +1055,6 @@ struct ChatDetailView: View {
 
     @State private var showSendLocation = false
     @State private var showTransfer = false
-
-    @State private var kbHeight: CGFloat = 0
 
     @State private var showSendRedPacket = false
 
@@ -2987,27 +2953,12 @@ struct ChatDetailView: View {
                             AnyView(sysTeamToolsBar)
                         }
                         AnyView(composer)
-
-                            .padding(.bottom, UIConfig.num("chatKeyboardManual", 1) > 0
-                                     ? max(0, kbHeight - (UIConfig.num("chatKbFlush", 1) > 0 ? L.safeBottom : 0))
-                                     : 0)
                     }
                 }
             })
         }
 
-        .modifier(KeyboardLiftDisable(enabled: UIConfig.num("chatKeyboardManual", 1) > 0))
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { n in
-            guard UIConfig.num("chatKeyboardManual", 1) > 0 else { return }
-            actionMessage = nil
-            guard let f = n.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
-            let screenH = (UIApplication.shared.connectedScenes
-                .compactMap { ($0 as? UIWindowScene)?.screen.bounds.height }.first) ?? UIScreen.main.bounds.height
-            let h = max(0, screenH - f.origin.y)
-            withAnimation(chatKeyboardAnimation(n)) { kbHeight = h }
-        }
         .onChange(of: panel) { next in
-            if next != .none { kbHeight = 0 }
             if next != .emoji { emojiPanelExpanded = false }
         }
 
@@ -5757,8 +5708,6 @@ struct ChatDetailView: View {
             }
         }
     }
-
-    private var kbUp: Bool { kbHeight > 1 }
 
     private var mutedForMe: Bool {
         let c = liveChat
