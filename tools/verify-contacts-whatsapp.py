@@ -52,11 +52,24 @@ require(
 )
 require(
     '"newFriends", "tags", "groups", "chatOnly", "officialAccounts"' in VIEW
-    and "Color(hex: 0xEDA150)" in VIEW
-    and "Color(hex: 0x57BE6A)" in VIEW
-    and "Color(hex: 0x3D83E6)" in VIEW
-    and "RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)" in VIEW,
-    "utility entries must use five stable rows with WeChat-aligned semantic colours",
+    and "Color(hex: 0xFFB340)" in VIEW
+    and "Color(hex: 0x8B7CFF)" in VIEW
+    and "Color(hex: 0x34C98F)" in VIEW
+    and "Color(hex: 0x8B93A1)" in VIEW
+    and "Color(hex: 0x58A6FF)" in VIEW
+    and "let gradient: LinearGradient" not in VIEW
+    and "LinearGradient(\n                        colors: colors" in VIEW
+    and ".strokeBorder(Color.white.opacity(0.16), lineWidth: 0.7)" in VIEW
+    and ".shadow(color: colors.last!.opacity(0.20), radius: 4.5, y: 2)" in VIEW,
+    "contact utility icons must use five distinct layered semantic colours",
+)
+require(
+    "enum ContactVisual" in VIEW
+    and "static var accent: Color { Color.dyn(0x0F8B65, 0x36CA95) }" in VIEW
+    and "static var indexFill: Color { Color.dyn(0x0F8B65, 0x1FAE79) }" in VIEW
+    and "ContactVisual.indexFill" in INDEX
+    and "ContactVisual.star" in VIEW,
+    "contact index, selection and stars must share restrained system accents",
 )
 require(
     'Text(Tr("搜索联系人"))' in SEARCH_VIEW

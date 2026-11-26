@@ -45,33 +45,15 @@ private enum OfficialRowVisual {
 
     static let weatherAvatar = LinearGradient(
         colors: [
-            Color(hex: 0x5AA7F5),
-            Color(hex: 0x2D6FC8),
-            Color(hex: 0x1D4D9D)
+            Color(hex: 0x64D2FF),
+            Color(hex: 0x2E9BEC),
+            Color(hex: 0x0A6FC2)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
-    static let payName = LinearGradient(
-        colors: [
-            Color.dyn(0x0066CC, 0x64D2FF),
-            Color.dyn(0x0A5FB8, 0x2A8CDB)
-        ],
-        startPoint: .leading,
-        endPoint: .trailing
-    )
-
-    static let weatherName = LinearGradient(
-        colors: [
-            Color.dyn(0x0B7FAB, 0x67D8FF),
-            Color.dyn(0x075E7F, 0x2FAFCF)
-        ],
-        startPoint: .leading,
-        endPoint: .trailing
-    )
-
-    static let weatherSun = Color(hex: 0xFFD166)
+    static let weatherSun = Color(hex: 0xFFD60A)
     static let avatarRim = Color.white.opacity(0.18)
 }
 
@@ -2473,6 +2455,18 @@ struct ChatsView: View {
                                     .stroke(PayVisual.tint.opacity(0.20),
                                             lineWidth: 0.8)
                             }
+                            .overlay(alignment: .bottomTrailing) {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 7.5, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 15, height: 15)
+                                    .background(PayVisual.tint, in: Circle())
+                                    .overlay {
+                                        Circle().stroke(ChatListVisual.badgeRing,
+                                                        lineWidth: 1.2)
+                                    }
+                                    .offset(x: 1.5, y: 1.5)
+                            }
                     } else {
                         Avatar(path: payOfficialRowAvatar, size: ChatListVisual.avatarSize,
                                radius: 14, circle: true)
@@ -2483,7 +2477,7 @@ struct ChatsView: View {
                             Text(payOfficialRowName)
                                 .font(pfStyled(size: scheme == .dark ? 16.5 : 17,
                                                weight: .semibold))
-                                .foregroundStyle(OfficialRowVisual.payName)
+                                .foregroundStyle(OfficialAccountVisual.name)
                                 .lineLimit(1)
                             Image(systemName: "checkmark.seal.fill")
                                 .font(.system(size: 11, weight: .semibold))
@@ -2572,7 +2566,7 @@ struct ChatsView: View {
                         }
                         .frame(width: ChatListVisual.avatarSize,
                                height: ChatListVisual.avatarSize)
-                        .shadow(color: Color(hex: 0x2D6FC8).opacity(0.18),
+                        .shadow(color: Color(hex: 0x2E9BEC).opacity(0.18),
                                 radius: 3.5, y: 1.5)
                     } else {
                         Avatar(path: weatherRowAvatar, size: ChatListVisual.avatarSize,
@@ -2584,11 +2578,8 @@ struct ChatsView: View {
                             Text(weatherRowName)
                                 .font(pfStyled(size: scheme == .dark ? 16.5 : 17,
                                                weight: .semibold))
-                                .foregroundStyle(OfficialRowVisual.weatherName)
+                                .foregroundStyle(ChatListVisual.ink)
                                 .lineLimit(1)
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: 10.5, weight: .semibold))
-                                .foregroundStyle(OfficialRowVisual.weatherName)
                         }
                         Text(weatherRowSubtitle)
                             .font(pfStyled(size: 14,

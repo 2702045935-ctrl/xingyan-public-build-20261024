@@ -95,15 +95,13 @@ require(
     "private enum OfficialRowVisual" in CHATS
     and "Color(hex: 0x1FAE79)" in CHATS
     and "Color(hex: 0x0E805E)" in CHATS
-    and "Color(hex: 0x5AA7F5)" in CHATS
-    and "Color(hex: 0x2D6FC8)" in CHATS
-    and "static let payName = LinearGradient" in CHATS
-    and "static let weatherName = LinearGradient" in CHATS
+    and "Color(hex: 0x64D2FF)" in CHATS
+    and "Color(hex: 0x2E9BEC)" in CHATS
     and "OfficialRowVisual.weatherSun" in CHATS
     and "PayVisual.tint.opacity(0.20)" in CHATS
     and "UIColor(hex: isDark ? 0x31C48D : 0x0F8B65)" in CHATS
-    and ".foregroundStyle(OfficialRowVisual.payName)" in CHATS
-    and ".foregroundStyle(OfficialRowVisual.weatherName)" in CHATS,
+    and ".foregroundStyle(OfficialAccountVisual.name)\n                                .lineLimit(1)" in CHATS
+    and ".foregroundStyle(ChatListVisual.ink)\n                                .lineLimit(1)" in CHATS,
     "official-account rows must use the restrained brand icon and official-name hierarchy",
 )
 

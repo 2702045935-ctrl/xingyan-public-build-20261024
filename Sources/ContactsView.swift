@@ -56,6 +56,12 @@ struct ContactSection: Identifiable {
     let users: [User]
 }
 
+enum ContactVisual {
+    static var accent: Color { Color.dyn(0x0F8B65, 0x36CA95) }
+    static var indexFill: Color { Color.dyn(0x0F8B65, 0x1FAE79) }
+    static var star: Color { Color.dyn(0xF2B43B, 0xFFD60A) }
+}
+
 private struct ContactDirectorySnapshot {
     var sections: [ContactSection] = []
     var usersByID: [String: User] = [:]
@@ -249,15 +255,15 @@ struct ContactsView: View {
                               _ weight: Font.Weight = .regular) -> Font {
         pfStyled(size: size * contactsAccessibilityScale, weight: weight)
     }
-    private let contactsAccent = Color(hex: 0x25D366)
+    private var contactsAccent: Color { ContactVisual.accent }
 
 private var funcs: [(String, String, Color, String)] {
     [
-        (Tr("新的朋友"), I.newFriends, Color(hex: 0x2C6E5E), "newFriends"),
-        (Tr("标签"), I.tag, OrbitTheme.jadeDeep, "tags"),
-        (Tr("群聊"), I.groups, Color(hex: 0x315E78), "groups"),
-        (Tr("仅聊天的朋友"), I.chatOnly, Color(hex: 0x8E8E99), "chatOnly"),
-        (Tr("公众号"), I.service, Color(hex: 0x5E6579), "officialAccounts")
+        (Tr("新的朋友"), I.newFriends, Color(hex: 0xE88214), "newFriends"),
+        (Tr("标签"), I.tag, Color(hex: 0x5A4FD1), "tags"),
+        (Tr("群聊"), I.groups, Color(hex: 0x0E8065), "groups"),
+        (Tr("仅聊天的朋友"), I.chatOnly, Color(hex: 0x586171), "chatOnly"),
+        (Tr("公众号"), I.service, Color(hex: 0x156FD1), "officialAccounts")
     ]
 }
 
@@ -521,19 +527,25 @@ private var funcs: [(String, String, Color, String)] {
 
         .navPlusOverlay($plusMenu, items: [
             NavPlusItem(title: Tr("发起群聊"), symbol: "person.2.fill",
-                        colors: [C.green, C.green.opacity(0.78)]) { path.append("newGroup") },
+                        colors: [Color(hex: 0x34C98F), Color(hex: 0x0E8065)]) {
+                path.append("newGroup")
+            },
             NavPlusItem(title: Tr("面对面建群"), symbol: "person.3.sequence.fill",
-                        colors: [Color(hex: 0x5FD38A), Color(hex: 0x178A58)]) {
+                        colors: [Color(hex: 0x35CFB5), Color(hex: 0x0E8E84)]) {
                 path.append("faceGroup")
             },
             NavPlusItem(title: Tr("添加朋友"), symbol: "person.badge.plus",
-                        colors: [Color(hex: 0x64B5F6), Color(hex: 0x2A6BC4)]) { path.append("addFriend") },
+                        colors: [Color(hex: 0xFFB340), Color(hex: 0xE88214)]) {
+                path.append("addFriend")
+            },
             NavPlusItem(title: Tr("手机联系人"), symbol: "person.text.rectangle",
-                        colors: [Color(hex: 0x69A18F), Color(hex: 0x315E78)]) {
+                        colors: [Color(hex: 0x8B7CFF), Color(hex: 0x5A4FD1)]) {
                 showPhoneContacts = true
             },
             NavPlusItem(title: Tr("扫一扫"), symbol: "qrcode.viewfinder",
-                        colors: [C.green, C.green.opacity(0.78)]) { showScan = true }
+                        colors: [Color(hex: 0x58A6FF), Color(hex: 0x156FD1)]) {
+                showScan = true
+            }
         ])
         .fullScreenCover(isPresented: $showScan) {
             ScannerView { text in handleScanned(text, app: app) }
@@ -698,7 +710,7 @@ private var funcs: [(String, String, Color, String)] {
                                             .font(.system(size: 7.5))
                                             .foregroundStyle(.white)
                                             .frame(width: 17, height: 17)
-                                            .background(Circle().fill(OrbitTheme.gold))
+                                            .background(Circle().fill(ContactVisual.star))
                                             .overlay(Circle().stroke(OrbitTheme.raised, lineWidth: 1.4))
                                             .offset(x: 3, y: 3)
                                     }
@@ -822,34 +834,56 @@ private var funcs: [(String, String, Color, String)] {
     private func nativeQuickIcon(_ item: (String, String, Color, String),
                                  size: CGFloat) -> some View {
         let symbol: String
-        let tint: Color
+        let colors: [Color]
         switch item.3 {
         case "newFriends":
             symbol = "person.badge.plus"
-            tint = Color(hex: 0xEDA150)
+            colors = [Color(hex: 0xFFB340), Color(hex: 0xE88214)]
         case "tags":
             symbol = "tag"
-            tint = Color(hex: 0x57BE6A)
+            colors = [Color(hex: 0x8B7CFF), Color(hex: 0x5A4FD1)]
         case "groups":
             symbol = "person.3"
-            tint = Color(hex: 0x57BE6A)
+            colors = [Color(hex: 0x34C98F), Color(hex: 0x0E8065)]
         case "chatOnly":
             symbol = "bubble.left.and.bubble.right"
-            tint = Color(hex: 0x8E8E99)
+            colors = [Color(hex: 0x8B93A1), Color(hex: 0x586171)]
         default:
             symbol = "megaphone"
-            tint = Color(hex: 0x3D83E6)
+            colors = [Color(hex: 0x58A6FF), Color(hex: 0x156FD1)]
         }
-        return Image(systemName: symbol)
-            .font(.system(size: size * 0.54, weight: .medium))
-            .symbolRenderingMode(.monochrome)
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(
-                RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)
-                    .fill(tint)
-            )
-            .accessibilityHidden(true)
+        let radius = size * 0.26
+        return ZStack {
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: colors,
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.18), .clear],
+                        startPoint: .top,
+                        endPoint: .center
+                    )
+                )
+
+            Image(systemName: symbol)
+                .font(.system(size: size * 0.47, weight: .semibold))
+                .symbolRenderingMode(.monochrome)
+                .foregroundStyle(.white.opacity(0.96))
+                .shadow(color: Color.black.opacity(0.16), radius: 0.8, y: 0.6)
+
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.7)
+        }
+        .frame(width: size, height: size)
+        .shadow(color: colors.last!.opacity(0.20), radius: 4.5, y: 2)
+        .accessibilityHidden(true)
     }
 
     private func contactRow(_ user: User) -> some View {
@@ -883,7 +917,7 @@ private var funcs: [(String, String, Color, String)] {
             if starIds.contains(user.id) {
                 Image(systemName: "star.fill")
                     .font(.system(size: 10))
-                    .foregroundColor(OrbitTheme.gold)
+                    .foregroundColor(ContactVisual.star)
             }
         }
         .padding(.leading, 16)
@@ -919,7 +953,7 @@ private var funcs: [(String, String, Color, String)] {
                         .background {
                             if idxLetter == section.letter {
                                 Circle()
-                                    .fill(contactsAccent)
+                                    .fill(ContactVisual.indexFill)
                                     .frame(width: max(18, rowH + 1.5))
                             }
                         }

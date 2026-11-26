@@ -76,7 +76,7 @@ struct ContactIndexBar: View {
                         .background {
                             if shownLetter == L {
                                 Capsule(style: .continuous)
-                                    .fill(OrbitTheme.jade)
+                                    .fill(ContactVisual.indexFill)
                                     .frame(width: dotSide - 3, height: dotSide - 3)
                             }
                         }
