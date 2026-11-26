@@ -6,6 +6,7 @@ struct MainTabView: View {
     @State private var tab = 0
     @State private var mountedTabs: Set<Int> = [0]
     @State private var shownCrash = false
+    @State private var showAccountSidebar = false
 
     @ObservedObject private var lang = LangStore.shared
 
@@ -132,7 +133,30 @@ struct MainTabView: View {
         }
 
         .background(C.pageBg.ignoresSafeArea())
+        .overlay {
+            AccountSidebarOverlay(
+                isOpen: showAccountSidebar,
+                onClose: {
+                    withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) {
+                        showAccountSidebar = false
+                    }
+                },
+                onOpenProfile: {
+                    mountedTabs.insert(4)
+                    tab = 4
+                }
+            )
+            .environmentObject(app)
+            .zIndex(200)
+        }
         .overlay(CallOverlay())
+
+        .onReceive(NotificationCenter.default.publisher(for: .chrisOpenAccountSidebar)) { _ in
+            guard !showAccountSidebar else { return }
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) {
+                showAccountSidebar = true
+            }
+        }
 
         .sheet(isPresented: Binding(
             get: { CrashCatcher.hasUnseenCrash() && !shownCrash },

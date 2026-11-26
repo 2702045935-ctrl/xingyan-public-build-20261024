@@ -9,6 +9,7 @@ enum ChatStressFixture {
 
     static let initialWindow = min(count, 160)
     static let pageSize = 320
+    static let maxActiveWindow = 2_400
     private static let lock = NSLock()
     private static var cache: [Chat] = []
 

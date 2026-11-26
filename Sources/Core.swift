@@ -212,6 +212,16 @@ enum UIConfig {
         return Color.dyn(parsed ?? light, dark)
     }
 
+    static func fixedLight(_ key: String, _ fallback: UInt32) -> Color {
+        guard let raw = strings[key], !raw.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return Color(hex: fallback)
+        }
+        let first = raw.split(separator: "|", omittingEmptySubsequences: false)
+            .first.map(String.init)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let parsed = UInt32(first.replacingOccurrences(of: "#", with: ""), radix: 16)
+        return Color(hex: parsed ?? fallback)
+    }
+
     static func apply(_ json: [String: Any]) {
         var n: [String: CGFloat] = [:]
         var s: [String: String] = [:]

@@ -202,6 +202,10 @@ struct FriendNowPlaying: Decodable, Identifiable {
     var cover: String?
     var url: String
     var at: Double?
+    var playing: Bool?
+    var position: Double?
+    var duration: Double?
+    var deviceId: String?
 
     var asTrack: MusicTrack {
         MusicTrack(id: trackId.isEmpty ? id : trackId, title: title,
@@ -211,6 +215,15 @@ struct FriendNowPlaying: Decodable, Identifiable {
     var line: String {
         let a = (artist ?? "").trimmingCharacters(in: .whitespaces)
         return "在听《" + title + "》" + (a.isEmpty ? "" : " · " + a)
+    }
+
+    var livePosition: Double {
+        guard playing == true, let position else { return position ?? 0 }
+        let base = max(0, position)
+        let started = (at ?? 0) / 1_000
+        guard started > 0 else { return base }
+        let elapsed = max(0, Date().timeIntervalSince1970 - started)
+        return base + elapsed
     }
 }
 
