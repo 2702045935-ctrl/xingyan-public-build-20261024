@@ -32,6 +32,49 @@ private enum ChatListVisual {
     static let selectedChipInk = Color.dyn(0xFFFFFF, 0x17171A)
 }
 
+private enum OfficialRowVisual {
+    static let officialAvatar = LinearGradient(
+        colors: [
+            Color(hex: 0x1FAE79),
+            Color(hex: 0x0E805E),
+            Color(hex: 0x075E54)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let weatherAvatar = LinearGradient(
+        colors: [
+            Color(hex: 0x5AA7F5),
+            Color(hex: 0x2D6FC8),
+            Color(hex: 0x1D4D9D)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let payName = LinearGradient(
+        colors: [
+            Color.dyn(0x0066CC, 0x64D2FF),
+            Color.dyn(0x0A5FB8, 0x2A8CDB)
+        ],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
+
+    static let weatherName = LinearGradient(
+        colors: [
+            Color.dyn(0x0B7FAB, 0x67D8FF),
+            Color.dyn(0x075E7F, 0x2FAFCF)
+        ],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
+
+    static let weatherSun = Color(hex: 0xFFD166)
+    static let avatarRim = Color.white.opacity(0.18)
+}
+
 private struct XingyanMainStarTitle: View {
     var size: CGFloat = 30
 
@@ -2296,13 +2339,26 @@ struct ChatsView: View {
                     if officialRowAvatar.isEmpty {
                         ZStack {
                             Circle()
-                                .fill(Color(hex: 0x25D366))
+                                .fill(OfficialRowVisual.officialAvatar)
+                            Circle()
+                                .fill(
+                                    RadialGradient(
+                                        colors: [Color.white.opacity(0.12), .clear],
+                                        center: .topLeading,
+                                        startRadius: 0,
+                                        endRadius: ChatListVisual.avatarSize * 0.68
+                                    )
+                                )
                             Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: ChatListVisual.avatarSize * 0.42, weight: .semibold))
-                                .foregroundStyle(.white)
+                                .font(.system(size: ChatListVisual.avatarSize * 0.40,
+                                              weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.94))
+                            Circle()
+                                .strokeBorder(OfficialRowVisual.avatarRim, lineWidth: 0.7)
                         }
                         .frame(width: ChatListVisual.avatarSize,
                                height: ChatListVisual.avatarSize)
+                        .shadow(color: Color.black.opacity(0.16), radius: 3, y: 1.5)
                     } else {
                         Avatar(path: officialRowAvatar,
                                size: ChatListVisual.avatarSize,
@@ -2412,6 +2468,11 @@ struct ChatsView: View {
                 HStack(spacing: ChatListVisual.avatarGap) {
                     if payOfficialRowAvatar.isEmpty {
                         StarPayAvatar(size: ChatListVisual.avatarSize)
+                            .overlay {
+                                Circle()
+                                    .stroke(PayVisual.tint.opacity(0.20),
+                                            lineWidth: 0.8)
+                            }
                     } else {
                         Avatar(path: payOfficialRowAvatar, size: ChatListVisual.avatarSize,
                                radius: 14, circle: true)
@@ -2422,7 +2483,7 @@ struct ChatsView: View {
                             Text(payOfficialRowName)
                                 .font(pfStyled(size: scheme == .dark ? 16.5 : 17,
                                                weight: .semibold))
-                                .foregroundStyle(OfficialAccountVisual.name)
+                                .foregroundStyle(OfficialRowVisual.payName)
                                 .lineLimit(1)
                             Image(systemName: "checkmark.seal.fill")
                                 .font(.system(size: 11, weight: .semibold))
@@ -2488,20 +2549,31 @@ struct ChatsView: View {
             } label: {
                 HStack(spacing: ChatListVisual.avatarGap) {
                     if weatherRowAvatar.isEmpty {
-                        Image(systemName: "cloud.sun.fill")
-                            .font(.system(size: ChatListVisual.avatarSize * 0.42, weight: .semibold))
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(.white, Color(hex: 0xFFD35C))
-                            .frame(width: ChatListVisual.avatarSize,
-                                   height: ChatListVisual.avatarSize)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color(hex: 0x4C9DFF), Color(hex: 0x1558B8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                in: Circle()
-                            )
+                        ZStack {
+                            Circle()
+                                .fill(OfficialRowVisual.weatherAvatar)
+                            Circle()
+                                .fill(
+                                    RadialGradient(
+                                        colors: [Color.white.opacity(0.15), .clear],
+                                        center: .topLeading,
+                                        startRadius: 0,
+                                        endRadius: ChatListVisual.avatarSize * 0.68
+                                    )
+                                )
+                            Image(systemName: "cloud.sun.fill")
+                                .font(.system(size: ChatListVisual.avatarSize * 0.40,
+                                              weight: .semibold))
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white.opacity(0.96),
+                                                 OfficialRowVisual.weatherSun)
+                            Circle()
+                                .strokeBorder(OfficialRowVisual.avatarRim, lineWidth: 0.7)
+                        }
+                        .frame(width: ChatListVisual.avatarSize,
+                               height: ChatListVisual.avatarSize)
+                        .shadow(color: Color(hex: 0x2D6FC8).opacity(0.18),
+                                radius: 3.5, y: 1.5)
                     } else {
                         Avatar(path: weatherRowAvatar, size: ChatListVisual.avatarSize,
                                radius: 14, circle: true)
@@ -2512,8 +2584,11 @@ struct ChatsView: View {
                             Text(weatherRowName)
                                 .font(pfStyled(size: scheme == .dark ? 16.5 : 17,
                                                weight: .semibold))
-                                .foregroundStyle(ChatListVisual.ink)
+                                .foregroundStyle(OfficialRowVisual.weatherName)
                                 .lineLimit(1)
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 10.5, weight: .semibold))
+                                .foregroundStyle(OfficialRowVisual.weatherName)
                         }
                         Text(weatherRowSubtitle)
                             .font(pfStyled(size: 14,
@@ -2808,7 +2883,7 @@ struct ChatsView: View {
 
         let isDark = chatsIsDark
         let titleColor: UIColor = chat.showsOfficialMark
-            ? UIColor(hex: 0x25D366)
+            ? UIColor(hex: isDark ? 0x31C48D : 0x0F8B65)
             : UIColor(hex: isDark ? 0xD1D1D1 : 0x191919)
         let previewColor = UIColor(hex: isDark ? 0x5E5E5E : 0x999999)
         let memberColor = nativePeerColor(chat.memberColor)

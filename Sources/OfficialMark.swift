@@ -3,9 +3,9 @@ import SwiftUI
 enum OfficialAccountVisual {
     static let name = LinearGradient(
         colors: [
-            Color(hex: 0x25D366),
-            Color(hex: 0x128C7E),
-            Color(hex: 0x075E54)
+            Color.dyn(0x0F8B65, 0x36CA95),
+            Color.dyn(0x0B7156, 0x1E9A70),
+            Color.dyn(0x075E54, 0x167B5D)
         ],
         startPoint: .leading,
         endPoint: .trailing
@@ -14,15 +14,15 @@ enum OfficialAccountVisual {
     static let edge = LinearGradient(
         colors: [
             Color.white.opacity(0.82),
-            Color(hex: 0x25D366).opacity(0.76),
-            Color(hex: 0x128C7E).opacity(0.62),
+            Color(hex: 0x1FAE79).opacity(0.66),
+            Color(hex: 0x0E765B).opacity(0.60),
             Color.black.opacity(0.18)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
-    static let glow = Color(hex: 0x25D366).opacity(0.22)
+    static let glow = Color(hex: 0x13966B).opacity(0.14)
 }
 
 /// 官方账号名称后的玻璃胶囊标识。
@@ -53,7 +53,7 @@ struct OfficialMark: View {
                         LinearGradient(
                             colors: [
                                 Color.white.opacity(scheme == .dark ? 0.22 : 0.82),
-                                Color(hex: 0x25D366).opacity(scheme == .dark ? 0.30 : 0.42),
+                                Color(hex: 0x1FAE79).opacity(scheme == .dark ? 0.24 : 0.34),
                                 Color.white.opacity(scheme == .dark ? 0.12 : 0.58)
                             ],
                             startPoint: .topLeading,
@@ -74,8 +74,8 @@ struct OfficialVerifiedV: View {
 
     private let face = LinearGradient(
         colors: [
-            Color(hex: 0x25D366),
-            Color(hex: 0x128C7E)
+            Color(hex: 0x1FAE79),
+            Color(hex: 0x0D805F)
         ],
         startPoint: .top,
         endPoint: .bottom
@@ -84,8 +84,8 @@ struct OfficialVerifiedV: View {
     private let bevel = LinearGradient(
         colors: [
             Color.white.opacity(0.76),
-            Color(hex: 0x9BE8B8).opacity(0.42),
-            Color(hex: 0x25D366).opacity(0.30),
+            Color(hex: 0xA8F0CD).opacity(0.38),
+            Color(hex: 0x1FAE79).opacity(0.24),
             Color.black.opacity(0.24)
         ],
         startPoint: .topLeading,
