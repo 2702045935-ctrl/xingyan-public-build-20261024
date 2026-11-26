@@ -22,8 +22,8 @@ def require(condition: bool, message: str) -> None:
 
 require(
     'static let directUploadBases = [' in API
-    and '"https://43.242.194.89:5443"' in API
-    and '"https://43.242.194.89:8443"' in API
+    and API.index('"https://43.242.194.89:8443"')
+    < API.index('"https://43.242.194.89:5443"')
     and "private let uploadSession: URLSession" in API
     and "private func uploadRaw(source: RawUploadSource" in API
     and "var roots = API.directUploadBases" in API

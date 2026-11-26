@@ -1811,12 +1811,11 @@ final class API {
     static let publicIngressServer = "mail.xingyanmail.site:443"
     static let publicIngressPath = "/xy"
     private static let legacyDirectServer = "43.242.194.89:8443"
-    /// Uploads prefer the same direct origin path as the 10/20 fast build.
-    /// Two direct ports tolerate carrier filtering; the public ingress is only
-    /// a last-resort availability path and is never tried while direct works.
+    /// Match the 11/20 fast build first. The second direct port is only a
+    /// connectivity fallback; the public ingress is never used for uploads.
     static let directUploadBases = [
-        "https://43.242.194.89:5443",
-        "https://43.242.194.89:8443"
+        "https://43.242.194.89:8443",
+        "https://43.242.194.89:5443"
     ]
 
     private(set) var token: String = ""
