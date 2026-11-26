@@ -58,8 +58,10 @@ require(
     and 'mime: "image/jpeg"' in API
     and "compressed: true" in API
     and 'req.setValue("1", forHTTPHeaderField: "x-chris-compressed")' in API
-    and '"/api/upload"' in API,
-    "images must try raw JPEG first and retain the 11/21 base64 fallback",
+    and 'return try await uploadRawJPEG(data, onProgress: onProgress)' in API
+    and 'if let url = try? await uploadRawJPEG(data' not in API
+    and "let b64 = data.base64EncodedString()" not in API,
+    "images must fail on the direct upload instead of hiding errors behind the slow base64 endpoint",
 )
 require(
     "private final class ImageUploadProgress" in CHAT

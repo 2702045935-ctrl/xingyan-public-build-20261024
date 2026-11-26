@@ -5798,19 +5798,9 @@ private struct StarredPayload: Decodable {
         guard let data = data else {
             throw APIError.message("图片处理失败")
         }
-
-        if let url = try? await uploadRawJPEG(data, onProgress: onProgress) {
-            return url
-        }
-        onProgress?(0.15)
-        let b64 = data.base64EncodedString()
-        let payload: UploadPayload = try await post("/api/upload",
-                                                    ["dataUrl": "data:image/jpeg;base64," + b64,
-                                                     "filename": "photo.jpg"],
-                                                    as: UploadPayload.self)
-        guard let url = payload.url else { throw APIError.message("上传失败") }
-        onProgress?(1)
-        return url
+        // Keep raw upload errors visible. Falling back to /api/upload turns a
+        // failing direct upload into a minute-long request with no progress.
+        return try await uploadRawJPEG(data, onProgress: onProgress)
     }
 
     private func uploadRawJPEG(_ data: Data,
