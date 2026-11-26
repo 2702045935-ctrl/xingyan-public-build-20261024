@@ -8419,67 +8419,103 @@ struct MessageRow: View {
         let amount = (o["amount"] as? Double) ?? 0
         let note = (o["note"] as? String) ?? ""
         let status = (o["status"] as? String) ?? "pending"
-        let state = status == "received" ? "已收款" : (status == "refunded" ? "已退回" : "待对方确认收款")
-
-        let card: Color
-        if status == "refunded" {
-            card = Color(hex: 0xC2C2C2)
-        } else if status == "received" {
-            card = Color(hex: 0xF0C69A)
-        } else {
-            card = Color(hex: 0xFA9D3C)
-        }
+        let pending = status == "pending"
+        let received = status == "received"
+        let accent = received ? PayVisual.success
+            : (pending ? PayVisual.warning : PayVisual.secondaryInk)
+        let statusText = received ? Tr("已收款")
+            : (pending ? Tr("待确认") : Tr("已退回"))
+        let hint = received ? Tr("已存入零钱")
+            : (pending
+               ? (mine ? Tr("对方确认后到账") : Tr("点击查看并确认收款"))
+               : Tr("款项已原路退回"))
+        let surface = Color.dyn(0xFFFFFF, 0x1C1C1E)
+        let inset = Color.dyn(0xF2F2F7, 0x2C2C2E)
 
         return VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .center, spacing: 9) {
+            HStack(alignment: .center, spacing: 12) {
                 ZStack {
-                    Circle().fill(Color.white.opacity(0.22)).frame(width: 34, height: 34)
-                    Image(systemName: "yensign")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.white)
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .fill(accent.opacity(scheme == .dark ? 0.17 : 0.10))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: received
+                          ? "checkmark"
+                          : (pending ? "arrow.up.right" : "arrow.uturn.backward"))
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(accent)
                 }
-                VStack(alignment: .leading, spacing: 2) {
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(mine ? Tr("你转给对方") : Tr("转账给你"))
+                        .font(pf(11.5, .medium))
+                        .foregroundColor(PayVisual.secondaryInk)
                     Text("¥\(moneyFmt(amount))")
-                        .font(pfMoney(19, .medium))
-                        .foregroundColor(.white)
+                        .font(pfMoney(23, .semibold))
+                        .foregroundColor(C.label)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
-                    Text(note.isEmpty ? Tr("转账") : note)
-                        .font(pf(11))
-                        .foregroundColor(Color.white.opacity(0.85))
-                        .lineLimit(1)
                 }
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 11)
-            .padding(.top, 11)
-            .padding(.bottom, 10)
 
-            Rectangle()
-                .fill(Color.white.opacity(0.22))
-                .frame(height: 0.5)
+                Spacer(minLength: 8)
 
-            HStack(spacing: 5) {
-                Image(systemName: "arrow.left.arrow.right")
-                    .font(.system(size: 9.5, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.85))
-                Text(Tr("转账"))
-                    .font(pf(11))
-                    .foregroundColor(Color.white.opacity(0.85))
-                Spacer(minLength: 4)
-                Text(state)
-                    .font(pf(11.5))
-                    .foregroundColor(.white)
+                Text(statusText)
+                    .font(pf(11.5, .semibold))
+                    .foregroundColor(accent)
+                    .padding(.horizontal, 8)
+                    .frame(height: 23)
+                    .background(accent.opacity(scheme == .dark ? 0.16 : 0.10),
+                                in: Capsule(style: .continuous))
                     .lineLimit(1)
             }
-            .padding(.horizontal, 11)
-            .frame(height: 28)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 13)
+
+            HairLine(inset: 14)
+
+            HStack(spacing: 8) {
+                Text(note.isEmpty ? Tr("转账") : note)
+                    .font(pf(13.5))
+                    .foregroundColor(C.label)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(PayVisual.secondaryInk.opacity(0.72))
+            }
+            .padding(.horizontal, 14)
+            .frame(height: 38)
+
+            HStack(spacing: 7) {
+                Circle()
+                    .fill(accent)
+                    .frame(width: 6, height: 6)
+                Text(hint)
+                    .font(pf(11.5, .medium))
+                    .foregroundColor(PayVisual.secondaryInk)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .frame(height: 34)
+            .background(inset.opacity(scheme == .dark ? 0.74 : 0.62))
         }
 
-        .frame(width: min(maxBubbleWidth, UIConfig.num("transferCardW", 240)),
+        .frame(width: min(maxBubbleWidth, UIConfig.num("transferCardW", 258)),
                alignment: .leading)
-        .background(card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(accent.opacity(scheme == .dark ? 0.17 : 0.12),
+                        lineWidth: 0.7)
+        }
+        .shadow(color: .black.opacity(scheme == .dark ? 0.18 : 0.07),
+                radius: 10, y: 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            (mine ? Tr("你转给对方") : Tr("转账给你"))
+                + "，" + statusText + "，¥" + moneyFmt(amount)
+        )
     }
 
     @ViewBuilder

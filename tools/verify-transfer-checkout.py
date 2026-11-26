@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TRANSFER = (ROOT / "Sources" / "TransferFlow.swift").read_text(encoding="utf-8")
+CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -29,6 +30,15 @@ require(
     and 'Image(systemName: "text.bubble")' in TRANSFER
     and ".frame(height: 48)" in TRANSFER,
     "the transfer desk must present a compact payee identity card and a full-width note row",
+)
+require(
+    'Text(mine ? Tr("你转给对方") : Tr("转账给你"))' in CHAT
+    and "Text(statusText)" in CHAT
+    and "Text(hint)" in CHAT
+    and 'UIConfig.num("transferCardW", 258)' in CHAT
+    and "Color(hex: 0xFA9D3C)" not in CHAT
+    and "RoundedRectangle(cornerRadius: 16, style: .continuous)" in CHAT,
+    "chat transfer receipts must use the same neutral transfer and receive hierarchy",
 )
 require(
     ".sheet(isPresented: $showPay)" in TRANSFER
