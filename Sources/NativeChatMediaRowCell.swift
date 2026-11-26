@@ -58,6 +58,15 @@ private final class NativeMediaImageView: UIImageView {
         let token = requestToken
         image = nil
         guard !path.isEmpty else { return }
+        let localPath = path.hasPrefix("file://")
+            ? (URL(string: path)?.path ?? "")
+            : path
+        if !localPath.isEmpty,
+           FileManager.default.fileExists(atPath: localPath),
+           let local = UIImage(contentsOfFile: localPath) {
+            image = local
+            return
+        }
         let key = ImageCacheKey.stablePath(path)
         if let hit = ImageStore.shared.get(key) ?? ImageStore.shared.get(path) {
             image = hit

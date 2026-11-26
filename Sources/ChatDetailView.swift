@@ -4112,9 +4112,13 @@ struct ChatDetailView: View {
                         case .images(_):
                             if !path.isEmpty { openImage(path) }
                         case .video:
-                            if let url = API.shared.assetURL(
-                                Self.firstJSONString(message.body, key: "url") ?? ""
-                            ) {
+                            let raw = Self.firstJSONString(message.body, key: "url") ?? ""
+                            let url = raw.hasPrefix("file://")
+                                ? URL(string: raw)
+                                : (FileManager.default.fileExists(atPath: raw)
+                                   ? URL(fileURLWithPath: raw)
+                                   : API.shared.assetURL(raw))
+                            if let url {
                                 videoToPlay = url
                                 videoPayload = message.body
                             }
@@ -6977,6 +6981,16 @@ struct ChatDetailView: View {
             sendProgress = 0
             scrollTick += 1
             let px = img.sendPixelSize
+            let clientId = UUID().uuidString
+            if let localPath = persistPendingImage(img, clientId: clientId, index: 0) {
+                showLocalMediaMessage(
+                    localMediaMessage(
+                        kind: "image",
+                        content: localPath,
+                        clientId: clientId
+                    )
+                )
+            }
             Task {
                 let t0 = Date()
                 do {
@@ -6994,6 +7008,7 @@ struct ChatDetailView: View {
                     sendProgress = 0.9
                     let tUp = Date()
                     if let m = try await API.shared.send(chatId: chat.id, kind: "image", content: url,
+                                                         clientId: clientId,
                                                          imgW: px.w, imgH: px.h) {
                         appendVisibleMessage(m)
                     }
@@ -7001,7 +7016,11 @@ struct ChatDetailView: View {
                     Task { await API.shared.callDiag("发图(+) 压+传=\(Int(tUp.timeIntervalSince(t0) * 1000))ms"
                         + " 发送=\(Int(tSend.timeIntervalSince(tUp) * 1000))ms"
                         + " 原图=\(original ? 1 : 0) 原始=\(Int(img.size.width))x\(Int(img.size.height))") }
-                } catch { app.show((error as? APIError)?.errorDescription ?? "图片发送失败") }
+                } catch {
+                    discardLocalMediaMessage(clientId: clientId)
+                    app.show((error as? APIError)?.errorDescription ?? "图片发送失败")
+                }
+                schedulePersist()
                 uploading = false
                 sendingMedia = ""
                 sendingPreview = nil
@@ -7019,6 +7038,20 @@ struct ChatDetailView: View {
             sendProgress = 0
             scrollTick += 1
             let progress = ImageUploadProgress(count: list.count)
+            let clientId = UUID().uuidString
+            let localPaths = list.enumerated().compactMap { item in
+                persistPendingImage(item.element, clientId: clientId, index: item.offset)
+            }
+            if localPaths.count == list.count, !localPaths.isEmpty {
+                let localBody = "{\"paths\":" + Self.jsonStringArray(localPaths) + "}"
+                showLocalMediaMessage(
+                    localMediaMessage(
+                        kind: "images",
+                        content: localBody,
+                        clientId: clientId
+                    )
+                )
+            }
             Task {
                 do {
                     var urls: [String] = []
@@ -7072,7 +7105,10 @@ struct ChatDetailView: View {
                         sendProgress = 0.9
                         CrashCatcher.note("发图", "合成一条相册消息（\(urls.count) 张）")
                         let body = "{\"paths\":" + Self.jsonStringArray(urls) + "}"
-                        if let m = try await API.shared.send(chatId: chat.id, kind: "images", content: body) {
+                        if let m = try await API.shared.send(chatId: chat.id,
+                                                             kind: "images",
+                                                             content: body,
+                                                             clientId: clientId) {
                             appendVisibleMessage(m)
                         }
                     } else {
@@ -7080,12 +7116,17 @@ struct ChatDetailView: View {
                         for (i, u) in urls.enumerated() {
                             let d: (w: Int, h: Int) = i < dims.count ? dims[i] : (w: 0, h: 0)
                             if let m = try await API.shared.send(chatId: chat.id, kind: "image", content: u,
+                                                                 clientId: clientId,
                                                                  imgW: d.w, imgH: d.h) {
                                 appendVisibleMessage(m)
                             }
                         }
                     }
-                } catch { app.show((error as? APIError)?.errorDescription ?? "图片发送失败") }
+                } catch {
+                    discardLocalMediaMessage(clientId: clientId)
+                    app.show((error as? APIError)?.errorDescription ?? "图片发送失败")
+                }
+                schedulePersist()
                 uploading = false
                 sendingMedia = ""
                 sendingPreview = nil
@@ -7099,11 +7140,38 @@ struct ChatDetailView: View {
             sendingPreview = preview
             sendingMedia = Tr("视频发送中…")
             scrollTick += 1
+            let clientId = UUID().uuidString
             Task {
 
                 let cover: UIImage?
                 if let p = preview { cover = p } else { cover = await MediaTool.firstFrame(url) }
                 if cover != nil { sendingPreview = cover }
+
+                let directory = pendingMediaDirectory()
+                let localVideo = directory.appendingPathComponent("\(clientId).mov")
+                try? FileManager.default.copyItem(at: url, to: localVideo)
+                let localCover = directory.appendingPathComponent("\(clientId)-cover.jpg")
+                if let data = cover?.jpegData(compressionQuality: 0.86) {
+                    try? data.write(to: localCover, options: .atomic)
+                }
+                if FileManager.default.fileExists(atPath: localVideo.path) {
+                    let localBody: [String: Any] = [
+                        "url": localVideo.path,
+                        "cover": FileManager.default.fileExists(atPath: localCover.path)
+                            ? localCover.path : "",
+                        "seconds": 0,
+                        "local": true
+                    ]
+                    let localJSON = (try? JSONSerialization.data(withJSONObject: localBody))
+                        .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+                    showLocalMediaMessage(
+                        localMediaMessage(
+                            kind: "video",
+                            content: localJSON,
+                            clientId: clientId
+                        )
+                    )
+                }
 
                 let coverTask = Task { () -> String? in
                     guard let c = cover else { return nil }
@@ -7134,6 +7202,7 @@ struct ChatDetailView: View {
                         if p >= 0.999 { sendingMedia = Tr("服务器处理中…") }
                     }
                 }, skipServerTranscode: true) else {
+                    discardLocalMediaMessage(clientId: clientId)
                     uploading = false
                     sendingMedia = ""
                     sendingPreview = nil
@@ -7149,9 +7218,16 @@ struct ChatDetailView: View {
                     body["cover"] = cp
                 }
                 let json = (try? JSONSerialization.data(withJSONObject: body)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
-                if let m = try? await API.shared.send(chatId: chat.id, kind: "video", content: json) {
+                if let m = try? await API.shared.send(chatId: chat.id,
+                                                      kind: "video",
+                                                      content: json,
+                                                      clientId: clientId) {
                     appendVisibleMessage(m)
+                } else {
+                    discardLocalMediaMessage(clientId: clientId)
+                    app.show(Tr("视频发送失败"))
                 }
+                schedulePersist()
                 uploading = false
                 sendingMedia = ""
                 sendingPreview = nil
@@ -7212,6 +7288,69 @@ struct ChatDetailView: View {
             ImageStore.shared.diskWrite(cacheKey, data)
             LocalStore.keep(cacheKey, data: data)
         }
+    }
+
+    private func pendingMediaDirectory() -> URL {
+        let root = FileManager.default.urls(
+            for: .cachesDirectory,
+            in: .userDomainMask
+        )[0].appendingPathComponent("xingyan-outbox-media", isDirectory: true)
+        try? FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        return root
+    }
+
+    private func persistPendingImage(_ image: UIImage,
+                                     clientId: String,
+                                     index: Int) -> String? {
+        guard let data = image.jpegData(compressionQuality: 0.88) else { return nil }
+        let url = pendingMediaDirectory()
+            .appendingPathComponent("\(clientId)-\(index).jpg")
+        do {
+            try data.write(to: url, options: .atomic)
+            return url.path
+        } catch {
+            return nil
+        }
+    }
+
+    private func localMediaMessage(kind: String,
+                                   content: String,
+                                   clientId: String) -> Message {
+        Message(
+            id: "pending-" + clientId,
+            clientId: clientId,
+            chatId: chat.id,
+            senderId: myId,
+            kind: kind,
+            content: content,
+            createdAt: TimeFmt.isoFrac.string(from: Date()),
+            senderName: app.me?.name
+        )
+    }
+
+    private func showLocalMediaMessage(_ message: Message) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            appendVisibleMessage(message, pinOwnMessage: false)
+        }
+        app.rememberChatPageMessages(chat.id, [message])
+        schedulePersist()
+        followOwnSendUntil = Date().addingTimeInterval(5)
+        pinToBottomSoon(force: true, animated: false)
+    }
+
+    private func discardLocalMediaMessage(clientId: String) {
+        guard !clientId.isEmpty else { return }
+        messages.removeAll {
+            $0.clientId == clientId || $0.id == "pending-" + clientId
+        }
+        app.rememberChatPageMessages(chat.id, messages)
+        schedulePersist()
+        rebuildIndex()
     }
 
     private func sendImage(_ image: UIImage) {
@@ -7455,6 +7594,29 @@ struct ChatDetailView: View {
             app.show(Tr("读不到这个文件"))
             return
         }
+        let clientId = UUID().uuidString
+        let safeName = name.replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: ":", with: "_")
+        let localFile = pendingMediaDirectory()
+            .appendingPathComponent("\(clientId)-\(safeName)")
+        try? FileManager.default.copyItem(at: uploadURL, to: localFile)
+        if FileManager.default.fileExists(atPath: localFile.path) {
+            let localBody: [String: Any] = [
+                "url": localFile.path,
+                "name": name,
+                "bytes": sizeBytes,
+                "local": true
+            ]
+            let localJSON = (try? JSONSerialization.data(withJSONObject: localBody))
+                .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+            showLocalMediaMessage(
+                localMediaMessage(
+                    kind: "file",
+                    content: localJSON,
+                    clientId: clientId
+                )
+            )
+        }
         uploading = true
         sendingFileName = name
         sendingFileBytes = sizeBytes
@@ -7499,13 +7661,18 @@ struct ChatDetailView: View {
             guard let content = String(data: jsonData, encoding: .utf8) else {
                 throw APIError.message("文件信息生成失败")
             }
-            if let message = try await API.shared.send(chatId: chat.id, kind: "file", content: content) {
+            if let message = try await API.shared.send(chatId: chat.id,
+                                                       kind: "file",
+                                                       content: content,
+                                                       clientId: clientId) {
                 appendVisibleMessage(message)
             }
+            schedulePersist()
             sendingFileProgress = nil
             sendingFileName = ""
             sendingFileBytes = 0
         } catch {
+            discardLocalMediaMessage(clientId: clientId)
             app.show((error as? APIError)?.errorDescription ?? "文件发送失败")
         }
         await app.loadChats()
