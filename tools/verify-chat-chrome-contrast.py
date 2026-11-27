@@ -19,8 +19,8 @@ require(
     "wallpaper edge masks must choose a scrim opposite to the selected ink",
 )
 require(
-    "contrastScrim.opacity(effectiveDark ? 0.30 : 0.26)" in CHAT
-    and "contrastScrim.opacity(effectiveDark ? 0.18 : 0.15)" in CHAT,
+    "contrastScrim.opacity(effectiveDark ? 0.25 : 0.22)" in CHAT
+    and "contrastScrim.opacity(effectiveDark ? 0.14 : 0.12)" in CHAT,
     "top and bottom chrome need a strong-to-transparent contrast falloff",
 )
 require(

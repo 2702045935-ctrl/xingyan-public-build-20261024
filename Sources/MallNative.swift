@@ -1407,28 +1407,28 @@ enum DDColor {
     static let blueDeep = Color.dyn(0x0071E3, 0x2997FF)
     static let blueLight = Color.dyn(0xEAF4FF, 0x101E31)
     static let blueEdge = Color.dyn(0xD6E7FF, 0x263B58)
-    static let page     = Color.dyn(0xF5F5F7, 0x000000)
-    static let hero     = Color.dyn(0xF5F5F7, 0x0A0A0A)
-    static let card     = Color.dyn(0xFFFFFF, 0x1C1C1E)
-    static let fill     = Color.dyn(0xF5F5F7, 0x2C2C2E)
-    static let ink      = Color.dyn(0x1D1D1F, 0xF5F5F7)
-    static let sub      = Color.dyn(0x6E6E73, 0xA1A1A6)
-    static let weak     = Color.dyn(0x86868B, 0x7C7C80)
-    static let line     = Color.dyn(0xE5E5EA, 0x38383A)
+    static let page     = C.pageBg
+    static let hero     = C.pageBg
+    static let card     = C.cardBg
+    static let fill     = C.searchBg
+    static let ink      = C.label
+    static let sub      = C.preview
+    static let weak     = C.time
+    static let line     = C.hairline
 
-    static let cardGrad = LinearGradient(colors: [Color.dyn(0xFFFFFF, 0x1C1C1E),
-                                                  Color.dyn(0xFBFCFE, 0x202022)],
+    static let cardGrad = LinearGradient(colors: [C.cardBg,
+                                                  C.pinnedBg],
                                          startPoint: .top, endPoint: .bottom)
-    static let cardEdge = Color.dyn(0xE5E5EA, 0x38383A)
+    static let cardEdge = C.hairline
     static let cardShadow = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor.black.withAlphaComponent(0.28)
             : UIColor(hex: 0x26354A).withAlphaComponent(0.07)
     })
 
-    static let mineCardGrad = LinearGradient(colors: [Color.dyn(0xFFFFFF, 0x1C1C1E),
-                                                      Color.dyn(0xFBFCFE, 0x202022),
-                                                      Color.dyn(0xFFFFFF, 0x1C1C1E)],
+    static let mineCardGrad = LinearGradient(colors: [C.cardBg,
+                                                      C.pinnedBg,
+                                                      C.cardBg],
                                              startPoint: .top, endPoint: .bottom)
 
     static let barGrad = LinearGradient(colors: [Color(hex: 0x2F6FED), Color(hex: 0x007DFF)],

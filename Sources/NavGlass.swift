@@ -54,34 +54,115 @@ struct TopGlassBar: View {
 }
 
 #if canImport(UIKit)
+private final class SpecularEffectView: UIVisualEffectView {
+    private let topSheen = CAGradientLayer()
+    private let diagonalSheen = CAGradientLayer()
+    private let lowerShade = CAGradientLayer()
+    private var isDark = true
+
+    init(effect: UIVisualEffect?, dark: Bool) {
+        self.isDark = dark
+        super.init(effect: effect)
+        isUserInteractionEnabled = false
+        contentView.layer.masksToBounds = true
+        contentView.layer.cornerCurve = .continuous
+        contentView.layer.addSublayer(diagonalSheen)
+        contentView.layer.addSublayer(topSheen)
+        contentView.layer.addSublayer(lowerShade)
+        configureDirection()
+        applyColors()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func setDark(_ dark: Bool) {
+        guard isDark != dark else { return }
+        isDark = dark
+        applyColors()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        diagonalSheen.frame = bounds
+        topSheen.frame = CGRect(
+            x: 0,
+            y: 0,
+            width: bounds.width,
+            height: min(108, max(28, bounds.height * 0.36))
+        )
+        let shadeHeight = min(40, max(18, bounds.height * 0.20))
+        lowerShade.frame = CGRect(
+            x: 0,
+            y: max(0, bounds.height - shadeHeight),
+            width: bounds.width,
+            height: shadeHeight
+        )
+    }
+
+    private func configureDirection() {
+        topSheen.startPoint = CGPoint(x: 0.5, y: 0)
+        topSheen.endPoint = CGPoint(x: 0.5, y: 1)
+        topSheen.locations = [0, 0.32, 1]
+
+        diagonalSheen.startPoint = CGPoint(x: 0, y: 0)
+        diagonalSheen.endPoint = CGPoint(x: 0.72, y: 1)
+        diagonalSheen.locations = [0, 0.32, 0.78]
+
+        lowerShade.startPoint = CGPoint(x: 0.5, y: 0)
+        lowerShade.endPoint = CGPoint(x: 0.5, y: 1)
+        lowerShade.locations = [0, 0.7, 1]
+    }
+
+    private func applyColors() {
+        topSheen.colors = [
+            UIColor.white.withAlphaComponent(isDark ? 0.13 : 0.46).cgColor,
+            UIColor.white.withAlphaComponent(isDark ? 0.035 : 0.12).cgColor,
+            UIColor.clear.cgColor
+        ]
+        diagonalSheen.colors = [
+            UIColor.white.withAlphaComponent(isDark ? 0.045 : 0.16).cgColor,
+            UIColor.clear.cgColor,
+            UIColor.black.withAlphaComponent(isDark ? 0.045 : 0.015).cgColor
+        ]
+        lowerShade.colors = [
+            UIColor.clear.cgColor,
+            UIColor.black.withAlphaComponent(isDark ? 0.035 : 0.012).cgColor,
+            UIColor.black.withAlphaComponent(isDark ? 0.17 : 0.045).cgColor
+        ]
+    }
+}
+
 struct NativePremiumGlassMaterial: UIViewRepresentable {
     let dark: Bool
 
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func makeUIView(context: Context) -> UIVisualEffectView {
-        let view = UIVisualEffectView(effect: effect)
+        let view = SpecularEffectView(effect: effect, dark: dark)
         view.isUserInteractionEnabled = false
         view.contentView.backgroundColor = reduceTransparency
             ? UIColor.secondarySystemBackground
-            : (dark ? UIColor.black.withAlphaComponent(0.035)
-                    : UIColor.white.withAlphaComponent(0.028))
+            : (dark ? UIColor.black.withAlphaComponent(0.018)
+                    : UIColor.white.withAlphaComponent(0.020))
         return view
     }
 
     func updateUIView(_ view: UIVisualEffectView, context: Context) {
         view.effect = effect
+        (view as? SpecularEffectView)?.setDark(dark)
         view.contentView.backgroundColor = reduceTransparency
             ? UIColor.secondarySystemBackground
-            : (dark ? UIColor.black.withAlphaComponent(0.035)
-                    : UIColor.white.withAlphaComponent(0.028))
+            : (dark ? UIColor.black.withAlphaComponent(0.018)
+                    : UIColor.white.withAlphaComponent(0.020))
     }
 
     private var effect: UIVisualEffect? {
         guard !reduceTransparency else { return nil }
         return UIBlurEffect(style: dark
-                            ? .systemChromeMaterialDark
-                            : .systemChromeMaterialLight)
+                            ? .systemUltraThinMaterialDark
+                            : .systemUltraThinMaterialLight)
     }
 }
 
@@ -99,7 +180,10 @@ struct NativeGlassHeaderMaterial: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UIVisualEffectView {
         let dark = forcedDark ?? (scheme == .dark)
-        let view = UIVisualEffectView(effect: Self.visualEffect(dark: dark))
+        let view = SpecularEffectView(
+            effect: Self.visualEffect(dark: dark),
+            dark: dark
+        )
         view.isUserInteractionEnabled = false
         view.contentView.backgroundColor = .clear
         applyReducedTransparency(to: view)
@@ -115,6 +199,7 @@ struct NativeGlassHeaderMaterial: UIViewRepresentable {
         guard context.coordinator.token != token else { return }
         context.coordinator.token = token
         view.effect = Self.visualEffect(dark: dark)
+        (view as? SpecularEffectView)?.setDark(dark)
         applyReducedTransparency(to: view)
     }
 
@@ -132,7 +217,7 @@ struct NativeGlassHeaderMaterial: UIViewRepresentable {
         if #available(iOS 26.0, *) {
             let effect = UIGlassEffect(style: .regular)
             effect.isInteractive = false
-            effect.tintColor = UIColor.white.withAlphaComponent(dark ? 0.025 : 0.055)
+            effect.tintColor = UIColor.white.withAlphaComponent(dark ? 0.055 : 0.080)
             return effect
         }
         return UIBlurEffect(style: dark
@@ -156,7 +241,10 @@ struct NativeFrostedHeaderMaterial: UIViewRepresentable {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func makeUIView(context: Context) -> UIVisualEffectView {
-        let view = UIVisualEffectView(effect: effect)
+        let view = SpecularEffectView(
+            effect: effect,
+            dark: scheme == .dark
+        )
         view.isUserInteractionEnabled = false
         view.contentView.backgroundColor = reduceTransparency
             ? UIColor.secondarySystemBackground : .clear
@@ -165,6 +253,7 @@ struct NativeFrostedHeaderMaterial: UIViewRepresentable {
 
     func updateUIView(_ view: UIVisualEffectView, context: Context) {
         view.effect = effect
+        (view as? SpecularEffectView)?.setDark(scheme == .dark)
         view.contentView.backgroundColor = reduceTransparency
             ? UIColor.secondarySystemBackground : .clear
     }
@@ -189,7 +278,7 @@ struct NativeTopGlassMask: View {
             if !active {
                 Color.clear
             } else if reduceTransparency {
-                Color(uiColor: .systemBackground)
+                C.pageBg
             } else {
                 NativeFrostedHeaderMaterial()
             }
@@ -225,7 +314,7 @@ struct NativeChatsTopEdgeChrome: View {
             } else {
                 ZStack {
                     NativeGlassHeaderMaterial(forcedDark: isDark)
-                    tint.opacity(isDark ? 0.62 : 0.58)
+                    tint.opacity(isDark ? 0.48 : 0.42)
                 }
             }
         }
@@ -381,7 +470,7 @@ struct ScrollActiveGlassMask: View {
                     base
                         /* 滚动内容进入标题区后必须真正被遮住。
                            保留玻璃的通透感，但浅色页面不能再让下面的文字透出来。 */
-                        .opacity(activeBaseOpacity ?? (scheme == .dark ? 0.72 : 0.56))
+                        .opacity(activeBaseOpacity ?? (scheme == .dark ? 0.54 : 0.42))
                     LinearGradient(
                         stops: [
                             .init(color: base.opacity(scheme == .dark ? 0.22 : 0.15),
@@ -392,6 +481,18 @@ struct ScrollActiveGlassMask: View {
                         ],
                         startPoint: .top,
                         endPoint: .bottom)
+
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(scheme == .dark ? 0.055 : 0.13),
+                            Color.white.opacity(scheme == .dark ? 0.015 : 0.035),
+                            Color.clear
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 46)
+                    .frame(maxHeight: .infinity, alignment: .top)
                 }
                 .transition(.opacity)
             }
@@ -428,7 +529,7 @@ struct NativeChromeMaterial: View {
 
     private var reducedSurface: some View {
         Rectangle()
-            .fill(UIConfig.fixedDark("glassReducedSurface", 0xFFFFFF, 0x1C1C1E))
+            .fill(UIConfig.fixedDark("glassReducedSurface", 0xFAFBF9, 0x1D231F))
             .overlay {
                 Rectangle()
                     .stroke(C.hairline.opacity(scheme == .dark ? 0.72 : 0.55),
@@ -508,7 +609,7 @@ struct NativeGlassControlMaterial: View {
             }
         } else if reduceTransparency {
             shape
-                .fill(UIConfig.fixedDark("glassReducedSurface", 0xFFFFFF, 0x1C1C1E))
+                .fill(UIConfig.fixedDark("glassReducedSurface", 0xFAFBF9, 0x1D231F))
         } else {
             fallback
         }
@@ -517,11 +618,35 @@ struct NativeGlassControlMaterial: View {
         #endif
         }
         .overlay {
-            shape.stroke(Color.white.opacity(scheme == .dark ? 0.22 : 0.32),
-                         lineWidth: 0.7)
+            shape.fill(
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(scheme == .dark ? 0.10 : 0.30),
+                        Color.clear,
+                        Color.black.opacity(scheme == .dark ? 0.10 : 0.025)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .allowsHitTesting(false)
         }
-        .shadow(color: Color.black.opacity(scheme == .dark ? 0.22 : 0.10),
-                radius: 7, y: 3)
+        .overlay {
+            shape.stroke(
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(scheme == .dark ? 0.34 : 0.62),
+                        Color.white.opacity(scheme == .dark ? 0.08 : 0.20),
+                        Color.black.opacity(scheme == .dark ? 0.20 : 0.055)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 0.65
+            )
+        }
+        .shadow(color: Color.black.opacity(scheme == .dark ? 0.28 : 0.09),
+                radius: 8, x: 0, y: 4)
         .allowsHitTesting(false)
     }
 

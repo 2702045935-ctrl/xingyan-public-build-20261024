@@ -17,6 +17,9 @@ def require(condition: bool, message: str) -> None:
 
 require("struct NativeTopGlassMask" in NAV
         and "struct NativeFrostedHeaderMaterial" in NAV
+        and "final class SpecularEffectView" in NAV
+        and "topSheen.colors" in NAV
+        and "lowerShade.colors" in NAV
         and "UIBlurEffect(style: scheme == .dark" in NAV
         and "NativeFrostedHeaderMaterial()" in NAV
         and "accessibilityReduceTransparency" in NAV,
@@ -46,9 +49,16 @@ require(
     "NativeChatsTopEdgeChrome" in NAV
     and "let tint = background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground))" in NAV
     and "NativeGlassHeaderMaterial(forcedDark: isDark)" in NAV
-    and "tint.opacity(isDark ? 0.62 : 0.58)" in NAV
+    and "tint.opacity(isDark ? 0.48 : 0.42)" in NAV
     and ".opacity(scrolled > 0 ? 1 : 0)" not in NAV,
     "conversation chrome must use same-colour native glass without a first-scroll transition",
+)
+require(
+    "Color.clear\n                        .frame(height: L.safeTop + chatsHeaderH + chatsSearchH)"
+    in CHATS
+    and "NativeChatsTopEdgeChrome(scrolled: chatTopScrolled," in CHATS
+    and "chatTopHeader\n                        .background" in CHATS,
+    "conversation top material must stop at the header and leave search visible",
 )
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         and "NativeTopScrollObserver" in CONTACTS

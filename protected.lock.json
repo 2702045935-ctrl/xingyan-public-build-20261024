@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 366218,
-      "sha256": "22f8ea828623771e79fe72d2b570ba70f8c551e71c9a46e628f3a7338c76b4e4"
+      "size": 366216,
+      "sha256": "40183ab0bda758c1492b47e7decb3a24d1a81b8c9f2692ed33b3e8607202a11b"
     },
     {
       "path": "Sources/ChatDeferred.swift",
@@ -48,8 +48,8 @@
     },
     {
       "path": "Sources/ChatsView.swift",
-      "size": 153297,
-      "sha256": "f90d2a554d81791ef3e6170829c034c5835d0d5f130d380fdb460cfe5f8634b9"
+      "size": 153299,
+      "sha256": "5aeb004531d906f2f6978924b5f742b983f0940b84f276f316d3bb4889adf23d"
     },
     {
       "path": "Sources/NativeChatList.swift",
@@ -58,8 +58,8 @@
     },
     {
       "path": "Sources/NativeChatRowCell.swift",
-      "size": 42368,
-      "sha256": "8a97ee8152f4ab2819ccefc6ec75316107e063b3e638ddfdd130310e37b63635"
+      "size": 42441,
+      "sha256": "f900e97561ff6b7d8eed7a4fe631efb104f94f27d80dd62fb39385e0176b059f"
     },
     {
       "path": "Sources/WeChatMessageCards.swift",

@@ -199,7 +199,7 @@ enum ShareSheetTheme {
     static var secondaryAccent: Color { Color.dyn(0x007AFF, 0x0A84FF) }
 
     static func page(_ scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(hex: 0x0A0A0A) : Color(hex: 0xF2F2F7)
+        C.pageBg
     }
 
     @ViewBuilder
@@ -208,20 +208,20 @@ enum ShareSheetTheme {
             Rectangle()
                 .fill(.regularMaterial)
             Rectangle()
-                .fill(page(scheme).opacity(scheme == .dark ? 0.48 : 0.54))
+                .fill(page(scheme).opacity(scheme == .dark ? 0.42 : 0.46))
         }
     }
 
     static func card(_ scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(hex: 0x1C1C1E) : .white
+        C.cardBg
     }
 
     static func ink(_ scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(hex: 0xF2F2F7) : Color(hex: 0x1C1C1E)
+        C.label
     }
 
     static func secondaryInk(_ scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(hex: 0x8E8E93) : Color(hex: 0x6C6C70)
+        C.subLabel
     }
 }
 

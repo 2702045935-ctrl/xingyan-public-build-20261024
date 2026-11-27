@@ -61,6 +61,33 @@ struct GlassBackground<S: Shape>: View {
                 .clipShape(shape)
 
                 .overlay { if let t = resolvedTint { shape.fill(t) } }
+                .overlay {
+                    shape.fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(scheme == .dark ? 0.10 : 0.30),
+                                Color.clear,
+                                Color.black.opacity(scheme == .dark ? 0.10 : 0.025)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                }
+                .overlay {
+                    shape.stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(scheme == .dark ? 0.34 : 0.62),
+                                Color.white.opacity(scheme == .dark ? 0.08 : 0.20),
+                                Color.black.opacity(scheme == .dark ? 0.20 : 0.055)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.7
+                    )
+                }
                 .opacity(opacity)
 
                 .allowsHitTesting(false)
@@ -80,7 +107,7 @@ struct GlassBackground<S: Shape>: View {
 
     private var reducedTransparencySurface: some View {
         ZStack {
-            shape.fill(UIConfig.fixedDark("glassReducedSurface", 0xFFFFFF, 0x1C1C1E))
+            shape.fill(UIConfig.fixedDark("glassReducedSurface", 0xFAFBF9, 0x1D231F))
             if let tint {
                 shape.fill(tint.opacity(scheme == .dark ? 0.42 : 0.34))
             }
@@ -168,7 +195,7 @@ struct HarmonyDarkMask: View {
             HarmonyDarkBlur()
                 .opacity(max(0, min(1, 0.94 * strength)))
 
-            Color(hex: 0x111111)
+            Color(hex: 0x101412)
                 .opacity(max(0, min(1, 0.62 * strength)))
 
             LinearGradient(

@@ -62,19 +62,19 @@ private enum ChatTheme {
         preset.mine
     }
     static var bubbleOther: Color { preset.other }
-    static let ink = Color.dyn(0x111B21, 0xE9EDEF)
-    static let mineInk = Color.dyn(0xFFFFFF, 0xE9EDEF)
-    static let secondary = Color.dyn(0x667781, 0x8696A0)
-    static let groupSenderNameOnLight = Color.dyn(0x111B21, 0x111B21)
-    static let groupSenderNameOnDark = Color.dyn(0xE9EDEF, 0xE9EDEF)
-    static let secondaryOnMine = Color.dyn(0xD4F5EF, 0xE5E5EA)
-    static let timeInk = Color.dyn(0x667781, 0x8696A0)
+    static let ink = Color.dyn(0x171A18, 0xEDF1EE)
+    static let mineInk = Color.dyn(0xF7F9F6, 0xEDF1EE)
+    static let secondary = Color.dyn(0x626B66, 0xA5ACA8)
+    static let groupSenderNameOnLight = Color.dyn(0x171A18, 0x171A18)
+    static let groupSenderNameOnDark = Color.dyn(0xEDF1EE, 0xEDF1EE)
+    static let secondaryOnMine = Color.dyn(0xD8F5EC, 0xE3EAE6)
+    static let timeInk = Color.dyn(0x858D88, 0x747C78)
     static var composerBg: Color { preset.panel }
-    static let separator = Color.dyn(0xE9EDEF, 0x38383A)
-    static let link = Color.dyn(0x0056D6, 0x8FD3FF)
+    static let separator = Color.dyn(0xDDE2DD, 0x2A302C)
+    static let link = Color.dyn(0x0A60BE, 0x8FD3FF)
     static let linkOnMine = Color.dyn(0xEFFFFC, 0xD9FFF8)
     static let readReceipt = Color(hex: 0x53BDEB)
-    static let mentionMe = Color.dyn(0xE53935, 0xFF9E91)
+    static let mentionMe = Color.dyn(0xD84747, 0xFF9E91)
     static let mentionMeOnMine = Color.dyn(0x7A1717, 0xFFD2CA)
 }
 
@@ -404,8 +404,8 @@ private struct ChatImmersiveEdgeMask: View {
             let blurred = resolved != .original
             let effectiveDark = resolved == .blackBlur
                 || (resolved != .whiteBlur && dark)
-            let base = tint ?? (effectiveDark ? Color(hex: 0x111312)
-                                              : Color(hex: 0xF3F5F2))
+            let base = tint ?? (effectiveDark ? Color(hex: 0x101412)
+                                              : Color(hex: 0xF2F4F1))
             let direction: (UnitPoint, UnitPoint) = edge == .top
                 ? (.top, .bottom)
                 : (.bottom, .top)
@@ -447,9 +447,9 @@ private struct ChatImmersiveEdgeMask: View {
 
                 LinearGradient(
                     stops: [
-                        .init(color: contrastScrim.opacity(effectiveDark ? 0.30 : 0.26),
+                        .init(color: contrastScrim.opacity(effectiveDark ? 0.25 : 0.22),
                               location: 0),
-                        .init(color: contrastScrim.opacity(effectiveDark ? 0.18 : 0.15),
+                        .init(color: contrastScrim.opacity(effectiveDark ? 0.14 : 0.12),
                               location: 0.58),
                         .init(color: .clear, location: 1)
                     ],
@@ -459,9 +459,9 @@ private struct ChatImmersiveEdgeMask: View {
 
                 LinearGradient(
                     colors: [
-                        Color.white.opacity(effectiveDark ? 0.025 : 0.055),
+                        Color.white.opacity(effectiveDark ? 0.055 : 0.13),
                         Color.clear,
-                        Color.black.opacity(effectiveDark ? 0.028 : 0.008)
+                        Color.black.opacity(effectiveDark ? 0.10 : 0.018)
                     ],
                     startPoint: direction.0,
                     endPoint: direction.1

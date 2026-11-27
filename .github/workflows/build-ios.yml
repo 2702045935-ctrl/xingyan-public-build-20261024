@@ -155,6 +155,7 @@ jobs:
           python3 tools/verify-cache-first-pages.py
           python3 tools/verify-account-sidebar.py
           python3 tools/verify-theme-immediacy.py
+          python3 tools/verify-daylight-jade.py
           python3 tools/verify-scale-foundation.py
           python3 tools/verify-moment-editorial.py
           python3 tools/verify-moment-stress-scroll.py

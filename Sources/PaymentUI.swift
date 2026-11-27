@@ -9,7 +9,7 @@ enum PayVisual {
     static var gold: Color { Color.dyn(0xC99432, 0xD8AA4D) }
 
     static var canvas: Color { Color.dyn(0xF2F2F7, 0x000000) }
-    static var card: Color { Color.dyn(0xFFFFFF, 0x1C1C1E) }
+    static var card: Color { C.cardBg }
     static var raised: Color { Color.dyn(0xFFFFFF, 0x2C2C2E) }
     static var inset: Color { Color.dyn(0xF2F2F7, 0x2C2C2E) }
     static var separator: Color {

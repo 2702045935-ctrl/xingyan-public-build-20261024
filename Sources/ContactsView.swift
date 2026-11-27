@@ -204,8 +204,7 @@ struct ContactsView: View {
     }
     private var listHeadH: CGFloat { max(0, contactsHeaderHeight - 23) }
     private var contactsCanvas: Color {
-        scheme == .dark ? C.contactsBg
-            : (UIConfig.colorIfSet("contactsBg") ?? .white)
+        UIConfig.colorIfSet("contactsBg") ?? C.contactsBg
     }
     private var contactsRule: Color {
         scheme == .dark ? C.hairline
@@ -1062,12 +1061,12 @@ struct ContactCardView: View {
         return u.id == app.me?.id ? "self" : "none"
     }
 
-    private var sheetBg: Color { scheme == .dark ? Color(hex: 0x1C1C1E) : .white }
+    private var sheetBg: Color { C.cardBg }
     private var scrollBg: Color { C.pageBg }
-    private var ink: Color { scheme == .dark ? Color(hex: 0xEDEDED) : Color(hex: 0x1A1A1A) }
-    private var gray: Color { scheme == .dark ? Color(hex: 0x8E8E93) : Color(hex: 0x737373) }
+    private var ink: Color { C.label }
+    private var gray: Color { C.subLabel }
     private var link: Color { scheme == .dark ? Color(hex: 0x7D90B8) : Color(hex: 0x576B95) }
-    private var lineColor: Color { scheme == .dark ? Color(white: 1, opacity: 0.09) : Color(hex: 0xE5E5E5) }
+    private var lineColor: Color { C.hairline }
 
     var body: some View {
         ZStack {

@@ -375,7 +375,7 @@ struct NewFriendsView: View {
         }
     }
     private var pageCanvas: Color { Color.dyn(0xFFFFFF, 0x000000) }
-    private var pageChrome: Color { Color.dyn(0xEDEDED, 0x1C1C1E) }
+    private var pageChrome: Color { C.pageBg }
     private var searchFill: Color { Color.dyn(0xF7F7F7, 0x2C2C2E) }
     private var pageRule: Color { Color.dyn(0xE5E5E5, 0x2C2C2E) }
 
@@ -548,7 +548,7 @@ struct NewFriendsView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 30)
-        .background(Color.dyn(0xF7F7F7, 0x1C1C1E))
+        .background(C.pageBg)
     }
 
     private func requestDate(_ user: User) -> Date {
@@ -1862,7 +1862,7 @@ struct GroupCreateView: View {
         }
     }
     private var pageCanvas: Color { Color.dyn(0xFFFFFF, 0x000000) }
-    private var pageChrome: Color { Color.dyn(0xEDEDED, 0x1C1C1E) }
+    private var pageChrome: Color { C.pageBg }
     private var searchFill: Color { Color.dyn(0xF7F7F7, 0x2C2C2E) }
     private var pageRule: Color { Color.dyn(0xE5E5E5, 0x2C2C2E) }
 
@@ -1992,7 +1992,7 @@ struct GroupCreateView: View {
                                     }
                                     .padding(.horizontal, 16)
                                     .frame(height: 28)
-                                    .background(Color.dyn(0xFCFCFC, 0x1C1C1E))
+                                    .background(C.cardBg)
                                     .id("group-letter-\(section.letter)")
                                 }
                             }
@@ -2727,7 +2727,7 @@ struct FaceGroupView: View {
                 ForEach(0..<4, id: \.self) { i in
                     let chars = Array(digits)
                     RoundedRectangle(cornerRadius: 13, style: .continuous)
-                        .fill(Color.dyn(0xF0F2F5, 0x1C1C1E))
+                        .fill(C.searchBg)
                         .frame(width: 58, height: 66)
                         .overlay {
                             Text(i < chars.count ? String(chars[i]) : "")
@@ -2773,7 +2773,7 @@ struct FaceGroupView: View {
                         .frame(height: 52)
                         .background(
                             RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                .fill(Color.dyn(0xF5F5F5, 0x1C1C1E))
+                                .fill(C.searchBg)
                         )
                         .contentShape(Rectangle())
                     }

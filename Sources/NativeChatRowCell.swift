@@ -215,7 +215,7 @@ final class NativeChatRowCell: UITableViewCell {
         contentView.isOpaque = true
         titleLabel.text = configuration.title
         titleLabel.textColor = configuration.titleColor
-        titleLabel.font = NativeChatRowMetrics.font(17, weight: .medium, textStyle: .headline)
+        titleLabel.font = NativeChatRowMetrics.font(17, weight: .semibold, textStyle: .headline)
         previewLabel.font = NativeChatRowMetrics.font(14,
                                                      weight: .regular,
                                                      textStyle: .body)
@@ -423,6 +423,7 @@ final class NativeChatRowCell: UITableViewCell {
         titleRow.axis = .horizontal
         titleRow.alignment = .center
         titleRow.spacing = 5
+        titleRow.transform = CGAffineTransform(translationX: 0, y: -1)
         titleRow.addArrangedSubview(titleLabel)
         titleRow.addArrangedSubview(levelLabel)
         titleRow.addArrangedSubview(memberLabel)

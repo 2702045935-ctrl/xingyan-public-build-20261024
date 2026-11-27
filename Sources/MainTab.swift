@@ -766,9 +766,14 @@ struct TabBar: View {
         if scheme == .dark {
             return AnyView(ZStack {
                 Rectangle().fill(.ultraThinMaterial)
-                    .opacity(0.42)
-                fill
-                    .opacity(0.90)
+                    .opacity(0.58)
+                GlassBackground(shape: Rectangle(),
+                                opacity: 0.82,
+                                edgeAlpha: 0.58,
+                                shadow: false,
+                                seed: 0.55,
+                                native: true)
+                fill.opacity(0.16)
             })
         }
 

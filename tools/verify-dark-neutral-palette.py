@@ -24,20 +24,20 @@ require(ROW.count("private static func previewTokenColor") == 1
 require("unreadLabel.backgroundColor = .systemRed" in ROW
         and "systemBlue" not in CHATS,
         "unread counts must use the single red badge language")
-for key, light in (
-    ("pageBg", "0xFFFFFF"),
-    ("navBg", "0xFFFFFF"),
-    ("tabBg", "0xFFFFFF"),
-    ("chatRowBg", "0xFFFFFF"),
-    ("chatsTopBg", "0xFFFFFF"),
-    ("chatsPageBg", "0xF5F5F5"),
-    ("chatsRowBg", "0xFFFFFF"),
-    ("contactsBg", "0xFFFFFF"),
-    ("discoverBg", "0xEDEDED"),
+for key, light, dark in (
+    ("pageBg", "0xF2F4F1", "0x101412"),
+    ("navBg", "0xF5F6F4", "0x101412"),
+    ("tabBg", "0xF5F6F4", "0x121613"),
+    ("chatRowBg", "0xFAFBF9", "0x171B18"),
+    ("chatsTopBg", "0xF4F6F3", "0x101412"),
+    ("chatsPageBg", "0xF2F4F1", "0x101412"),
+    ("chatsRowBg", "0xFAFBF9", "0x171B18"),
+    ("contactsBg", "0xF2F4F1", "0x101412"),
+    ("discoverBg", "0xF2F4F1", "0x101412"),
 ):
     require(
-        f'UIConfig.fixedDark("{key}", {light}, 0x0A0A0A)' in CORE,
-        f"{key} must share the app-wide #0A0A0A dark canvas",
+        f'UIConfig.fixedDark("{key}", {light}, {dark})' in CORE,
+        f"{key} must use the daylight-jade surface ladder",
     )
 require(
     "background ?? (isDark ? C.pageBg" in NAV,
@@ -53,8 +53,8 @@ require(
 )
 require(
     "private enum NativeTabBarVisual" in TAB
-    and "static var normalInk: Color { Color.dyn(0x6E6E73, 0x8E8E93) }" in TAB
-    and "static var selectedInk: Color { Color.dyn(0x0F8B65, 0x36CA95) }" in TAB
+    and "static var normalInk: Color { Color.dyn(0x757D78, 0x8B938E) }" in TAB
+    and "static var selectedInk: Color { Color.dyn(0x117A58, 0x42C693) }" in TAB
     and "let normalIcon = UIColor(NativeTabBarVisual.normalInk)" in TAB
     and "let selectedIcon = UIColor(NativeTabBarVisual.selectedInk)" in TAB
     and "appearance.inlineLayoutAppearance" in TAB

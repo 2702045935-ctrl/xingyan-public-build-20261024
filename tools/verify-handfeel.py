@@ -91,7 +91,7 @@ require(
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark: isDark)" in NAV_GLASS
-    and "tint.opacity(isDark ? 0.62 : 0.58)" in NAV_GLASS
+    and "tint.opacity(isDark ? 0.48 : 0.42)" in NAV_GLASS
     and "value: scrolled > 0" not in NAV_GLASS,
     "the chats top chrome must use same-colour native glass without a first-scroll flash",
 )

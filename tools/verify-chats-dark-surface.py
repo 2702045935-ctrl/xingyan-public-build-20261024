@@ -14,15 +14,15 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "chatsIsDark\n            ? Color(hex: 0x0A0A0A)\n            : UIConfig.fixedLight(\"chatsPageBg\", 0xF5F5F5)" in CHATS
-    and "if isDark { return Color(hex: 0x0A0A0A) }" in CHATS
-    and "let rowBg: UIColor = isDark ? UIColor(hex: 0x0A0A0A) : UIColor.white" in CHATS,
+    "chatsIsDark\n            ? Color(hex: 0x101412)\n            : UIConfig.fixedLight(\"chatsPageBg\", 0xF2F4F1)" in CHATS
+    and "if isDark { return Color(hex: 0x171B18) }" in CHATS
+    and "let rowBg = UIColor(hex: isDark ? 0x171B18 : 0xFAFBF9)" in CHATS,
     "chat canvas must resolve explicit dark and light surfaces without environment delay",
 )
 require(
     "showsDivider: true" in CHATS
-    and "? UIColor(hex: 0x232326)" in CHATS
-    and "dividerColor: isDark\n                ? UIColor(hex: 0x232326)" in CHATS
+    and "? UIColor(hex: 0x2A302C)" in CHATS
+    and "dividerColor: isDark\n                ? UIColor(hex: 0x2A302C)" in CHATS
     and ".fill(ChatListVisual.rule)" in CHATS
     and ".fill(isDark ? Color.clear : ChatListVisual.rule)" not in CHATS
     and "dividerLeading: CGFloat = 77" in ROW,
@@ -47,9 +47,9 @@ require(
     "reused native rows must clear old text and render on an opaque surface",
 )
 require(
-    "? Color(hex: 0x111111)" in CHATS
+    "? Color(hex: 0x1D231F)" in CHATS
     and "Color.white.opacity(0.045)" in CHATS
-    and "Color(hex: 0x6E7378)" in CHATS
+    and "Color(hex: 0x8B938E)" in CHATS
     and ".stroke(chatsSearchBorder, lineWidth: 0.5)" in CHATS,
     "dark search must sit quietly on the near-black canvas instead of using a raised light card",
 )
@@ -72,24 +72,24 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x5E5E5E : 0x999999)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x303030 : 0xB2B2B2)" in CHATS
-    and "static let conversationPreviewInk = Color.dyn(0x999999, 0x5E5E5E)" in CHATS
-    and "static let timeInk = Color.dyn(0xB2B2B2, 0x303030)" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0xA5ACA8 : 0x626B66)" in CHATS
+    and "let timeColor = UIColor(hex: isDark ? 0x747C78 : 0x858D88)" in CHATS
+    and "static let conversationPreviewInk = Color.dyn(0x626B66, 0xA5ACA8)" in CHATS
+    and "static let timeInk = Color.dyn(0x858D88, 0x747C78)" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
-    and "UIColor(hex: isDark ? 0xD1D1D1 : 0x191919)" in CHATS,
-    "chat-list title, preview and time must use WeCom's neutral dark hierarchy",
+    and "UIColor(hex: isDark ? 0xEDF1EE : 0x171A18)" in CHATS,
+    "chat-list title, preview and time must use the daylight-jade hierarchy",
 )
 require(
-    0xD1D1D1 > 0x5E5E5E > 0x303030,
+    0xEDF1EE > 0xA5ACA8 > 0x747C78,
     "dark title, preview and time must remain strictly ordered with time weakest",
 )
 require(
     "static let avatarSize: CGFloat = 48" in CHATS
     and "static let avatarGap: CGFloat = 12" in CHATS
     and "max(72, (72 + (combinedScale - 1) * 34).rounded())" in ROW
-    and "weight: .medium, textStyle: .headline" in ROW,
-    "conversation rows must use the tighter WeChat avatar grid and lighter title weight",
+    and "weight: .semibold, textStyle: .headline" in ROW,
+    "conversation rows must use the tighter avatar grid and one semibold title weight",
 )
 require(
     "private enum OfficialRowVisual" in CHATS
@@ -99,7 +99,7 @@ require(
     and "Color(hex: 0x2E9BEC)" in CHATS
     and "OfficialRowVisual.weatherSun" in CHATS
     and "PayVisual.tint.opacity(0.20)" in CHATS
-    and "UIColor(hex: isDark ? 0x31C48D : 0x0F8B65)" in CHATS
+    and "UIColor(hex: isDark ? 0x42C693 : 0x137D5B)" in CHATS
     and ".foregroundStyle(OfficialAccountVisual.name)\n                                .lineLimit(1)" in CHATS
     and ".foregroundStyle(ChatListVisual.ink)\n                                .lineLimit(1)" in CHATS,
     "official-account rows must use the restrained brand icon and official-name hierarchy",
