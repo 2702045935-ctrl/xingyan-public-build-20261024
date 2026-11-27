@@ -13,13 +13,12 @@ struct MsgMenuBox: View {
     var onPick: (MsgAction) -> Void
 
     @Environment(\.colorScheme) private var scheme
-    private var bg: Color { scheme == .dark ? Color(hex: 0x3A3A3C) : .white }
     private var ink: Color { scheme == .dark ? Color(hex: 0xEDEDED) : Color(hex: 0x1A1A1A) }
 
     static let itemW: CGFloat = 56
-    static let itemH: CGFloat = 62
-    static let padH: CGFloat = 6
-    static let padV: CGFloat = 8
+    static let itemH: CGFloat = 68
+    static let padH: CGFloat = 8
+    static let padV: CGFloat = 10
 
     static func columns(_ n: Int) -> Int { min(6, max(1, n)) }
 
@@ -41,16 +40,22 @@ struct MsgMenuBox: View {
                             Button {
                                 onPick(a)
                             } label: {
-                                VStack(spacing: 5) {
-                                    Image(systemName: a.icon)
-                                        .font(.system(size: 20))
-                                        .foregroundColor(a.danger ? Color(hexString: "#FA5151") : ink)
-                                        .frame(height: 22)
+                                VStack(spacing: 6) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(accent(for: a).opacity(0.12))
+                                        Image(systemName: a.icon)
+                                            .font(.system(size: 17.5, weight: .medium))
+                                            .foregroundColor(accent(for: a))
+                                    }
+                                    .frame(width: 36, height: 36)
                                     Text(Tr(a.label))
-                                        .font(pf(11.5))
-                                        .foregroundColor(a.danger ? Color(hexString: "#FA5151") : ink)
+                                        .font(pf(11.5, .medium))
+                                        .foregroundColor(a.danger
+                                                         ? Color(hexString: "#E6534D")
+                                                         : ink)
                                         .lineLimit(1)
-                                        .fixedSize()
+                                        .minimumScaleFactor(0.82)
                                 }
                                 .frame(width: MsgMenuBox.itemW, height: MsgMenuBox.itemH)
                                 .contentShape(Rectangle())
@@ -65,20 +70,36 @@ struct MsgMenuBox: View {
         .padding(.vertical, MsgMenuBox.padV)
 
         .background {
-            ZStack {
-                GlassBackground(shape: RoundedRectangle(cornerRadius: 10, style: .continuous),
-                                opacity: UIConfig.num("menuGlassAlpha", 0.92),
-                                edgeAlpha: UIConfig.num("menuGlassEdge", 0.28),
-                                shadow: false,
-                                seed: 0.85,
-                                native: true)
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(bg.opacity(0.55))
-            }
+            NativeMediaGlassSurface(
+                shape: AnyShape(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                ),
+                interactive: false
+            )
         }
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .stroke(Color.white.opacity(scheme == .dark ? 0.16 : 0.30), lineWidth: 0.6))
-        .shadow(color: Color.black.opacity(0.18), radius: 12, y: 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.white.opacity(scheme == .dark ? 0.14 : 0.28),
+                        lineWidth: 0.6)
+        )
+        .shadow(color: Color.black.opacity(scheme == .dark ? 0.28 : 0.16),
+                radius: 20, y: 8)
+    }
+
+    private func accent(for action: MsgAction) -> Color {
+        if action.danger { return Color(hexString: "#E6534D") }
+        switch action.key {
+        case "speak", "asr":
+            return Color(hex: 0x4A9EFF)
+        case "fav":
+            return Color(hex: 0xE6A23C)
+        case "quote":
+            return Color(hex: 0x7B72E9)
+        case "forward", "share":
+            return OrbitTheme.jade
+        default:
+            return ink.opacity(0.82)
+        }
     }
 }
 
