@@ -23,19 +23,27 @@ require("pinToBottomSoon(force: true)" in CHAT, "send action must keep bottom pi
 require(
     "transaction.disablesAnimations = true" in CHAT
     and "withTransaction(transaction) {\n            outbox.append(pending)" in CHAT
-    and "pinToBottomImmediately()\n        pinToBottomSoon(force: true)" in CHAT
+    and "app.previewOutgoingMessage(" in CHAT
+    and "pinToBottomImmediately(force: true)\n        pinToBottomSoon(force: true)" in CHAT
     and "ChatScrollHandle.shared.allowAutomaticPinning()\n                nativeMessageController.scrollToBottom(animated: false)"
     in CHAT,
-    "the pending bubble must appear and pin without an insertion animation delay",
+    "the pending bubble and list preview must appear and pin without an insertion animation delay",
 )
 require(
     "let prependDetector: (([Item], [Item]) -> Bool)?" in NATIVE
     and "isPrepending = prependDetector(" in NATIVE
     and "premeasure(widthChanged\n                ? nextOrder\n                : Array(Set(changed).union(addedIDs)))"
     in NATIVE
+    and "A new outgoing row is a tail-only append" in NATIVE
+    and "if isPrepending || commonOrder != order || existingChanged" in NATIVE
     and "prependDetector: { oldItems, nextItems in" in CHAT
     and "return nextItems.prefix(while: { $0.id != firstKept.id }).contains" in CHAT,
     "pending and confirmed bubbles must use append layout instead of the history prepend path",
+)
+require(
+    "var commit = Transaction(animation: nil)" in CHAT
+    and "withTransaction(commit)" in block,
+    "confirmed bubbles must replace the pending row in one non-animated transaction",
 )
 
 flush_start = CHAT.index("private func flushOutbox")

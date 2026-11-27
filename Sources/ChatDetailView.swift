@@ -3306,8 +3306,11 @@ struct ChatDetailView: View {
         pinTask = Task { @MainActor in
             await Task.yield()
             if Task.isCancelled { return }
-            guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
+            guard force || (atBottomNow &&
+                            !holdScroll &&
+                            !ChatScrollHandle.shared.moving) else { return }
             atBottom = true
+            wasAtBottom = true
             if force {
                 ChatScrollHandle.shared.allowAutomaticPinning()
                 nativeMessageController.scrollToBottom(animated: false)
@@ -3325,8 +3328,8 @@ struct ChatDetailView: View {
         }
     }
 
-    private func pinToBottomImmediately() {
-        guard atBottomNow else { return }
+    private func pinToBottomImmediately(force: Bool = false) {
+        guard force || atBottomNow else { return }
         pinTask?.cancel()
         ChatScrollHandle.shared.allowAutomaticPinning()
         atBottom = true
@@ -5574,12 +5577,19 @@ struct ChatDetailView: View {
         transaction.disablesAnimations = true
         withTransaction(transaction) {
             outbox.append(pending)
+            app.previewOutgoingMessage(
+                chat,
+                clientId: pending.id,
+                kind: pending.kind,
+                content: pending.content,
+                mentions: pending.mentions
+            )
         }
         followOwnSendUntil = Date().addingTimeInterval(5)
         persistOutboxAfterFrame()
 
         UINotification.lightTap()
-        pinToBottomImmediately()
+        pinToBottomImmediately(force: true)
         pinToBottomSoon(force: true)
         Task { await flushOutbox() }
     }
@@ -5604,9 +5614,13 @@ struct ChatDetailView: View {
                                                            quote: Self.quoteDict(p.quoteJSON)) {
                     /* 先把本地发送占位撤掉，再落入服务端确认气泡。
                        两步在同一个 MainActor 事务里完成，避免同一条消息短暂出现两张气泡。 */
-                    outbox.removeAll { $0.id == p.id }
-                    appendVisibleMessage(message)
-                    app.ensureChatVisible(chat, latest: message)
+                    var commit = Transaction(animation: nil)
+                    commit.disablesAnimations = true
+                    withTransaction(commit) {
+                        outbox.removeAll { $0.id == p.id }
+                        appendVisibleMessage(message)
+                        app.ensureChatVisible(chat, latest: message)
+                    }
                 } else if let i2 = outbox.firstIndex(where: { $0.id == p.id }) {
                     outbox[i2].sending = false
                     outbox[i2].failed = true

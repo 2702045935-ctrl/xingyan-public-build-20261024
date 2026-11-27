@@ -339,7 +339,13 @@ where Item.ID: Hashable {
                collection.isDragging || collection.isTracking || collection.isDecelerating {
                 let known = Set(order)
                 let commonOrder = nextOrder.filter { known.contains($0) }
-                if !isPrepending && (commonOrder != order || nextSignatures != signatures) {
+                let existingChanged = nextOrder.contains {
+                    known.contains($0) && nextSignatures[$0] != signatures[$0]
+                }
+                /* A new outgoing row is a tail-only append. It must be visible
+                   even while the list is still settling after a scroll. Only
+                   prepends, reorders and changes to existing rows wait. */
+                if isPrepending || commonOrder != order || existingChanged {
                     pending = next
                     return
                 }
