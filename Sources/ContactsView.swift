@@ -219,7 +219,12 @@ struct ContactsView: View {
         scheme == .dark ? C.chatRowBg : contactsCanvas
     }
     private var contactsSearchFill: Color {
-        scheme == .dark ? C.searchBg : contactsCanvas
+        scheme == .dark ? C.searchBg : Color(hex: 0xE9EDE8)
+    }
+    private var contactsSearchBorder: Color {
+        scheme == .dark
+            ? Color.white.opacity(0.055)
+            : Color.black.opacity(0.035)
     }
     private var contactsAccessibilityScale: CGFloat {
         switch dynamicTypeSize {
@@ -623,11 +628,13 @@ private var funcs: [(String, String, Color, String)] {
             .padding(.horizontal, 13)
             .frame(maxWidth: .infinity)
             .frame(height: searchHeight)
-            .background(contactsSearchFill)
-            .overlay(alignment: .bottom) {
-                Rectangle()
-                    .fill(contactsRule)
-                    .frame(height: 0.5)
+            .background {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(contactsSearchFill)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(contactsSearchBorder, lineWidth: 0.5)
+                    }
             }
             .contentShape(Rectangle())
         }

@@ -41,6 +41,13 @@ require(
     "contacts search must participate in the native list so it scrolls into the mask",
 )
 require(
+    SEARCH_VIEW.count("RoundedRectangle(cornerRadius: 10, style: .continuous)") >= 2
+    and ".fill(contactsSearchFill)" in SEARCH_VIEW
+    and "contactsSearchBorder" in SEARCH_VIEW
+    and ".overlay(alignment: .bottom)" not in SEARCH_VIEW,
+    "contacts search must render as a visible rounded field rather than a divider",
+)
+require(
     "nativeQuickIcon(item, size: utilityIconSize)" in VIEW
     and "40 * min(1.18, contactsAccessibilityScale)" in VIEW
     and ".frame(height: utilityRowHeight)" in VIEW
