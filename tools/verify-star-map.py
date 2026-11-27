@@ -38,8 +38,10 @@ require(
     and "if mountedTabs.contains(3) { DiscoverView() }" not in MAIN_TAB
     and "@State private var showWorldDirectory = false" in WORLD
     and "showWorldDirectory = true" in WORLD
-    and "DiscoverView()\n                .environmentObject(app)" in WORLD,
-    "the World tab must mount the immersive page directly and keep the legacy directory behind an explicit entry",
+    and "struct StarWorldDirectoryView" in WORLD
+    and "StarWorldDirectoryView(current: activeMap)" in WORLD
+    and "DiscoverView()" not in WORLD,
+    "the World tab and its directory must stay entirely on the immersive world system",
 )
 require(
     ".opacity(entered ? 1 : 0.01)" not in WORLD
