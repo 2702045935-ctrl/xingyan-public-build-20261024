@@ -41,8 +41,8 @@ def main() -> None:
     ):
         if key not in config_text:
             raise AssertionError(f"missing stress switch: {key}")
-    if "min(100_000, number)" not in config_text:
-        raise AssertionError("stress cap must be 100k")
+    if "hardCap = 300_000" not in config_text or "min(hardCap, number)" not in config_text:
+        raise AssertionError("stress cap must be 300k")
     if "min(500, raw)" not in config_text:
         raise AssertionError("multi-group cap must be 500")
     for filename, marker in STRESS_FIXTURES.items():

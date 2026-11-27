@@ -168,18 +168,18 @@
     },
     {
       "path": "Sources/StressTestConfiguration.swift",
-      "size": 2356,
-      "sha256": "a5a09725c9954a9f08fa17114de09bbbd7cb0492fa645fce968efc03986d4c8b"
+      "size": 2913,
+      "sha256": "8c69be8fe4cd4721c22557d8f5b00c4102280438be1b21509320d2eb87385b30"
     },
     {
       "path": "Sources/API.swift",
-      "size": 221825,
-      "sha256": "54de4fa2ac1dfb4a8b5c6dd54e5b6e3a5b723a44ff42f85274b7e3c30881da2e"
+      "size": 227552,
+      "sha256": "f660083d9857d66bce01050a5e80e897df11b45833f408688019f07529a4ddd5"
     },
     {
       "path": "Sources/Realtime.swift",
-      "size": 19674,
-      "sha256": "bb6be6358be3d6fd9204a5c44b9abf8e43a45c0fb77b6d55697d4df54413128e"
+      "size": 20837,
+      "sha256": "ca897d5b1688e2e63b61756e64ee1e6d3f4fcf154612e760e45aa7f7c8b4f2f2"
     },
     {
       "path": "server/server.js",
@@ -203,8 +203,8 @@
     },
     {
       "path": "Sources/Core.swift",
-      "size": 121085,
-      "sha256": "34a1809ccd865b5ca00228c1d5e5a2a7a7e7e03bb9b7dde04c69b30b81a614c8"
+      "size": 127963,
+      "sha256": "d55a95318128e05121a1f4a2276c05137be2b5903eaf2761a33804229c7f405c"
     }
   ]
 }
