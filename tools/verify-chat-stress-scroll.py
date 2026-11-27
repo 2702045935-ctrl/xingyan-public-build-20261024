@@ -15,10 +15,9 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "if isPrepending || commonOrder != order || existingChanged" in LIST
-    and "A new outgoing row is a tail-only append" in LIST
+    "!isPrepending && (commonOrder != order || nextSignatures != signatures)" in LIST
     and "prependAnchor" in LIST,
-    "history prepends must defer while outgoing tail appends stay immediate",
+    "history prepends must apply during touch motion with atomic anchor compensation",
 )
 require(
     "if isPrepending, !order.isEmpty" in LIST

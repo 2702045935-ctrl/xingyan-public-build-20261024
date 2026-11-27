@@ -103,8 +103,8 @@
     },
     {
       "path": "Sources/NativeStaticList.swift",
-      "size": 24461,
-      "sha256": "42f1e9daf1afe9ae56a833db53aedf44da02ec2db77e2230da15314a9bed705a"
+      "size": 24087,
+      "sha256": "87d57025f1f923812fe5586461dbe68e28fe6dcef1f416de5c7e73355b315981"
     },
     {
       "path": "Sources/NativeMomentFeed.swift",

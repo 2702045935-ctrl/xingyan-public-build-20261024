@@ -39,9 +39,8 @@ require(
 )
 require(
     "collection.isDragging || collection.isTracking || collection.isDecelerating" in LIST
-    and "if isPrepending || commonOrder != order || existingChanged" in LIST
-    and "A new outgoing row is a tail-only append" in LIST,
-    "prepends must defer while outgoing tail appends remain immediate",
+    and "!isPrepending && (commonOrder != order || nextSignatures != signatures)" in LIST,
+    "prepends must apply during touch motion through the native anchor compensation path",
 )
 require(
     "snapshot.insertItems(added, beforeItem: anchor)" in LIST

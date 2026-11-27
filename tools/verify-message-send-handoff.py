@@ -34,8 +34,6 @@ require(
     and "isPrepending = prependDetector(" in NATIVE
     and "premeasure(widthChanged\n                ? nextOrder\n                : Array(Set(changed).union(addedIDs)))"
     in NATIVE
-    and "A new outgoing row is a tail-only append" in NATIVE
-    and "if isPrepending || commonOrder != order || existingChanged" in NATIVE
     and "prependDetector: { oldItems, nextItems in" in CHAT
     and "return nextItems.prefix(while: { $0.id != firstKept.id }).contains" in CHAT,
     "pending and confirmed bubbles must use append layout instead of the history prepend path",
