@@ -70,6 +70,16 @@ require(
     and "chatTheme.activate(chat.id)" not in CHAT_DETAIL,
     "chat appearance must be active before the first rendered frame",
 )
+time_start = CHAT_DETAIL.index("private func timeLine")
+time_end = CHAT_DETAIL.index("private func recallLine", time_start)
+time_line = CHAT_DETAIL[time_start:time_end]
+require(
+    ".fixedSize(horizontal: true, vertical: false)" in time_line
+    and "NativeGlassControlMaterial()" in time_line
+    and "adaptiveSystemSurface.opacity(" in time_line
+    and ".fill(adaptiveSystemSurface)" not in time_line,
+    "chat timestamps must use intrinsic width and translucent system glass",
+)
 require(
     "NativeGlassHeaderMaterial(forcedDark: isDark)" in NAV_GLASS
     and "tint.opacity(isDark ? 0.62 : 0.58)" in NAV_GLASS

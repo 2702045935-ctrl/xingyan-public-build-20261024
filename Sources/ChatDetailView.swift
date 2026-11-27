@@ -2986,7 +2986,20 @@ struct ChatDetailView: View {
                 )
             },
             initiallyPinnedToBottom: true,
-            signature: nativeGroupSignature
+            signature: nativeGroupSignature,
+            prependDetector: { oldItems, nextItems in
+                let oldMessageIDs = Set(oldItems.compactMap { item -> String? in
+                    guard case .message(let message) = item.kind else { return nil }
+                    return message.id
+                })
+                guard let firstKept = nextItems.first(where: {
+                    oldMessageIDs.contains($0.id)
+                }) else { return false }
+                return nextItems.prefix(while: { $0.id != firstKept.id }).contains {
+                    guard case .message(let message) = $0.kind else { return false }
+                    return !oldMessageIDs.contains(message.id)
+                }
+            }
         ) { item in
             nativeGroupRow(item)
         }
@@ -3264,7 +3277,7 @@ struct ChatDetailView: View {
             atBottom = true
             if force {
                 ChatScrollHandle.shared.allowAutomaticPinning()
-                nativeMessageController.scrollToBottom(animated: true)
+                nativeMessageController.scrollToBottom(animated: false)
                 return
             }
             pinTick += 1
@@ -3633,35 +3646,24 @@ struct ChatDetailView: View {
 
     @ViewBuilder
     private func timeLine(_ message: Message) -> some View {
-        if isGroup || usesPlainDefaultChatChrome {
-            Text(TimeFmt.bubble(message.createdAt))
-                .font(pf(11.5, .medium))
-                .foregroundColor(adaptiveSystemSecondaryInk.opacity(0.92))
-                .frame(maxWidth: .infinity)
-                .padding(.top, 8)
-                .padding(.bottom, 7)
-        } else {
-            Text(TimeFmt.bubble(message.createdAt))
-                .font(pf(12, .medium))
-                .foregroundColor(adaptiveSystemSecondaryInk)
-                .padding(.horizontal, L.o("chatTimePadX", 9))
-                .padding(.vertical, L.o("chatTimePadY", 4))
-                .background {
-                    ZStack {
-                        Capsule(style: .continuous)
-                            .fill(.ultraThinMaterial)
-                        Capsule(style: .continuous)
-                            .fill(adaptiveSystemSurface)
-                    }
-                }
-                .overlay {
+        Text(TimeFmt.bubble(message.createdAt))
+            .font(pf(12, .medium))
+            .foregroundColor(adaptiveSystemSecondaryInk)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, L.o("chatTimePadX", 9))
+            .padding(.vertical, L.o("chatTimePadY", 4))
+            .background {
+                ZStack {
+                    NativeGlassControlMaterial()
                     Capsule(style: .continuous)
-                        .stroke(adaptiveSystemBorder, lineWidth: 0.6)
+                        .fill(adaptiveSystemSurface.opacity(
+                            scheme == .dark ? 0.08 : 0.12
+                        ))
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.top, L.o("chatTimeGapTop", 10))
-                .padding(.bottom, L.o("chatTimeGapBottom", 10))
-        }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, L.o("chatTimeGapTop", 10))
+            .padding(.bottom, L.o("chatTimeGapBottom", 10))
     }
 
     @ViewBuilder

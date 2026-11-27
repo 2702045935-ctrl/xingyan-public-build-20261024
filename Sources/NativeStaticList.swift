@@ -67,6 +67,7 @@ where Item.ID: Hashable {
     let onSizeChange: (() -> Void)?
     let initiallyPinnedToBottom: Bool
     let signature: (Item) -> String
+    let prependDetector: (([Item], [Item]) -> Bool)?
     @ViewBuilder let row: (Item) -> Row
 
     init(items: [Item],
@@ -77,6 +78,7 @@ where Item.ID: Hashable {
          onSizeChange: (() -> Void)? = nil,
          initiallyPinnedToBottom: Bool = false,
          signature: @escaping (Item) -> String,
+         prependDetector: (([Item], [Item]) -> Bool)? = nil,
          @ViewBuilder row: @escaping (Item) -> Row) {
         self.items = items
         self.controller = controller
@@ -86,6 +88,7 @@ where Item.ID: Hashable {
         self.onSizeChange = onSizeChange
         self.initiallyPinnedToBottom = initiallyPinnedToBottom
         self.signature = signature
+        self.prependDetector = prependDetector
         self.row = row
     }
 
@@ -97,6 +100,7 @@ where Item.ID: Hashable {
                     onSizeChange: onSizeChange,
                     initiallyPinnedToBottom: initiallyPinnedToBottom,
                     signature: signature,
+                    prependDetector: prependDetector,
                     row: row)
     }
 
@@ -160,6 +164,7 @@ where Item.ID: Hashable {
         context.coordinator.onScrollStateChange = onScrollStateChange
         context.coordinator.onScrollOffset = onScrollOffset
         context.coordinator.onSizeChange = onSizeChange
+        context.coordinator.prependDetector = prependDetector
         context.coordinator.attachController()
         if let collection = controller.collectionView {
             context.coordinator.attachScroll(collection)
@@ -179,6 +184,7 @@ where Item.ID: Hashable {
         var onScrollOffset: ((CGFloat) -> Void)?
         var onSizeChange: (() -> Void)?
         var initiallyPinnedToBottom: Bool
+        var prependDetector: (([Item], [Item]) -> Bool)?
         private var waitsForInitialBottom = false
         private var sizeObservation: NSKeyValueObservation?
         private var lastScrollState: Bool?
@@ -202,6 +208,7 @@ where Item.ID: Hashable {
              onSizeChange: (() -> Void)?,
              initiallyPinnedToBottom: Bool,
              signature: @escaping (Item) -> String,
+             prependDetector: (([Item], [Item]) -> Bool)?,
              row: @escaping (Item) -> Row) {
             self.controller = controller
             self.onScrollViewReady = onScrollViewReady
@@ -211,6 +218,7 @@ where Item.ID: Hashable {
             self.initiallyPinnedToBottom = initiallyPinnedToBottom
             self.waitsForInitialBottom = initiallyPinnedToBottom
             self.signature = signature
+            self.prependDetector = prependDetector
             self.row = row
             super.init()
         }
@@ -298,6 +306,11 @@ where Item.ID: Hashable {
             let isPrepending: Bool
             if isPureAppend {
                 isPrepending = false
+            } else if let prependDetector {
+                isPrepending = prependDetector(
+                    order.compactMap { lookup[$0] },
+                    next
+                )
             } else {
                 let nextPositions = Dictionary(
                     uniqueKeysWithValues: nextOrder.enumerated().map { ($1, $0) }
@@ -361,9 +374,10 @@ where Item.ID: Hashable {
             signatures = nextSignatures
             order = nextOrder
             pending = nil
-            premeasure(isPrepending
-                ? Array(Set(changed).union(nextOrder.filter { !knownOld.contains($0) }))
-                : nextOrder)
+            let addedIDs = nextOrder.filter { !knownOld.contains($0) }
+            premeasure(widthChanged
+                ? nextOrder
+                : Array(Set(changed).union(addedIDs)))
             let previousOffset = collection.contentOffset
             let prependAnchor: (id: Item.ID, delta: CGFloat)?
             if isPrepending,
