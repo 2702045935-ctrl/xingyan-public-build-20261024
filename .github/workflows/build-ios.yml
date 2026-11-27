@@ -79,6 +79,7 @@ jobs:
           python3 tools/verify-no-tencent-media.py
           python3 tools/verify-upload-fallback.py
           python3 tools/verify-video-kernel.py
+          python3 tools/verify-music-kernel.py
           python3 tools/verify-game-runtime.py
           python3 tools/verify-star-map.py
           python3 tools/verify-browser.py

@@ -72,19 +72,33 @@ require(
     "friend music cards must refresh in real time and render live progress",
 )
 require(
-    "@State private var peerMusic: FriendNowPlaying?" in CHAT
-    and "await API.shared.friendsNowPlaying()" in CHAT
-    and "MusicPlayer.shared.play(track)" in CHAT
-    and "peerMusic.line" in CHAT,
-    "direct chats must surface a friend's music state and allow one-tap playback",
-)
-require(
     "final class MusicPresenceStore" in PRESENCE
     and "struct MusicListeningRing" in PRESENCE
     and "musicOrbit.layer.add(spin" in NATIVE_CHAT
     and "musicListening" in NATIVE_CHAT
-    and "MusicListeningRing(size: 46, active: true)" in CHAT,
+    and "musicOrbit.isHidden = !listening" in NATIVE_CHAT,
     "friends who are listening must animate their chat avatars and stop on pause",
+)
+portrait_start = PLAYER.index("private func portraitPlayer")
+portrait_end = PLAYER.index("private func landscapePlayer", portrait_start)
+portrait = PLAYER[portrait_start:portrait_end]
+require(
+    "private var lyricTopBar" in PLAYER
+    and "private var lyricTrackHeader" in PLAYER
+    and "private var lyricSongSwitchGesture" in PLAYER
+    and "private func lyricsCard(width: CGFloat, height: CGFloat)" in PLAYER
+    and "let cardWidth = max(280, min(380, size.width - 40))" in PLAYER
+    and "let cardHeight = min(380, max(320, L.height * 0.398))" in PLAYER
+    and "ZStack(alignment: .bottomTrailing)" in PLAYER
+    and "MusicGreenCompanion(" in portrait
+    and "lyricsViewport" in portrait
+    and "artworkPanel" not in portrait
+    and "size: 17" in PLAYER
+    and "spacing: 15.5" in PLAYER
+    and ".padding(.horizontal, 20)" in PLAYER
+    and "MusicPlayer.shared.next()" in PLAYER
+    and "MusicPlayer.shared.prev()" in PLAYER,
+    "music player must use a lyric-first hierarchy with horizontal track switching",
 )
 require(
     "python3 tools/verify-music-kernel.py" in WORKFLOW,

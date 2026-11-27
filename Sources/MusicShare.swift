@@ -3900,6 +3900,82 @@ final class MusicSheet: ObservableObject {
     }
 }
 
+private struct MusicGreenCompanion: View {
+    let level: CGFloat
+    let playing: Bool
+
+    @State private var floating = false
+
+    private let green = Color(hex: 0x30E59A)
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Capsule()
+                .fill(green.opacity(playing ? 0.22 : 0.10))
+                .frame(width: 28, height: 48)
+                .blur(radius: 12)
+
+            VStack(spacing: -2) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(hex: 0x8BFFD0),
+                                    green,
+                                    Color(hex: 0x08A76E)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 20, height: 20)
+                    HStack(spacing: 4) {
+                        Circle().fill(Color.black.opacity(0.72)).frame(width: 2.2, height: 3.2)
+                        Circle().fill(Color.black.opacity(0.72)).frame(width: 2.2, height: 3.2)
+                    }
+                    .offset(y: -0.5)
+                }
+
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [green, Color(hex: 0x0B9F6D)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 16, height: 25)
+                    .overlay(alignment: .top) {
+                        Capsule()
+                            .fill(Color.white.opacity(0.18))
+                            .frame(width: 7, height: 12)
+                            .padding(.top, 3)
+                    }
+
+                HStack(spacing: 6) {
+                    Capsule().fill(green).frame(width: 5, height: 7)
+                    Capsule().fill(green).frame(width: 5, height: 7)
+                }
+                .offset(y: -1)
+            }
+        }
+        .frame(width: 34, height: 58)
+        .scaleEffect(playing ? 1 + min(0.055, max(0, level) * 0.035) : 1)
+        .offset(y: floating ? -2 : 2)
+        .shadow(color: green.opacity(playing ? 0.34 : 0.16), radius: 9, y: 4)
+        .onAppear { floating = true }
+        .animation(
+            .easeInOut(duration: 1.45).repeatForever(autoreverses: true),
+            value: floating
+        )
+        .animation(.linear(duration: 0.24), value: level)
+        .animation(.easeOut(duration: 0.20), value: playing)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
 private struct FullPlayerAmbient: View {
     let track: MusicTrack?
     @Environment(\.colorScheme) private var scheme
@@ -4000,6 +4076,8 @@ struct MusicPlayingView: View {
     var onModeChange: ((CopyMode) -> Void)? = nil
     @State private var dragging = false
     @State private var dragValue: Double = 0
+    @State private var lyricSwipeX: CGFloat = 0
+    @State private var lyricSwipeOpacity: Double = 1
 
     @State private var flipped = false
 
@@ -4227,30 +4305,31 @@ struct MusicPlayingView: View {
             } else {
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
-                        LazyVStack(alignment: .leading, spacing: 13) {
-                            Color.clear.frame(height: 42)
+                        LazyVStack(alignment: .leading, spacing: 15.5) {
+                            Color.clear.frame(height: 18)
                             ForEach(lyricLines) { line in
                                 KaraokeLyricText(
                                     text: line.text,
                                     progress: line.id == lyricIndex ? currentLyricProgress : 0,
                                     font: .system(
-                                        size: line.id == lyricIndex ? 22 : 17,
+                                        size: 17,
                                         weight: line.id == lyricIndex ? .semibold : .regular
                                     ),
                                     baseColor: line.id == lyricIndex
-                                        ? Color.primary.opacity(0.30)
-                                        : Color.primary.opacity(0.62),
-                                    activeColor: OrbitTheme.jade
+                                        ? Color.white.opacity(0.34)
+                                        : Color.white.opacity(0.46),
+                                    activeColor: .white
                                 )
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .fixedSize(horizontal: false, vertical: true)
+                                .shadow(color: .black.opacity(0.22), radius: 2, y: 1)
                                 .id(line.id)
                                 .contentShape(Rectangle())
                                 .onTapGesture { seekTo(line.time) }
                             }
-                            Color.clear.frame(height: 48)
+                            Color.clear.frame(height: 32)
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, 20)
                     }
                     .onAppear {
                         proxy.scrollTo(lyricIndex, anchor: .center)
@@ -4638,6 +4717,103 @@ struct MusicPlayingView: View {
         }
     }
 
+    private var lyricTopBar: some View {
+        HStack(spacing: 8) {
+            Button {
+                closeMe()
+            } label: {
+                chromeCircle {
+                    Image(systemName: "chevron.down")
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("关闭"))
+
+            Spacer(minLength: 8)
+
+            playerModeMenu
+
+            Button {
+                PushCenter.forceMusicLandscape()
+            } label: {
+                Image(systemName: "rectangle.landscape.rotate")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.90))
+                    .frame(width: 38, height: 38)
+                    .background(.white.opacity(0.08), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("横版"))
+
+            playbackMenu
+                .font(pfStyled(size: 16, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 6)
+        .frame(height: 56)
+        .background {
+            LinearGradient(
+                colors: [.black.opacity(0.14), .clear],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea(edges: .top)
+        }
+    }
+
+    private var lyricTrackHeader: some View {
+        VStack(spacing: 4) {
+            Text(t?.title ?? "")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.94))
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+
+            Text(t?.artistText ?? "")
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.white.opacity(0.56))
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 42)
+        .padding(.top, 28)
+        .padding(.bottom, 32)
+    }
+
+    private var lyricSongSwitchGesture: some Gesture {
+        DragGesture(minimumDistance: 14)
+            .onChanged { value in
+                let horizontal = value.translation.width
+                let vertical = value.translation.height
+                guard abs(horizontal) > abs(vertical) * 1.18 else { return }
+                lyricSwipeX = min(24, max(-24, horizontal * 0.16))
+                lyricSwipeOpacity = 1 - min(
+                    0.18,
+                    Double(abs(horizontal)) / 520
+                )
+            }
+            .onEnded { value in
+                let horizontal = value.translation.width
+                let vertical = value.translation.height
+                let shouldSwitch = abs(horizontal) > 64
+                    && abs(horizontal) > abs(vertical) * 1.35
+                withAnimation(.spring(response: 0.30, dampingFraction: 0.88)) {
+                    lyricSwipeX = 0
+                    lyricSwipeOpacity = 1
+                }
+                guard shouldSwitch else { return }
+                UISelectionFeedbackGenerator().selectionChanged()
+                if horizontal < 0 {
+                    MusicPlayer.shared.next()
+                } else {
+                    MusicPlayer.shared.prev()
+                }
+            }
+    }
+
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(t?.title ?? "")
@@ -4858,28 +5034,70 @@ struct MusicPlayingView: View {
     }
 
     private func portraitPlayer(size: CGSize) -> some View {
-        let lyricHeight = min(152, max(96, size.height * 0.23))
-        let coverSide = max(160, min(size.width - 44,
-                                     size.height - lyricHeight - 108))
-        return VStack(spacing: 10) {
-            artworkPanel(side: coverSide)
-                .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.22)) {
-                        flipped.toggle()
-                    }
-                }
+        let cardWidth = max(280, min(380, size.width - 40))
+        let cardHeight = min(380, max(320, L.height * 0.398))
+        VStack(spacing: 0) {
+            lyricTrackHeader
 
-            titleBlock
-                .padding(.horizontal, 2)
+            lyricsCard(width: cardWidth, height: cardHeight)
+                .frame(width: cardWidth, height: cardHeight)
+                .offset(x: lyricSwipeX)
+                .opacity(lyricSwipeOpacity)
+                .simultaneousGesture(lyricSongSwitchGesture)
+
+            Spacer(minLength: 8)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private func lyricsCard(width: CGFloat, height: CGFloat) -> some View {
+        let corner = max(24, min(32, width * 0.075))
+        return ZStack(alignment: .bottomTrailing) {
+            if let cover = t?.cover, !cover.isEmpty {
+                RemoteImage(path: cover, mode: .fill, maxSide: 900)
+                    .frame(width: width, height: height)
+                    .scaleEffect(1.12)
+                    .blur(radius: 24, opaque: false)
+                    .saturation(1.18)
+            } else {
+                LinearGradient(
+                    colors: [
+                        Color(hex: 0x496B58),
+                        Color(hex: 0x1A3028),
+                        Color(hex: 0x111A16)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(0.12),
+                    Color.black.opacity(0.24),
+                    Color.black.opacity(0.38)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
 
             lyricsViewport
-                .frame(height: lyricHeight)
+                .padding(.vertical, 8)
+
+            MusicGreenCompanion(
+                level: player.level,
+                playing: player.playing
+            )
+            .padding(.trailing, 8)
+            .padding(.bottom, 20)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 4)
-        .padding(.bottom, 6)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(width: width, height: height)
+        .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: corner, style: .continuous)
+                .stroke(Color.white.opacity(0.13), lineWidth: 0.7)
+        }
+        .shadow(color: Color.black.opacity(0.25), radius: 24, y: 14)
     }
 
     private func landscapePlayer(size: CGSize) -> some View {
@@ -4923,7 +5141,11 @@ struct MusicPlayingView: View {
                     FullPlayerAmbient(track: t)
 
                     VStack(spacing: 0) {
-                        playerTopBar(landscape: landscape)
+                        if landscape {
+                            playerTopBar(landscape: true)
+                        } else {
+                            lyricTopBar
+                        }
 
                         Group {
                             if landscape {
