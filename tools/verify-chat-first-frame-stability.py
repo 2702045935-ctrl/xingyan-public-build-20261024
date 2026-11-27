@@ -25,6 +25,12 @@ require(
     "the shared native chat must settle before its first visible frame",
 )
 require(
+    "initialOpenQuietUntil = Date().addingTimeInterval(0.55)" in CHAT
+    and "private var shouldAnimateAutomaticBottomScroll" in CHAT
+    and CHAT.count("animated: shouldAnimateAutomaticBottomScroll") == 2,
+    "the first network reconciliation must pin without a visible bounce",
+)
+require(
     "collection.alpha = initiallyPinnedToBottom ? 0 : 1" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
     and "completeInitialBottom" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8"),
     "native chats must reveal only after the first bottom position is committed",

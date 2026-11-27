@@ -798,6 +798,7 @@ struct ChatDetailView: View {
     @State private var initialRetryTask: Task<Void, Never>?
     @State private var initialScrollReady = false
     @State private var initialOpenSettling = false
+    @State private var initialOpenQuietUntil = Date.distantPast
     @State private var initialScrollTask: Task<Void, Never>?
     @State private var panel: PanelKind = .none
     @State private var emojiPanelExpanded = false
@@ -2894,7 +2895,7 @@ struct ChatDetailView: View {
                 if ChatScrollHandle.shared.moving { return }
                 ChatScrollDiag.shared.note("内容变高 → 原生消息列表贴底")
                 nativeMessageController.scrollToBottom(
-                    animated: Date() >= followOwnSendUntil
+                    animated: shouldAnimateAutomaticBottomScroll
                 )
             },
             initiallyPinnedToBottom: true,
@@ -2927,7 +2928,7 @@ struct ChatDetailView: View {
             guard !holdScroll else { return }
             guard atBottomNow || messages.last?.senderId == myId else { return }
             nativeMessageController.scrollToBottom(
-                animated: Date() >= followOwnSendUntil
+                animated: shouldAnimateAutomaticBottomScroll
             )
             scheduleSettledBottom()
             markConversationReadSoon()
@@ -3160,6 +3161,7 @@ struct ChatDetailView: View {
             await Task.yield()
             if Task.isCancelled { return }
             nativeMessageController.scrollToBottom(animated: false)
+            initialOpenQuietUntil = Date().addingTimeInterval(0.55)
             initialScrollReady = true
             initialOpenSettling = false
             allowSettledBottom = true
@@ -3344,6 +3346,10 @@ struct ChatDetailView: View {
             if !followOwnSend, let gap = ChatScrollHandle.shared.gap, gap > 24 { return }
             pinTick += 1
         }
+    }
+
+    private var shouldAnimateAutomaticBottomScroll: Bool {
+        Date() >= max(followOwnSendUntil, initialOpenQuietUntil)
     }
 
     private var atBottomNow: Bool { wasAtBottom || atBottom }
