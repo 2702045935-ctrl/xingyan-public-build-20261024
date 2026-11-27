@@ -43,8 +43,8 @@
     },
     {
       "path": "Sources/ChatWallpaperEffect.swift",
-      "size": 30364,
-      "sha256": "09d99e8a111506d260810d8005f7ca06f5b15e7000fcd6da2feb44cb6a6eb3e4"
+      "size": 30366,
+      "sha256": "fd856175f9a7642cbfc1d06b9db91da1ed3a68335645f9f0683156c91571232f"
     },
     {
       "path": "Sources/ChatsView.swift",

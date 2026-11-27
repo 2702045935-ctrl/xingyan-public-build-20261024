@@ -115,9 +115,9 @@ struct ChatThemeBackdrop: View {
                 scene(size: geo.size)
                 LinearGradient(
                     colors: [
-                        Color.white.opacity(dark ? 0.018 : 0.10),
+                        Color.white.opacity(dark ? 0.024 : 0.12),
                         Color.clear,
-                        Color.black.opacity(dark ? 0.14 : 0.025)
+                        Color.black.opacity(dark ? 0.20 : 0.035)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -158,14 +158,14 @@ struct ChatThemeBackdrop: View {
         ZStack {
             LinearGradient(
                 colors: dark
-                    ? [Color(hex: 0x071512), Color(hex: 0x0B141A), Color(hex: 0x111A18)]
-                    : [Color(hex: 0xF8F3EA), Color(hex: 0xEFEAE2), Color(hex: 0xE8E5DA)],
+                    ? [Color(hex: 0x050B09), Color(hex: 0x0A1113), Color(hex: 0x0D1411)]
+                    : [Color(hex: 0xF7F3EC), Color(hex: 0xEFEBE3), Color(hex: 0xE8E4DA)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
 
             RadialGradient(
-                colors: [Color(hex: 0x25D366).opacity(dark ? 0.09 : 0.13), Color.clear],
+                colors: [Color(hex: 0x25D366).opacity(dark ? 0.052 : 0.085), Color.clear],
                 center: UnitPoint(x: 0.86, y: 0.10),
                 startRadius: 2,
                 endRadius: max(size.width, size.height) * 0.72
@@ -173,7 +173,7 @@ struct ChatThemeBackdrop: View {
 
             Canvas { context, canvas in
                 let ink = Color(hex: dark ? 0xB8C5BE : 0x5E6B60)
-                    .opacity(dark ? 0.045 : 0.055)
+                    .opacity(dark ? 0.024 : 0.032)
                 for row in 0..<8 {
                     for column in 0..<5 {
                         let x = CGFloat(column) * canvas.width / 4.4
