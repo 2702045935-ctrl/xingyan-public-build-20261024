@@ -17,9 +17,10 @@ check(
     "the server must allow the map action instead of normalizing it to soon",
 )
 check(
-    'case "map": StarWorldExperienceView()' in DISCOVER
+    'case "map": ComingSoonView(title: Tr("星轨地图"))' in DISCOVER
+    and "StarWorldExperienceView()" not in DISCOVER
     and 'case "map": StarMapView()' not in DISCOVER,
-    "the map action must open the new world and retire the legacy map",
+    "the postponed 3D world must remain unreachable while the legacy map stays retired",
 )
 check(
     '"星轨地图": "map.fill"' in (
@@ -28,8 +29,9 @@ check(
     "the world entry must render with the native map icon",
 )
 check(
-    'DiscoverItem(id: "d-map", label: "星轨地图"' in DISCOVER,
-    "the world entry must render immediately as a builtin item",
+    "grouped.flatMap { $0 }.filter { $0.action != \"map\" }" in DISCOVER
+    and 'DiscoverItem(id: "d-map", label: "星轨地图"' not in DISCOVER,
+    "the postponed world entry must not render in Discover",
 )
 check(
     "items = DiscoverItem.builtin" in DISCOVER,
