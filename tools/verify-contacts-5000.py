@@ -31,6 +31,11 @@ require(
     "stress contacts must not be replaced by a server refresh",
 )
 require(
+    "let next: CGFloat = y > 8 ? 1 : 0" in CONTACTS
+    and "let next = y > 8 ? y : 0" not in CONTACTS,
+    "contact scrolling must notify SwiftUI only when crossing the top-chrome edge",
+)
+require(
     "private var sections: [ContactSection] {\n        directory.sections\n    }"
     in CONTACTS
     and "directory.usersByID[id]" in CONTACTS

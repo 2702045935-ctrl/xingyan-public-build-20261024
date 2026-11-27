@@ -699,7 +699,7 @@ struct DiscoverView: View {
                     }
                     .background {
                         NativeTopScrollObserver { y in
-                            let next = y > 8 ? y : 0
+                            let next: CGFloat = y > 8 ? 1 : 0
                             if navScrolled != next { navScrolled = next }
                         } onScrollViewReady: { scroll in
                             NativeTopScrollRegistry.shared.discover = scroll

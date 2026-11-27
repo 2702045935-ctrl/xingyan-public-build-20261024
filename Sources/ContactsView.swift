@@ -439,7 +439,7 @@ private var funcs: [(String, String, Color, String)] {
                         .background(contactsCanvas)
                         .background {
                             NativeTopScrollObserver { y in
-                                let next = y > 8 ? y : 0
+                                let next: CGFloat = y > 8 ? 1 : 0
                                 if navScrolled != next { navScrolled = next }
                             } onScrollViewReady: { scroll in
                                 NativeTopScrollRegistry.shared.contacts = scroll
