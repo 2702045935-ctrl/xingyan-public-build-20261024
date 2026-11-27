@@ -85,10 +85,11 @@ require(
     "sidebar material must use the shared specular glass and top light",
 )
 require(
-    "Color.clear\n                        .frame(height: L.safeTop + chatsHeaderH + chatsSearchH)"
+    "Color.clear\n                        .frame(height: L.safeTop + chatsHeaderH)"
     in CHATS
+    and "chatsSearchBar\n                    if chatFilterVisible" in CHATS
     and "chatTopHeader\n                        .background" in CHATS,
-    "top material must stop above the search row",
+    "search must be fixed above list and below the header material",
 )
 require(
     "python3 tools/verify-daylight-jade.py" in WORKFLOW,

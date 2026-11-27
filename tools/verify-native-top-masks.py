@@ -55,11 +55,12 @@ require(
     "conversation chrome must use same-colour native glass without a first-scroll transition",
 )
 require(
-    "Color.clear\n                        .frame(height: L.safeTop + chatsHeaderH + chatsSearchH)"
+    "Color.clear\n                        .frame(height: L.safeTop + chatsHeaderH)"
     in CHATS
+    and "chatsSearchBar\n                    if chatFilterVisible" in CHATS
     and "NativeChatsTopEdgeChrome(scrolled: chatTopScrolled," in CHATS
     and "chatTopHeader\n                        .background" in CHATS,
-    "conversation top material must stop at the header and leave search visible",
+    "conversation search must be a fixed sibling outside header material",
 )
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         and "NativeTopScrollObserver" in CONTACTS
