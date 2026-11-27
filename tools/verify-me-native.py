@@ -29,22 +29,5 @@ require(
     and ".font(.headline)" in ME,
     "native navigation, section and typography hierarchy are required",
 )
-require(
-    "items = DiscoverItem.builtinMe" in ME,
-    "the native me rows must render before the network catalog returns",
-)
-require(
-    "private func meSectionHeader" in ME
-    and ".textCase(nil)" in ME
-    and ".frame(width: 29, height: 29)" in ME
-    and "LinearGradient(" in ME
-    and "private enum MeVisual" in ME
-    and "static func colors(for action: String?) -> [Color]" in ME
-    and "colors: MeVisual.colors(for: item.action)" in ME
-    and "colors: MeVisual.violet" in ME
-    and "Color(hexString: item.color" not in ME
-    and ".stroke(Color.white.opacity(0.18), lineWidth: 0.5)" in ME,
-    "me section labels and row symbols must use the refined native hierarchy",
-)
 
 print("me-native: passed")

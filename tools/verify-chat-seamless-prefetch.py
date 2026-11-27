@@ -24,7 +24,7 @@ require(
     "foreground paging must reuse an in-flight prefetch instead of waiting twice",
 )
 require(
-    "if y < 4200" in CHAT,
+    "if isGroup, y < 4200" in CHAT,
     "B2611191645 chat prefetch must use the fixed 4200-point trigger",
 )
 require(

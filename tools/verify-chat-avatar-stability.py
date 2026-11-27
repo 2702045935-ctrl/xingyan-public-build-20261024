@@ -36,8 +36,8 @@ require(
 )
 require(
     "private static func cachedImage(path: String, maxSide: CGFloat)" in CORE
-    and "_image = State(initialValue: fallback)" in CORE
-    and "if loadedPath == identity { return }" in CORE,
+    and "_image = State(initialValue: cached)" in CORE
+    and "if loadedPath == path { return }" in CORE,
     "RemoteImage must paint a cached avatar on its first frame without a placeholder flash",
 )
 

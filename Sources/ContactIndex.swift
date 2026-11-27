@@ -3,18 +3,6 @@ import UIKit
 
 func ctIdxWeight() -> Font.Weight { UIConfig.num("ctIdxBold", 1) > 0 ? .heavy : .regular }
 
-private struct ContactIndexSearchPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.93 : 1))
-            .opacity(configuration.isPressed ? 0.78 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
-                       value: configuration.isPressed)
-    }
-}
-
 struct ContactIndexBar: View {
     static let letters: [String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#".map { String($0) }
 
@@ -25,88 +13,55 @@ struct ContactIndexBar: View {
 
     private let padV: CGFloat = 4.2
 
+    private let searchBox: CGFloat = 26
+    private let searchGap: CGFloat = 6
+
     @State private var active: String? = nil
     @State private var clearTask: Task<Void, Never>?
 
-    private let haptic = UISelectionFeedbackGenerator()
+    private let haptic = UIImpactFeedbackGenerator(style: .heavy)
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private var accessibilityScale: CGFloat {
-        switch dynamicTypeSize {
-        case .accessibility1: return 1.08
-        case .accessibility2: return 1.14
-        case .accessibility3: return 1.20
-        case .accessibility4: return 1.26
-        case .accessibility5: return 1.32
-        default: return 1
-        }
-    }
-    private var fontSize: CGFloat {
-        max(6.5, min(14, (L.ctIdxSize - 0.5) * accessibilityScale))
-    }
-    private var rowH: CGFloat {
-        max(fontSize, min(24, L.ctIdxItemH * accessibilityScale))
-    }
+    private var fontSize: CGFloat { max(6.5, L.ctIdxSize - 0.5) }
+    private var rowH: CGFloat { max(fontSize, L.ctIdxItemH) }
     private var pitch: CGFloat { rowH }
 
     private var dotSide: CGFloat { max(16, rowH + 2) }
-    private var indexInk: Color { Color.dyn(0x4A4A4F, 0xB8BCC2) }
-    private var activeInk: Color { Color.white.opacity(0.98) }
 
-    private var availableLetters: [String] {
+    private var letters: [String] {
         Self.letters.filter { available.contains($0) }
     }
-    private var displayedLetters: [String] { Self.letters }
     private var shownLetter: String? { active }
 
     var body: some View {
-        VStack(spacing: 0) {
-            VStack(spacing: 0) {
-                ForEach(displayedLetters, id: \.self) { L in
-                    ZStack {
-                        if shownLetter == L {
-                            Capsule(style: .continuous)
-                                .fill(ContactVisual.indexFill)
-                                .overlay {
-                                    Capsule(style: .continuous)
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [
-                                                    Color.white.opacity(0.18),
-                                                    .clear
-                                                ],
-                                                startPoint: .top,
-                                                endPoint: .bottom
-                                            )
-                                        )
-                                }
-                                .overlay {
-                                    Capsule(style: .continuous)
-                                        .stroke(Color.white.opacity(0.14),
-                                                lineWidth: 0.6)
-                                }
-                                .shadow(color: ContactVisual.indexFill.opacity(0.24),
-                                        radius: 3.5, y: 1.5)
-                        }
+        VStack(spacing: searchGap) {
+            Button(action: onSearch) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundStyle(OrbitTheme.jade)
+                    .frame(width: searchBox, height: searchBox)
+                    .background(Circle().fill(OrbitTheme.raised))
+                    .overlay(Circle().stroke(OrbitTheme.divider, lineWidth: 0.6))
+                    .shadow(color: Color.black.opacity(0.08), radius: 5, y: 2)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("搜索"))
 
-                        Text(L)
-                            .font(pfStyled(size: fontSize,
-                                           weight: shownLetter == L ? .bold : .medium))
-                            .foregroundColor(
-                                shownLetter == L
-                                    ? activeInk
-                                    : (available.contains(L)
-                                        ? indexInk
-                                        : indexInk.opacity(0.22))
-                            )
-                    }
-                    .frame(width: max(18, dotSide - 3),
-                           height: min(rowH, dotSide - 3))
-                    .frame(width: 22, height: rowH)
-                    .contentShape(Capsule(style: .continuous))
-                    .animation(reduceMotion ? nil : .easeOut(duration: 0.12),
-                               value: shownLetter)
+            VStack(spacing: 0) {
+                ForEach(letters, id: \.self) { L in
+                    Text(L)
+                        .font(pfStyled(size: fontSize, weight: shownLetter == L ? .bold : .medium))
+
+                        .foregroundColor(shownLetter == L ? .white : OrbitTheme.tertiary)
+                        .frame(height: rowH)
+                        .frame(width: 18)
+                        .background {
+                            if shownLetter == L {
+                                Capsule(style: .continuous)
+                                    .fill(OrbitTheme.jade)
+                                    .frame(width: dotSide, height: dotSide)
+                            }
+                        }
                 }
             }
             .contentShape(Rectangle())
@@ -115,16 +70,13 @@ struct ContactIndexBar: View {
             .accessibilityValue(shownLetter ?? "")
             .accessibilityHint(Tr("上下轻扫切换字母"))
             .accessibilityAdjustableAction { direction in
-                guard !availableLetters.isEmpty else { return }
+                guard !letters.isEmpty else { return }
+                let current = active.flatMap { letters.firstIndex(of: $0) } ?? 0
                 switch direction {
                 case .increment:
-                    let current = active.flatMap { availableLetters.firstIndex(of: $0) }
-                    let next = current.map { min(availableLetters.count - 1, $0 + 1) } ?? 0
-                    pick(availableLetters[next])
+                    pick(letters[min(letters.count - 1, current + 1)])
                 case .decrement:
-                    let current = active.flatMap { availableLetters.firstIndex(of: $0) }
-                    let next = current.map { max(0, $0 - 1) } ?? (availableLetters.count - 1)
-                    pick(availableLetters[next])
+                    pick(letters[max(0, current - 1)])
                 @unknown default:
                     return
                 }
@@ -133,12 +85,11 @@ struct ContactIndexBar: View {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        guard !displayedLetters.isEmpty else { return }
+                        guard !letters.isEmpty else { return }
                         clearTask?.cancel()
-                        let i = max(0, min(displayedLetters.count - 1,
+                        let i = max(0, min(letters.count - 1,
                                            Int(floor(value.location.y / pitch))))
-                        guard let letter = nearestAvailableLetter(to: i) else { return }
-                        pick(letter)
+                        pick(letters[i])
                     }
                     .onEnded { _ in
                         scheduleHighlightEnd()
@@ -150,35 +101,29 @@ struct ContactIndexBar: View {
                 onHighlight(nil)
             }
             .padding(.vertical, 5)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(OrbitTheme.field.opacity(0.92))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(OrbitTheme.divider, lineWidth: 0.6)
+                    )
+            )
         }
         .padding(.vertical, padV)
-        .frame(width: 30)
+        .frame(width: 28)
         .onAppear { haptic.prepare() }
-        .onChange(of: available) { next in
-            if let active, !next.contains(active) {
-                self.active = nil
-                onHighlight(nil)
-            }
-            haptic.prepare()
-        }
+        .onChange(of: available) { _ in haptic.prepare() }
     }
 
     private func pick(_ letter: String) {
-        guard active != letter else { return }
-        active = letter
-        onHighlight(letter)
-        onPick(letter)
-        haptic.selectionChanged()
-        haptic.prepare()
-    }
-
-    private func nearestAvailableLetter(to index: Int) -> String? {
-        guard !availableLetters.isEmpty else { return nil }
-        let clamped = max(0, min(displayedLetters.count - 1, index))
-        if let forward = displayedLetters[clamped...].first(where: available.contains) {
-            return forward
+        if active != letter {
+            active = letter
+            onHighlight(letter)
+            haptic.impactOccurred(intensity: 1.0)
+            haptic.prepare()
         }
-        return displayedLetters[..<clamped].reversed().first(where: available.contains)
+        onPick(letter)
     }
 
     private func scheduleHighlightEnd() {
@@ -198,16 +143,16 @@ struct LetterBubble: View {
     var body: some View {
         Text(letter)
             .font(pfStyled(size: 34, weight: .bold))
-            .foregroundColor(.white)
-            .frame(width: 66, height: 66)
+            .foregroundColor(OrbitTheme.ink)
+            .frame(width: 74, height: 74)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.dyn(0x62666B, 0x4A4D52).opacity(0.88))
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(OrbitTheme.raised.opacity(0.96))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Color.white.opacity(0.14), lineWidth: 0.6)
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .stroke(OrbitTheme.jade.opacity(0.42), lineWidth: 1)
                     )
-                    .shadow(color: Color.black.opacity(0.08), radius: 5, y: 2)
+                    .shadow(color: Color.black.opacity(0.16), radius: 16, y: 7)
             )
             .allowsHitTesting(false)
     }

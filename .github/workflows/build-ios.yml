@@ -103,7 +103,7 @@ jobs:
           python3 tools/verify-contacts-whatsapp.py
           python3 tools/verify-chat-menu-icon.py
           python3 tools/verify-no-top-green-glow.py
-          python3 tools/verify-splash-premium.py
+          python3 tools/verify-no-splash-page.py
           python3 tools/verify-video-tab.py
           python3 tools/verify-video-works-integration.py
           python3 tools/verify-video-publish-douyin.py

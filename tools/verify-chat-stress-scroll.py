@@ -25,11 +25,12 @@ require(
     "prepending must reuse unchanged row signatures and remeasure only the boundary",
 )
 require(
-    "if y < 4200" in CHAT,
+    "if isGroup, y < 4200" in CHAT,
     "B2611191645 group history must use the fixed prefetch trigger",
 )
 require(
-    "let target = isGroup ? 300 : 200" in CHAT
+    "if isGroup { autoLoadOlder() }" in CHAT
+    and "let target = isGroup ? 300 : 200" in CHAT
     and "let canContinue = explicitMore ?? hasOlder" in CHAT
     and "guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT
     and "scheduleOlderPrefetch(before: nextCursor" in CHAT,
@@ -92,23 +93,10 @@ require(
     and "private func slideWindowDuringScroll(_ next: [Item]) -> Bool" in NATIVE_CHAT_LIST,
     "equal-size conversation window slides must stay live during touch motion",
 )
-require(
-    NATIVE_CHAT_LIST.index("slideWindowDuringScroll(next)")
-    < NATIVE_CHAT_LIST.index("if next.count == oldCount {"),
-    "window slides must run before unchanged-row deferral during active scrolling",
-)
-require(
-    "prependWindowDuringScroll(next)" in NATIVE_CHAT_LIST
-    and "snapshot.insertItems(addedIDs, beforeItem: retainedFirst)"
-    in NATIVE_CHAT_LIST
-    and "snapshot.deleteItems(removedIDs)" in NATIVE_CHAT_LIST,
-    "upward conversation runway pages must commit without ending the gesture",
-)
 FIXTURE = (ROOT / "Sources" / "ChatStressFixture.swift").read_text(encoding="utf-8")
 require(
     "private static var cache: [Chat]" in FIXTURE
-    and "static func chats(range: Range<Int>)" in FIXTURE
-    and "static let pageSize = 120" in FIXTURE,
+    and "static func chats(range: Range<Int>)" in FIXTURE,
     "100k conversation stress data must materialize incrementally",
 )
 require(

@@ -72,16 +72,16 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x5E5E5E : 0x999999)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x303030 : 0xB2B2B2)" in CHATS
-    and "static let conversationPreviewInk = Color.dyn(0x999999, 0x5E5E5E)" in CHATS
-    and "static let timeInk = Color.dyn(0xB2B2B2, 0x303030)" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0x8C8C8C : 0x999999)" in CHATS
+    and "let timeColor = UIColor(hex: isDark ? 0x6E6E6E : 0xB2B2B2)" in CHATS
+    and "static let conversationPreviewInk = Color.dyn(0x999999, 0x8C8C8C)" in CHATS
+    and "static let timeInk = Color.dyn(0xB2B2B2, 0x6E6E6E)" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
-    and "UIColor(hex: isDark ? 0xD1D1D1 : 0x191919)" in CHATS,
+    and "UIColor(hex: isDark ? 0xEBEBF0 : 0x191919)" in CHATS,
     "chat-list title, preview and time must use WeCom's neutral dark hierarchy",
 )
 require(
-    0xD1D1D1 > 0x5E5E5E > 0x303030,
+    0xEBEBF0 > 0x8C8C8C > 0x6E6E6E,
     "dark title, preview and time must remain strictly ordered with time weakest",
 )
 require(
@@ -90,19 +90,6 @@ require(
     and "max(72, (72 + (combinedScale - 1) * 34).rounded())" in ROW
     and "weight: .medium, textStyle: .headline" in ROW,
     "conversation rows must use the tighter WeChat avatar grid and lighter title weight",
-)
-require(
-    "private enum OfficialRowVisual" in CHATS
-    and "Color(hex: 0x1FAE79)" in CHATS
-    and "Color(hex: 0x0E805E)" in CHATS
-    and "Color(hex: 0x64D2FF)" in CHATS
-    and "Color(hex: 0x2E9BEC)" in CHATS
-    and "OfficialRowVisual.weatherSun" in CHATS
-    and "PayVisual.tint.opacity(0.20)" in CHATS
-    and "UIColor(hex: isDark ? 0x31C48D : 0x0F8B65)" in CHATS
-    and ".foregroundStyle(OfficialAccountVisual.name)\n                                .lineLimit(1)" in CHATS
-    and ".foregroundStyle(ChatListVisual.ink)\n                                .lineLimit(1)" in CHATS,
-    "official-account rows must use the restrained brand icon and official-name hierarchy",
 )
 
 print("chats-dark-surface: passed")

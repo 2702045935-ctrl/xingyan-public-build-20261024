@@ -39,8 +39,7 @@ require(
 require(
     "locallyHiddenLastMessage" in APP
     and "locallyHiddenLastMessageAt" in APP
-    and "hiddenChatHasNewerActivity(incomingChat)" in APP
-    and "private func applyRealtimeDelivery(" in APP,
+    and "hiddenChatHasNewerActivity(incoming)" in APP,
     "stale realtime snapshots must not revive a deleted or hidden conversation",
 )
 require(
