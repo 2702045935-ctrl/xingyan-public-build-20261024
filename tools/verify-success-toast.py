@@ -29,11 +29,11 @@ require(
 require(
     "struct AppToastNotice: Identifiable, Equatable" in TOAST
     and "case .success: return \"checkmark\"" in TOAST
-    and ".fill(.regularMaterial)" in TOAST
+    and ".fill(C.floatingSurface)" in TOAST
     and "RoundedRectangle(cornerRadius: 17" in TOAST
     and "Capsule()" in TOAST
     and "progress = 1" in TOAST,
-    "success feedback must use the premium material, icon and time rail",
+    "success feedback must use the opaque floating surface, icon and time rail",
 )
 require(
     "AppToastView(notice: notice)" in APP

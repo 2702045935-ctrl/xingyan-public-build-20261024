@@ -41,7 +41,7 @@ struct BottlePageView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
                         .padding(.vertical, 8)
-                        .background(Capsule().fill(.ultraThinMaterial))
+                        .background(Capsule().fill(C.floatingSurface))
                         .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 0.8))
 
                     if let b = picked {
@@ -49,7 +49,7 @@ struct BottlePageView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(spacing: 9) {
                                 Circle()
-                                    .fill(.ultraThinMaterial)
+                                    .fill(C.floatingSurface)
                                     .frame(width: 30, height: 30)
                                     .overlay(Image(systemName: "person.fill")
                                         .font(.system(size: 13))
@@ -74,7 +74,7 @@ struct BottlePageView: View {
                         }
                         .padding(16)
                         .frame(maxWidth: .infinity)
-                        .background(.ultraThinMaterial,
+                        .background(C.floatingSurface,
                                     in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .stroke(Color.white.opacity(0.28), lineWidth: 0.9))
@@ -93,7 +93,7 @@ struct BottlePageView: View {
                             }
                             .font(pf(16, .medium)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 50)
-                            .background(Capsule().fill(.ultraThinMaterial))
+                            .background(Capsule().fill(C.floatingSurface))
                             .overlay(Capsule().stroke(Color.white.opacity(0.34), lineWidth: 0.9))
                         }
                         .buttonStyle(.plain)

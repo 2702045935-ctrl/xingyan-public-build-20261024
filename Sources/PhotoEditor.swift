@@ -194,7 +194,7 @@ struct PhotoEditorView: View {
                     .progressViewStyle(.circular)
                     .tint(.white)
                     .padding(12)
-                    .background(.ultraThinMaterial, in: Circle())
+                    .background(C.floatingSurface, in: Circle())
             }
 
             VStack(spacing: 0) {
@@ -213,7 +213,7 @@ struct PhotoEditorView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 11)
                         .frame(height: 32)
-                        .background(.ultraThinMaterial, in: Capsule())
+                        .background(C.floatingSurface, in: Capsule())
                 }
                 .buttonStyle(.plain)
                 .padding(.top, L.safeTop + 64)
@@ -259,7 +259,7 @@ struct PhotoEditorView: View {
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(.white.opacity(0.92))
                     .frame(width: 38, height: 38)
-                    .background(.ultraThinMaterial, in: Circle())
+                    .background(C.floatingSurface, in: Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Tr("取消"))

@@ -15,11 +15,12 @@ require(
     "private var composerFieldShape: RoundedRectangle" in CHAT
     and "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT
     and ".clipShape(composerFieldShape)" in CHAT,
-    "composer field must use the native Liquid Glass surface",
+    "composer field must use the opaque adaptive surface",
 )
 require(
-    "composerFieldShape.fill(.regularMaterial)" not in CHAT,
-    "composer field must not fall back to an opaque material-only surface",
+    "composerFieldShape.fill(.regularMaterial)" not in CHAT
+    and "composerFieldShape\n+                            .fill((composerUsesLightInk" not in CHAT,
+    "composer field must not use glass or a translucent tint",
 )
 require(
     "Color.white.opacity(0.18)" in CHAT

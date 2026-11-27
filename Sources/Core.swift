@@ -458,6 +458,12 @@ enum C {
     static var searchBg    : Color { UIConfig.fixedDark("searchBg", 0xE9EDE8, 0x1D231F) }
 
     static var fieldBg     : Color { UIConfig.fixedDark("fieldBg", 0xE9ECE8, 0x232A26) }
+    static var floatingSurface: Color {
+        UIConfig.fixedDark("floatingSurface", 0xFAFBF9, 0x1D231F)
+    }
+    static var controlSurface: Color {
+        UIConfig.fixedDark("controlSurface", 0xEEF1ED, 0x232A26)
+    }
     static var searchIcon  : Color { UIConfig.fixedDark("searchIcon", 0x87908A, 0x8E9792) }
     static var searchIcon2 : Color { UIConfig.fixedDark("searchIcon2", 0x6E7771, 0xA5ADA8) }
     static let searchBorder = Color(UIColor { t in

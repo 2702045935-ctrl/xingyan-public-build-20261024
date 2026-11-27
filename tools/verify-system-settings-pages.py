@@ -73,10 +73,10 @@ require(
 )
 require(
     "private struct ShareActionRow" in SHARE
-    and ".background(.regularMaterial)" in SHARE
+    and ".background(C.floatingSurface)" in SHARE
     and "ShareSheetTheme" in SHARE
     and "UIActivityViewController(activityItems: items" in SHARE,
-    "share must use a system action list with the native activity fallback",
+    "share must use an opaque action list with the native activity fallback",
 )
 require(
     "Form {" in PROFILE
@@ -92,8 +92,8 @@ require(
     and "LazyVStack(alignment: .leading, spacing: 14)" in NOTES
     and ".font(.largeTitle.bold())" in NOTES
     and ".font(.body)" in NOTES
-    and ".background(.bar)" in NOTES,
-    "notes must use native row feedback, semantic typography and lazy detail layout",
+    and ".background(C.navBg)" in NOTES,
+    "notes must use opaque row feedback, semantic typography and lazy detail layout",
 )
 require(
     "python3 tools/verify-system-settings-pages.py" in WORKFLOW,

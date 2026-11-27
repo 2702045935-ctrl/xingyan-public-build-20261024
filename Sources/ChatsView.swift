@@ -1197,6 +1197,7 @@ private struct ChatSearchPressStyle: ButtonStyle {
 private struct NativeChatEntry: Identifiable, Equatable {
     enum Kind: Equatable {
         case top
+        case search
         case official
         case pay
         case chat
@@ -1865,6 +1866,7 @@ struct ChatsView: View {
         .frame(maxWidth: chatsContentMaxWidth)
         .frame(maxWidth: .infinity)
         .frame(height: chatsSearchH)
+        .offset(y: -6)
     }
 
     private var pullDots: some View {
@@ -2398,7 +2400,7 @@ struct ChatsView: View {
                         .font(.system(size: 21, weight: .medium))
                         .foregroundStyle(.secondary)
                         .frame(width: 38, height: 38)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .background(C.floatingSurface, in: Circle())
                 }
                 .padding(.trailing, 12)
                 .accessibilityLabel(Tr("管理官方账号"))
@@ -2524,7 +2526,7 @@ struct ChatsView: View {
                         .font(.system(size: 21, weight: .medium))
                         .foregroundStyle(.secondary)
                         .frame(width: 38, height: 38)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .background(C.floatingSurface, in: Circle())
                 }
                 .padding(.trailing, 12)
                 .accessibilityLabel(Tr("管理支付官方号"))
@@ -2622,7 +2624,7 @@ struct ChatsView: View {
                         .font(.system(size: 21, weight: .medium))
                         .foregroundStyle(.secondary)
                         .frame(width: 38, height: 38)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .background(C.floatingSurface, in: Circle())
                 }
                 .padding(.trailing, 12)
                 .accessibilityLabel(Tr("管理天气账号"))
@@ -2650,7 +2652,12 @@ struct ChatsView: View {
             NativeChatEntry(
                 id: "top",
                 kind: .top,
-                signature: "\(appearance)-\(chatFilterOffset)-\(L.safeTop)-\(chatsHeaderH)-\(chatsSearchH)"
+                signature: "\(appearance)-\(chatFilterOffset)-\(L.safeTop)-\(chatsHeaderH)"
+            ),
+            NativeChatEntry(
+                id: "search",
+                kind: .search,
+                signature: "\(appearance)-\(Tr("搜索"))"
             )
         ]
         for key in sortedOfficialRowKeys {
@@ -2748,7 +2755,9 @@ struct ChatsView: View {
         switch entry.kind {
         case .top:
             Color.clear
-                .frame(height: L.safeTop + chatsHeaderH + chatsSearchH + chatFilterOffset)
+                .frame(height: L.safeTop + chatsHeaderH + chatFilterOffset)
+        case .search:
+            chatsSearchBar
         case .official:
             officialConversationRow
         case .pay:
@@ -2782,7 +2791,9 @@ struct ChatsView: View {
     private func nativeChatHeight(_ entry: NativeChatEntry) -> CGFloat {
         switch entry.kind {
         case .top:
-            return L.safeTop + chatsHeaderH + chatsSearchH + chatFilterOffset
+            return L.safeTop + chatsHeaderH + chatFilterOffset
+        case .search:
+            return chatsSearchH
         case .official, .pay, .chat, .weather:
             return ChatListVisual.rowHeight
         case .empty:
@@ -3089,9 +3100,8 @@ struct ChatsView: View {
 
                 VStack(spacing: 0) {
                     Color.clear
-                        .frame(height: L.safeTop + chatsHeaderH)
+                        .frame(height: L.safeTop + chatsHeaderH + chatsSearchH)
                         .allowsHitTesting(false)
-                    chatsSearchBar
                     if chatFilterVisible {
                         chatFilterBar(unreadCounts: snapshot.unreadCounts)
                             .frame(maxWidth: chatsContentMaxWidth)

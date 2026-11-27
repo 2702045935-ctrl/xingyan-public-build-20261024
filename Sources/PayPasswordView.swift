@@ -84,7 +84,7 @@ struct PayPasswordView: View {
                         .padding(18)
                         .background(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(.regularMaterial)
+                                .fill(C.floatingSurface)
                         )
                 }
             }

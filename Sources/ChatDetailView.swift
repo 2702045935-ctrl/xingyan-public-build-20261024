@@ -474,16 +474,6 @@ private struct ChatImmersiveEdgeMask: View {
 
                 LinearGradient(
                     colors: [
-                        Color.white.opacity(effectiveDark ? 0.055 : 0.13),
-                        Color.clear,
-                        Color.black.opacity(effectiveDark ? 0.10 : 0.018)
-                    ],
-                    startPoint: direction.0,
-                    endPoint: direction.1
-                )
-
-                LinearGradient(
-                    colors: [
                         Color.clear,
                         base.opacity(blurred
                                      ? (effectiveDark ? 0.075 : 0.035)
@@ -548,42 +538,15 @@ private struct ChatHeaderGlassGroup<Content: View>: View {
 
     var body: some View {
         let capsule = Capsule(style: .continuous)
-
-        if reduceTransparency {
-            ZStack {
-                content
-                    .background {
-                        capsule.fill(lightInk
-                                     ? Color.black.opacity(0.86)
-                                     : Color(uiColor: .secondarySystemBackground))
-                    }
+        content
+            .background {
+                capsule.fill(lightInk
+                             ? Color.black.opacity(0.84)
+                             : C.cardBg)
             }
-        } else {
-            #if compiler(>=6.2)
-            if #available(iOS 26.0, *) {
-                content
-                    .background {
-                        ZStack {
-                            Color.clear
-                                .glassEffect(.regular.interactive(), in: capsule)
-                            capsule.fill(lightInk
-                                         ? Color.black.opacity(0.24)
-                                         : Color.white.opacity(0.025))
-                        }
-                    }
-                    .overlay {
-                        capsule.stroke(lightInk
-                                       ? Color.white.opacity(0.18)
-                                       : Color.black.opacity(0.055),
-                                       lineWidth: 0.6)
-                    }
-            } else {
-                legacyGlass
+            .overlay {
+                capsule.stroke(C.hairline, lineWidth: 0.5)
             }
-            #else
-            legacyGlass
-            #endif
-        }
     }
 
     private var legacyGlass: some View {
@@ -731,7 +694,7 @@ private struct StarWhisperLine: View {
         .background {
             if !plain {
                 ZStack {
-                    Capsule(style: .continuous).fill(.ultraThinMaterial)
+                    Capsule(style: .continuous).fill(C.floatingSurface)
                     Capsule(style: .continuous).fill(surface)
                 }
             }
@@ -2162,7 +2125,7 @@ struct ChatDetailView: View {
                                     }
                                     .padding(.horizontal, unreadHere > 0 ? 11 : 0)
                                     .frame(minWidth: 34, minHeight: 34)
-                                    .background(Capsule().fill(.regularMaterial))
+                                    .background(Capsule().fill(C.floatingSurface))
                                     .overlay(Capsule().stroke(Color.white.opacity(0.16), lineWidth: 0.5))
                                     .shadow(color: Color.black.opacity(0.18), radius: 8, y: 3)
                                 }
@@ -2261,7 +2224,7 @@ struct ChatDetailView: View {
                 .padding(.vertical, 8)
                 .background {
                     ZStack {
-                        Rectangle().fill(.regularMaterial)
+                        Rectangle().fill(C.floatingSurface)
                         Color.red.opacity(0.055)
                     }
                 }
@@ -2286,7 +2249,7 @@ struct ChatDetailView: View {
                     }
                     .padding(.horizontal, 14)
                     .frame(height: 34)
-                    .background(.regularMaterial)
+                    .background(C.floatingSurface)
                     .overlay(alignment: .bottom) {
                         Rectangle().fill(C.green.opacity(0.18)).frame(height: 0.5)
                     }
@@ -3173,7 +3136,7 @@ struct ChatDetailView: View {
         .background(
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.regularMaterial)
+                    .fill(C.floatingSurface)
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Color(uiColor: .secondarySystemBackground)
                         .opacity(scheme == .dark ? 0.48 : 0.76))
@@ -3679,7 +3642,7 @@ struct ChatDetailView: View {
                                 .padding(.vertical, 2)
                                 .background {
                                     if !usesPlainDefaultChatChrome {
-                                        Capsule().fill(.thinMaterial)
+                                        Capsule().fill(C.controlSurface)
                                     }
                                 }
                                 .overlay {
@@ -3756,7 +3719,7 @@ struct ChatDetailView: View {
                 .background(
                     ZStack {
                         RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(.ultraThinMaterial)
+                            .fill(C.floatingSurface)
                         RoundedRectangle(cornerRadius: 4, style: .continuous)
                             .fill(adaptiveSystemSurface)
                     }
@@ -4990,9 +4953,6 @@ struct ChatDetailView: View {
                 .background {
                     ZStack {
                         NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)
-                        composerFieldShape
-                            .fill((composerUsesLightInk ? Color.black : Color.white)
-                                .opacity(composerUsesLightInk ? 0.42 : 0.32))
                         if recorder.recording {
                             composerFieldShape.fill(
                                 recorder.willCancel
@@ -6934,7 +6894,7 @@ struct SystemLine: View {
                 if !plain {
                     ZStack {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(.ultraThinMaterial)
+                            .fill(C.floatingSurface)
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(usesLightInk
                                   ? Color.black.opacity(0.42)
@@ -7132,7 +7092,7 @@ struct QuoteInspectSheet: View {
     var body: some View {
         ZStack {
             Rectangle()
-                .fill(.regularMaterial)
+                .fill(C.floatingSurface)
                 .ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 16) {
@@ -7519,7 +7479,7 @@ struct MessageRow: View {
                 .background(
                     ZStack {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(.ultraThinMaterial)
+                            .fill(C.floatingSurface)
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(senderNameUsesLightInk
                                   ? Color.black.opacity(0.40)
@@ -7800,7 +7760,7 @@ struct MessageRow: View {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(.ultraThinMaterial)
+                        .fill(C.floatingSurface)
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
                         .fill(quoteSurface)
                 }

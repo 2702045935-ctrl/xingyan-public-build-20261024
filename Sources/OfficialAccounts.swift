@@ -178,7 +178,7 @@ struct OfficialAccountsView: View {
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity)
             .frame(height: 64)
-            .background(.regularMaterial,
+            .background(C.floatingSurface,
                         in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)

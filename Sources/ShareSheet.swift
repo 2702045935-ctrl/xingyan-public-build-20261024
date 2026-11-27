@@ -168,7 +168,7 @@ struct ShareBrandRail: View {
             .padding(.vertical, 12)
             .background {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.regularMaterial)
+                    .fill(C.floatingSurface)
             }
         }
     }
@@ -206,7 +206,7 @@ enum ShareSheetTheme {
     static func pageBackdrop(_ scheme: ColorScheme) -> some View {
         ZStack {
             Rectangle()
-                .fill(.regularMaterial)
+                .fill(C.floatingSurface)
             Rectangle()
                 .fill(page(scheme).opacity(scheme == .dark ? 0.42 : 0.46))
         }
@@ -250,7 +250,7 @@ struct SharePreviewCard<Content: View>: View {
             .padding(12)
             .background {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(.regularMaterial)
+                    .fill(C.floatingSurface)
             }
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay {
@@ -647,7 +647,7 @@ struct ShareSheet: View {
                     }
                 }
             }
-            .background(.regularMaterial)
+            .background(C.floatingSurface)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }

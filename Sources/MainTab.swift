@@ -769,7 +769,7 @@ struct TabBar: View {
 
         if scheme == .dark {
             return AnyView(ZStack {
-                Rectangle().fill(.ultraThinMaterial)
+                Rectangle().fill(C.floatingSurface)
                     .opacity(0.58)
                 GlassBackground(shape: Rectangle(),
                                 opacity: 0.82,
@@ -788,7 +788,7 @@ struct TabBar: View {
                 let blurA = UIConfig.num("tabBarBlur", 0.9)
                 if blurA > 0 {
                     Rectangle()
-                        .fill(.bar)
+                        .fill(C.navBg)
                         .opacity(max(0, min(1, blurA)))
                 }
                 GlassBackground(shape: Rectangle(),
@@ -806,7 +806,7 @@ struct TabBar: View {
         return AnyView(ZStack {
             fill
                 .opacity(UIConfig.num("tabBarOpaque", 0.32))
-            Rectangle().fill(.bar)
+            Rectangle().fill(C.navBg)
                 .opacity(glass)
         })
     }

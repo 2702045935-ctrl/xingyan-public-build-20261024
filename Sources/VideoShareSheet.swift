@@ -266,7 +266,7 @@ struct VideoForwardPicker: View {
             }
             .padding(.horizontal, 15)
             .frame(height: 46)
-            .background(.ultraThinMaterial)
+            .background(C.floatingSurface)
             .overlay(alignment: .top) {
                 Rectangle()
                     .fill(OrbitTheme.divider.opacity(0.7))

@@ -17,15 +17,16 @@ def require(condition: bool, message: str) -> None:
 
 require("struct NativeTopGlassMask" in NAV
         and "struct NativeFrostedHeaderMaterial" in NAV
-        and "final class SpecularEffectView" in NAV
-        and "topSheen.colors" in NAV
-        and "lowerShade.colors" in NAV
-        and "UIBlurEffect(style: scheme == .dark" in NAV
+        and "func makeUIView(context: Context) -> UIView" in NAV
+        and "view.backgroundColor = UIColor(hex: scheme == .dark" in NAV
         and "NativeFrostedHeaderMaterial()" in NAV
-        and "accessibilityReduceTransparency" in NAV,
-        "shared top mask must use a visible native frosted material with accessibility fallback")
-require(".glassEffect(.regular.interactive(), in: shape)" in NAV,
-        "tappable glass controls must use native interactive liquid glass")
+        and "UIVisualEffectView" not in NAV
+        and "UIBlurEffect" not in NAV
+        and "glassEffect(" not in NAV,
+        "shared top mask must use an opaque themed surface without glass")
+require("shape\n            .fill(C.floatingSurface)" in NAV
+        and "shape.stroke(C.hairline" in NAV,
+        "controls must use an opaque floating surface")
 require(
     "table.topEdgeEffect.style = .hard" in NATIVE_LIST
     and "table.topEdgeEffect.isHidden = true" in NATIVE_LIST
@@ -55,12 +56,12 @@ require(
     "conversation chrome must use same-colour native glass without a first-scroll transition",
 )
 require(
-    "Color.clear\n                        .frame(height: L.safeTop + chatsHeaderH)"
+    "Color.clear\n                        .frame(height: L.safeTop + chatsHeaderH + chatsSearchH)"
     in CHATS
-    and "chatsSearchBar\n                    if chatFilterVisible" in CHATS
+    and "id: \"search\",\n                kind: .search" in CHATS
     and "NativeChatsTopEdgeChrome(scrolled: chatTopScrolled," in CHATS
     and "chatTopHeader\n                        .background" in CHATS,
-    "conversation search must be a fixed sibling outside header material",
+    "conversation mask must stop at the header while search remains a list row",
 )
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         and "NativeTopScrollObserver" in CONTACTS

@@ -375,7 +375,7 @@ struct OfficialNoticeCenterView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.regularMaterial,
+        .background(C.floatingSurface,
                     in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -403,7 +403,7 @@ struct OfficialNoticeCenterView: View {
             Spacer(minLength: 0)
         }
         .padding(14)
-        .background(.regularMaterial,
+        .background(C.floatingSurface,
                     in: RoundedRectangle(cornerRadius: 17, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 17, style: .continuous)
@@ -476,7 +476,7 @@ private struct WeatherAnimatedBackdrop: View {
                 .offset(x: drifting ? 110 : -72, y: drifting ? -18 : 48)
 
             Rectangle()
-                .fill(.ultraThinMaterial)
+                .fill(C.floatingSurface)
                 .opacity(0.18)
         }
         .ignoresSafeArea()
@@ -641,7 +641,7 @@ struct WeatherOfficialView: View {
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(.primary)
                             .frame(width: 38, height: 38)
-                            .background(.thinMaterial, in: Circle())
+                            .background(C.controlSurface, in: Circle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -749,7 +749,7 @@ struct WeatherOfficialView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(C.floatingSurface)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -832,7 +832,7 @@ struct WeatherOfficialView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.thinMaterial)
+                .fill(C.controlSurface)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -847,7 +847,7 @@ struct WeatherOfficialView: View {
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(current.accent)
                 .frame(width: 44, height: 44)
-                .background(.thinMaterial,
+                .background(C.controlSurface,
                             in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             VStack(alignment: .leading, spacing: 4) {
                 Text(info.title)
@@ -863,7 +863,7 @@ struct WeatherOfficialView: View {
         .padding(15)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.regularMaterial)
+                .fill(C.floatingSurface)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -907,7 +907,7 @@ struct WeatherOfficialView: View {
         .padding(15)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.regularMaterial)
+                .fill(C.floatingSurface)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -956,7 +956,7 @@ struct WeatherOfficialView: View {
         .padding(15)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.regularMaterial)
+                .fill(C.floatingSurface)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)

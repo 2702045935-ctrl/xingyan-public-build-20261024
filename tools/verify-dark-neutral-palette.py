@@ -46,7 +46,9 @@ require(
 require(
     "let fill = scheme == .dark\n            ? C.tabBg" in MAIN_TAB
     and "appearance.configureWithDefaultBackground()" in TAB
-    and "UIBlurEffect(style: .systemChromeMaterial)" in TAB
+    and "appearance.configureWithOpaqueBackground()" in TAB
+    and "appearance.backgroundEffect = nil" in TAB
+    and "UIBlurEffect" not in TAB
     and "systemUltraThinMaterialDark" not in TAB
     and "TabGlassBackdrop" not in TAB,
     "tab surfaces must use native system chrome instead of stacked custom blur",

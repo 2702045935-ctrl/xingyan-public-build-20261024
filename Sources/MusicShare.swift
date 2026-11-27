@@ -1659,7 +1659,7 @@ struct ListenView: View {
             }
         }
         .padding(3)
-        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+        .background(C.floatingSurface, in: Capsule(style: .continuous))
         .overlay {
             Capsule(style: .continuous).stroke(.white.opacity(0.16), lineWidth: 0.6)
         }
@@ -1768,7 +1768,7 @@ struct ListenView: View {
                 .frame(width: width * 0.74, alignment: .leading)
 
                 ZStack {
-                    Circle().fill(.ultraThinMaterial)
+                    Circle().fill(C.floatingSurface)
                     Image(systemName: player.isPlaying(track.id) ? "pause.fill" : "play.fill")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
@@ -1810,7 +1810,7 @@ struct ListenView: View {
             }
             .padding(.horizontal, 9)
             .frame(width: 224, height: 64)
-            .background(.thinMaterial,
+            .background(C.controlSurface,
                         in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
@@ -1949,7 +1949,7 @@ struct ListenView: View {
                 .padding(16)
 
                 ZStack {
-                    Circle().fill(.ultraThinMaterial)
+                    Circle().fill(C.floatingSurface)
                     Image(systemName: player.isPlaying(track.id) ? "pause.fill" : "play.fill")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
@@ -2278,7 +2278,7 @@ struct ListenView: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 66)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(C.floatingSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .stroke(Color.primary.opacity(0.06), lineWidth: 0.6)
@@ -2752,7 +2752,7 @@ struct ListenView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(.regularMaterial,
+            .background(C.floatingSurface,
                         in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -2799,7 +2799,7 @@ struct ListenView: View {
             }
         }
         .padding(14)
-        .background(.regularMaterial,
+        .background(C.floatingSurface,
                     in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -3050,7 +3050,7 @@ struct ListenView: View {
         } label: {
             ZStack {
                 Circle()
-                    .fill(.ultraThinMaterial)
+                    .fill(C.floatingSurface)
                 Circle()
                     .fill(
                         LinearGradient(
@@ -3702,7 +3702,7 @@ struct KTVSongPickerView: View {
         }
         .padding(.horizontal, 13)
         .frame(height: 46)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(C.floatingSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(.white.opacity(0.12), lineWidth: 0.7)
@@ -3849,7 +3849,7 @@ struct KTVSongPickerView: View {
         }
         .padding(.horizontal, 12)
         .frame(height: 64)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(C.floatingSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(.white.opacity(0.13), lineWidth: 0.7)
@@ -4514,7 +4514,7 @@ struct MusicPlayingView: View {
                     .frame(width: side, height: side)
                     .background {
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(.regularMaterial)
+                            .fill(C.floatingSurface)
                     }
                     .transition(.opacity)
             } else {

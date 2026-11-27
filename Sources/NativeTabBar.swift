@@ -303,21 +303,13 @@ struct NativeTabBar: UIViewRepresentable {
         bar.unselectedItemTintColor = UIColor(NativeTabBarVisual.normalInk)
 
         let appearance = UITabBarAppearance()
-        if reduceTransparency {
-            appearance.configureWithOpaqueBackground()
-            appearance.backgroundEffect = nil
-            let themed = UIConfig.colorIfSet("tabBarColor")
-                ?? UIConfig.colorIfSet("tabBg")
-                ?? C.tabBg
-            appearance.backgroundColor = UIColor(themed)
-            bar.isOpaque = true
-        } else {
-            appearance.configureWithDefaultBackground()
-            if #unavailable(iOS 26.0) {
-                appearance.backgroundEffect = UIBlurEffect(style: .systemChromeMaterial)
-            }
-            bar.isOpaque = false
-        }
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundEffect = nil
+        let themed = UIConfig.colorIfSet("tabBarColor")
+            ?? UIConfig.colorIfSet("tabBg")
+            ?? C.tabBg
+        appearance.backgroundColor = UIColor(themed)
+        bar.isOpaque = true
         let normalTitle: [NSAttributedString.Key: Any] = [
             .foregroundColor: UIColor(NativeTabBarVisual.normalInk),
             .font: pfUIFont(10, .medium)

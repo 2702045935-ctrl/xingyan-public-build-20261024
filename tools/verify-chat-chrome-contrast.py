@@ -24,10 +24,10 @@ require(
     "top and bottom chrome need a strong-to-transparent contrast falloff",
 )
 require(
-    "(composerUsesLightInk ? Color.black : Color.white)" in CHAT
-    and ".opacity(composerUsesLightInk ? 0.42 : 0.32)" in CHAT
+    "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT
+    and ".opacity(composerUsesLightInk ? 0.42 : 0.32)" not in CHAT
     and "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT,
-    "composer field backing must follow wallpaper luminance, not system appearance",
+    "composer field backing must use one opaque wallpaper-aware surface",
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT
@@ -41,8 +41,9 @@ require(
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark:" in CHAT
-    and ".glassEffect(.regular.interactive(), in: capsule)" in CHAT,
-    "contrast protection must preserve the existing native glass controls",
+    and "capsule.fill(lightInk" in CHAT
+    and ".glassEffect(" not in CHAT,
+    "contrast protection must use opaque adaptive controls",
 )
 require(
     "Color.white.opacity(0.90)" in CHAT

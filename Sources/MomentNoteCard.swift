@@ -111,7 +111,7 @@ struct MomentNoteCard: View {
             if isVideo {
                 ZStack {
                     Circle()
-                        .fill(.ultraThinMaterial)
+                        .fill(C.floatingSurface)
                         .frame(width: 54, height: 54)
                         .overlay(Circle().fill(Color.black.opacity(0.18)))
                         .overlay(Circle().stroke(Color.white.opacity(0.55), lineWidth: 0.8))

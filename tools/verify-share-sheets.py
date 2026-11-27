@@ -27,7 +27,7 @@ for token in ("分享到", "SharePreviewCard", "ShareActionTile", "系统分享"
 require(
     "private struct ShareActionRow" in SHARE
     and "ShareActionRow(\n                        title: copied" in SHARE
-    and ".background(.regularMaterial)\n            .clipShape(RoundedRectangle(cornerRadius: 16"
+    and ".background(C.floatingSurface)\n            .clipShape(RoundedRectangle(cornerRadius: 16"
     in SHARE
     and "static var accent: Color { Color.dyn(0x0F8B65, 0x36CA95) }" in SHARE
     and "Color(hex: 0xFF2442)" not in SHARE,
@@ -82,13 +82,13 @@ require(
 )
 require(
     "static func pageBackdrop(_ scheme: ColorScheme) -> some View" in SHARE
-    and ".fill(.regularMaterial)" in SHARE
+    and ".fill(C.floatingSurface)" in SHARE
     and "shareSheetTranslucentBackground()" in SHARE
     and "presentationBackground(.clear)" in SHARE
     and "ShareSheetTheme.pageBackdrop(scheme)" in SHARE
     and "ShareSheetTheme.pageBackdrop(scheme)" in VIDEO
     and "ShareSheetTheme.pageBackdrop(scheme)" in MALL,
-    "every share sheet must use the shared translucent system material",
+    "every share sheet must use the shared opaque surface",
 )
 require(
     "presentationDragIndicator(.visible)" in SHARE

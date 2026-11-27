@@ -533,7 +533,7 @@ struct DDMallFloor: View {
                 .background {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(.thinMaterial)
+                            .fill(C.controlSurface)
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .fill(L2.cardFill.opacity(0.24))
                     }
@@ -618,7 +618,7 @@ struct DDMallFloor: View {
                 .background {
                     ZStack {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(.regularMaterial)
+                            .fill(C.floatingSurface)
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .fill(L2.cardFill.opacity(0.22))
                     }
@@ -708,7 +708,7 @@ struct DDMallFloor: View {
         .background {
             ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.regularMaterial)
+                    .fill(C.floatingSurface)
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(l.cardFill.opacity(0.20))
             }
@@ -727,7 +727,7 @@ struct DDMallFloor: View {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(.regularMaterial)
+                        .fill(C.floatingSurface)
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .fill(l.cardFill.opacity(0.22))
                 }

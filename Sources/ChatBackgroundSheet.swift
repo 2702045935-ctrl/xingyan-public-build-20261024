@@ -432,7 +432,7 @@ struct ChatBackgroundSheet: View {
                 .padding(.horizontal, 11)
                 .frame(height: 34)
                 .frame(maxWidth: .infinity)
-                .background(.ultraThinMaterial)
+                .background(C.floatingSurface)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 112)

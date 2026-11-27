@@ -160,7 +160,7 @@ struct OfficeDocumentActionBar: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(.bar)
+        .background(C.navBg)
         .overlay(alignment: .top) {
             Rectangle().fill(C.hairline).frame(height: 0.5)
         }

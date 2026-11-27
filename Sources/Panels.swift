@@ -26,7 +26,7 @@ struct ChatEmojiPanelMaterial: View {
 
     var body: some View {
         ZStack {
-            Rectangle().fill(.ultraThinMaterial)
+            Rectangle().fill(C.floatingSurface)
             Rectangle().fill(
                 scheme == .dark
                     ? Color.black.opacity(0.08)
@@ -41,7 +41,7 @@ struct ChatPlusPanelMaterial: View {
 
     var body: some View {
         ZStack {
-            Rectangle().fill(.regularMaterial)
+            Rectangle().fill(C.floatingSurface)
             Rectangle().fill(
                 Color(uiColor: .systemBackground)
                     .opacity(scheme == .dark ? 0.28 : 0.54)

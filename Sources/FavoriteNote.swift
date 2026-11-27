@@ -185,7 +185,7 @@ struct FavoriteNoteComposeSheet: View {
                     .padding(.horizontal, 18)
                     .padding(.vertical, 7)
                 }
-                .background(.bar)
+                .background(C.navBg)
             }
         }
         .task {

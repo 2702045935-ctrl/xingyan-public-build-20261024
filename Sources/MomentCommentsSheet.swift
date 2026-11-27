@@ -340,7 +340,7 @@ struct MomentCommentsSheet: View {
                 }
                 ZStack {
                     Circle()
-                        .fill(.ultraThinMaterial)
+                        .fill(C.floatingSurface)
                         .frame(width: 50, height: 50)
                         .overlay(Circle().fill(Color.black.opacity(0.15)))
                     Image(systemName: "play.fill")
@@ -439,7 +439,7 @@ struct MomentCommentsSheet: View {
                 .foregroundColor(C.subLabel)
                 .padding(.horizontal, 7)
                 .frame(height: 22)
-                .background(.thinMaterial, in: Capsule())
+                .background(C.controlSurface, in: Capsule())
             Spacer(minLength: 0)
             Text(Tr("最新"))
                 .font(pfStyled(size: 12))

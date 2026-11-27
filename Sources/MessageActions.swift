@@ -315,7 +315,7 @@ struct ForwardPickerView: View {
         .padding(.horizontal, 13)
         .padding(.top, 10)
         .padding(.bottom, max(8, L.safeBottom * 0.32))
-        .background(.ultraThinMaterial)
+        .background(C.floatingSurface)
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(OrbitTheme.divider.opacity(0.7))

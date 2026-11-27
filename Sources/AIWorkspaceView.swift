@@ -1812,23 +1812,12 @@ private struct AIChatSystemGlass: View {
     private let shape = RoundedRectangle(cornerRadius: 29, style: .continuous)
 
     var body: some View {
-        #if compiler(>=6.2)
-        if #available(iOS 26.0, *) {
-            Color.clear
-                .glassEffect(.regular, in: shape)
-                .shadow(color: .black.opacity(0.10), radius: 12, y: 6)
-                .allowsHitTesting(false)
-        } else {
-            fallback
-        }
-        #else
         fallback
-        #endif
     }
 
     private var fallback: some View {
         shape
-            .fill(.ultraThinMaterial)
+            .fill(C.floatingSurface)
             .overlay(shape.stroke(Color.white.opacity(0.42), lineWidth: 0.8))
             .shadow(color: .black.opacity(0.10), radius: 12, y: 6)
             .allowsHitTesting(false)

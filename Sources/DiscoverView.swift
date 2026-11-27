@@ -1036,7 +1036,7 @@ struct DiscoverView: View {
                         .foregroundStyle(.white.opacity(0.94))
                         .padding(.horizontal, 11)
                         .frame(height: 30)
-                        .background(.ultraThinMaterial, in: Capsule())
+                        .background(C.floatingSurface, in: Capsule())
 
                         if app.showDot("momentsRow", auto: !latestThumb.isEmpty) {
                             Circle()

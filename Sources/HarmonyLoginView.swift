@@ -107,7 +107,7 @@ struct HarmonyLoginView: View {
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 18)
-                    .background(.ultraThinMaterial)
+                    .background(C.floatingSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .allowsHitTesting(true)

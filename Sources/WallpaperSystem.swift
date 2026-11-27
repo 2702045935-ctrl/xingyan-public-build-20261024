@@ -174,7 +174,7 @@ struct WallpaperCropView: View {
         .frame(height: 46)
         .background {
             Capsule()
-                .fill(.ultraThinMaterial)
+                .fill(C.floatingSurface)
                 .overlay(Capsule().stroke(Color.white.opacity(0.13), lineWidth: 0.7))
         }
         .padding(.horizontal, 18)

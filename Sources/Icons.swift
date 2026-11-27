@@ -50,59 +50,18 @@ struct GlassBackground<S: Shape>: View {
     }
 
     var body: some View {
-        #if compiler(>=6.2)
-
-        if #available(iOS 26.0, *), native, !darkEdgeSuppressed, !reduceTransparency,
-           UIConfig.num("nativeGlass", 1) > 0 {
-            Color.clear
-
-                .glassEffect(.regular, in: shape)
-
-                .clipShape(shape)
-
-                .overlay { if let t = resolvedTint { shape.fill(t) } }
-                .overlay {
-                    shape.fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(scheme == .dark ? 0.10 : 0.30),
-                                Color.clear,
-                                Color.black.opacity(scheme == .dark ? 0.10 : 0.025)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                }
-                .overlay {
-                    shape.stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(scheme == .dark ? 0.34 : 0.62),
-                                Color.white.opacity(scheme == .dark ? 0.08 : 0.20),
-                                Color.black.opacity(scheme == .dark ? 0.20 : 0.055)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.7
-                    )
-                }
-                .opacity(opacity)
-
-                .allowsHitTesting(false)
-                .shadow(color: shadow ? Color.black.opacity(scheme == .dark ? 0.35 : 0.12) : .clear,
-                        radius: shadow ? 10 : 0, y: shadow ? 5 : 0)
-        } else if reduceTransparency {
-            reducedTransparencySurface
-        } else if darkEdgeSuppressed {
-            suppressedDarkGlass
-        } else {
-            fallbackGlass
+        ZStack {
+            shape.fill(C.floatingSurface)
+            if let tint {
+                shape.fill(tint.opacity(scheme == .dark ? 0.14 : 0.10))
+            }
+            shape.stroke(C.hairline.opacity(0.78), lineWidth: 0.5)
         }
-        #else
-        fallbackGlass
-        #endif
+        .clipShape(shape)
+        .opacity(max(0.62, min(1, opacity)))
+        .shadow(color: shadow ? Color.black.opacity(scheme == .dark ? 0.22 : 0.08) : .clear,
+                radius: shadow ? 7 : 0, y: shadow ? 3 : 0)
+        .allowsHitTesting(false)
     }
 
     private var reducedTransparencySurface: some View {
@@ -142,7 +101,7 @@ struct GlassBackground<S: Shape>: View {
 
             ZStack {
                 ForEach(0..<layers, id: \.self) { _ in
-                    shape.fill(.ultraThinMaterial)
+                    shape.fill(C.floatingSurface)
                 }
             }
             .opacity(opacity)
@@ -174,25 +133,13 @@ struct GlassBackground<S: Shape>: View {
     }
 }
 
-private struct HarmonyDarkBlur: UIViewRepresentable {
-    func makeUIView(context: Context) -> UIVisualEffectView {
-        let view = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
-        view.isUserInteractionEnabled = false
-        return view
-    }
-
-    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {
-        uiView.effect = UIBlurEffect(style: .dark)
-    }
-}
-
 struct HarmonyDarkMask: View {
 
     var strength: Double = 1
 
     var body: some View {
         ZStack {
-            HarmonyDarkBlur()
+            Color(hex: 0x101412)
                 .opacity(max(0, min(1, 0.94 * strength)))
 
             Color(hex: 0x101412)

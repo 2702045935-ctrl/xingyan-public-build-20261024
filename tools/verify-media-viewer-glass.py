@@ -19,25 +19,27 @@ def require(condition: bool, message: str) -> None:
 require(
     "struct NativeGlassControlMaterial: View" in NAV
     and "var shape: AnyShape = AnyShape(Capsule(style: .continuous))" in NAV
-    and ".glassEffect(.regular.interactive(), in: shape)" in NAV
-    and ".glassEffect(.regular, in: shape)" in NAV
+    and "shape\n            .fill(C.floatingSurface)" in NAV
+    and "shape.stroke(C.hairline" in NAV
+    and "glassEffect(" not in NAV
+    and "UIVisualEffectView" not in NAV
     and "shape: AnyShape(Circle())" in NAV
     and "interactive: true" in NAV,
-    "viewer controls must share the native interactive glass material",
+    "viewer controls must share the opaque floating surface",
 )
 require(
     CORE.count("NativeGlassControlMaterial()") >= 2
     and "GlassBackground(\n                                shape: Capsule(style: .continuous)"
     not in CORE
     and "GlassBackground(shape: Capsule(style: .continuous), shadow: true)" not in CORE,
-    "photo viewer count and action bar must use native glass",
+    "photo viewer count and action bar must use opaque controls",
 )
 require(
     "shape: AnyShape(\n                                RoundedRectangle(" in VIDEO
     and "NativeGlassControlMaterial(\n                                        interactive: true" in VIDEO
     and "NativeGlassControlMaterial()" in VIDEO
     and "GlassBackground(" not in VIDEO,
-    "video viewer scrubber, speed and message controls must use native glass",
+    "video viewer scrubber, speed and message controls must use opaque controls",
 )
 require(
     "python3 tools/verify-media-viewer-glass.py" in WORKFLOW,

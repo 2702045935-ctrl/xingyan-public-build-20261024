@@ -143,7 +143,7 @@ struct StarWorldExperienceView: View {
                     .foregroundStyle(.white.opacity(0.70))
                     .padding(.horizontal, 13)
                     .frame(height: 31)
-                    .background(Capsule().fill(.ultraThinMaterial))
+                    .background(Capsule().fill(C.floatingSurface))
                     .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.7))
                     .padding(.bottom, 11)
 
@@ -164,7 +164,7 @@ struct StarWorldExperienceView: View {
                 .frame(height: 70)
                 .background {
                     Capsule()
-                        .fill(.ultraThinMaterial)
+                        .fill(C.floatingSurface)
                         .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 0.7))
                 }
                 .padding(.horizontal, 28)
@@ -225,7 +225,7 @@ struct StarWorldExperienceView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 42, height: 42)
-                .background(Circle().fill(.ultraThinMaterial))
+                .background(Circle().fill(C.floatingSurface))
                 .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 0.7))
         }
         .buttonStyle(.plain)

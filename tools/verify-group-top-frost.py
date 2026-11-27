@@ -15,7 +15,7 @@ def require(condition: bool, message: str) -> None:
 require(
     "private struct ChatTopGlassBackdrop" in CHAT
     and "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT,
-    "chat top chrome must restore the native blur layer",
+    "chat top chrome must use the opaque adaptive surface",
 )
 require(
     "sv.topEdgeEffect.style = .automatic" in (
@@ -25,9 +25,10 @@ require(
 )
 require(
     "private struct ChatHeaderGlassGroup" in CHAT
-    and ".glassEffect(.regular.interactive(), in: capsule)" in CHAT
-    and "capsule.fill(lightInk" in CHAT,
-    "the circled chat header layout must use adaptive native interactive glass",
+    and "capsule.fill(lightInk" in CHAT
+    and "capsule.stroke(C.hairline" in CHAT
+    and ".glassEffect(" not in CHAT,
+    "the circled chat header layout must use an opaque adaptive surface",
 )
 require(
     "chatBackdrop" in CHAT and "ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)" in CHAT,

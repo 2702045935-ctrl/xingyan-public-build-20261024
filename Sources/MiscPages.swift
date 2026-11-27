@@ -2001,7 +2001,7 @@ struct WorksView: View {
                 .foregroundColor(.white)
                 .padding(.horizontal, 11)
                 .frame(height: 30)
-                .background(.ultraThinMaterial, in: Capsule())
+                .background(C.floatingSurface, in: Capsule())
                 .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 0.6))
             }
             .buttonStyle(.plain)

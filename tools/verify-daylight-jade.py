@@ -49,18 +49,18 @@ require(
     "conversation title must use the calibrated semibold optical rhythm",
 )
 require(
-    "final class SpecularEffectView" in NAV
-    and "topSheen.colors" in NAV
-    and "diagonalSheen.colors" in NAV
-    and "lowerShade.colors" in NAV
-    and "shape.stroke(\n                LinearGradient(" in NAV,
-    "native glass must provide specular, diagonal and lower-rim response",
+    "UIVisualEffectView" not in NAV
+    and "UIBlurEffect" not in NAV
+    and "UIGlassEffect" not in NAV
+    and "glassEffect(" not in NAV
+    and "shape\n            .fill(C.floatingSurface)" in NAV,
+    "all chrome and controls must use opaque surfaces without glass",
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT
-    and "Color.white.opacity(effectiveDark ? 0.055 : 0.13)" in CHAT
-    and "Color.black.opacity(effectiveDark ? 0.10 : 0.018)" in CHAT,
-    "chat edge masks must provide light and dark mirror response",
+    and "Color.white.opacity(effectiveDark ? 0.055 : 0.13)" not in CHAT
+    and "Color.black.opacity(effectiveDark ? 0.10 : 0.018)" not in CHAT,
+    "chat masks must not restore a mirror highlight",
 )
 require(
     "Color.dyn(0x757D78, 0x8B938E)" in TAB
@@ -81,15 +81,16 @@ require(
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark: scheme == .dark)" in SIDEBAR
-    and "Color.white.opacity(scheme == .dark ? 0.08 : 0.22)" in SIDEBAR,
-    "sidebar material must use the shared specular glass and top light",
+    and "Color.white.opacity(scheme == .dark ? 0.08 : 0.22)" not in SIDEBAR,
+    "sidebar must use the shared opaque surface without top specular light",
 )
 require(
-    "Color.clear\n                        .frame(height: L.safeTop + chatsHeaderH)"
+    "Color.clear\n                        .frame(height: L.safeTop + chatsHeaderH + chatsSearchH)"
     in CHATS
-    and "chatsSearchBar\n                    if chatFilterVisible" in CHATS
+    and "id: \"search\",\n                kind: .search" in CHATS
+    and "chatsSearchBar\n                    if chatFilterVisible" not in CHATS
     and "chatTopHeader\n                        .background" in CHATS,
-    "search must be fixed above list and below the header material",
+    "search must stay in the list so it enters the mask only while scrolling",
 )
 require(
     "python3 tools/verify-daylight-jade.py" in WORKFLOW,

@@ -333,7 +333,7 @@ struct ChatThemePickerView: View {
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 8)
                         .frame(height: 21)
-                        .background(.ultraThinMaterial,
+                        .background(C.floatingSurface,
                                     in: Capsule(style: .continuous))
                 }
 

@@ -577,7 +577,7 @@ private struct NativeZoomCompass: View {
         .frame(maxWidth: 342)
         .background(
             RoundedRectangle(cornerRadius: 19, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(C.floatingSurface)
                 .environment(\.colorScheme, .dark)
         )
         .overlay {

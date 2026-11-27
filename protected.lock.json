@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 369569,
-      "sha256": "e6fb15db87b40fe2f4713d92c4ce9fd2fb41328a83e79378b1f8f5ab3366b466"
+      "size": 367968,
+      "sha256": "16ec5c199a69037c863c9bca28662f04f967b49b9ffbe4701673e9f2d1fc8443"
     },
     {
       "path": "Sources/ChatDeferred.swift",
@@ -18,8 +18,8 @@
     },
     {
       "path": "Sources/ChatBackgroundSheet.swift",
-      "size": 36100,
-      "sha256": "0136e0e900bc78a5e338cf2beaef136e8f84474240be5aab493cfd4aeea223d4"
+      "size": 36099,
+      "sha256": "d7b7dd0512dadf20f34b279cc4f79f9ac6ef83d1fdcc7edfd5371836fed8af2c"
     },
     {
       "path": "Sources/ChatComposerField.swift",
@@ -38,8 +38,8 @@
     },
     {
       "path": "Sources/ChatThemes.swift",
-      "size": 21662,
-      "sha256": "afbb47e746185992fddc13cb69be53535cbe995d1f47a8756275e1597e57f48a"
+      "size": 21661,
+      "sha256": "ae9923bcd0d304469b8e1fb6cbf87e67ddf0206d5090ffd5b0b0a8de7f8cc5e7"
     },
     {
       "path": "Sources/ChatWallpaperEffect.swift",
@@ -48,8 +48,8 @@
     },
     {
       "path": "Sources/ChatsView.swift",
-      "size": 153055,
-      "sha256": "1bdf23716e0477a48de32bc943f86ea396a7c54cfa20af6e57d0ee424f20395b"
+      "size": 153296,
+      "sha256": "fec71769c1939221cb178d80bea3c4ce3ed47e7f8eaf42eb84367a3e5f5a6b66"
     },
     {
       "path": "Sources/NativeChatList.swift",
@@ -63,13 +63,13 @@
     },
     {
       "path": "Sources/WeChatMessageCards.swift",
-      "size": 3117,
-      "sha256": "dcf08e432c7b3020e93969de9757f52ac101d90d690bb6c0a6dd83f9dca98ad4"
+      "size": 3118,
+      "sha256": "298559a4352e06f9dfaf88bc801837d49140c39669d7a59c89e1828c8f6a7da5"
     },
     {
       "path": "Sources/DiscoverView.swift",
-      "size": 166749,
-      "sha256": "cd7e8a0eb3ed435d8e030ead2411aa0c25b9c6a4e50967ea554cb402c35c2f1b"
+      "size": 166748,
+      "sha256": "484b038e9a0c782e548318ff3c5f7931bd63a87873205a834bd75ec7e1dd686e"
     },
     {
       "path": "Sources/MomentFeedCard.swift",

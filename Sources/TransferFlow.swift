@@ -952,7 +952,7 @@ struct TransferView: View {
                     )
                     .frame(width: 96, height: 96)
                 Circle()
-                    .fill(.ultraThinMaterial)
+                    .fill(C.floatingSurface)
                     .frame(width: 76, height: 76)
                     .overlay {
                         Circle()
@@ -1009,7 +1009,7 @@ struct TransferView: View {
                         .foregroundStyle(C.label)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(.ultraThinMaterial,
+                        .background(C.floatingSurface,
                                     in: RoundedRectangle(cornerRadius: 15, style: .continuous))
                         .overlay {
                             RoundedRectangle(cornerRadius: 15, style: .continuous)

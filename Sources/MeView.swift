@@ -580,7 +580,7 @@ struct MeView: View {
                         .frame(height: L.safeTop + 64)
                 } else {
                     Color(hex: 0xFFFFFF)
-                    Rectangle().fill(.ultraThinMaterial)
+                    Rectangle().fill(C.floatingSurface)
                     LinearGradient(colors: [Color.white.opacity(0.60), Color.clear],
                                    startPoint: .top, endPoint: .bottom)
                         .frame(height: L.safeTop + 64)

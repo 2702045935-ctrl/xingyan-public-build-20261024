@@ -20,7 +20,7 @@ struct WeChatMessageCard<Content: View>: View {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(.regularMaterial)
+                        .fill(C.floatingSurface)
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .fill(Color.dyn(0xFFFFFF, 0x242426).opacity(0.72))
                     RoundedRectangle(cornerRadius: 16, style: .continuous)

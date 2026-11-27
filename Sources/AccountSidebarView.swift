@@ -267,18 +267,6 @@ private struct AccountSidebarPanel: View {
             )
             .frame(width: 1)
         }
-        .overlay(alignment: .top) {
-            LinearGradient(
-                colors: [
-                    Color.white.opacity(scheme == .dark ? 0.08 : 0.22),
-                    Color.clear
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 54)
-            .allowsHitTesting(false)
-        }
         .sheet(isPresented: $showAccounts) {
             NavigationStack {
                 SwitchAccountView()

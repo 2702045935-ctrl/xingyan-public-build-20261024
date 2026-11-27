@@ -191,7 +191,7 @@ struct KefuPage: View {
             .padding(.horizontal, 12)
             .padding(.top, 7)
             .padding(.bottom, 8)
-            .background(.bar)
+            .background(C.navBg)
         }
     }
 

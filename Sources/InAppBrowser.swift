@@ -464,7 +464,7 @@ struct InAppBrowserView: View {
         }
         .padding(.horizontal, 13)
         .frame(height: 42)
-        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+        .background(C.floatingSurface, in: Capsule(style: .continuous))
         .overlay(
             Capsule(style: .continuous)
                 .stroke(Color.white.opacity(0.3), lineWidth: 0.6)
@@ -499,7 +499,7 @@ struct InAppBrowserView: View {
         }
         .padding(.horizontal, 13)
         .frame(height: 42)
-        .background(.regularMaterial, in: Capsule())
+        .background(C.floatingSurface, in: Capsule())
         .padding(.top, max(58, top + 56))
     }
 
@@ -566,7 +566,7 @@ struct InAppBrowserView: View {
         .foregroundStyle(.primary)
         .padding(.horizontal, 18)
         .frame(height: 56)
-        .background(.regularMaterial, in: Capsule())
+        .background(C.floatingSurface, in: Capsule())
         .overlay {
             Capsule().stroke(
                 Color.white.opacity(scheme == .dark ? 0.13 : 0.45),

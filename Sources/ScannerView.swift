@@ -580,7 +580,7 @@ struct ScannerView: View {
                 .frame(width: 56, height: 56)
                 .background {
                     Circle()
-                        .fill(.ultraThinMaterial)
+                        .fill(C.floatingSurface)
                         .environment(\.colorScheme, .dark)
                 }
                 .overlay {

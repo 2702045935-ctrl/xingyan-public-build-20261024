@@ -87,7 +87,7 @@ struct AppToastView: View {
         .frame(maxWidth: min(360, max(220, L.width - 36)))
         .background {
             RoundedRectangle(cornerRadius: 17, style: .continuous)
-                .fill(.regularMaterial)
+                .fill(C.floatingSurface)
             RoundedRectangle(cornerRadius: 17, style: .continuous)
                 .fill(scheme == .dark
                       ? Color(hex: 0x1C1C1E).opacity(0.82)

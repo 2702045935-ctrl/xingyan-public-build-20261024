@@ -54,7 +54,7 @@ struct MusicDockedPlayerBar: View {
         .frame(height: 64)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.thinMaterial)
+                .fill(C.controlSurface)
                 .opacity(fadesBackgroundWhilePlaying && player.playing ? 0.12 : 1)
                 .animation(.easeInOut(duration: 0.38), value: player.playing)
         }

@@ -1840,7 +1840,7 @@ struct MallNativeView: View {
         .frame(height: 34)
         .background {
             Capsule()
-                .fill(.ultraThinMaterial)
+                .fill(C.floatingSurface)
                 .overlay(Capsule().stroke(Color.white.opacity(0.34), lineWidth: 0.6))
                 .shadow(color: Color.black.opacity(0.10 + 0.10 * prog), radius: 10, y: 3)
         }
@@ -2075,7 +2075,7 @@ struct MallNativeView: View {
 
         .background {
             ZStack {
-                Rectangle().fill(.ultraThinMaterial)
+                Rectangle().fill(C.floatingSurface)
                     .opacity(UIConfig.num("mallTabGlass", 0.18))
                 DDColor.card.opacity(0.96)
             }
@@ -4789,7 +4789,7 @@ struct DDDetailView: View {
         .padding(4)
         .background {
             Capsule(style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(C.floatingSurface)
                 .overlay(Capsule().stroke(DDColor.cardEdge, lineWidth: 0.7))
         }
         .padding(.horizontal, 16)
@@ -4990,7 +4990,7 @@ struct DDDetailView: View {
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(DDColor.ink)
                     .frame(width: 38, height: 38)
-                    .background(Circle().fill(.ultraThinMaterial))
+                    .background(Circle().fill(C.floatingSurface))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -4999,14 +4999,14 @@ struct DDDetailView: View {
                 .foregroundColor(DDColor.ink)
                 .padding(.horizontal, 14)
                 .frame(height: 36)
-                .background(Capsule().fill(.ultraThinMaterial))
+                .background(Capsule().fill(C.floatingSurface))
             Spacer(minLength: 0)
             Button { store.toggleFav(product.id) } label: {
                 Image(systemName: store.isFav(product.id) ? "heart.fill" : "heart")
                     .font(.system(size: 17))
                     .foregroundColor(store.isFav(product.id) ? DDColor.redDeep : DDColor.ink)
                     .frame(width: 38, height: 38)
-                    .background(Circle().fill(.ultraThinMaterial))
+                    .background(Circle().fill(C.floatingSurface))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -5015,7 +5015,7 @@ struct DDDetailView: View {
                     .font(.system(size: 17))
                     .foregroundColor(DDColor.ink)
                     .frame(width: 38, height: 38)
-                    .background(Circle().fill(.ultraThinMaterial))
+                    .background(Circle().fill(C.floatingSurface))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -5024,7 +5024,7 @@ struct DDDetailView: View {
                     .font(.system(size: 17, weight: .medium))
                     .foregroundColor(DDColor.ink)
                     .frame(width: 38, height: 38)
-                    .background(Circle().fill(.ultraThinMaterial))
+                    .background(Circle().fill(C.floatingSurface))
                     .overlay(alignment: .topTrailing) {
                         if store.cartCount > 0 {
                             Text(String(min(99, store.cartCount)))
@@ -5492,7 +5492,7 @@ struct DDDetailView: View {
             .padding(.horizontal, 14).padding(.top, 9)
             .padding(.bottom, 9)
         }
-        .background(.ultraThinMaterial)
+        .background(C.floatingSurface)
         .overlay(alignment: .top) {
             Rectangle().fill(DDColor.cardEdge).frame(height: 0.5)
         }

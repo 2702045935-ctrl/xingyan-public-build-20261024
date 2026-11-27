@@ -67,7 +67,7 @@ require(
     and "private var panelColorGlow: LinearGradient" in SIDEBAR
     and "accent.opacity(0.07)" in SIDEBAR
     and "Color.dyn(0x0F8B65, 0x36CA95)" in SIDEBAR,
-    "sidebar material must remain visibly frosted and color-tinted",
+    "sidebar surface must remain color-tinted without glass",
 )
 require(
     ".frame(width: 28, height: 28)" in SIDEBAR

@@ -675,7 +675,7 @@ struct ChannelsView: View {
                     .padding(.horizontal, 14)
                     .padding(.top, 9)
                     .padding(.bottom, max(10, L.safeBottom + 4))
-                    .background(.ultraThinMaterial)
+                    .background(C.floatingSurface)
                 }
                 .frame(height: commentsExpanded ? geo.size.height * 0.86 : geo.size.height * 0.62)
                 .background(Color.black.opacity(0.96))
@@ -902,7 +902,7 @@ struct ChannelsView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 11)
                         .frame(height: 30)
-                        .background(.ultraThinMaterial, in: Capsule())
+                        .background(C.floatingSurface, in: Capsule())
                     }
                     .buttonStyle(.plain)
                 }
