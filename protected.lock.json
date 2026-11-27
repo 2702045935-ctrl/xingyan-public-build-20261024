@@ -53,8 +53,8 @@
     },
     {
       "path": "Sources/NativeChatList.swift",
-      "size": 35557,
-      "sha256": "010097cf9e09471f88249ddcd18a885553ea7b30ff6a8ffdeefb3aedc18321a2"
+      "size": 35656,
+      "sha256": "352066351236af419c1df39d6898ffeb96dcf3bbc74ea1af6299a0ab9d031dca"
     },
     {
       "path": "Sources/NativeChatRowCell.swift",

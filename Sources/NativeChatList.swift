@@ -150,12 +150,6 @@ where Item.ID: Hashable {
         context.coordinator.table = table
         context.coordinator.itemsRevision = revision
         context.coordinator.apply(items, animated: false)
-
-        let refresh = UIRefreshControl()
-        refresh.addTarget(context.coordinator,
-                          action: #selector(Coordinator.refreshPulled(_:)),
-                          for: .valueChanged)
-        table.refreshControl = refresh
         return controller
     }
 
@@ -575,6 +569,13 @@ where Item.ID: Hashable {
             guard !hasCompletedInitialApply else { return }
             hasCompletedInitialApply = true
             UIView.performWithoutAnimation {
+                if table.refreshControl == nil {
+                    let refresh = UIRefreshControl()
+                    refresh.addTarget(self,
+                                      action: #selector(refreshPulled(_:)),
+                                      for: .valueChanged)
+                    table.refreshControl = refresh
+                }
                 table.alpha = 1
             }
         }

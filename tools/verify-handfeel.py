@@ -9,6 +9,7 @@ SEARCH = (ROOT / "Sources" / "SearchPage.swift").read_text(encoding="utf-8")
 CONTACTS = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
 SIDEBAR = (ROOT / "Sources" / "AccountSidebarView.swift").read_text(encoding="utf-8")
 DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
+NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -49,6 +50,11 @@ require(
     'case "map": StarWorldExperienceView()' in DISCOVER
     and 'case "map": StarMapView()' not in DISCOVER,
     "the world entry must open the new experience without the legacy page",
+)
+require(
+    "if table.refreshControl == nil" in NATIVE_CHAT_LIST
+    and "private func revealInitialTableIfNeeded" in NATIVE_CHAT_LIST,
+    "pull-to-refresh must attach only after the first native list layout",
 )
 
 print("handfeel: passed")
