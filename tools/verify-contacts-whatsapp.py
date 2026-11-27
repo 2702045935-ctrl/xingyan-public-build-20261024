@@ -34,9 +34,11 @@ require(
     "contacts must use a centered native title with the add control on the trailing edge",
 )
 require(
-    ".safeAreaInset(edge: .top, spacing: 0)" in VIEW
-    and "contactsSearchBar\n                                .padding(.horizontal, 16)" in VIEW,
-    "contacts search must remain pinned and visible above every list position",
+    "ZStack(alignment: .top)" in VIEW
+    and "Color.clear\n                                    .frame(height: contactsHeaderHeight)" in VIEW
+    and "contactsSearchBar\n                                    .padding(.horizontal, 16)" in VIEW
+    and ".safeAreaInset(edge: .top, spacing: 0)" not in VIEW,
+    "contacts search must participate in the native list so it scrolls into the mask",
 )
 require(
     "nativeQuickIcon(item, size: utilityIconSize)" in VIEW

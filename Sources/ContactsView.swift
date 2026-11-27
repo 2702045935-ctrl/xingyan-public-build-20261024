@@ -331,7 +331,7 @@ private var funcs: [(String, String, Color, String)] {
 
     var body: some View {
         NavigationStack(path: $path) {
-            VStack(spacing: 0) {
+            ZStack(alignment: .top) {
 
                 VStack(spacing: 0) {
 
@@ -357,6 +357,14 @@ private var funcs: [(String, String, Color, String)] {
                         ScrollView {
 
                             LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                                Color.clear
+                                    .frame(height: contactsHeaderHeight)
+
+                                contactsSearchBar
+                                    .padding(.horizontal, 16)
+                                    .padding(.top, 6)
+                                    .padding(.bottom, 10)
+
                                 if keyword.isEmpty {
 
                                     funcStrip
@@ -429,13 +437,6 @@ private var funcs: [(String, String, Color, String)] {
                                 Color.clear
                                     .frame(height: L.tabH + L.safeBottom + 12)
                             }
-                        }
-                        .safeAreaInset(edge: .top, spacing: 0) {
-                            contactsSearchBar
-                                .padding(.horizontal, 16)
-                                .padding(.top, 6)
-                                .padding(.bottom, 10)
-                                .background(contactsCanvas)
                         }
                         .background(contactsCanvas)
                         .background {
