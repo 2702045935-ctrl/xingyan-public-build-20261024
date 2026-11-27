@@ -1,11 +1,15 @@
 import SwiftUI
 import UIKit
 
-private struct NativeMomentFeedItem {
+struct NativeMomentFeedItem {
     let id: String
     let moment: Moment
     let showsDayHeader: Bool
     let dayText: String
+}
+
+private enum NativeMomentFeedCellIdentifier {
+    static let row = "NativeMomentFeedCell"
 }
 
 /// Native scrolling kernel for the Moments timeline. The feed uses one
@@ -64,7 +68,7 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
         table.verticalScrollIndicatorInsets.top = headerHeight
         table.register(
             UITableViewCell.self,
-            forCellReuseIdentifier: Coordinator.cellIdentifier
+            forCellReuseIdentifier: NativeMomentFeedCellIdentifier.row
         )
 
         let headerContainer = UIView()
@@ -90,7 +94,7 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
                 [weak coordinator = context.coordinator] item, tableView, indexPath in
                 guard let coordinator else { return UITableViewCell() }
                 let cell = tableView.dequeueReusableCell(
-                    withIdentifier: Coordinator.cellIdentifier,
+                    withIdentifier: NativeMomentFeedCellIdentifier.row,
                     for: indexPath
                 )
                 cell.backgroundColor = .clear
@@ -152,8 +156,6 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
 
     final class Coordinator: NSObject, UITableViewDelegate,
                              UITableViewDataSourcePrefetching {
-        static let cellIdentifier = "NativeMomentFeedCell"
-
         weak var table: UITableView?
         weak var headerContainer: UIView?
         var headerHost: UIHostingController<Header>?
@@ -256,7 +258,7 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
             }
 
             var day = previousLastDay ?? ""
-            var seen = previousIDs
+            var seen = isPureAppend ? previousIDs : []
             for index in start..<moments.count {
                 let moment = moments[index]
                 let id = "moment:\(moment.id)"
@@ -303,6 +305,9 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
                 var snapshot = NSDiffableDataSourceSnapshot<Int, String>()
                 snapshot.appendSections([0])
                 snapshot.appendItems(nextIDs, toSection: 0)
+                if !nextIDs.isEmpty {
+                    snapshot.reloadItems(nextIDs)
+                }
                 dataSource.apply(snapshot, animatingDifferences: false) {
                     [weak self] in
                     guard let self, let table = self.table,
