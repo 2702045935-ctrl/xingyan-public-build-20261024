@@ -2983,7 +2983,7 @@ struct MomentsView: View {
               let last = moments.last else { return }
         momentPrefetchTask?.cancel()
         momentPrefetchTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 120_000_000)
+            await Task.yield()
             if Task.isCancelled { return }
             await prefetchNextMomentsPage()
         }

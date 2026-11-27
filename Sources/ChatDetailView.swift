@@ -3707,7 +3707,7 @@ struct ChatDetailView: View {
                    senderOnline: senderIsOnline(message),
                    avatarSize: L.chatAvatar,
                    maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
-                   showsAvatar: true,
+                   showsAvatar: !isGroup || isRunStart(message),
                    reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
@@ -3974,9 +3974,11 @@ struct ChatDetailView: View {
         let same = (next.senderId ?? "") == (message.senderId ?? "")
 
         if isGroup {
-            return same ? 4 : 12
+            return same ? 3 : 14
         }
-        return same ? UIConfig.num("msgGapSame", 7) : UIConfig.num("msgGapOther", 15)
+        return same
+            ? UIConfig.num("msgGapSame", 6)
+            : UIConfig.num("msgGapOther", 16)
     }
 
     private var leftUnreadBadge: AnyView? {

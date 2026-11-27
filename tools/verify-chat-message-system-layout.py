@@ -47,6 +47,13 @@ require(
     "image, multi-image and video message rendering must remain unchanged",
 )
 require(
+    "showsAvatar: !isGroup || isRunStart(message)" in CHAT
+    and "return same ? 3 : 14" in CHAT
+    and 'UIConfig.num("msgGapSame", 6)' in CHAT
+    and 'UIConfig.num("msgGapOther", 16)' in CHAT,
+    "consecutive group messages must share one stable avatar/name run hierarchy",
+)
+require(
     ".fill(ChatTheme.bubbleMine)" in CHAT
     and ".fill(ChatTheme.bubbleOther)" in CHAT
     and "bubbleGloss" not in CHAT
