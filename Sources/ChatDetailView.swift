@@ -770,6 +770,7 @@ struct ChatDetailView: View {
 
     init(chat: Chat, initialMessages: [Message] = []) {
         self.chat = chat
+        ChatThemeStore.shared.activate(chat.id)
         let hidden = Set(
             UserDefaults.standard.stringArray(forKey: "chris.deleted." + chat.id) ?? []
         )
@@ -2865,7 +2866,6 @@ struct ChatDetailView: View {
             }
         }
         .onAppear {
-            chatTheme.activate(chat.id)
             InteractionKernel.shared.complete(page: "chat", id: chat.id)
         }
         .onReceive(NotificationCenter.default.publisher(for: .chrisStickersChanged)) { _ in

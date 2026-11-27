@@ -10,6 +10,7 @@ CONTACTS = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
 SIDEBAR = (ROOT / "Sources" / "AccountSidebarView.swift").read_text(encoding="utf-8")
 DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
+CHAT_DETAIL = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -55,6 +56,11 @@ require(
     "if table.refreshControl == nil" in NATIVE_CHAT_LIST
     and "private func revealInitialTableIfNeeded" in NATIVE_CHAT_LIST,
     "pull-to-refresh must attach only after the first native list layout",
+)
+require(
+    "ChatThemeStore.shared.activate(chat.id)" in CHAT_DETAIL
+    and "chatTheme.activate(chat.id)" not in CHAT_DETAIL,
+    "chat appearance must be active before the first rendered frame",
 )
 
 print("handfeel: passed")
