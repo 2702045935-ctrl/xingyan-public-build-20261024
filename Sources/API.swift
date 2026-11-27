@@ -5721,48 +5721,68 @@ private struct StarredPayload: Decodable {
     }
 
     func uploadBinary(_ data: Data, mime: String) async throws -> String {
-        guard let url = URL(string: API.directUploadBases[0] + "/api/upload/raw") else {
-            throw APIError.message("服务器地址不正确")
+        var lastError: Error = APIError.message("上传失败，请检查网络后再试")
+        for base in uploadBases {
+            guard let url = URL(string: base + "/api/upload/raw") else { continue }
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.timeoutInterval = 180
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            req.setValue(mime, forHTTPHeaderField: "Content-Type")
+            req.httpBody = data
+            do {
+                let (d, resp) = try await session.data(for: req)
+                guard let http = resp as? HTTPURLResponse,
+                      (200...299).contains(http.statusCode) else {
+                    let http = resp as? HTTPURLResponse
+                    throw APIError.message(uploadFailureMessage(
+                        d,
+                        status: http?.statusCode ?? -1
+                    ))
+                }
+                return try Self.rawUploadURL(from: d)
+            } catch {
+                lastError = error
+            }
         }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.timeoutInterval = 180
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue(mime, forHTTPHeaderField: "Content-Type")
-        req.httpBody = data
-        let (d, resp) = try await session.data(for: req)
-        guard let http = resp as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败，请检查网络后再试")
-        }
-        return try Self.rawUploadURL(from: d)
+        throw lastError
     }
 
     func uploadBinaryFile(_ file: URL, mime: String,
                           skipTranscode: Bool = false,
                           onProgress: @escaping (Double) -> Void) async throws -> String {
-        guard let url = URL(string: API.directUploadBases[0] + "/api/upload/raw") else {
-            throw APIError.message("服务器地址不正确")
+        var lastError: Error = APIError.message("上传失败，请检查网络后再试")
+        for base in uploadBases {
+            guard let url = URL(string: base + "/api/upload/raw") else { continue }
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.timeoutInterval = 600
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            req.setValue(mime, forHTTPHeaderField: "Content-Type")
+            if skipTranscode {
+                req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
+            }
+            let delegate = UploadProgressDelegate(onProgress)
+            do {
+                let (d, resp) = try await session.upload(
+                    for: req,
+                    fromFile: file,
+                    delegate: delegate
+                )
+                guard let http = resp as? HTTPURLResponse,
+                      (200...299).contains(http.statusCode) else {
+                    let http = resp as? HTTPURLResponse
+                    throw APIError.message(uploadFailureMessage(
+                        d,
+                        status: http?.statusCode ?? -1
+                    ))
+                }
+                return try Self.rawUploadURL(from: d)
+            } catch {
+                lastError = error
+            }
         }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.timeoutInterval = 600
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue(mime, forHTTPHeaderField: "Content-Type")
-        if skipTranscode {
-            req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
-        }
-        let delegate = UploadProgressDelegate(onProgress)
-        let (d, resp) = try await session.upload(
-            for: req,
-            fromFile: file,
-            delegate: delegate
-        )
-        guard let http = resp as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败，请检查网络后再试")
-        }
-        return try Self.rawUploadURL(from: d)
+        throw lastError
     }
 
     func uploadOriginal(image: UIImage) async throws -> String {
@@ -5803,48 +5823,97 @@ private struct StarredPayload: Decodable {
                                                 base: String = API.directUploadBases[0],
                                                 path: String = "/api/upload",
                                                 timeout: TimeInterval = 120) async throws -> T {
-        guard let url = URL(string: base + path) else {
-            throw APIError.message("服务器地址不正确")
+        let encoded = try JSONSerialization.data(withJSONObject: body)
+        var lastError: Error = APIError.message("上传失败，请检查网络后再试")
+        var candidates = [base]
+        for fallback in uploadBases where fallback != base {
+            candidates.append(fallback)
         }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.timeoutInterval = timeout
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let (responseData, response) = try await session.data(for: req)
-        guard let http = response as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败，请检查网络后再试")
+        for candidate in candidates {
+            guard let url = URL(string: candidate + path) else { continue }
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.timeoutInterval = timeout
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = encoded
+            do {
+                let (responseData, response) = try await session.data(for: req)
+                guard let http = response as? HTTPURLResponse,
+                      (200...299).contains(http.statusCode) else {
+                    let http = response as? HTTPURLResponse
+                    throw APIError.message(uploadFailureMessage(
+                        responseData,
+                        status: http?.statusCode ?? -1
+                    ))
+                }
+                return try JSONDecoder().decode(T.self, from: responseData)
+            } catch {
+                lastError = error
+            }
         }
-        return try JSONDecoder().decode(T.self, from: responseData)
+        throw lastError
     }
 
     private func uploadRawJPEG(_ data: Data,
                                base: String = API.directUploadBases[0],
                                path: String = "/api/upload/raw",
                                onProgress: ((Double) -> Void)? = nil) async throws -> String {
-        guard let url = URL(string: base + path) else {
-            throw APIError.message("服务器地址不正确")
+        var lastError: Error = APIError.message("上传失败，请检查网络后再试")
+        var candidates = [base]
+        for fallback in uploadBases where fallback != base {
+            candidates.append(fallback)
         }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.timeoutInterval = 120
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
-        req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
-        let delegate = onProgress.map(UploadProgressDelegate.init)
-        let (d, resp): (Data, URLResponse)
-        if let delegate {
-            (d, resp) = try await session.upload(for: req, from: data, delegate: delegate)
-        } else {
-            (d, resp) = try await session.upload(for: req, from: data)
+        for candidate in candidates {
+            guard let url = URL(string: candidate + path) else { continue }
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.timeoutInterval = 120
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            req.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+            req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
+            let delegate = onProgress.map(UploadProgressDelegate.init)
+            do {
+                let (d, resp): (Data, URLResponse)
+                if let delegate {
+                    (d, resp) = try await session.upload(
+                        for: req,
+                        from: data,
+                        delegate: delegate
+                    )
+                } else {
+                    (d, resp) = try await session.upload(for: req, from: data)
+                }
+                guard let http = resp as? HTTPURLResponse,
+                      (200...299).contains(http.statusCode) else {
+                    let http = resp as? HTTPURLResponse
+                    throw APIError.message(uploadFailureMessage(
+                        d,
+                        status: http?.statusCode ?? -1
+                    ))
+                }
+                return try Self.rawUploadURL(from: d)
+            } catch {
+                lastError = error
+            }
         }
-        guard let http = resp as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败，请检查网络后再试")
+        throw lastError
+    }
+
+    private var uploadBases: [String] {
+        var result = [API.directUploadBases[0]]
+        if base != result[0] { result.append(base) }
+        return result
+    }
+
+    private func uploadFailureMessage(_ data: Data, status: Int) -> String {
+        if let object = try? JSONSerialization.jsonObject(with: data),
+           let dict = object as? [String: Any],
+           let raw = dict["error"] as? String,
+           !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return friendlyServerMessage(raw)
         }
-        return try Self.rawUploadURL(from: d)
+        return "上传失败（HTTP \(status)）"
     }
 
     private static func rawUploadURL(from d: Data) throws -> String {

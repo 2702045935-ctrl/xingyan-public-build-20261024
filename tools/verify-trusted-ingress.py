@@ -34,10 +34,12 @@ check(
     "the direct Cell endpoint must retain certificate pinning",
 )
 check(
-    "API.directUploadBases[0] + \"/api/upload/raw\"" in API
-    and "API.publicIngressPath + \"/api/upload/raw\"" not in API
-    and "API.publicIngressPath + \"/api/upload\"" not in API,
-    "uploads must use the fast direct origin restored from build 2611261910",
+    "static let directUploadBases = [" in API
+    and '"https://43.242.194.89:8443"' in API
+    and "var result = [API.directUploadBases[0]]" in API
+    and "if base != result[0] { result.append(base) }" in API
+    and "for base in uploadBases {" in API,
+    "uploads must keep the fast direct origin first with the healthy ingress fallback",
 )
 check(
     "let up = try? await API.shared.uploadImageForSend(" not in
