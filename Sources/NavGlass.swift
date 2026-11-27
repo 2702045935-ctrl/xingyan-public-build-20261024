@@ -214,16 +214,21 @@ struct NativeChatsTopEdgeChrome: View {
     var background: Color? = nil
 
     @Environment(\.colorScheme) private var scheme
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     private var isDark: Bool { dark ?? (scheme == .dark) }
 
     var body: some View {
-        ZStack {
-            (background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground)))
-                .opacity(scrolled > 0 ? 1 : 0)
+        let tint = background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground))
+        Group {
+            if reduceTransparency {
+                tint
+            } else {
+                ZStack {
+                    NativeGlassHeaderMaterial(forcedDark: isDark)
+                    tint.opacity(isDark ? 0.62 : 0.58)
+                }
+            }
         }
-        .animation(reduceMotion ? nil : .easeOut(duration: 0.16),
-                   value: scrolled > 0)
         .ignoresSafeArea(edges: .top)
         .allowsHitTesting(false)
     }

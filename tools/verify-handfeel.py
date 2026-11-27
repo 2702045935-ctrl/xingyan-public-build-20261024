@@ -11,6 +11,7 @@ SIDEBAR = (ROOT / "Sources" / "AccountSidebarView.swift").read_text(encoding="ut
 DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 CHAT_DETAIL = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+NAV_GLASS = (ROOT / "Sources" / "NavGlass.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -61,6 +62,12 @@ require(
     "ChatThemeStore.shared.activate(chat.id)" in CHAT_DETAIL
     and "chatTheme.activate(chat.id)" not in CHAT_DETAIL,
     "chat appearance must be active before the first rendered frame",
+)
+require(
+    "NativeGlassHeaderMaterial(forcedDark: isDark)" in NAV_GLASS
+    and "tint.opacity(isDark ? 0.62 : 0.58)" in NAV_GLASS
+    and "value: scrolled > 0" not in NAV_GLASS,
+    "the chats top chrome must use same-colour native glass without a first-scroll flash",
 )
 
 print("handfeel: passed")
