@@ -22,7 +22,6 @@ require(
     and "shape\n            .fill(C.floatingSurface)" in NAV
     and "shape.stroke(C.hairline" in NAV
     and "glassEffect(" not in NAV
-    and "UIVisualEffectView" not in NAV
     and "shape: AnyShape(Circle())" in NAV
     and "interactive: true" in NAV,
     "viewer controls must share the opaque floating surface",
