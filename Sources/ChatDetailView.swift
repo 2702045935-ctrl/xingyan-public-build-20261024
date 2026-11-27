@@ -2182,7 +2182,7 @@ struct ChatDetailView: View {
                 Group {
                     if isStarWorld && newsMode {
                         newsMaskColor
-                    } else if scheme == .light {
+                    } else if scheme == .light && !hasPickedChatWallpaper {
                         ChatImmersiveEdgeMask(path: backgroundPath,
                                               edge: .top,
                                               tint: wallpaperTopTint,
@@ -5114,6 +5114,8 @@ struct ChatDetailView: View {
                 Group {
                     if isStarWorld && newsMode {
                         newsMaskColor
+                    } else if scheme == .light && hasPickedChatWallpaper {
+                        C.pageBg
                     } else {
                         ChatImmersiveEdgeMask(path: backgroundPath,
                                               edge: .bottom,
@@ -5127,6 +5129,11 @@ struct ChatDetailView: View {
                 .ignoresSafeArea(edges: .bottom)
             }
         }
+    }
+
+    private var hasPickedChatWallpaper: Bool {
+        let value = backgroundPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !value.isEmpty && value != "auto"
     }
 
     @ViewBuilder
