@@ -8,8 +8,8 @@
     },
     {
       "path": "Sources/App.swift",
-      "size": 210040,
-      "sha256": "787389843a2552afcde311980421bcbb252861660168b895301ffcc9cfbef410"
+      "size": 209998,
+      "sha256": "9f7da4713a64340a89e252219b233c535a208eabe9cff2ef0f485b6dec358deb"
     },
     {
       "path": "Sources/Realtime.swift",
@@ -113,8 +113,8 @@
     },
     {
       "path": "Sources/NativeMallProductGrid.swift",
-      "size": 22887,
-      "sha256": "58738c1578c2f7a944be0be9390a96fca8d58acf85e537891471649ce19fe61c"
+      "size": 22877,
+      "sha256": "d127a1acec4170f6c0a6e2bd0712c1889028c6551d4d5216ccf5c938075a3389"
     },
     {
       "path": "Sources/RecommendationEngine.swift",
