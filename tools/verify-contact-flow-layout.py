@@ -29,7 +29,7 @@ require(
     and ".frame(height: 60)" in NEW
     and "Avatar(path: user.avatarPath, size: 40, radius: 6)" in NEW
     and ".padding(.leading, 69)" in NEW
-    and "Color.dyn(0xEDEDED, 0x1C1C1E)" in PROFILE,
+    and "private var pageChrome: Color { C.pageBg }" in PROFILE,
     "New Friends must keep the measured 44/36/30/60 pt hierarchy",
 )
 require(

@@ -31,11 +31,11 @@ struct PhoneChangeSheet: View {
                         .disabled(!phoneOK || busy)
                 }
                 .padding(.horizontal, 14).frame(height: 52)
-                .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
+                .background(C.cardBg)
 
                 TextField(Tr("验证码"), text: $code).keyboardType(.numberPad)
                     .padding(.horizontal, 14).frame(height: 52)
-                    .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
+                    .background(C.cardBg)
 
                 if !devCode.isEmpty {
                     Text(Tr("本机直接显示验证码：") + devCode)
@@ -44,7 +44,7 @@ struct PhoneChangeSheet: View {
 
                 SecureField(Tr("当前登录密码（没配短信通道时用）"), text: $password)
                     .padding(.horizontal, 14).frame(height: 52)
-                    .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
+                    .background(C.cardBg)
 
                 if !note.isEmpty { Text(note).font(pfStyled(size: 13)).foregroundColor(C.subLabel) }
                 if !error.isEmpty { Text(error).font(pfStyled(size: 13)).foregroundColor(C.red) }

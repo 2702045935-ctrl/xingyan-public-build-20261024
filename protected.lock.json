@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/DiscoverView.swift",
-      "size": 166926,
-      "sha256": "92970c28f6cfd939e92c193a32ee63443f7d79471a96700917660ae244ef651d"
+      "size": 166749,
+      "sha256": "cd7e8a0eb3ed435d8e030ead2411aa0c25b9c6a4e50967ea554cb402c35c2f1b"
     },
     {
       "path": "Sources/MomentFeedCard.swift",

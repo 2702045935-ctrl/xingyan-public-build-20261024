@@ -98,7 +98,7 @@ require(
     and "snapshot.reloadItems(changed)" in NATIVE_GRID
     and "NativeMallImageLoader.shared.cancelPrefetch(paths, side: 360)" in NATIVE_GRID
     and "collectionView.reloadData()" not in NATIVE_GRID
-    and "UIColor.dyn(0xF5F5F7, 0x000000)" in NATIVE_GRID,
+    and "UIColor.dyn(0xF2F4F1, 0x101412)" in NATIVE_GRID,
     "the native product grid must recycle cells, cancel stale prefetch and preserve its anchor",
 )
 require(
@@ -122,9 +122,9 @@ require(
     "mall stress fixtures must exercise 5,000 and 9,000 real products without replacing the base catalog",
 )
 require(
-    "static let page     = Color.dyn(0xF5F5F7, 0x000000)" in MALL
-    and "static let card     = Color.dyn(0xFFFFFF, 0x1C1C1E)" in MALL
-    and "static let ink      = Color.dyn(0x1D1D1F, 0xF5F5F7)" in MALL
+    "static let page     = C.pageBg" in MALL
+    and "static let card     = C.cardBg" in MALL
+    and "static let ink      = C.label" in MALL
     and ".ddLight()" not in MALL_UI
     and ".preferredColorScheme(.light)" not in MALL_UI,
     "the complete mall UI must follow the app appearance with real light and dark tokens",

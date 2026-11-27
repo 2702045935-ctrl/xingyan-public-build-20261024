@@ -106,7 +106,7 @@ private final class NativeMallProductCell: UICollectionViewCell {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        contentView.backgroundColor = .white
+        contentView.backgroundColor = UIColor(hex: 0xFAFBF9)
         contentView.layer.cornerRadius = 13
         contentView.layer.cornerCurve = .continuous
         contentView.layer.borderWidth = 0.6
@@ -169,12 +169,12 @@ private final class NativeMallProductCell: UICollectionViewCell {
 
     private func applyTheme() {
         let dark = traitCollection.userInterfaceStyle == .dark
-        contentView.backgroundColor = dark ? UIColor(hex: 0x1C1C1E) : .white
+        contentView.backgroundColor = UIColor(hex: dark ? 0x1D231F : 0xFAFBF9)
         contentView.layer.borderColor = (dark
-            ? UIColor(hex: 0x38383A)
-            : UIColor(hex: 0xE5E5EA)).cgColor
-        imageView.backgroundColor = dark ? UIColor(hex: 0x2C2C2E) : UIColor(hex: 0xF5F5F7)
-        titleLabel.textColor = dark ? UIColor(hex: 0xF5F5F7) : UIColor(hex: 0x1D1D1F)
+            ? UIColor(hex: 0x2A302C)
+            : UIColor(hex: 0xDDE2DD)).cgColor
+        imageView.backgroundColor = UIColor(hex: dark ? 0x232A26 : 0xF2F4F1)
+        titleLabel.textColor = UIColor(hex: dark ? 0xEDF1EE : 0x171A18)
     }
 
     override func prepareForReuse() {
@@ -516,7 +516,7 @@ struct NativeMallProductGrid: UIViewRepresentable {
         section.boundarySupplementaryItems = supplementary
         let layout = UICollectionViewCompositionalLayout(section: section)
         let view = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        view.backgroundColor = UIColor.dyn(0xF5F5F7, 0x000000)
+        view.backgroundColor = UIColor.dyn(0xF2F4F1, 0x101412)
         view.indicatorStyle = .default
         view.alwaysBounceVertical = true
         view.showsVerticalScrollIndicator = true

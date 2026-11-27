@@ -4059,7 +4059,7 @@ struct AccountLoginSheet: View {
         HStack(spacing: 8) { c() }
             .font(pfStyled(15))
             .frame(height: 54).padding(.horizontal, 14)
-            .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
+            .background(C.cardBg)
     }
 
     private func sendCode() {
@@ -4181,7 +4181,7 @@ struct UnbanSheet: View {
         HStack(spacing: 8) { c() }
             .font(pfStyled(15))
             .frame(height: 54).padding(.horizontal, 14)
-            .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
+            .background(C.cardBg)
     }
 
     private func submit() {

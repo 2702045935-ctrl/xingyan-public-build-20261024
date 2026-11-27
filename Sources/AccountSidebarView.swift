@@ -250,7 +250,7 @@ private struct AccountSidebarPanel: View {
         .padding(.bottom, max(4, L.safeBottom))
         .background {
             ZStack {
-                Rectangle().fill(.thinMaterial)
+                NativeGlassHeaderMaterial(forcedDark: scheme == .dark)
                 Rectangle().fill(panelColorGlow)
                 panelTint
             }
@@ -266,6 +266,18 @@ private struct AccountSidebarPanel: View {
                 endPoint: .bottom
             )
             .frame(width: 1)
+        }
+        .overlay(alignment: .top) {
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(scheme == .dark ? 0.08 : 0.22),
+                    Color.clear
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 54)
+            .allowsHitTesting(false)
         }
         .sheet(isPresented: $showAccounts) {
             NavigationStack {

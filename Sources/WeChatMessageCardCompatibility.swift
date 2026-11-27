@@ -7,7 +7,7 @@ enum ChatMessageSurface {
     static let gridRadius: CGFloat = 5
 
     static var cardFill: Color {
-        Color.dyn(0xFFFFFF, 0x1C1C1E)
+        C.cardBg
     }
 
     static func cardFill(mine _: Bool) -> Color {

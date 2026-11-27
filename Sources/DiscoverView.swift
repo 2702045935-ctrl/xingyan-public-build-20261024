@@ -416,8 +416,7 @@ struct DiscoverView: View {
     }
 
     private var worldCanvas: Color {
-        scheme == .dark ? C.discoverBg
-            : (UIConfig.colorIfSet("discoverBg") ?? worldAndMeCanvasColor())
+        UIConfig.colorIfSet("discoverBg") ?? C.discoverBg
     }
 
     private var worldPageBackground: some View {
@@ -425,17 +424,15 @@ struct DiscoverView: View {
     }
 
     private var worldSectionFill: Color {
-        scheme == .dark ? C.cardBg : .white
+        C.cardBg
     }
 
     private var worldRowFill: Color {
-        scheme == .dark ? C.cardBg : .white
+        C.cardBg
     }
 
     private var worldHairline: Color {
-        scheme == .dark
-            ? C.hairline
-            : Color(hex: 0xE7E7E7)
+        C.hairline
     }
 
     private func worldSectionHeader(_ title: String) -> some View {

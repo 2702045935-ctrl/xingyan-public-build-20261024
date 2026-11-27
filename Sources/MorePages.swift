@@ -941,7 +941,7 @@ struct BankCardsView: View {
         .font(pf(15))
         .frame(height: 54)
         .padding(.horizontal, 14)
-        .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
+        .background(C.cardBg)
     }
 
     private func reload() async {
@@ -1456,7 +1456,7 @@ struct ResetPasswordSheet: View {
             .font(pfStyled(15))
             .frame(height: 54)
             .padding(.horizontal, 14)
-            .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
+            .background(C.cardBg)
     }
 
     private func sendCode() {

@@ -554,7 +554,7 @@ struct MediaSendSheet: View {
                 }
             }
             .padding(16)
-            .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
+            .background(C.cardBg)
         }
         .ignoresSafeArea(edges: .top)
         .fullScreenCover(isPresented: $showPhotoEditor) {

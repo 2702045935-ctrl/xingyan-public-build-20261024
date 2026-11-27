@@ -126,7 +126,7 @@ struct BotChatView: View {
         }
         .padding(.horizontal, 4)
         .frame(height: 52)
-        .background(Color.dyn(0xFFFFFF, 0x1C1C1E).opacity(0.96))
+        .background(C.cardBg.opacity(0.96))
     }
 
     @ViewBuilder
