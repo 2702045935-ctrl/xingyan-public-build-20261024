@@ -4055,7 +4055,7 @@ struct AccountLoginSheet: View {
         (error ?? "").contains("冻结")
     }
 
-    private func row<C: View>(@ViewBuilder _ c: () -> C) -> some View {
+    private func row<Content: View>(@ViewBuilder _ c: () -> Content) -> some View {
         HStack(spacing: 8) { c() }
             .font(pfStyled(15))
             .frame(height: 54).padding(.horizontal, 14)
@@ -4177,7 +4177,7 @@ struct UnbanSheet: View {
         }
     }
 
-    private func field<C: View>(@ViewBuilder _ c: () -> C) -> some View {
+    private func field<Content: View>(@ViewBuilder _ c: () -> Content) -> some View {
         HStack(spacing: 8) { c() }
             .font(pfStyled(15))
             .frame(height: 54).padding(.horizontal, 14)
