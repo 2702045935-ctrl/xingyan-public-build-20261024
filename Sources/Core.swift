@@ -451,7 +451,7 @@ enum C {
 
     static var pageBg      : Color { UIConfig.fixedDark("pageBg", 0xF2F4F1, 0x101412) }
     static var navBg       : Color { UIConfig.fixedDark("navBg", 0xF5F6F4, 0x101412) }
-    static var tabBg       : Color { UIConfig.fixedDark("tabBg", 0xF5F6F4, 0x101412) }
+    static var tabBg       : Color { UIConfig.fixedDark("tabBg", 0xF5F6F4, 0x121613) }
     static var cardBg      : Color { UIConfig.fixedDark("cardBg", 0xFAFBF9, 0x1D231F) }
     static var chatRowBg   : Color { UIConfig.fixedDark("chatRowBg", 0xFAFBF9, 0x171B18) }
     static var pinnedBg    : Color { UIConfig.fixedDark("pinnedBg", 0xEDF0EC, 0x1A1F1C) }
