@@ -88,8 +88,8 @@
     },
     {
       "path": "Sources/MediaPicker.swift",
-      "size": 26533,
-      "sha256": "c5b2ab8220d476d1ee0dd4d8ca3b693b3265ab95db788d3190838bdc360fe6f4"
+      "size": 26512,
+      "sha256": "da321e091cb7668594b54b117d6c67119240dc7faabf075daad6d6a21edae821"
     },
     {
       "path": "Sources/MessageStressFixture.swift",
