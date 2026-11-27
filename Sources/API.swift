@@ -5820,14 +5820,14 @@ private struct StarredPayload: Decodable {
     }
 
     private func postDirectUpload<T: Decodable>(_ body: [String: Any],
-                                                base: String = API.directUploadBases[0],
+                                                base: String = "",
                                                 path: String = "/api/upload",
                                                 timeout: TimeInterval = 120) async throws -> T {
         let encoded = try JSONSerialization.data(withJSONObject: body)
         var lastError: Error = APIError.message("上传失败，请检查网络后再试")
-        var candidates = [base]
-        for fallback in uploadBases where fallback != base {
-            candidates.append(fallback)
+        var candidates = uploadBases
+        if !base.isEmpty, base != candidates.first {
+            candidates.insert(base, at: 0)
         }
         for candidate in candidates {
             guard let url = URL(string: candidate + path) else { continue }
@@ -5856,13 +5856,13 @@ private struct StarredPayload: Decodable {
     }
 
     private func uploadRawJPEG(_ data: Data,
-                               base: String = API.directUploadBases[0],
+                               base: String = "",
                                path: String = "/api/upload/raw",
                                onProgress: ((Double) -> Void)? = nil) async throws -> String {
         var lastError: Error = APIError.message("上传失败，请检查网络后再试")
-        var candidates = [base]
-        for fallback in uploadBases where fallback != base {
-            candidates.append(fallback)
+        var candidates = uploadBases
+        if !base.isEmpty, base != candidates.first {
+            candidates.insert(base, at: 0)
         }
         for candidate in candidates {
             guard let url = URL(string: candidate + path) else { continue }
@@ -5901,8 +5901,10 @@ private struct StarredPayload: Decodable {
     }
 
     private var uploadBases: [String] {
-        var result = [API.directUploadBases[0]]
-        if base != result[0] { result.append(base) }
+        var result = [base]
+        if API.directUploadBases[0] != result[0] {
+            result.append(API.directUploadBases[0])
+        }
         return result
     }
 

@@ -16,9 +16,10 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private var uploadBases: [String]" in API
-    and "var result = [API.directUploadBases[0]]" in API
-    and "if base != result[0] { result.append(base) }" in API,
-    "direct upload must keep its fast primary and add the healthy ingress fallback",
+    and "var result = [base]" in API
+    and "if API.directUploadBases[0] != result[0]" in API
+    and "result.append(API.directUploadBases[0])" in API,
+    "media uploads must use the healthy ingress first and keep direct upload as fallback",
 )
 require(
     API.count("for base in uploadBases {") == 2
@@ -27,10 +28,10 @@ require(
     "raw image/file uploads must retry through both upload origins",
 )
 require(
-    API.count("for fallback in uploadBases where fallback != base") == 2
+    API.count("var candidates = uploadBases") == 2
     and "private func postDirectUpload" in API
     and "private func uploadRawJPEG" in API,
-    "base64 voice/file and JPEG uploads must retry through both upload origins",
+    "base64 voice/file and JPEG uploads must support both upload origins",
 )
 require(
     "private func uploadFailureMessage(_ data: Data, status: Int)" in API

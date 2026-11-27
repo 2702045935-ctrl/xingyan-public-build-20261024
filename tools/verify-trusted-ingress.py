@@ -36,10 +36,10 @@ check(
 check(
     "static let directUploadBases = [" in API
     and '"https://43.242.194.89:8443"' in API
-    and "var result = [API.directUploadBases[0]]" in API
-    and "if base != result[0] { result.append(base) }" in API
+    and "var result = [base]" in API
+    and "if API.directUploadBases[0] != result[0]" in API
     and "for base in uploadBases {" in API,
-    "uploads must keep the fast direct origin first with the healthy ingress fallback",
+    "uploads must keep the healthy ingress primary with the direct origin fallback",
 )
 check(
     "let up = try? await API.shared.uploadImageForSend(" not in
