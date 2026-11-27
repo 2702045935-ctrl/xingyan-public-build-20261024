@@ -19,6 +19,12 @@ append = block.index("appendVisibleMessage(message)")
 require(remove < append, "local send placeholder must be removed before confirmed bubble insertion")
 require("UINotification.lightTap()" in CHAT, "send action must keep native tactile feedback")
 require("pinToBottomSoon(force: true)" in CHAT, "send action must keep bottom pinning")
+require(
+    "transaction.disablesAnimations = true" in CHAT
+    and "withTransaction(transaction) {\n            outbox.append(pending)" in CHAT
+    and "pinToBottomImmediately()\n        pinToBottomSoon(force: true)" in CHAT,
+    "the pending bubble must appear and pin without an insertion animation delay",
+)
 
 flush_start = CHAT.index("private func flushOutbox")
 flush_end = CHAT.index("private func tapRedPacket", flush_start)

@@ -5489,15 +5489,16 @@ struct ChatDetailView: View {
         }
         let pending = PendingMsg(id: UUID().uuidString, kind: kind, content: content,
                                  mentions: mentions, quoteJSON: qJSON)
-        withAnimation(.spring(response: 0.24,
-                              dampingFraction: 0.92,
-                              blendDuration: 0.04)) {
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
             outbox.append(pending)
         }
         followOwnSendUntil = Date().addingTimeInterval(5)
         persistOutboxAfterFrame()
 
         UINotification.lightTap()
+        pinToBottomImmediately()
         pinToBottomSoon(force: true)
         Task { await flushOutbox() }
     }
