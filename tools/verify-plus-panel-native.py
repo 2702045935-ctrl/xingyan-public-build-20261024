@@ -15,9 +15,9 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "struct ChatPlusPanelMaterial" in PANELS
-    and "Rectangle().fill(C.floatingSurface)" in PANELS
+    and "NativeMediaGlassSurface(" in PANELS
     and ".fill(.regularMaterial)" not in PANELS,
-    "plus panel must use the opaque floating surface",
+    "plus panel must use the shared native system glass surface",
 )
 require(
     "else if panel == .plus" in CHAT

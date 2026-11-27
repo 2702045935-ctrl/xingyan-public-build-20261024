@@ -14,9 +14,10 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "struct ChatPlusPanelMaterial" in PANELS
-    and "Rectangle().fill(C.floatingSurface)" in PANELS
+    and "NativeMediaGlassSurface(" in PANELS
+    and "showsEdge: false" in PANELS
     and ".regularMaterial" not in PANELS,
-    "the panel background must use the opaque floating surface",
+    "the panel background must use the shared native system glass surface",
 )
 require(
     "struct NativePlusPanel: UIViewRepresentable" in NATIVE
