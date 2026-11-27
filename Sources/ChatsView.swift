@@ -3087,9 +3087,14 @@ struct ChatsView: View {
                                     Color.clear
                                         .contentShape(Rectangle())
                                 }
-                                NativeChatsTopEdgeChrome(scrolled: chatTopScrolled,
-                                                         dark: chatsIsDark,
-                                                         background: chatsPageFill)
+                                NativeTopGlassMask(active: chatTopScrolled > 0)
+                                if #available(iOS 26.0, *) {
+                                    NativeScrollEdgeElementBridge(
+                                        scrollView: {
+                                            NativeChatListScrollRegistry.shared.chats
+                                        }
+                                    )
+                                }
                             }
                         }
                         .opacity(navFadeForFloor)

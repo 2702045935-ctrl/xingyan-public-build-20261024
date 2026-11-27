@@ -104,8 +104,8 @@ where Item.ID: Hashable {
         table.allowsMultipleSelection = false
         table.sectionHeaderTopPadding = 0
         if #available(iOS 26.0, *) {
-            table.topEdgeEffect.style = .hard
-            table.topEdgeEffect.isHidden = true
+            table.topEdgeEffect.style = .automatic
+            table.topEdgeEffect.isHidden = false
             table.bottomEdgeEffect.isHidden = true
         }
         NativeChatListScrollRegistry.shared.chats = table
@@ -176,8 +176,8 @@ where Item.ID: Hashable {
         context.coordinator.onRefresh = onRefresh
         context.coordinator.allowInsertionDuringScroll = allowInsertionDuringScroll
         if #available(iOS 26.0, *) {
-            controller.tableView.topEdgeEffect.style = .hard
-            controller.tableView.topEdgeEffect.isHidden = true
+            controller.tableView.topEdgeEffect.style = .automatic
+            controller.tableView.topEdgeEffect.isHidden = false
             controller.tableView.bottomEdgeEffect.isHidden = true
         }
     }

@@ -17,21 +17,21 @@ def require(condition: bool, message: str) -> None:
 
 require("struct NativeTopGlassMask" in NAV
         and "struct NativeFrostedHeaderMaterial" in NAV
-        and "func makeUIView(context: Context) -> UIView" in NAV
-        and "view.backgroundColor = UIColor(hex: scheme == .dark" in NAV
+        and "UIBlurEffect(style: scheme == .dark" in NAV
+        and "UIScrollEdgeElementContainerInteraction" in NAV
+        and "table.topEdgeEffect.style = .automatic" in NATIVE_LIST
         and "NativeFrostedHeaderMaterial()" in NAV
-        and "UIVisualEffectView" not in NAV
-        and "UIBlurEffect" not in NAV
+        and "UIGlassEffect" not in NAV
         and "glassEffect(" not in NAV,
-        "shared top mask must use an opaque themed surface without glass")
+        "shared top mask must use only the native system material")
 require("shape\n            .fill(C.floatingSurface)" in NAV
         and "shape.stroke(C.hairline" in NAV,
         "controls must use an opaque floating surface")
 require(
-    "table.topEdgeEffect.style = .hard" in NATIVE_LIST
-    and "table.topEdgeEffect.isHidden = true" in NATIVE_LIST
+    "table.topEdgeEffect.style = .automatic" in NATIVE_LIST
+    and "table.topEdgeEffect.isHidden = false" in NATIVE_LIST
     and "NativeChatListScrollRegistry.shared.chats = table" in NATIVE_LIST,
-    "chat list must keep the system scroll-edge line hidden to prevent a first-frame flash",
+    "chat list must expose the native scroll-edge effect",
 )
 require(
     "UIScrollEdgeElementContainerInteraction" in NAV
@@ -39,27 +39,24 @@ require(
     and "let edgeShape = UIView()" in NAV
     and "if #available(iOS 26.0, *), !isDark" not in NAV
     and ".ignoresSafeArea(edges: .top)" in NAV
-    and "NativeChatsTopEdgeChrome(scrolled: chatTopScrolled," in CHATS
-    and "dark: chatsIsDark" in CHATS
-    and "background: chatsPageFill" in CHATS
+    and "NativeTopGlassMask(active: chatTopScrolled > 0)" in CHATS
+    and "NativeChatListScrollRegistry.shared.chats" in CHATS
     and "onOffsetChange:" in CHATS
     and "NativeTopGlassMask(active: scrolled > 0)" not in CHATS,
-    "chat header must use the opaque themed surface without a system edge overlay",
+    "chat header must bind to the native scroll edge with an opaque safety layer",
 )
 require(
-    "NativeChatsTopEdgeChrome" in NAV
-    and "let tint = background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground))" in NAV
-    and "        tint\n        .ignoresSafeArea(edges: .top)" in NAV
-    and "contrastScrim.opacity" not in NAV.split("struct NativeChatsTopEdgeChrome", 1)[1]
-    .split("struct NativeScrollEdgeElementBridge", 1)[0]
-    and ".opacity(scrolled > 0 ? 1 : 0)" not in NAV,
-    "conversation chrome must use one solid page-colour surface",
+    "NativeChatsTopEdgeChrome" not in NAV
+    and "struct NativeTopGlassMask" in NAV
+    and "struct NativeFrostedHeaderMaterial" in NAV,
+    "the old custom conversation mask must be removed",
 )
 require(
     "Color.clear\n                        .frame(height: L.safeTop + chatsHeaderH + chatsSearchH)"
     in CHATS
     and "id: \"search\",\n                kind: .search" in CHATS
-    and "NativeChatsTopEdgeChrome(scrolled: chatTopScrolled," in CHATS
+    and "NativeTopGlassMask(active: chatTopScrolled > 0)" in CHATS
+    and "NativeChatListScrollRegistry.shared.chats" in CHATS
     and "chatTopHeader\n                        .background" in CHATS,
     "conversation mask must stop at the header while search remains a list row",
 )

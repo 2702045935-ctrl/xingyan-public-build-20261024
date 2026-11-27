@@ -23,10 +23,21 @@ for token in (
     ".regularMaterial",
     ".glassEffect(",
     "UIGlassEffect",
-    "UIBlurEffect",
-    "UIVisualEffectView",
 ):
     require(token not in SOURCES, "glass API remains: " + token)
+
+NAV = (ROOT / "Sources" / "NavGlass.swift").read_text(encoding="utf-8")
+frosted = NAV.split("struct NativeFrostedHeaderMaterial", 1)[1].split(
+    "#endif", 1
+)[0]
+require(
+    "UIBlurEffect(style: scheme == .dark" in frosted
+    and "UIVisualEffectView" in frosted
+    and "UIBlurEffect" not in frosted.replace(
+        "UIBlurEffect(style: scheme == .dark", ""
+    ),
+    "native system material is allowed only for the scroll-edge mask",
+)
 
 require(
     "C.floatingSurface" in SOURCES

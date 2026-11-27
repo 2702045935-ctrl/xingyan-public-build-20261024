@@ -33,11 +33,11 @@ require(
     "native row cells must apply the divider visibility configuration",
 )
 require(
-    "table.topEdgeEffect.style = .hard" in NATIVE_LIST
-    and "table.topEdgeEffect.isHidden = true" in NATIVE_LIST
-    and "controller.tableView.topEdgeEffect.isHidden = true" in NATIVE_LIST
+    "table.topEdgeEffect.style = .automatic" in NATIVE_LIST
+    and "table.topEdgeEffect.isHidden = false" in NATIVE_LIST
+    and "controller.tableView.topEdgeEffect.isHidden = false" in NATIVE_LIST
     and "dark: chatsIsDark" in CHATS,
-    "the chat surface must disable the flashing system edge line in every theme",
+    "the chat surface must expose the native system edge effect",
 )
 require(
     "previewLabel.attributedText = nil" in ROW

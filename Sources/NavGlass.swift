@@ -95,15 +95,20 @@ struct NativeGlassHeaderMaterial: UIViewRepresentable {
 struct NativeFrostedHeaderMaterial: UIViewRepresentable {
     @Environment(\.colorScheme) private var scheme
 
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView()
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        let view = UIVisualEffectView(effect: effect)
         view.isUserInteractionEnabled = false
-        view.backgroundColor = UIColor(hex: scheme == .dark ? 0x101412 : 0xF5F6F4)
         return view
     }
 
-    func updateUIView(_ view: UIView, context: Context) {
-        view.backgroundColor = UIColor(hex: scheme == .dark ? 0x101412 : 0xF5F6F4)
+    func updateUIView(_ view: UIVisualEffectView, context: Context) {
+        view.effect = effect
+    }
+
+    private var effect: UIVisualEffect {
+        UIBlurEffect(style: scheme == .dark
+                     ? .systemMaterialDark
+                     : .systemMaterialLight)
     }
 }
 #endif
@@ -136,23 +141,6 @@ final class NativeTopScrollRegistry {
     static let shared = NativeTopScrollRegistry()
     weak var contacts: UIScrollView?
     weak var discover: UIScrollView?
-}
-
-struct NativeChatsTopEdgeChrome: View {
-    var scrolled: CGFloat
-    var dark: Bool? = nil
-    var background: Color? = nil
-
-    @Environment(\.colorScheme) private var scheme
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    private var isDark: Bool { dark ?? (scheme == .dark) }
-
-    var body: some View {
-        let tint = background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground))
-        tint
-        .ignoresSafeArea(edges: .top)
-        .allowsHitTesting(false)
-    }
 }
 
 #if canImport(UIKit)
