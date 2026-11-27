@@ -10,6 +10,9 @@ TEEN = (ROOT / "Sources" / "TeenCare.swift").read_text(encoding="utf-8")
 FONT = (ROOT / "Sources" / "FontSettings.swift").read_text(encoding="utf-8")
 WALLPAPER = (ROOT / "Sources" / "ChatBackgroundSheet.swift").read_text(encoding="utf-8")
 SHARE = (ROOT / "Sources" / "ShareSheet.swift").read_text(encoding="utf-8")
+PROFILE = (ROOT / "Sources" / "ProfileEditNew.swift").read_text(encoding="utf-8")
+NOTES = (ROOT / "Sources" / "FavoriteNote.swift").read_text(encoding="utf-8")
+MISC = (ROOT / "Sources" / "MiscPages.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -74,6 +77,23 @@ require(
     and "ShareSheetTheme" in SHARE
     and "UIActivityViewController(activityItems: items" in SHARE,
     "share must use a system action list with the native activity fallback",
+)
+require(
+    "Form {" in PROFILE
+    and ".listStyle(.insetGrouped)" in PROFILE
+    and ".scrollDismissesKeyboard(.interactively)" in PROFILE
+    and "private var profileIdentityHeader: some View" in PROFILE
+    and "@FocusState private var focusedInput: InputField?" in PROFILE,
+    "profile editing must use a system grouped form, identity header and native focus flow",
+)
+require(
+    'Button {\n            openFavorite(item)' in MISC
+    and ".buttonStyle(.plain)" in MISC
+    and "LazyVStack(alignment: .leading, spacing: 14)" in NOTES
+    and ".font(.largeTitle.bold())" in NOTES
+    and ".font(.body)" in NOTES
+    and ".background(.bar)" in NOTES,
+    "notes must use native row feedback, semantic typography and lazy detail layout",
 )
 require(
     "python3 tools/verify-system-settings-pages.py" in WORKFLOW,

@@ -1,6 +1,12 @@
 import SwiftUI
 
 struct ProfileEditView: View {
+    private enum InputField: Hashable {
+        case nickname
+        case patText
+        case bio
+    }
+
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var growth = GrowthStore.shared
@@ -28,32 +34,26 @@ struct ProfileEditView: View {
     @State private var showUsername = false
 
     @State private var baselineProfile: [String: String] = [:]
+    @FocusState private var focusedInput: InputField?
 
     private let gold = Color(hex: 0xF0C24B)
 
     var body: some View {
         Form {
             Section {
-                Button { showPhoto = true } label: {
-                    HStack(spacing: 12) {
-                        Text(Tr("头像"))
-                            .foregroundStyle(.primary)
-                        Spacer(minLength: 12)
-                        Avatar(path: app.me?.avatarPath ?? "", size: 44, radius: 8,
-                               circle: false, level: growth.shownLevel)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .buttonStyle(.plain)
+                profileIdentityHeader
             }
+            .listRowBackground(Color.clear)
 
             Section {
                 LabeledContent(Tr("昵称")) {
                     TextField("", text: $nickname)
                         .multilineTextAlignment(.trailing)
                         .textInputAutocapitalization(.never)
+                        .textContentType(.name)
+                        .submitLabel(.done)
+                        .focused($focusedInput, equals: .nickname)
+                        .onSubmit { focusedInput = nil }
                 }
 
                 nativeValueRow(Tr("星言号"),
@@ -79,6 +79,9 @@ struct ProfileEditView: View {
                 LabeledContent(Tr("星语提示")) {
                     TextField(Tr("收到一束星光"), text: $patText)
                         .multilineTextAlignment(.trailing)
+                        .submitLabel(.done)
+                        .focused($focusedInput, equals: .patText)
+                        .onSubmit { focusedInput = nil }
                         .onChange(of: patText) { v in
                             if v.count > 10 { patText = String(v.prefix(10)) }
                         }
@@ -87,6 +90,9 @@ struct ProfileEditView: View {
                 LabeledContent(Tr("个性签名")) {
                     TextField(Tr("写一句介绍自己"), text: $bio)
                         .multilineTextAlignment(.trailing)
+                        .submitLabel(.done)
+                        .focused($focusedInput, equals: .bio)
+                        .onSubmit { focusedInput = nil }
                 }
             } header: {
                 Text(Tr("个人介绍"))
@@ -101,8 +107,12 @@ struct ProfileEditView: View {
                 nativeValueRow(Tr("来电铃声"), ring.currentName) {
                     showRingtone = true
                 }
+            } header: {
+                Text(Tr("联系与提醒"))
             }
         }
+        .listStyle(.insetGrouped)
+        .scrollDismissesKeyboard(.interactively)
         .scrollContentBackground(.hidden)
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(Tr("个人信息"))
@@ -110,8 +120,19 @@ struct ProfileEditView: View {
         .toolbar(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(busy ? Tr("保存中…") : Tr("保存")) { save() }
+                Button {
+                    focusedInput = nil
+                    save()
+                } label: {
+                    if busy {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Text(Tr("保存"))
+                    }
+                }
                     .disabled(busy)
+                    .accessibilityLabel(busy ? Tr("保存中…") : Tr("保存"))
             }
         }
         .hidesTabBar()
@@ -160,6 +181,32 @@ struct ProfileEditView: View {
         .onChange(of: birthday) { v in
             if v != (app.me?.birthday ?? "") { saveNow(["birthday": v]) }
         }
+    }
+
+    private var profileIdentityHeader: some View {
+        Button { showPhoto = true } label: {
+            VStack(spacing: 10) {
+                Avatar(
+                    path: app.me?.avatarPath ?? "",
+                    size: 72,
+                    radius: UIConfig.avatarCircle ? 36 : 14,
+                    circle: UIConfig.avatarCircle,
+                    level: growth.shownLevel
+                )
+                Text(app.me?.name ?? (nickname.isEmpty ? Tr("个人资料") : nickname))
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                Label(Tr("更换头像"), systemImage: "camera")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(Tr("选择新的头像"))
     }
 
     private func nativeValueRow(_ title: String, _ value: String,

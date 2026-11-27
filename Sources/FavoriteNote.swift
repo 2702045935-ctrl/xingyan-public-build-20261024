@@ -52,16 +52,19 @@ struct FavoriteNoteComposeSheet: View {
         NavigationStack {
             VStack(spacing: 0) {
                 TextField(Tr("标题"), text: $titleText, axis: .vertical)
-                    .font(pfStyled(size: 22, weight: .semibold))
+                    .font(.title2.weight(.semibold))
                     .lineLimit(1...3)
                     .padding(.horizontal, 18)
                     .padding(.top, 12)
+                    .submitLabel(.next)
+                    .onSubmit { focused = true }
 
                 Divider().padding(.horizontal, 18)
 
                 ZStack(alignment: .topLeading) {
                     if bodyText.isEmpty {
                         Text(Tr("开始输入…"))
+                            .font(.body)
                             .foregroundStyle(.tertiary)
                             .padding(.horizontal, 18)
                             .padding(.top, 12)
@@ -69,10 +72,10 @@ struct FavoriteNoteComposeSheet: View {
                     }
                     TextEditor(text: $bodyText)
                         .font(bodyStyle == 1
-                              ? .system(size: 22, weight: .semibold)
+                              ? .title2.weight(.semibold)
                               : (bodyStyle == 2
-                                 ? .system(size: 16, design: .monospaced)
-                                 : .system(size: 17)))
+                                 ? .body.monospaced()
+                                 : .body))
                         .scrollContentBackground(.hidden)
                         .padding(.horizontal, 13)
                         .padding(.top, 4)
@@ -129,14 +132,14 @@ struct FavoriteNoteComposeSheet: View {
                 VStack(spacing: 0) {
                     if !msg.isEmpty {
                         Text(msg)
-                            .font(pfStyled(size: 12))
+                            .font(.footnote)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18)
                             .padding(.bottom, 6)
                     }
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 5) {
+                        HStack(spacing: 7) {
                             noteTool("checklist", Tr("清单")) { insertChecklist() }
                             noteTool("tablecells", Tr("表格")) { insertTable() }
                             noteTool("camera", Tr("相机")) { showCamera = true }
@@ -162,19 +165,25 @@ struct FavoriteNoteComposeSheet: View {
                             noteTool("link", Tr("链接")) { insertLink() }
                             noteTool("minus", Tr("分隔线")) { insertSeparator() }
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, 14)
                     }
                     .frame(height: 44)
 
+                    Divider()
+
                     HStack {
-                        if picBusy { ProgressView() }
+                        if picBusy {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
                         Spacer()
                         Text("\((titleText + bodyText).count) / 20000")
-                            .font(pfStyled(size: 12))
+                            .font(.caption)
+                            .monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 7)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 7)
                 }
                 .background(.bar)
             }
@@ -235,10 +244,10 @@ struct FavoriteNoteComposeSheet: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 18, weight: .medium))
-                .frame(width: 42, height: 38)
+                .frame(width: 40, height: 34)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless)
         .accessibilityLabel(title)
     }
 
@@ -315,9 +324,9 @@ struct FavoriteNoteDetailSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 14) {
+                LazyVStack(alignment: .leading, spacing: 14) {
                     Text(titleText)
-                        .font(pfStyled(size: 34, weight: .bold))
+                        .font(.largeTitle.bold())
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -325,6 +334,7 @@ struct FavoriteNoteDetailSheet: View {
                         Text(TimeFmt.bill(createdAt))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
+                            .monospacedDigit()
                     }
 
                     let titleIndex = lines.firstIndex(of: titleText)
@@ -340,7 +350,7 @@ struct FavoriteNoteDetailSheet: View {
                                     .foregroundStyle(line.hasPrefix("☑")
                                                      ? Color.accentColor : Color.secondary)
                                 Text(String(line.dropFirst()).trimmingCharacters(in: .whitespaces))
-                                    .font(pfStyled(size: 17))
+                                    .font(.body)
                                     .textSelection(.enabled)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -348,7 +358,7 @@ struct FavoriteNoteDetailSheet: View {
                             Divider().padding(.vertical, 6)
                         } else if !line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             Text(line)
-                                .font(pfStyled(size: 17))
+                                .font(.body)
                                 .textSelection(.enabled)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -357,7 +367,7 @@ struct FavoriteNoteDetailSheet: View {
 
                     if content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Text(Tr("（空）"))
-                            .font(pfStyled(size: 17))
+                            .font(.body)
                             .foregroundStyle(.secondary)
                     }
                 }

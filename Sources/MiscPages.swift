@@ -99,54 +99,58 @@ struct FavoritesView: View {
 
         let dateText = TimeFmt.listApple(item["at"] as? String)
 
-        return HStack(alignment: .top, spacing: 12) {
-            if let thumb = thumbOf(item) {
-                RemoteImage(path: thumb)
-                    .frame(width: 46, height: 46)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            } else {
-                Image(systemName: iconName(kind))
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-                    .frame(width: 36, height: 36)
-                    .background(Color.accentColor.opacity(0.10),
-                                in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            }
+        return Button {
+            openFavorite(item)
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                if let thumb = thumbOf(item) {
+                    RemoteImage(path: thumb)
+                        .frame(width: 46, height: 46)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                } else {
+                    Image(systemName: iconName(kind))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .frame(width: 36, height: 36)
+                        .background(Color.accentColor.opacity(0.10),
+                                    in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
 
-            VStack(alignment: .leading, spacing: 5) {
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    if (item["pinned"] as? Bool) == true {
-                        Image(systemName: "pin.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        if (item["pinned"] as? Bool) == true {
+                            Image(systemName: "pin.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                        Text(heading)
+                            .font(.headline)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        if !dateText.isEmpty {
+                            Text(dateText)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
                     }
-                    Text(heading)
-                        .font(.headline)
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
-                    if !dateText.isEmpty {
-                        Text(dateText)
-                            .font(.caption)
+                    if !preview.isEmpty {
+                        Text(preview)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                    if let from = item["fromName"] as? String, !from.isEmpty {
+                        Label(from, systemImage: "person.crop.circle")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
                             .lineLimit(1)
                     }
                 }
-                if !preview.isEmpty {
-                    Text(preview)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-                if let from = item["fromName"] as? String, !from.isEmpty {
-                    Label(from, systemImage: "person.crop.circle")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                }
             }
+            .contentShape(Rectangle())
         }
-        .contentShape(Rectangle())
-        .onTapGesture { openFavorite(item) }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder private var favoriteListContent: some View {
@@ -163,9 +167,9 @@ struct FavoritesView: View {
                     .font(.system(size: 30))
                     .foregroundStyle(.secondary)
                 Text(Tr("暂无备忘录"))
-                    .font(pfStyled(size: 17, weight: .semibold))
+                    .font(.headline)
                 Text(Tr("聊天里收藏的内容和你写的备忘录会出现在这里"))
-                    .font(pfStyled(size: 15))
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
