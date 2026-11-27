@@ -49,7 +49,8 @@ require(
     "NativeChatsTopEdgeChrome" in NAV
     and "let tint = background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground))" in NAV
     and "NativeGlassHeaderMaterial(forcedDark: isDark)" in NAV
-    and "tint.opacity(isDark ? 0.48 : 0.42)" in NAV
+    and "tint.opacity(isDark ? 0.50 : 0.34)" in NAV
+    and "NativeGlassHeaderMaterial(forcedDark: isDark)\n                    LinearGradient(" in NAV
     and ".opacity(scrolled > 0 ? 1 : 0)" not in NAV,
     "conversation chrome must use same-colour native glass without a first-scroll transition",
 )

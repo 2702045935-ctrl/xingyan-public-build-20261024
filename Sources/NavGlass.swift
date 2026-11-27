@@ -314,7 +314,17 @@ struct NativeChatsTopEdgeChrome: View {
             } else {
                 ZStack {
                     NativeGlassHeaderMaterial(forcedDark: isDark)
-                    tint.opacity(isDark ? 0.48 : 0.42)
+                    LinearGradient(
+                        stops: [
+                            .init(color: tint.opacity(isDark ? 0.50 : 0.34),
+                                  location: 0),
+                            .init(color: tint.opacity(isDark ? 0.24 : 0.14),
+                                  location: 0.64),
+                            .init(color: .clear, location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
                 }
             }
         }
@@ -467,16 +477,14 @@ struct ScrollActiveGlassMask: View {
             if active && !reduceTransparency {
                 ZStack(alignment: .bottom) {
                     NativeGlassHeaderMaterial()
-                    base
-                        /* 滚动内容进入标题区后必须真正被遮住。
-                           保留玻璃的通透感，但浅色页面不能再让下面的文字透出来。 */
-                        .opacity(activeBaseOpacity ?? (scheme == .dark ? 0.54 : 0.42))
                     LinearGradient(
                         stops: [
-                            .init(color: base.opacity(scheme == .dark ? 0.22 : 0.15),
+                            .init(color: base.opacity(
+                                activeBaseOpacity ?? (scheme == .dark ? 0.50 : 0.34)
+                            ),
                                   location: 0),
-                            .init(color: base.opacity(scheme == .dark ? 0.12 : 0.08),
-                                  location: 0.72),
+                            .init(color: base.opacity(scheme == .dark ? 0.24 : 0.14),
+                                  location: 0.64),
                             .init(color: .clear, location: 1)
                         ],
                         startPoint: .top,
