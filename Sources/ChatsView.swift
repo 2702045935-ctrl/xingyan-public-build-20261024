@@ -1287,15 +1287,15 @@ struct ChatsView: View {
         // WhatsApp's current dark canvas and native row share one near-black
         // surface. Search and cards keep their raised tone.
         chatsIsDark
-            ? Color(hex: 0x101412)
+            ? C.pageBg
             : UIConfig.fixedLight("chatsPageBg", 0xF2F4F1)
     }
     private var chatsRule: Color {
-        chatsIsDark ? Color(hex: 0x2A302C) : Color(hex: 0xDDE2DD)
+        chatsIsDark ? C.hairline : Color(hex: 0xDDE2DD)
     }
     private var chatsSearchFill: Color {
         chatsIsDark
-            ? Color(hex: 0x1D231F)
+            ? C.searchBg
             : Color(hex: 0xE9EDE8)
     }
     private var chatsSearchBorder: Color {
@@ -1306,7 +1306,7 @@ struct ChatsView: View {
     }
     private var chatsCardFill: Color {
         chatsIsDark
-            ? Color(hex: 0x171B18)
+            ? C.chatRowBg
             : UIConfig.fixedLight("chatsRowBg", 0xFAFBF9)
     }
 
@@ -2877,7 +2877,7 @@ struct ChatsView: View {
             : UIColor(hex: isDark ? 0xEDF1EE : 0x171A18)
         let previewColor = UIColor(hex: isDark ? 0xA5ACA8 : 0x626B66)
         let memberColor = nativePeerColor(chat.memberColor)
-        let rowBg = UIColor(hex: isDark ? 0x171B18 : 0xFAFBF9)
+        let rowBg = isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9)
         let timeColor = UIColor(hex: isDark ? 0x747C78 : 0x858D88)
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
@@ -2895,10 +2895,10 @@ struct ChatsView: View {
             timeColor: timeColor,
             rowBackground: rowBg,
             dividerColor: isDark
-                ? UIColor(hex: 0x2A302C)
+                ? UIColor(C.hairline)
                 : UIColor(hex: 0xDDE2DD),
             showsDivider: true,
-            badgeRing: UIColor(hex: isDark ? 0x171B18 : 0xFAFBF9),
+            badgeRing: isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9),
             chatId: chat.id,
             avatarPaths: avatarPaths,
             groupMemberIds: chat.memberIds ?? [],

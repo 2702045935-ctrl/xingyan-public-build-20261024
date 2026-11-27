@@ -14,15 +14,14 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "chatsIsDark\n            ? Color(hex: 0x101412)\n            : UIConfig.fixedLight(\"chatsPageBg\", 0xF2F4F1)" in CHATS
-    and "if isDark { return Color(hex: 0x171B18) }" in CHATS
-    and "let rowBg = UIColor(hex: isDark ? 0x171B18 : 0xFAFBF9)" in CHATS,
+    "chatsIsDark\n            ? C.pageBg\n            : UIConfig.fixedLight(\"chatsPageBg\", 0xF2F4F1)" in CHATS
+    and "chatsIsDark\n            ? C.chatRowBg" in CHATS
+    and "let rowBg = isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9)" in CHATS,
     "chat canvas must resolve explicit dark and light surfaces without environment delay",
 )
 require(
     "showsDivider: true" in CHATS
-    and "? UIColor(hex: 0x2A302C)" in CHATS
-    and "dividerColor: isDark\n                ? UIColor(hex: 0x2A302C)" in CHATS
+    and "dividerColor: isDark\n                ? UIColor(C.hairline)" in CHATS
     and ".fill(ChatListVisual.rule)" in CHATS
     and ".fill(isDark ? Color.clear : ChatListVisual.rule)" not in CHATS
     and "dividerLeading: CGFloat = 77" in ROW,
@@ -47,7 +46,7 @@ require(
     "reused native rows must clear old text and render on an opaque surface",
 )
 require(
-    "? Color(hex: 0x1D231F)" in CHATS
+    "chatsIsDark\n            ? C.searchBg" in CHATS
     and "Color.white.opacity(0.045)" in CHATS
     and "Color(hex: 0x8B938E)" in CHATS
     and ".stroke(chatsSearchBorder, lineWidth: 0.5)" in CHATS,

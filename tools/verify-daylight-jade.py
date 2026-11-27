@@ -37,11 +37,12 @@ for token in (
     require(token in CORE, "missing shared daylight-jade token: " + token)
 
 require(
-    "Color(hex: 0x101412)" in CHATS
-    and "Color(hex: 0x171B18)" in CHATS
+    "chatsIsDark\n            ? C.pageBg" in CHATS
+    and "chatsIsDark\n            ? C.searchBg" in CHATS
+    and "chatsIsDark\n            ? C.chatRowBg" in CHATS
     and "UIColor(hex: isDark ? 0xA5ACA8 : 0x626B66)" in CHATS
     and "UIColor(hex: isDark ? 0x747C78 : 0x858D88)" in CHATS,
-    "conversation surfaces must retain the four-level light/dark hierarchy",
+    "conversation surfaces must share the four-level light/dark tokens",
 )
 require(
     "weight: .semibold, textStyle: .headline" in ROW

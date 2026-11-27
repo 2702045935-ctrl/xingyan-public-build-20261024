@@ -217,7 +217,10 @@ struct ContactsView: View {
         scheme == .dark ? C.subLabel : Color(hex: 0x667781)
     }
     private var contactsRowFill: Color {
-        contactsCanvas
+        scheme == .dark ? C.chatRowBg : contactsCanvas
+    }
+    private var contactsSearchFill: Color {
+        scheme == .dark ? C.searchBg : contactsCanvas
     }
     private var contactsAccessibilityScale: CGFloat {
         switch dynamicTypeSize {
@@ -622,7 +625,7 @@ private var funcs: [(String, String, Color, String)] {
             .padding(.horizontal, 13)
             .frame(maxWidth: .infinity)
             .frame(height: searchHeight)
-            .background(contactsCanvas)
+            .background(contactsSearchFill)
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(contactsRule)
