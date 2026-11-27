@@ -18,6 +18,8 @@ def require(condition: bool, message: str) -> None:
 require("struct NativeTopGlassMask" in NAV
         and "struct NativeFrostedHeaderMaterial" in NAV
         and "UIBlurEffect(style: scheme == .dark" in NAV
+        and "if !active {\n                Color.clear" in NAV
+        and "} else {\n                NativeFrostedHeaderMaterial()" in NAV
         and "UIScrollEdgeElementContainerInteraction" in NAV
         and "table.topEdgeEffect.style = .automatic" in NATIVE_LIST
         and "NativeFrostedHeaderMaterial()" in NAV
@@ -55,10 +57,11 @@ require(
     "Color.clear\n                        .frame(height: L.safeTop + chatsHeaderH + chatsSearchH)"
     in CHATS
     and "id: \"search\",\n                kind: .search" in CHATS
+    and ".frame(height: chatsSearchH)\n        .offset(y: -6)" in CHATS
     and "NativeTopGlassMask(active: chatTopScrolled > 0)" in CHATS
     and "NativeChatListScrollRegistry.shared.chats" in CHATS
     and "chatTopHeader\n                        .background" in CHATS,
-    "conversation mask must stop at the header while search remains a list row",
+    "resting search must stay at the legacy position while the mask activates only after scrolling",
 )
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         and "NativeTopScrollObserver" in CONTACTS

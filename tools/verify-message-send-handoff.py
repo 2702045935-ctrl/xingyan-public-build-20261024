@@ -52,6 +52,19 @@ require(
     and "withTransaction(commit)" in block,
     "confirmed bubbles must replace the pending row in one non-animated transaction",
 )
+require(
+    ".lineSpacing(textLineSpacing(p.preview))" in CHAT
+    and ".padding(.bottom, pendingGapAfter(p))" in CHAT
+    and ".padding(.vertical, 3)\n        .id(p.id)" not in CHAT
+    and "insertion: .scale(scale: 0.94" not in CHAT,
+    "pending and confirmed text rows must share height and spacing without a scale transition",
+)
+require(
+    "return outbox.isEmpty ? 4 : ChatFeedMetrics.runGap" in CHAT
+    and "animated: Date() >= followOwnSendUntil" in CHAT
+    and "animated: Date() < followOwnSendUntil" not in CHAT,
+    "outgoing confirmation must preserve the row gap and pin without animation",
+)
 
 flush_start = CHAT.index("private func flushOutbox")
 flush_end = CHAT.index("private func tapRedPacket", flush_start)

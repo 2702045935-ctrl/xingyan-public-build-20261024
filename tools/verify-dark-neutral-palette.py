@@ -27,7 +27,7 @@ require("unreadLabel.backgroundColor = .systemRed" in ROW
 for key, light, dark in (
     ("pageBg", "0xF2F4F1", "0x101412"),
     ("navBg", "0xF5F6F4", "0x101412"),
-    ("tabBg", "0xF5F6F4", "0x121613"),
+    ("tabBg", "0xF5F6F4", "0x101412"),
     ("chatRowBg", "0xFAFBF9", "0x171B18"),
     ("chatsTopBg", "0xF4F6F3", "0x101412"),
     ("chatsPageBg", "0xF2F4F1", "0x101412"),
@@ -40,14 +40,14 @@ for key, light, dark in (
         f"{key} must use the daylight-jade surface ladder",
     )
 require(
-    "background ?? (isDark ? C.pageBg" in NAV,
-    "the dark native chrome fallback must use the app-wide canvas",
+    "private var fallback: some View {\n        Rectangle()\n            .fill(C.navBg)"
+    in NAV,
+    "the dark native chrome fallback must use the app-wide navigation canvas",
 )
 require(
-    "let fill = scheme == .dark\n            ? C.tabBg" in MAIN_TAB
-    and "appearance.configureWithDefaultBackground()" in TAB
-    and "appearance.configureWithOpaqueBackground()" in TAB
+    "appearance.configureWithOpaqueBackground()" in TAB
     and "appearance.backgroundEffect = nil" in TAB
+    and "appearance.backgroundColor = UIColor(themed)" in TAB
     and "UIBlurEffect" not in TAB
     and "systemUltraThinMaterialDark" not in TAB
     and "TabGlassBackdrop" not in TAB,
@@ -55,8 +55,10 @@ require(
 )
 require(
     "private enum NativeTabBarVisual" in TAB
-    and "static var normalInk: Color { Color.dyn(0x757D78, 0x8B938E) }" in TAB
-    and "static var selectedInk: Color { Color.dyn(0x117A58, 0x42C693) }" in TAB
+    and "static var normalInk: Color { Color.dyn(0x757D78, 0x747C78) }" in TAB
+    and "static var selectedInk: Color { Color.dyn(0x117A58, 0x32B27F) }" in TAB
+    and "UIColor.white.withAlphaComponent(0.045)" in TAB
+    and "bar.isTranslucent = false" in TAB
     and "let normalIcon = UIColor(NativeTabBarVisual.normalInk)" in TAB
     and "let selectedIcon = UIColor(NativeTabBarVisual.selectedInk)" in TAB
     and "appearance.inlineLayoutAppearance" in TAB

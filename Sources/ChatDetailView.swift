@@ -2896,7 +2896,7 @@ struct ChatDetailView: View {
                 if ChatScrollHandle.shared.moving { return }
                 ChatScrollDiag.shared.note("内容变高 → 原生消息列表贴底")
                 nativeMessageController.scrollToBottom(
-                    animated: Date() < followOwnSendUntil
+                    animated: Date() >= followOwnSendUntil
                 )
             },
             initiallyPinnedToBottom: true,
@@ -2929,7 +2929,7 @@ struct ChatDetailView: View {
             guard !holdScroll else { return }
             guard atBottomNow || messages.last?.senderId == myId else { return }
             nativeMessageController.scrollToBottom(
-                animated: Date() < followOwnSendUntil
+                animated: Date() >= followOwnSendUntil
             )
             scheduleSettledBottom()
             markConversationReadSoon()
@@ -3362,6 +3362,11 @@ struct ChatDetailView: View {
         ) >= 5
     }
 
+    private func pendingGapAfter(_ p: PendingMsg) -> CGFloat {
+        guard let index = outbox.firstIndex(where: { $0.id == p.id }) else { return 4 }
+        return index + 1 < outbox.count ? ChatFeedMetrics.runGap : 4
+    }
+
     private func pendingBubble(_ p: PendingMsg) -> some View {
         let showsAvatar = pendingIsRunStart(p)
         return HStack(alignment: .top, spacing: 0) {
@@ -3385,7 +3390,9 @@ struct ChatDetailView: View {
                         .font(pf(L.chatFontSize))
                         .foregroundColor(Color.white.opacity(0.98))
                         .lineLimit(6)
+                        .lineSpacing(textLineSpacing(p.preview))
                         .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal,
                                  ChatFeedMetrics.textHorizontalPadding)
                         .padding(.vertical,
@@ -3422,15 +3429,8 @@ struct ChatDetailView: View {
                 )
             }
         }
-        .padding(.vertical, 3)
+        .padding(.bottom, pendingGapAfter(p))
         .id(p.id)
-        .transition(
-            .asymmetric(
-                insertion: .scale(scale: 0.94, anchor: .bottomTrailing)
-                    .combined(with: .opacity),
-                removal: .opacity
-            )
-        )
     }
 
     private func deliveryFailureCard(_ failure: DeliveryFailureCopy) -> some View {
@@ -4009,7 +4009,9 @@ struct ChatDetailView: View {
 
     private func gapAfter(_ message: Message) -> CGFloat {
         guard let i = indexOf(message) else { return ChatFeedMetrics.senderChangeGap }
-        guard i + 1 < messages.count else { return 4 }
+        guard i + 1 < messages.count else {
+            return outbox.isEmpty ? 4 : ChatFeedMetrics.runGap
+        }
         let next = messages[i + 1]
         if showTime(for: next) { return 0 }
         if next.kindName == "system" || next.kindName == "pat" || next.isRecalled {

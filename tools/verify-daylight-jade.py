@@ -62,8 +62,8 @@ require(
     "chat masks must not restore a mirror highlight",
 )
 require(
-    "Color.dyn(0x757D78, 0x8B938E)" in TAB
-    and "Color.dyn(0x117A58, 0x42C693)" in TAB,
+    "Color.dyn(0x757D78, 0x747C78)" in TAB
+    and "Color.dyn(0x117A58, 0x32B27F)" in TAB,
     "tab icons must share the new neutral and jade hierarchy",
 )
 require(

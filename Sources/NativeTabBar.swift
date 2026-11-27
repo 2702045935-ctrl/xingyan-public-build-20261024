@@ -2,8 +2,8 @@ import SwiftUI
 import UIKit
 
 private enum NativeTabBarVisual {
-    static var normalInk: Color { Color.dyn(0x757D78, 0x8B938E) }
-    static var selectedInk: Color { Color.dyn(0x117A58, 0x42C693) }
+    static var normalInk: Color { Color.dyn(0x757D78, 0x747C78) }
+    static var selectedInk: Color { Color.dyn(0x117A58, 0x32B27F) }
     static let badge = UIColor.systemRed
 }
 
@@ -226,7 +226,6 @@ fileprivate final class TabAvatarLoader: ObservableObject {
 struct NativeTabBar: UIViewRepresentable {
     @Binding var selection: Int
     @Environment(\.colorScheme) private var scheme
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @StateObject private var avatarLoader = TabAvatarLoader.shared
     let badge: Int
     let contactsDot: Bool
@@ -316,11 +315,11 @@ struct NativeTabBar: UIViewRepresentable {
         ]
         let selectedTitle: [NSAttributedString.Key: Any] = [
             .foregroundColor: UIColor(NativeTabBarVisual.selectedInk),
-            .font: pfUIFont(10, .semibold)
+            .font: pfUIFont(10, .medium)
         ]
         let selectedMyTitle: [NSAttributedString.Key: Any] = [
             .foregroundColor: UIColor(NativeTabBarVisual.selectedInk),
-            .font: pfUIFont(10, .semibold)
+            .font: pfUIFont(10, .medium)
         ]
         let normalIcon = UIColor(NativeTabBarVisual.normalInk)
         let selectedIcon = UIColor(NativeTabBarVisual.selectedInk)
@@ -340,7 +339,9 @@ struct NativeTabBar: UIViewRepresentable {
         appearance.inlineLayoutAppearance.selected.badgeBackgroundColor = NativeTabBarVisual.badge
         appearance.compactInlineLayoutAppearance.normal.badgeBackgroundColor = NativeTabBarVisual.badge
         appearance.compactInlineLayoutAppearance.selected.badgeBackgroundColor = NativeTabBarVisual.badge
-        appearance.shadowColor = UIColor.separator.withAlphaComponent(0.28)
+        appearance.shadowColor = scheme == .dark
+            ? UIColor.white.withAlphaComponent(0.045)
+            : UIColor.separator.withAlphaComponent(0.28)
         if let items = bar.items, items.count == 5 {
             items[4].setTitleTextAttributes(normalTitle, for: .normal)
             items[4].setTitleTextAttributes(selectedMyTitle, for: .selected)
@@ -359,7 +360,7 @@ struct NativeTabBar: UIViewRepresentable {
         }
         bar.standardAppearance = appearance
         bar.scrollEdgeAppearance = appearance
-        bar.isTranslucent = !reduceTransparency
+        bar.isTranslucent = false
         (bar as? CompactDotTabBar)?.clearsNativeBackdrop = false
     }
 
