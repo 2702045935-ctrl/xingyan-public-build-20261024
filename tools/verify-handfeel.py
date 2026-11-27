@@ -50,9 +50,10 @@ require(
     "keyboard, contacts and sidebar transitions must avoid visible waits",
 )
 require(
-    'case "map": StarWorldExperienceView()' in DISCOVER
+    'case "map": ComingSoonView(title: Tr("星轨地图"))' in DISCOVER
+    and "StarWorldExperienceView()" not in DISCOVER
     and 'case "map": StarMapView()' not in DISCOVER,
-    "the world entry must open the new experience without the legacy page",
+    "the postponed 3D world must keep the legacy page retired",
 )
 require(
     "if table.refreshControl == nil" in NATIVE_CHAT_LIST

@@ -1466,7 +1466,7 @@ private final class MomentDragClock {
 }
 
 struct MomentsView: View {
-    private static let momentPageSize = 30
+    private static let momentPageSize = 70
     private static let stressMomentWindow = 120
     private static let stressMomentPageSize = 20
     private static let monthDayFormatter: DateFormatter = {
@@ -1670,6 +1670,10 @@ struct MomentsView: View {
                 onApproachingEnd: {
                     Task { await loadMoreMoments() }
                 },
+                actions: nativeMomentActions,
+                stressText: momentStressStatus,
+                footerText: momentFooterText,
+                footerWaiting: loadingMore,
                 dayLabel: { moment in
                     mineOnly
                         ? fullDateLabel(moment.createdAt)
@@ -1677,14 +1681,6 @@ struct MomentsView: View {
                 },
                 header: { extra in
                     coverView(coverLocked ? coverLockPull : extra)
-                },
-                row: { moment, showsDayHeader, dayText, isLast in
-                    nativeMomentRow(
-                        moment,
-                        showsDayHeader: showsDayHeader,
-                        dayText: dayText,
-                        isLast: isLast
-                    )
                 }
             )
             .background(C.pageBg)
@@ -2091,30 +2087,6 @@ struct MomentsView: View {
         .contentShape(Rectangle())
     }
 
-    private func momentRow(_ moment: Moment) -> some View {
-        MomentFeedCard(
-            moment: moment,
-            availableWidth: L.width,
-            onOpenComments: { commentsSheet = moment },
-            onOpenImage: { index in
-                let paths = moment.images ?? []
-                guard paths.indices.contains(index) else { return }
-                viewerPaths = paths
-                viewerIndex = index
-            },
-            onOpenVideo: { url in momentVideo = url },
-            onOpenAvatar: { user in cardUser = user },
-            onOpenLikes: { likes in
-                likesSnapshot = likes
-                showLikes = true
-            },
-            avatarPathFor: { id in app.contact(for: id)?.avatarPath ?? "" },
-            isFriend: { id in app.contact(for: id) != nil },
-            onLike: { like(moment) },
-            onMore: { actionMoment = moment }
-        )
-    }
-
     private func dayLabel(_ s: String?) -> String {
         guard let d = TimeFmt.date(s) else { return "" }
         let cal = Calendar.current
@@ -2132,17 +2104,6 @@ struct MomentsView: View {
     private func fullDateLabel(_ s: String?) -> String {
         guard let d = TimeFmt.date(s) else { return "" }
         return Self.yearMonthDayFormatter.string(from: d)
-    }
-
-    private func dayHeader(_ t: String) -> some View {
-        HStack {
-            Text(t)
-                .font(pf(13))
-                .foregroundColor(C.subLabel)
-            Spacer(minLength: 0)
-        }
-        .padding(.top, 14)
-        .padding(.bottom, 2)
     }
 
     private struct FoldRow: Identifiable {
@@ -2213,65 +2174,49 @@ struct MomentsView: View {
             : moments
     }
 
-    private func nativeMomentRow(_ moment: Moment,
-                                 showsDayHeader: Bool,
-                                 dayText: String,
-                                 isLast: Bool) -> some View {
-        let isFirst = moment.id == displayedMoments.first?.id
-        return VStack(spacing: 0) {
-            if isFirst, MomentStressFixture.isActive {
-                HStack(spacing: 6) {
-                    Text("STRESS")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                    Text("已加载 \(stressLoadedCount) / \(MomentStressFixture.count)")
-                        .font(pf(12, .medium))
-                    Spacer(minLength: 0)
-                }
-                .foregroundColor(C.subLabel)
-                .padding(.horizontal, L.momentPadH)
-                .frame(height: 28)
-            }
+    private var nativeMomentActions: NativeMomentActions {
+        NativeMomentActions(
+            openComments: { commentsSheet = $0 },
+            openImage: { moment, index in
+                let paths = moment.images ?? []
+                guard paths.indices.contains(index) else { return }
+                viewerPaths = paths
+                viewerIndex = index
+            },
+            openVideo: { momentVideo = $0 },
+            openAvatar: { cardUser = $0 },
+            openLikes: { likes in
+                likesSnapshot = likes
+                showLikes = true
+            },
+            avatarPathFor: { app.contact(for: $0)?.avatarPath ?? "" },
+            isFriend: { app.contact(for: $0) != nil },
+            like: { like($0) },
+            more: { actionMoment = $0 }
+        )
+    }
 
-            if showsDayHeader {
-                dayHeader(dayText)
-                    .padding(.horizontal, L.momentPadH)
-            }
+    private var momentStressStatus: String? {
+        guard MomentStressFixture.isActive else { return nil }
+        return "已加载 \(stressLoadedCount) / \(MomentStressFixture.count)"
+    }
 
-            momentRow(moment)
-
-            if isLast {
-                if hasMoreMoments {
-                    PrefetchWaitingIndicator(
-                        waiting: loadingMore,
-                        label: Tr("正在加载…")
-                    )
-                    .frame(height: 49)
-                } else if momentTotal > 0 {
-                    Text(Tr("没有更多了"))
-                        .font(pf(13))
-                        .foregroundColor(C.subLabel)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                }
-
-                if !mineOnly,
-                   !(feedUserId ?? "").isEmpty,
-                   (feedUserId ?? "") != (app.me?.id ?? ""),
-                   feedRange == "3d" || feedRange == "6m" {
-                    Text(feedRange == "3d"
-                         ? Tr("朋友仅展示最近三天的朋友圈")
-                         : Tr("朋友仅展示最近半年的朋友圈"))
-                        .font(pf(13))
-                        .foregroundColor(C.subLabel)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                }
-            }
+    private var momentFooterText: String? {
+        var rows: [String] = []
+        if hasMoreMoments {
+            rows.append(Tr("正在加载…"))
+        } else if momentTotal > 0 {
+            rows.append(Tr("没有更多了"))
         }
-        .padding(.top, isFirst ? 18 : 0)
-        .padding(.bottom, isLast ? max(42, L.safeBottom + 20) : 0)
-        .frame(maxWidth: .infinity)
-        .background(C.pageBg)
+        if !mineOnly,
+           !(feedUserId ?? "").isEmpty,
+           (feedUserId ?? "") != (app.me?.id ?? ""),
+           feedRange == "3d" || feedRange == "6m" {
+            rows.append(feedRange == "3d"
+                        ? Tr("朋友仅展示最近三天的朋友圈")
+                        : Tr("朋友仅展示最近半年的朋友圈"))
+        }
+        return rows.isEmpty ? nil : rows.joined(separator: "\n")
     }
 
     private var navBar: some View {
@@ -2936,8 +2881,6 @@ struct MomentsView: View {
               let last = moments.last else { return }
         momentPrefetchTask?.cancel()
         momentPrefetchTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 120_000_000)
-            if Task.isCancelled { return }
             await prefetchNextMomentsPage()
         }
     }

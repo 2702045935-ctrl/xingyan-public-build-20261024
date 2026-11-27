@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 VIEW = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 FEED = (ROOT / "Sources" / "NativeMomentFeed.swift").read_text(encoding="utf-8")
+ROW = (ROOT / "Sources" / "NativeMomentRowCell.swift").read_text(encoding="utf-8")
 FIXTURE = (ROOT / "Sources" / "MomentStressFixture.swift").read_text(encoding="utf-8")
 
 
@@ -23,6 +24,11 @@ feed_body = moments.split("var body: some View", 1)[1].split(
 require(
     "NativeMomentFeed(" in moments,
     "Moments must use the native feed kernel",
+)
+require(
+    "MomentFeedCard(" not in moments
+    and "nativeMomentRow(" not in moments,
+    "Moments must not retain a SwiftUI card fallback",
 )
 require(
     "ScrollView {" not in feed_body
@@ -49,8 +55,23 @@ require(
     and "UITableViewDiffableDataSource" in FEED
     and "UITableViewDataSourcePrefetching" in FEED
     and "prefetchRowsAt indexPaths" in FEED
-    and "UIHostingConfiguration" in FEED,
-    "feed reuse, diffing and page prefetch must be native",
+    and "NativeMomentRowCell" in FEED
+    and "UIHostingConfiguration" not in FEED,
+    "feed rows, reuse, diffing and prefetch must all be native UIKit",
+)
+require(
+    "final class NativeMomentRowCell: UITableViewCell" in ROW
+    and "UIStackView" in ROW
+    and "UITextView" in ROW
+    and "NativeMomentMediaControl" in ROW
+    and "prefetchRowsAt indexPaths" in FEED
+    and "items.count - 40" in FEED
+    and "bounds.height * 4" in FEED,
+    "native moment rows must preserve the card layout and load with a runway",
+)
+require(
+    "private static let momentPageSize = 70" in VIEW,
+    "the production moments runway must page seventy items at a time",
 )
 require(
     "onAppear" not in FEED

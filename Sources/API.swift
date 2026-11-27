@@ -5847,7 +5847,18 @@ private struct StarredPayload: Decodable {
                         status: http?.statusCode ?? -1
                     ))
                 }
-                return try JSONDecoder().decode(T.self, from: responseData)
+                guard let root = try? JSONSerialization.jsonObject(with: responseData),
+                      let object = root as? [String: Any] else {
+                    throw APIError.message("上传返回异常")
+                }
+                if (object["ok"] as? Bool) == false {
+                    throw APIError.message(friendlyServerMessage(
+                        object["error"] as? String ?? ""
+                    ))
+                }
+                let payload: Any = object["data"] ?? object
+                let payloadData = try JSONSerialization.data(withJSONObject: payload)
+                return try JSONDecoder().decode(T.self, from: payloadData)
             } catch {
                 lastError = error
             }

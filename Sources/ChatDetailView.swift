@@ -6046,14 +6046,23 @@ struct ChatDetailView: View {
                 app.show(Tr("录音读不到，再录一次"))
                 return
             }
-            let payload: [String: Any] = [
-                "dataUrl": "data:audio/mp4;base64," + data.base64EncodedString(),
-                "filename": "voice.m4a"
-            ]
             do {
-                let up = try await API.shared.rawUpload(payload)
+                let uploadedURL: String
+                do {
+                    uploadedURL = try await API.shared.uploadBinaryFile(
+                        file,
+                        mime: "audio/mp4",
+                        skipTranscode: true
+                    ) { _ in }
+                } catch {
+                    let payload: [String: Any] = [
+                        "dataUrl": "data:audio/mp4;base64," + data.base64EncodedString(),
+                        "filename": "voice.m4a"
+                    ]
+                    uploadedURL = try await API.shared.rawUpload(payload).url
+                }
                 var info: [String: Any] = [
-                    "url": up.url,
+                    "url": uploadedURL,
                     "seconds": seconds,
                     "bytes": data.count
                 ]
@@ -6062,7 +6071,7 @@ struct ChatDetailView: View {
                 }
                 let body = (try? JSONSerialization.data(withJSONObject: info))
                     .flatMap { String(data: $0, encoding: .utf8) }
-                    ?? "{\"url\":\"\(up.url)\",\"seconds\":\(seconds)}"
+                    ?? "{\"url\":\"\(uploadedURL)\",\"seconds\":\(seconds)}"
                 send(kind: "audio", content: body)
             } catch {
                 app.show((error as? APIError)?.errorDescription ?? "语音发送失败")

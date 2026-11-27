@@ -6,16 +6,14 @@ struct NativeMomentFeedItem {
     let moment: Moment
     let showsDayHeader: Bool
     let dayText: String
-}
-
-private enum NativeMomentFeedCellIdentifier {
-    static let row = "NativeMomentFeedCell"
+    let isFirst: Bool
+    let isLast: Bool
 }
 
 /// Native scrolling kernel for the Moments timeline. The feed uses one
 /// diffable data source for cell reuse, native prefetching, page consumption
 /// and the cover header, so no SwiftUI list or on-appear paging path is needed.
-struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable {
+struct NativeMomentFeed<Header: View>: UIViewControllerRepresentable {
     let moments: [Moment]
     let revision: Int
     let mineOnly: Bool
@@ -27,9 +25,12 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
     let onPullChange: (CGFloat) -> Void
     let onPullEnd: (CGFloat) -> Void
     let onApproachingEnd: () -> Void
+    let actions: NativeMomentActions
+    let stressText: String?
+    let footerText: String?
+    let footerWaiting: Bool
     let dayLabel: (Moment) -> String
     @ViewBuilder let header: (CGFloat) -> Header
-    @ViewBuilder let row: (Moment, Bool, String, Bool) -> Row
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
@@ -44,9 +45,12 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
             onPullChange: onPullChange,
             onPullEnd: onPullEnd,
             onApproachingEnd: onApproachingEnd,
+            actions: actions,
+            stressText: stressText,
+            footerText: footerText,
+            footerWaiting: footerWaiting,
             dayLabel: dayLabel,
-            header: header,
-            row: row
+            header: header
         )
     }
 
@@ -63,13 +67,12 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
         table.keyboardDismissMode = .interactive
         table.delaysContentTouches = false
         table.canCancelContentTouches = true
+        table.decelerationRate = .normal
         table.sectionHeaderTopPadding = 0
         table.showsVerticalScrollIndicator = true
         table.verticalScrollIndicatorInsets.top = headerHeight
-        table.register(
-            UITableViewCell.self,
-            forCellReuseIdentifier: NativeMomentFeedCellIdentifier.row
-        )
+        table.register(NativeMomentRowCell.self,
+                       forCellReuseIdentifier: NativeMomentRowCell.reuseIdentifier)
 
         let headerContainer = UIView()
         headerContainer.backgroundColor = .clear
@@ -88,32 +91,7 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
         context.coordinator.requestEnd = { [weak coordinator = context.coordinator] in
             coordinator?.requestNextPage()
         }
-        context.coordinator.install(
-            in: table,
-            row: {
-                [weak coordinator = context.coordinator] item, tableView, indexPath in
-                guard let coordinator else { return UITableViewCell() }
-                let cell = tableView.dequeueReusableCell(
-                    withIdentifier: NativeMomentFeedCellIdentifier.row,
-                    for: indexPath
-                )
-                cell.backgroundColor = .clear
-                cell.contentView.backgroundColor = .clear
-                cell.selectionStyle = .none
-                cell.contentConfiguration = UIHostingConfiguration {
-                    coordinator.row(
-                        item.moment,
-                        item.showsDayHeader,
-                        item.dayText,
-                        item.id == coordinator.items.last?.id
-                    )
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .margins(.all, 0)
-                .background(.clear)
-                return cell
-            }
-        )
+        context.coordinator.install(in: table)
         context.coordinator.layoutHeader(in: table, pull: 0)
         context.coordinator.applyIfNeeded(
             moments: moments,
@@ -128,13 +106,16 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
                                 context: Context) {
         let coordinator = context.coordinator
         coordinator.header = header
-        coordinator.row = row
         coordinator.dayLabel = dayLabel
         coordinator.onScrollActive = onScrollActive
         coordinator.onCollapseChange = onCollapseChange
         coordinator.onPullChange = onPullChange
         coordinator.onPullEnd = onPullEnd
         coordinator.onApproachingEnd = onApproachingEnd
+        coordinator.actions = actions
+        coordinator.stressText = stressText
+        coordinator.footerText = footerText
+        coordinator.footerWaiting = footerWaiting
         coordinator.requestEnd = { [weak coordinator] in
             coordinator?.requestNextPage()
         }
@@ -152,6 +133,7 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
             mineOnly: mineOnly,
             dayKey: dayKey
         )
+        coordinator.refreshFooterIfNeeded()
     }
 
     final class Coordinator: NSObject, UITableViewDelegate,
@@ -161,13 +143,16 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
         var headerHost: UIHostingController<Header>?
         var dataSource: UITableViewDiffableDataSource<Int, String>?
         var header: (CGFloat) -> Header
-        var row: (Moment, Bool, String, Bool) -> Row
         var dayLabel: (Moment) -> String
         var onScrollActive: (Bool) -> Void
         var onCollapseChange: (Bool) -> Void
         var onPullChange: (CGFloat) -> Void
         var onPullEnd: (CGFloat) -> Void
         var onApproachingEnd: () -> Void
+        var actions: NativeMomentActions
+        var stressText: String?
+        var footerText: String?
+        var footerWaiting: Bool
         var requestEnd: (() -> Void)?
 
         private(set) var items: [NativeMomentFeedItem] = []
@@ -176,6 +161,7 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
         private var sourceRevision = Int.min
         private var sourceMineOnly = false
         private var sourceDayKey = ""
+        private var footerSignature = ""
         private var headerHeight: CGFloat
         private var collapseOffset: CGFloat
         private var lastCollapsed = false
@@ -196,9 +182,12 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
              onPullChange: @escaping (CGFloat) -> Void,
              onPullEnd: @escaping (CGFloat) -> Void,
              onApproachingEnd: @escaping () -> Void,
+             actions: NativeMomentActions,
+             stressText: String?,
+             footerText: String?,
+             footerWaiting: Bool,
              dayLabel: @escaping (Moment) -> String,
-             header: @escaping (CGFloat) -> Header,
-             row: @escaping (Moment, Bool, String, Bool) -> Row) {
+             header: @escaping (CGFloat) -> Header) {
             _ = moments
             _ = revision
             _ = mineOnly
@@ -210,15 +199,16 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
             self.onPullChange = onPullChange
             self.onPullEnd = onPullEnd
             self.onApproachingEnd = onApproachingEnd
+            self.actions = actions
+            self.stressText = stressText
+            self.footerText = footerText
+            self.footerWaiting = footerWaiting
             self.dayLabel = dayLabel
             self.header = header
-            self.row = row
             super.init()
         }
 
-        func install(in table: UITableView,
-                     row cellProvider: @escaping
-                     (NativeMomentFeedItem, UITableView, IndexPath) -> UITableViewCell) {
+        func install(in table: UITableView) {
             self.table = table
             table.delegate = self
             table.prefetchDataSource = self
@@ -228,7 +218,20 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
                 guard let self, let item = self.lookup[id] else {
                     return UITableViewCell()
                 }
-                return cellProvider(item, tableView, indexPath)
+                guard let cell = tableView.dequeueReusableCell(
+                    withIdentifier: NativeMomentRowCell.reuseIdentifier,
+                    for: indexPath
+                ) as? NativeMomentRowCell else {
+                    return UITableViewCell()
+                }
+                cell.configure(
+                    item: item,
+                    actions: self.actions,
+                    stressText: item.isFirst ? self.stressText : nil,
+                    footerText: item.isLast ? self.footerText : nil,
+                    footerWaiting: item.isLast && self.footerWaiting
+                )
+                return cell
             }
             dataSource = source
         }
@@ -255,6 +258,17 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
             if !isPureAppend {
                 items.removeAll(keepingCapacity: true)
                 lookup.removeAll(keepingCapacity: true)
+            } else if let previous = items.last {
+                let updated = NativeMomentFeedItem(
+                    id: previous.id,
+                    moment: previous.moment,
+                    showsDayHeader: previous.showsDayHeader,
+                    dayText: previous.dayText,
+                    isFirst: previous.isFirst,
+                    isLast: false
+                )
+                items[items.count - 1] = updated
+                lookup[updated.id] = updated
             }
 
             var day = previousLastDay ?? ""
@@ -268,7 +282,9 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
                     id: id,
                     moment: moment,
                     showsDayHeader: index == 0 || nextDay != day,
-                    dayText: nextDay
+                    dayText: nextDay,
+                    isFirst: index == 0,
+                    isLast: index == moments.count - 1
                 )
                 day = nextDay
                 items.append(item)
@@ -280,6 +296,14 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
             sourceMineOnly = mineOnly
             sourceDayKey = dayKey
             endRequestInFlight = false
+            let nextFooterSignature = [
+                stressText ?? "",
+                footerText ?? "",
+                footerWaiting ? "1" : "0"
+            ].joined(separator: "|")
+            if nextFooterSignature != footerSignature {
+                footerSignature = nextFooterSignature
+            }
 
             let nextIDs = items.map(\.id)
             if isPureAppend {
@@ -325,6 +349,22 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
                     }
                 }
             }
+        }
+
+        func refreshFooterIfNeeded() {
+            guard let table, let dataSource, !items.isEmpty else { return }
+            let signature = [
+                stressText ?? "",
+                footerText ?? "",
+                footerWaiting ? "1" : "0"
+            ].joined(separator: "|")
+            guard signature != footerSignature else { return }
+            footerSignature = signature
+            var snapshot = dataSource.snapshot()
+            var ids: [String] = [items[0].id]
+            if items.count > 1 { ids.append(items.last!.id) }
+            snapshot.reloadItems(ids)
+            dataSource.apply(snapshot, animatingDifferences: false)
         }
 
         func requestNextPage() {
@@ -395,7 +435,7 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
                 - scrollView.bounds.height
                 - scrollView.contentOffset.y
             if scrollView.isDragging || scrollView.isDecelerating,
-               remaining < max(1_600, scrollView.bounds.height * 3) {
+               remaining < max(2_400, scrollView.bounds.height * 4) {
                 requestNextPage()
             }
         }
@@ -426,8 +466,12 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
 
         func tableView(_ tableView: UITableView,
                        prefetchRowsAt indexPaths: [IndexPath]) {
+            for indexPath in indexPaths
+            where items.indices.contains(indexPath.row) {
+                NativeMomentRowCell.prefetch(items[indexPath.row].moment)
+            }
             guard let maximum = indexPaths.map(\.row).max() else { return }
-            if maximum >= max(0, items.count - 24) {
+            if maximum >= max(0, items.count - 40) {
                 requestNextPage()
             }
         }
@@ -438,7 +482,7 @@ struct NativeMomentFeed<Header: View, Row: View>: UIViewControllerRepresentable 
         func tableView(_ tableView: UITableView,
                        willDisplay cell: UITableViewCell,
                        forRowAt indexPath: IndexPath) {
-            if indexPath.row >= max(0, items.count - 12) {
+            if indexPath.row >= max(0, items.count - 24) {
                 requestNextPage()
             }
         }

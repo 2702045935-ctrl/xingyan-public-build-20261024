@@ -24520,7 +24520,7 @@ async function handleApi(req, res, pathname, query) {
   if (parts[0] === 'moments' && method === 'GET' && parts.length === 1) {
     refreshMomentsFromDisk(false);
     await ensureMomentFriendIndex(user.id);
-    const limit = Math.min(50, Math.max(1, Number(query.get('limit')) || 20));
+    const limit = Math.min(100, Math.max(1, Number(query.get('limit')) || 20));
     const before = str(query.get('before'), 40);
     const beforeId = str(query.get('beforeId'), 40);
     const onlyUser = str(query.get('userId'), 40);
@@ -24894,6 +24894,10 @@ async function handleApi(req, res, pathname, query) {
     const ctype = String(req.headers['content-type'] || '').toLowerCase();
     let ext = 'bin';
     if (ctype.indexOf('video/') === 0) ext = ctype.indexOf('quicktime') >= 0 ? 'mov' : 'mp4';
+    else if (ctype.indexOf('audio/mp4') === 0 || ctype.indexOf('audio/x-m4a') === 0) ext = 'm4a';
+    else if (ctype.indexOf('audio/mpeg') === 0) ext = 'mp3';
+    else if (ctype.indexOf('audio/wav') === 0 || ctype.indexOf('audio/x-wav') === 0) ext = 'wav';
+    else if (ctype.indexOf('audio/') === 0) ext = 'm4a';
     else if (ctype.indexOf('png') >= 0) ext = 'png';
     else if (ctype.indexOf('image/') === 0) ext = 'jpg';
     let name = uid('file') + '.' + ext;

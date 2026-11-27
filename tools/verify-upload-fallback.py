@@ -40,6 +40,12 @@ require(
     "upload failures must surface the server reason instead of a generic message",
 )
 require(
+    'let payload: Any = object["data"] ?? object' in API
+    and 'JSONSerialization.jsonObject(with: responseData)' in API
+    and '(object["ok"] as? Bool) == false' in API,
+    "direct uploads must unwrap the server envelope and preserve its error",
+)
+require(
     "python3 tools/verify-upload-fallback.py" in WORKFLOW,
     "upload fallback regression must run in the iOS gate",
 )

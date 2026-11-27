@@ -21,6 +21,12 @@ require(
     "release must terminate a late-starting recording and send immediately",
 )
 require(
+    'mime: "audio/mp4"' in CHAT
+    and "skipTranscode: true" in CHAT
+    and "uploadBinaryFile(" in CHAT,
+    "voice must use the direct binary upload chain before base64 fallback",
+)
+require(
     "recorder.willCancel ? C.red : OrbitTheme.jadeDeep" in CHAT
     and "Circle().fill(OrbitTheme.jadeDeep)" in CHAT,
     "the hold-to-talk controls must use the fixed Xingyan brand colour",
