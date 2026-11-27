@@ -2315,10 +2315,16 @@ struct ChatDetailView: View {
             let screenH = (UIApplication.shared.connectedScenes
                 .compactMap { ($0 as? UIWindowScene)?.screen.bounds.height }.first) ?? UIScreen.main.bounds.height
             let h = max(0, screenH - f.origin.y)
-            withAnimation(.easeOut(duration: 0.25)) { kbHeight = h }
+            guard abs(kbHeight - h) > 0.5 else { return }
+            let duration = n.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
+                as? Double ?? 0.25
+            withAnimation(.easeOut(duration: duration)) { kbHeight = h }
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            withAnimation(.easeOut(duration: 0.22)) { kbHeight = 0 }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { n in
+            guard kbHeight != 0 else { return }
+            let duration = n.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
+                as? Double ?? 0.22
+            withAnimation(.easeOut(duration: duration)) { kbHeight = 0 }
         }
         .onChange(of: panel) { next in
             if next != .none { kbHeight = 0 }
@@ -3101,12 +3107,12 @@ struct ChatDetailView: View {
                         }
                     }, onScrollStateChange: { scrolling in
                         if scrolling {
-                            actionMessage = nil
+                            if actionMessage != nil { actionMessage = nil }
                             if !isGroup {
-                                atBottom = false
-                                wasAtBottom = false
+                                if atBottom { atBottom = false }
+                                if wasAtBottom { wasAtBottom = false }
                             }
-                            initialOpenSettling = false
+                            if initialOpenSettling { initialOpenSettling = false }
                             if !initialScrollReady {
                                 initialScrollTask?.cancel()
                                 initialScrollTask = nil
@@ -3114,11 +3120,14 @@ struct ChatDetailView: View {
                                 allowSettledBottom = false
                             }
                             ScrollGate.shared.setScrolling(true)
-                            followOwnSendUntil = Date.distantPast
+                            if followOwnSendUntil != .distantPast {
+                                followOwnSendUntil = .distantPast
+                            }
                         } else {
                             if !isGroup, let gap = ChatScrollHandle.shared.gap {
-                                atBottom = gap <= 16
-                                wasAtBottom = gap <= 16
+                                let next = gap <= 16
+                                if atBottom != next { atBottom = next }
+                                if wasAtBottom != next { wasAtBottom = next }
                             }
                             ScrollGate.shared.setScrolling(false)
                             frameCaptureTick &+= 1
@@ -3236,10 +3245,10 @@ struct ChatDetailView: View {
             },
             onScrollStateChange: { scrolling in
                 if scrolling {
-                    actionMessage = nil
-                    atBottom = false
-                    wasAtBottom = false
-                    initialOpenSettling = false
+                    if actionMessage != nil { actionMessage = nil }
+                    if atBottom { atBottom = false }
+                    if wasAtBottom { wasAtBottom = false }
+                    if initialOpenSettling { initialOpenSettling = false }
                     if isGroup { autoLoadOlder() }
                     if !initialScrollReady {
                         initialScrollTask?.cancel()
@@ -3248,11 +3257,14 @@ struct ChatDetailView: View {
                         allowSettledBottom = false
                     }
                     ScrollGate.shared.setScrolling(true)
-                    followOwnSendUntil = Date.distantPast
+                    if followOwnSendUntil != .distantPast {
+                        followOwnSendUntil = .distantPast
+                    }
                 } else {
                     if let gap = ChatScrollHandle.shared.gap {
-                        atBottom = gap <= 16
-                        wasAtBottom = gap <= 16
+                        let next = gap <= 16
+                        if atBottom != next { atBottom = next }
+                        if wasAtBottom != next { wasAtBottom = next }
                     }
                     ScrollGate.shared.setScrolling(false)
                     frameCaptureTick &+= 1
@@ -3606,20 +3618,23 @@ struct ChatDetailView: View {
                     }
                     }, onScrollStateChange: { scrolling in
                         if scrolling {
-                            atBottom = false
-                            wasAtBottom = false
+                            if atBottom { atBottom = false }
+                            if wasAtBottom { wasAtBottom = false }
                             if !initialScrollReady {
                                 initialScrollTask?.cancel()
                                 initialScrollTask = nil
                             initialScrollReady = true
                             allowSettledBottom = false
-                        }
+                            }
                             ScrollGate.shared.setScrolling(true)
-                            followOwnSendUntil = Date.distantPast
+                            if followOwnSendUntil != .distantPast {
+                                followOwnSendUntil = .distantPast
+                            }
                         } else {
                             if let gap = ChatScrollHandle.shared.gap {
-                                atBottom = gap <= 16
-                                wasAtBottom = gap <= 16
+                                let next = gap <= 16
+                                if atBottom != next { atBottom = next }
+                                if wasAtBottom != next { wasAtBottom = next }
                             }
                             ScrollGate.shared.setScrolling(false)
                             frameCaptureTick &+= 1
