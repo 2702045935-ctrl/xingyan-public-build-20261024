@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 import AVFoundation
 import UniformTypeIdentifiers
 import UIKit
@@ -3976,6 +3977,39 @@ private struct MusicGreenCompanion: View {
     }
 }
 
+private struct MusicPlayBubbleField: View {
+    let playing: Bool
+    let tint: Color
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: !playing)) { timeline in
+            let time = timeline.date.timeIntervalSinceReferenceDate
+            ZStack {
+                ForEach(0..<5, id: \.self) { index in
+                    let raw = time * 0.48 + Double(index) * 0.19
+                    let phase = raw - floor(raw)
+                    let size = 3.0 + Double(index % 3) * 1.4
+                    Circle()
+                        .fill(tint.opacity((1 - phase) * 0.26))
+                        .frame(width: size, height: size)
+                        .overlay {
+                            Circle().stroke(tint.opacity((1 - phase) * 0.22),
+                                            lineWidth: 0.5)
+                        }
+                        .offset(
+                            x: sin(raw * .pi * 2) * (5 + Double(index)),
+                            y: 13 - phase * 38
+                        )
+                }
+            }
+            .opacity(playing ? 1 : 0)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
 private struct FullPlayerAmbient: View {
     let track: MusicTrack?
     @Environment(\.colorScheme) private var scheme
@@ -4956,6 +4990,14 @@ struct MusicPlayingView: View {
                             .foregroundStyle(.black)
                             .offset(x: player.playing ? 0 : 2)
                     }
+                }
+                .background {
+                    MusicPlayBubbleField(
+                        playing: player.playing && player.loadingId != (t?.id ?? ""),
+                        tint: OrbitTheme.jade
+                    )
+                    .frame(width: 92, height: 88)
+                    .offset(y: -8)
                 }
             }
             .buttonStyle(.plain)
