@@ -25,12 +25,11 @@ require(
     "prepending must reuse unchanged row signatures and remeasure only the boundary",
 )
 require(
-    "if isGroup, y < 4200" in CHAT,
+    "if y < 4200" in CHAT,
     "B2611191645 group history must use the fixed prefetch trigger",
 )
 require(
-    "if isGroup { autoLoadOlder() }" in CHAT
-    and "let target = isGroup ? 300 : 200" in CHAT
+    "let target = isGroup ? 300 : 200" in CHAT
     and "let canContinue = explicitMore ?? hasOlder" in CHAT
     and "guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT
     and "scheduleOlderPrefetch(before: nextCursor" in CHAT,

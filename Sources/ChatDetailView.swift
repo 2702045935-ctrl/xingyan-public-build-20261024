@@ -2933,11 +2933,7 @@ struct ChatDetailView: View {
 
     @ViewBuilder
     private var conversationSurface: some View {
-        if usesShortConversationSurface {
-            shortConversationSurface
-        } else {
-            messageList
-        }
+        nativeMessageList
     }
 
     /* Small conversations do not need the history prefetch/pinning kernel. On
@@ -3249,7 +3245,6 @@ struct ChatDetailView: View {
                     if atBottom { atBottom = false }
                     if wasAtBottom { wasAtBottom = false }
                     if initialOpenSettling { initialOpenSettling = false }
-                    if isGroup { autoLoadOlder() }
                     if !initialScrollReady {
                         initialScrollTask?.cancel()
                         initialScrollTask = nil
@@ -3271,7 +3266,7 @@ struct ChatDetailView: View {
                 }
             },
             onScrollOffset: { y in
-                if isGroup, y < 4200 {
+                if y < 4200 {
                     autoLoadOlder()
                 }
             },
@@ -5683,9 +5678,10 @@ struct ChatDetailView: View {
                        mine: myStickers,
                        onExpandedChange: { emojiPanelExpanded = $0 })
         case .plus:
-            PlusPanel(items: plusItems,
-                      onTap: { item in handlePlus(item) },
-                      onLongPress: { item in handlePlusLong(item) })
+            NativePlusPanel(items: plusItems,
+                            onTap: { item in handlePlus(item) },
+                            onLongPress: { item in handlePlusLong(item) })
+                .frame(height: NativePlusPanel.requiredHeight(for: plusItems))
         case .mention:
             MentionPanel(members: mentionMembers,
                          query: $mentionQuery,
