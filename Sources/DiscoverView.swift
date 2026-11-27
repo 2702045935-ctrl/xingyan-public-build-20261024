@@ -1462,18 +1462,8 @@ struct ComingSoonView: View {
     }
 }
 
-private struct OffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 private final class MomentCoverPullBox {
     var value: CGFloat = 0
-}
-
-private final class MomentScrollMetrics {
-    var topY: CGFloat = 0
-    var baseTop: CGFloat? = nil
 }
 
 private final class MomentDragClock {
@@ -1510,14 +1500,13 @@ struct MomentsView: View {
 
     private var coverEditable: Bool { target == nil || mineOnly }
 
-    @State private var scrollMetrics = MomentScrollMetrics()
-
     @State private var sentinelGone = false
 
     @State private var solid = false
     @State private var momentsScrollActive = false
     @State private var moments: [Moment] = []
     @State private var stressLoadedMoments: [Moment] = []
+    @State private var momentFeedRevision = 0
     @State private var locallyPostedMoments: [String: Moment] = [:]
     @State private var stressLoadedCount = min(MomentStressFixture.count,
                                                Self.stressMomentWindow)
@@ -1635,99 +1624,75 @@ struct MomentsView: View {
         return s.isEmpty ? nil : s
     }
 
-    private func updateSolidState() {
-        let a = scrollMetrics.baseTop.map { $0 - scrollMetrics.topY } ?? 0
-        let next = max(0, a) > (L.coverH - 52) || sentinelGone
-        if next != solid { solid = next }
-    }
-
     var body: some View {
         ZStack(alignment: .top) {
 
             C.pageBg.ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 0) {
-
-                    Color.clear
-                        .frame(height: 1)
-                        .background(
-                            GeometryReader { g in
-                                Color.clear.preference(key: OffsetKey.self,
-                                                       value: g.frame(in: .global).minY)
-                            }
-                        )
-
-                    GeometryReader { g in
-                        let measured = max(0, g.frame(in: .named("momentsScroll")).minY - 1)
-                        let extra = coverLocked ? coverLockPull : measured
-                        coverView(extra)
-                            .offset(y: coverLocked ? 0 : -extra)
-                            .onAppear { coverPullBox.value = measured }
-                            .onChange(of: measured) { value in
-                                let quantized = (value / 4).rounded() * 4
-                                if abs(quantized - coverPullBox.value) >= 4 {
-                                    coverPullBox.value = quantized
-                                }
-                            }
+            NativeMomentFeed(
+                moments: displayedMoments,
+                revision: momentFeedRevision,
+                mineOnly: mineOnly,
+                dayKey: "\(Lang.code)-\(scheme)-\(app.contacts.count)",
+                headerHeight: L.coverH + (coverLocked ? coverLockPull : 0),
+                collapseOffset: L.coverH - 52,
+                onScrollActive: { active in
+                    guard momentsScrollActive != active else { return }
+                    withSystemAnimation(.easeOut(duration: active ? 0.12 : 0.20)) {
+                        momentsScrollActive = active
                     }
-                    .frame(height: L.coverH + (coverLocked ? coverLockPull : 0))
-                    .zIndex(1)
-                    momentList
-                }
-                .background {
-                    ScrollOffsetProbe(onChange: { _, _ in },
-                                      onDragChange: { _ in },
-                                      onScrollStateChange: { scrolling in
-                        guard momentsScrollActive != scrolling else { return }
-                        withSystemAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
-                            momentsScrollActive = scrolling
-                        }
-                    })
-                }
-            }
-            .coordinateSpace(name: "momentsScroll")
-            .onPreferenceChange(OffsetKey.self) { y in
-                if scrollMetrics.baseTop == nil { scrollMetrics.baseTop = y }
-                scrollMetrics.topY = y
-                updateSolidState()
-            }
-
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 6)
-                    .onChanged { _ in
+                    if active {
                         guard !scrollGateActive else { return }
                         scrollGateActive = true
                         ScrollGate.shared.setScrolling(true)
-                    }
-                    .onEnded { _ in
+                    } else {
                         tapLockUntil = Date().addingTimeInterval(0.35)
+                        guard scrollGateActive else { return }
                         scrollGateActive = false
                         ScrollGate.shared.setScrolling(false)
                     }
-            )
-            .simultaneousGesture(
-                    DragGesture(minimumDistance: 8)
-                    .onChanged { v in
-                        dragClock.lastDragAt = Date()
-                        guard !sentinelGone else { return }
-                        let dy = v.translation.height
-                        if dy > 0 {
-                            let next = min(140, dy)
-                            if abs(next - pullY) >= 0.25 {
-                                pullY = next
-                            }
-                            if !pulling { spin = Double(pullY) * 3.2 }
-                        } else if pullY > 0 && !pulling {
-                            pullY = 0
-                        }
+                },
+                onCollapseChange: { collapsed in
+                    if solid != collapsed { solid = collapsed }
+                    if sentinelGone != collapsed { sentinelGone = collapsed }
+                },
+                onPullChange: { pull in
+                    guard !sentinelGone, !pulling else { return }
+                    let next = min(140, max(0, pull))
+                    guard abs(next - pullY) >= 2 else { return }
+                    dragClock.lastDragAt = Date()
+                    pullY = next
+                    spin = Double(next) * 3.2
+                },
+                onPullEnd: { pull in
+                    dragClock.lastDragAt = Date()
+                    if pull > 60 && !pulling {
+                        startPullRefresh()
+                    } else if !pulling {
+                        pullY = 0
                     }
-                    .onEnded { _ in
-                        dragClock.lastDragAt = Date()
-                        if pullY > 60 && !pulling { startPullRefresh() }
-                        if !pulling { pullY = 0 }
-                    }
+                },
+                onApproachingEnd: {
+                    Task { await loadMoreMoments() }
+                },
+                dayLabel: { moment in
+                    mineOnly
+                        ? fullDateLabel(moment.createdAt)
+                        : dayLabel(moment.createdAt)
+                },
+                header: { extra in
+                    coverView(coverLocked ? coverLockPull : extra)
+                },
+                row: { moment, showsDayHeader, dayText, isLast in
+                    nativeMomentRow(
+                        moment,
+                        showsDayHeader: showsDayHeader,
+                        dayText: dayText,
+                        isLast: isLast
+                    )
+                }
             )
+            .background(C.pageBg)
             .ignoresSafeArea(edges: .top)
 
             .task(id: pullY > 0 || pulling) {
@@ -1812,8 +1777,6 @@ struct MomentsView: View {
         .modifier(MomentLikesPresenter(likes: likesSnapshot,
                                        isPresented: $showLikes))
         .onAppear {
-            scrollMetrics.baseTop = nil
-            scrollMetrics.topY = 0
             sentinelGone = false
             solid = false
             momentsScrollActive = false
@@ -1843,7 +1806,7 @@ struct MomentsView: View {
                 let cached = LocalStore.cachedMoments(userId: app.me?.id ?? "")
                 if !cached.isEmpty {
                     let page = Array(cached.prefix(Self.momentPageSize))
-                    moments = page
+                    setMomentsWithoutAnimation(page)
                 }
             }
             await reload()
@@ -2255,20 +2218,13 @@ struct MomentsView: View {
             : moments
     }
 
-    private var momentList: some View {
-        return LazyVStack(spacing: 0) {
-            Color.clear
-                .frame(height: 1)
-                .onAppear {
-                    sentinelGone = false
-                    updateSolidState()
-                }
-                .onDisappear {
-                    sentinelGone = true
-                    updateSolidState()
-                }
-
-            if MomentStressFixture.isActive {
+    private func nativeMomentRow(_ moment: Moment,
+                                 showsDayHeader: Bool,
+                                 dayText: String,
+                                 isLast: Bool) -> some View {
+        let isFirst = moment.id == displayedMoments.first?.id
+        return VStack(spacing: 0) {
+            if isFirst, MomentStressFixture.isActive {
                 HStack(spacing: 6) {
                     Text("STRESS")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
@@ -2281,57 +2237,46 @@ struct MomentsView: View {
                 .frame(height: 28)
             }
 
-            let source = displayedMoments
-            ForEach(Array(source.enumerated()), id: \.element.id) { index, moment in
-                let day = mineOnly ? fullDateLabel(moment.createdAt) : dayLabel(moment.createdAt)
-                let previous = index > 0
-                    ? (mineOnly ? fullDateLabel(source[index - 1].createdAt)
-                                : dayLabel(source[index - 1].createdAt))
-                    : ""
-                if index == 0 || day != previous {
-                    dayHeader(day)
-                        .padding(.horizontal, L.momentPadH)
-                }
-                momentRow(moment)
-                    .onAppear {
-                        guard hasMoreMoments, index >= source.count - 12 else { return }
-                        Task { await loadMoreMoments() }
-                    }
+            if showsDayHeader {
+                dayHeader(dayText)
+                    .padding(.horizontal, L.momentPadH)
             }
 
-            if hasMoreMoments {
-                PrefetchWaitingIndicator(
-                    waiting: loadingMore,
-                    label: Tr("正在加载…")
-                )
+            momentRow(moment)
+
+            if isLast {
+                if hasMoreMoments {
+                    PrefetchWaitingIndicator(
+                        waiting: loadingMore,
+                        label: Tr("正在加载…")
+                    )
                     .frame(height: 49)
-                    .onAppear {
-                        Task { await loadMoreMoments() }
-                    }
-            } else if momentTotal > 0 {
-                Text(Tr("没有更多了"))
-                    .font(pf(13))
-                    .foregroundColor(C.subLabel)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-            }
+                } else if momentTotal > 0 {
+                    Text(Tr("没有更多了"))
+                        .font(pf(13))
+                        .foregroundColor(C.subLabel)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                }
 
-            if !mineOnly, !(feedUserId ?? "").isEmpty, (feedUserId ?? "") != (app.me?.id ?? ""),
-               feedRange == "3d" || feedRange == "6m" {
-                Text(feedRange == "3d" ? Tr("朋友仅展示最近三天的朋友圈")
-                                       : Tr("朋友仅展示最近半年的朋友圈"))
-                    .font(pf(13))
-                    .foregroundColor(C.subLabel)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
+                if !mineOnly,
+                   !(feedUserId ?? "").isEmpty,
+                   (feedUserId ?? "") != (app.me?.id ?? ""),
+                   feedRange == "3d" || feedRange == "6m" {
+                    Text(feedRange == "3d"
+                         ? Tr("朋友仅展示最近三天的朋友圈")
+                         : Tr("朋友仅展示最近半年的朋友圈"))
+                        .font(pf(13))
+                        .foregroundColor(C.subLabel)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                }
             }
         }
-        .padding(.top, 18)
-        .padding(.bottom, max(42, L.safeBottom + 20))
+        .padding(.top, isFirst ? 18 : 0)
+        .padding(.bottom, isLast ? max(42, L.safeBottom + 20) : 0)
         .frame(maxWidth: .infinity)
         .background(C.pageBg)
-        .offset(y: 0)
-        .zIndex(0)
     }
 
     private var navBar: some View {
@@ -2864,11 +2809,15 @@ struct MomentsView: View {
                 max(Self.stressMomentWindow, stressLoadedCount)
             )
             if stressLoadedMoments.count > stressLoadedCount {
-                stressLoadedMoments = Array(stressLoadedMoments.prefix(stressLoadedCount))
+                setStressLoadedMoments(
+                    Array(stressLoadedMoments.prefix(stressLoadedCount))
+                )
             } else if stressLoadedMoments.count < stressLoadedCount {
-                stressLoadedMoments.append(contentsOf: MomentStressFixture.moments(
-                    range: stressLoadedMoments.count..<stressLoadedCount
-                ))
+                setStressLoadedMoments(
+                    stressLoadedMoments + MomentStressFixture.moments(
+                        range: stressLoadedMoments.count..<stressLoadedCount
+                    )
+                )
             }
             momentTotal = MomentStressFixture.count
             hasMoreMoments = stressLoadedCount < MomentStressFixture.count
@@ -2915,9 +2864,11 @@ struct MomentsView: View {
             momentTotal = MomentStressFixture.count
             stressLoadedCount = next
             if stressLoadedCount > previous {
-                stressLoadedMoments.append(contentsOf: MomentStressFixture.moments(
-                    range: previous..<stressLoadedCount
-                ))
+                setStressLoadedMoments(
+                    stressLoadedMoments + MomentStressFixture.moments(
+                        range: previous..<stressLoadedCount
+                    )
+                )
             }
             hasMoreMoments = stressLoadedCount < MomentStressFixture.count
             loadingMore = false
@@ -3073,6 +3024,16 @@ struct MomentsView: View {
         transaction.disablesAnimations = true
         withTransaction(transaction) {
             moments = next
+            momentFeedRevision &+= 1
+        }
+    }
+
+    private func setStressLoadedMoments(_ next: [Moment]) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            stressLoadedMoments = next
+            momentFeedRevision &+= 1
         }
     }
 

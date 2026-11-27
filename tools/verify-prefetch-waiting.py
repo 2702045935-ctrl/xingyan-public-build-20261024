@@ -34,10 +34,9 @@ require(
     "chat prefetch waiting must use the native circular activity indicator",
 )
 require(
-    "PrefetchWaitingIndicator(\n"
-    "                    waiting: loadingMore,\n"
-    "                    label: Tr(\"正在加载…\")\n"
-    "                )" in MOMENTS
+    "PrefetchWaitingIndicator(" in MOMENTS
+    and "waiting: loadingMore" in MOMENTS
+    and 'label: Tr("正在加载…")' in MOMENTS
     and ".frame(height: 49)" in MOMENTS,
     "Moments waiting must use the native indicator and hold footer height",
 )

@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VIEW = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
+FEED = (ROOT / "Sources" / "NativeMomentFeed.swift").read_text(encoding="utf-8")
 FIXTURE = (ROOT / "Sources" / "MomentStressFixture.swift").read_text(encoding="utf-8")
 
 
@@ -12,53 +13,55 @@ def require(condition: bool, message: str) -> None:
         raise SystemExit("moment stress scroll verification failed: " + message)
 
 
+moments = VIEW.split("struct MomentsView: View", 1)[1].split(
+    "struct MomentGroup:", 1
+)[0]
+feed_body = moments.split("var body: some View", 1)[1].split(
+    ".navigationBarBackButtonHidden", 1
+)[0]
+
 require(
-    "pendingMomentPage" not in VIEW
-    and "pendingStressLoadedCount" not in VIEW,
-    "Moments pages must append while scrolling instead of stopping at the current page",
+    "NativeMomentFeed(" in moments,
+    "Moments must use the native feed kernel",
+)
+require(
+    "ScrollView {" not in feed_body
+    and "LazyVStack" not in feed_body
+    and "momentList" not in moments,
+    "Moments must not retain the SwiftUI list or a fallback rendering path",
+)
+require(
+    "onApproachingEnd:" in moments
+    and "await loadMoreMoments()" in moments,
+    "native prefetch must own page consumption",
+)
+require(
+    '"已加载 \\(stressLoadedCount) / \\(MomentStressFixture.count)"' in moments,
+    "stress rows must expose the currently loaded count",
+)
+require(
+    "setStressLoadedMoments(" in moments
+    and "stressLoadedMoments.append(contentsOf:" not in moments,
+    "stress pages must use the same revisioned data path as server pages",
+)
+require(
+    "UITableView" in FEED
+    and "UITableViewDiffableDataSource" in FEED
+    and "UITableViewDataSourcePrefetching" in FEED
+    and "prefetchRowsAt indexPaths" in FEED
+    and "UIHostingConfiguration" in FEED,
+    "feed reuse, diffing and page prefetch must be native",
+)
+require(
+    "onAppear" not in FEED
+    and "ScrollView {" not in FEED
+    and "endRequestInFlight" in FEED
+    and "requestNextPage()" in FEED,
+    "feed paging must be a single native runway without SwiftUI on-appear triggers",
 )
 require(
     '"#\\(index + 1) · \\(bodySamples[index % bodySamples.count])"' in FIXTURE,
     "stress cards must expose exact ordinals for displacement checks",
-)
-require(
-    '"已加载 \\(stressLoadedCount) / \\(MomentStressFixture.count)"' in VIEW,
-    "stress header must expose the current loaded window",
-)
-require(
-    "stressLoadedMoments.append(contentsOf:" in VIEW
-    and "range: stressLoadedCount..<next" in VIEW
-    and "stressLoadedMoments.removeFirst(min(removed, stressLoadedMoments.count))" in VIEW,
-    "Moments stress data must consume one page and keep a bounded active window",
-)
-require(
-    "@State private var pendingMomentCommit = false" in VIEW
-    and "if momentsScrollActive {\n"
-    "            pendingMomentCommit = true\n"
-    "            scheduleMomentPrefetch()\n"
-    "            return\n"
-    "        }" in VIEW
-    and "if !scrolling, pendingMomentCommit" in VIEW,
-    "Moments prefetched pages must commit only after the active scroll stops",
-)
-require(
-    "private var momentPrefetchLead: Int" in VIEW
-    and "MomentStressFixture.isActive ? Self.stressMomentPageSize : 12" in VIEW
-    and "index >= source.count - momentPrefetchLead" in VIEW,
-    "Moments stress must arm a full page of prefetch runway before the tail",
-)
-require(
-    "momentPaging.moments = await Self.generateStressMoments(" in VIEW
-    and "private static func generateStressMoments(range: Range<Int>) async -> [Moment]" in VIEW
-    and "Task.detached(priority: .userInitiated)" in VIEW
-    and "if let task = momentPaging.task {\n                await task.value" in VIEW
-    and "scheduleMomentPrefetch()" in VIEW,
-    "Moments stress pages must be generated off the main thread before display",
-)
-require(
-    "@StateObject private var momentPaging = MomentPrefetchStore()" in VIEW
-    and "@Published" not in VIEW.split("private final class MomentPrefetchStore", 1)[1].split("}", 1)[0],
-    "prefetch output must stay outside SwiftUI observation until a visible page commits",
 )
 
 print("moment-stress-scroll: passed")

@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/DiscoverView.swift",
-      "size": 168675,
-      "sha256": "4be68a100764b148176212f0bc5666e33d47a4bcd7ce5b5d941145fa4b023c7e"
+      "size": 166926,
+      "sha256": "92970c28f6cfd939e92c193a32ee63443f7d79471a96700917660ae244ef651d"
     },
     {
       "path": "Sources/MomentFeedCard.swift",
@@ -105,6 +105,11 @@
       "path": "Sources/NativeStaticList.swift",
       "size": 24087,
       "sha256": "87d57025f1f923812fe5586461dbe68e28fe6dcef1f416de5c7e73355b315981"
+    },
+    {
+      "path": "Sources/NativeMomentFeed.swift",
+      "size": 17237,
+      "sha256": "9e78a97df760f0544e99c037c7fb1f914e34a103cf1393a51ff25d2a74fe5cac"
     }
   ]
 }

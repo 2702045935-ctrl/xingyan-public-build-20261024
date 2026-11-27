@@ -157,6 +157,7 @@ jobs:
           python3 tools/verify-theme-immediacy.py
           python3 tools/verify-scale-foundation.py
           python3 tools/verify-moment-editorial.py
+          python3 tools/verify-moment-stress-scroll.py
           python3 tools/verify-moment-media-grid.py
           python3 tools/verify-moment-own-publish.py
           python3 tools/verify-me-current.py
