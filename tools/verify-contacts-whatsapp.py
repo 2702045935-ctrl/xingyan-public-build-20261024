@@ -34,6 +34,11 @@ require(
     "contacts must use a centered native title with the add control on the trailing edge",
 )
 require(
+    ".safeAreaInset(edge: .top, spacing: 0)" in VIEW
+    and "contactsSearchBar\n                                .padding(.horizontal, 16)" in VIEW,
+    "contacts search must remain pinned and visible above every list position",
+)
+require(
     "nativeQuickIcon(item, size: utilityIconSize)" in VIEW
     and "40 * min(1.18, contactsAccessibilityScale)" in VIEW
     and ".frame(height: utilityRowHeight)" in VIEW

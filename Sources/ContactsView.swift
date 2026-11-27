@@ -202,7 +202,6 @@ struct ContactsView: View {
             .scaledValue(for: preferred)
         return max(L.navH, ceil(titleHeight + 14))
     }
-    private var listHeadH: CGFloat { max(0, contactsHeaderHeight - 23) }
     private var contactsCanvas: Color {
         UIConfig.colorIfSet("contactsBg") ?? C.contactsBg
     }
@@ -358,13 +357,6 @@ private var funcs: [(String, String, Color, String)] {
                         ScrollView {
 
                             LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                                Color.clear.frame(height: listHeadH)
-
-                                contactsSearchBar
-                                    .padding(.horizontal, 16)
-                                    .padding(.top, 6)
-                                    .padding(.bottom, 10)
-
                                 if keyword.isEmpty {
 
                                     funcStrip
@@ -438,6 +430,13 @@ private var funcs: [(String, String, Color, String)] {
                                     .frame(height: L.tabH + L.safeBottom + 12)
                             }
                         }
+                        .safeAreaInset(edge: .top, spacing: 0) {
+                            contactsSearchBar
+                                .padding(.horizontal, 16)
+                                .padding(.top, 6)
+                                .padding(.bottom, 10)
+                                .background(contactsCanvas)
+                        }
                         .background(contactsCanvas)
                         .background {
                             NativeTopScrollObserver { y in
@@ -475,8 +474,6 @@ private var funcs: [(String, String, Color, String)] {
                                 }
                             }
                         }
-
-                .padding(.top, -listHeadH)
             }
             .background(contactsCanvas.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
