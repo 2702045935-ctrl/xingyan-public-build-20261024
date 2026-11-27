@@ -8,7 +8,6 @@ extension Notification.Name {
 enum AccountSidebarMetrics {
     static let maxWidth: CGFloat = 320
     static let minimumTrailingReveal: CGFloat = 48
-    static let contentPush: CGFloat = 44
     static let horizontal: CGFloat = 16
     static let rowHeight: CGFloat = 52
     static let sectionTitleHeight: CGFloat = 28
@@ -16,6 +15,14 @@ enum AccountSidebarMetrics {
     static let avatarSize: CGFloat = 56
     static let textOrigin: CGFloat = 84
     static let cornerRadius: CGFloat = 24
+
+    static func panelWidth(for containerWidth: CGFloat) -> CGFloat {
+        min(maxWidth, max(240, containerWidth - minimumTrailingReveal))
+    }
+
+    static func contentPush(for containerWidth: CGFloat) -> CGFloat {
+        panelWidth(for: containerWidth)
+    }
 }
 
 private struct AccountSidebarShape: Shape {
@@ -58,25 +65,12 @@ struct AccountSidebarOverlay: View {
 
     @GestureState private var dragTranslation: CGFloat = 0
 
-    private var railChats: [Chat] {
-        Array(app.chats.lazy.filter { chat in
-            guard (chat.botRank ?? 9) < 9 else { return false }
-            return !(chat.title ?? "").isEmpty
-                || !(chat.avatar ?? "").isEmpty
-                || chat.lastMessage != nil
-        }.prefix(16))
-    }
-
     var body: some View {
         GeometryReader { proxy in
-            let width = min(
-                AccountSidebarMetrics.maxWidth,
-                max(240, proxy.size.width - AccountSidebarMetrics.minimumTrailingReveal)
-            )
+            let width = AccountSidebarMetrics.panelWidth(for: proxy.size.width)
 
             ZStack(alignment: .leading) {
-                Color.black
-                    .opacity(isOpen ? (scheme == .dark ? 0.30 : 0.18) : 0)
+                Color.clear
                     .ignoresSafeArea()
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -115,16 +109,6 @@ struct AccountSidebarOverlay: View {
                         }
                 )
 
-                AccountSidebarConversationRail(
-                    chats: railChats,
-                    onSelect: openRailChat
-                )
-                .frame(width: AccountSidebarMetrics.minimumTrailingReveal)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .opacity(isOpen ? 1 : 0)
-                .offset(x: isOpen ? 0 : AccountSidebarMetrics.minimumTrailingReveal)
-                .scaleEffect(isOpen ? 1 : 0.96, anchor: .trailing)
-                .zIndex(3)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -147,93 +131,6 @@ struct AccountSidebarOverlay: View {
         }
     }
 
-    private func openRailChat(_ chat: Chat) {
-        UISelectionFeedbackGenerator().selectionChanged()
-        close()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            app.openChatViaList(chat)
-        }
-    }
-}
-
-private struct AccountSidebarConversationRail: View {
-    @EnvironmentObject private var app: AppState
-    @Environment(\.colorScheme) private var scheme
-
-    let chats: [Chat]
-    let onSelect: (Chat) -> Void
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 8) {
-                ForEach(Array(chats.enumerated()), id: \.element.id) { index, chat in
-                    Button {
-                        onSelect(chat)
-                    } label: {
-                        Avatar(
-                            path: avatarPath(chat),
-                            size: 34,
-                            radius: 17,
-                            circle: true
-                        )
-                        .frame(width: 46, height: 46)
-                        .overlay(alignment: .bottomTrailing) {
-                            if index == 0 {
-                                Circle()
-                                    .fill(Color.dyn(0x0F8B65, 0x36CA95))
-                                    .frame(width: 8, height: 8)
-                                    .overlay(Circle().stroke(
-                                        scheme == .dark ? Color(hex: 0x1A1A1A) : .white,
-                                        lineWidth: 1.5
-                                    ))
-                                    .offset(x: -5, y: -5)
-                            }
-                        }
-                        .contentShape(Circle())
-                    }
-                    .buttonStyle(MenuPressStyle())
-                    .accessibilityLabel(chat.name)
-                }
-            }
-            .padding(.vertical, 10)
-        }
-        .background {
-            ZStack {
-                Rectangle().fill(.regularMaterial)
-                Rectangle().fill(
-                    LinearGradient(
-                        colors: [
-                            Color.dyn(0x0F8B65, 0x36CA95)
-                                .opacity(scheme == .dark ? 0.08 : 0.05),
-                            Color.clear
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-            }
-            Rectangle().fill(
-                scheme == .dark ? Color.black.opacity(0.20) : Color.white.opacity(0.34)
-            )
-        }
-        .overlay(alignment: .leading) {
-            Rectangle()
-                .fill(Color.primary.opacity(scheme == .dark ? 0.10 : 0.06))
-                .frame(width: 0.5)
-        }
-        .accessibilityHidden(chats.isEmpty)
-    }
-
-    private func avatarPath(_ chat: Chat) -> String {
-        let own = (chat.avatar ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if !own.isEmpty { return own }
-        guard (chat.type ?? "direct") == "direct" else { return "" }
-        let peerId = (chat.memberIds ?? []).first { $0 != app.me?.id }
-            ?? chat.lastMessage?.senderId
-            ?? ""
-        guard !peerId.isEmpty, peerId != app.me?.id else { return "" }
-        return app.contact(for: peerId)?.avatarPath ?? ""
-    }
 }
 
 private struct AccountSidebarPanel: View {

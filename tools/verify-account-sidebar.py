@@ -19,8 +19,8 @@ def require(condition: bool, message: str) -> None:
 require(
     "static let maxWidth: CGFloat = 320" in SIDEBAR
     and "static let minimumTrailingReveal: CGFloat = 48" in SIDEBAR
-    and "static let contentPush: CGFloat = 44" in SIDEBAR
-    and "proxy.size.width - AccountSidebarMetrics.minimumTrailingReveal" in SIDEBAR
+    and "static func panelWidth(for containerWidth: CGFloat)" in SIDEBAR
+    and "containerWidth - minimumTrailingReveal" in SIDEBAR
     and "static let cornerRadius: CGFloat = 24" in SIDEBAR
     and "struct AccountSidebarShape: Shape" in SIDEBAR,
     "account sidebar must remain a 320-point overlay with visible main-page reveal",
@@ -50,28 +50,22 @@ require(
     "the drawer must support scrim dismissal and a restrained swipe-close gesture",
 )
 require(
-    "struct AccountSidebarConversationRail: View" in SIDEBAR
-    and "chats: railChats" in SIDEBAR
-    and "Array(app.chats.lazy.filter" in SIDEBAR
-    and "app.openChatViaList(chat)" in SIDEBAR
-    and ".frame(width: AccountSidebarMetrics.minimumTrailingReveal)" in SIDEBAR
-    and ".offset(x: isOpen ? 0 : AccountSidebarMetrics.minimumTrailingReveal)" in SIDEBAR
-    and ".scaleEffect(isOpen ? 1 : 0.96, anchor: .trailing)" in SIDEBAR
-    and "Rectangle().fill(.regularMaterial)" in SIDEBAR
-    and "ForEach(Array(chats.enumerated()), id: \\.element.id)" in SIDEBAR,
-    "the exposed trailing edge must show conversation avatars and open their chats",
+    "AccountSidebarConversationRail" not in SIDEBAR
+    and "AccountSidebarAvatarRail" not in SIDEBAR
+    and "Color.clear\n                    .ignoresSafeArea()" in SIDEBAR,
+    "the trailing reveal must expose the real conversation page instead of a copied avatar rail",
 )
 require(
-    "showAccountSidebar ? AccountSidebarMetrics.contentPush : 0" in MAIN,
-    "opening the drawer must push the active page to the right",
+    "static func panelWidth(for containerWidth: CGFloat)" in SIDEBAR
+    and "static func contentPush(for containerWidth: CGFloat)" in SIDEBAR
+    and "showAccountSidebar\n                    ? AccountSidebarMetrics.contentPush(for: L.width)" in MAIN,
+    "opening the drawer must push the active conversation page by the sidebar width",
 )
 require(
     "Color.black.opacity(0.42)" in SIDEBAR
     and "Color.white.opacity(0.62)" in SIDEBAR
     and "private var panelColorGlow: LinearGradient" in SIDEBAR
     and "accent.opacity(0.07)" in SIDEBAR
-    and "Color.black.opacity(0.20)" in SIDEBAR
-    and "Color.white.opacity(0.34)" in SIDEBAR
     and "Color.dyn(0x0F8B65, 0x36CA95)" in SIDEBAR,
     "sidebar material must remain visibly frosted and color-tinted",
 )

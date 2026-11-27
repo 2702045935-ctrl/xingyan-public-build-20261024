@@ -146,7 +146,9 @@ struct MainTabView: View {
                         .ignoresSafeArea(edges: .top)
                 }
             }
-            .offset(x: showAccountSidebar ? AccountSidebarMetrics.contentPush : 0)
+            .offset(x: showAccountSidebar
+                    ? AccountSidebarMetrics.contentPush(for: L.width)
+                    : 0)
 
         }
 
