@@ -129,6 +129,8 @@ final class Realtime: ObservableObject {
     private var pending: PushEvent?
     private var publishTask: Task<Void, Never>?
     private var chatEventHandler: ((PushEvent) -> Void)?
+    private var detailChatId = ""
+    private var detailChatEventHandler: ((PushEvent) -> Void)?
 
     private var heartbeat: Task<Void, Never>?
     private let rxClock = RxClock()
@@ -141,6 +143,18 @@ final class Realtime: ObservableObject {
     /// 使用公开的 event 流。
     func setChatEventHandler(_ handler: ((PushEvent) -> Void)?) {
         chatEventHandler = handler
+    }
+
+    func setChatDetailEventHandler(chatId: String,
+                                   handler: @escaping (PushEvent) -> Void) {
+        detailChatId = chatId
+        detailChatEventHandler = handler
+    }
+
+    func clearChatDetailEventHandler(chatId: String) {
+        guard detailChatId == chatId else { return }
+        detailChatId = ""
+        detailChatEventHandler = nil
     }
 
     static func isChatStateEvent(_ type: String) -> Bool {
@@ -338,6 +352,8 @@ final class Realtime: ObservableObject {
         publishTask?.cancel()
         publishTask = nil
         pending = nil
+        detailChatId = ""
+        detailChatEventHandler = nil
         ackTask?.cancel()
         ackTask = nil
         ackPending.removeAll()
@@ -521,21 +537,30 @@ final class Realtime: ObservableObject {
         }
 
         if Self.isChatStateEvent(ev.type) {
+            tick += 1
+            ev.tick = tick
             chatEventHandler?(ev)
+            if ev.chatId == detailChatId {
+                detailChatEventHandler?(ev)
+            }
         }
 
         let important = ["ui", "friend", "call", "transfer", "transferRemind",
                          "toast", "moment", "profile", "pair"]
         if important.contains(ev.type) {
             pending = nil
-            tick += 1
-            ev.tick = tick
+            if ev.tick == 0 {
+                tick += 1
+                ev.tick = tick
+            }
             event = ev
             return
         }
         if publishTask == nil {
-            tick += 1
-            ev.tick = tick
+            if ev.tick == 0 {
+                tick += 1
+                ev.tick = tick
+            }
             event = ev
             publishTask = Task { [weak self] in
                 try? await Task.sleep(nanoseconds: 250_000_000)

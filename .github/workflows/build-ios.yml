@@ -133,6 +133,7 @@ jobs:
           python3 tools/verify-native-list-incremental-signatures.py
           python3 tools/verify-message-receipts.py
           python3 tools/verify-message-send-handoff.py
+          python3 tools/verify-realtime-chat-direct.py
           python3 tools/verify-voice-hold-brand.py
           python3 tools/verify-native-top-masks.py
           python3 tools/verify-group-membership-send.py

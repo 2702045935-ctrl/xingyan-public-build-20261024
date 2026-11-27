@@ -1244,6 +1244,7 @@ struct ChatDetailView: View {
     @StateObject private var composerBridge = ChatComposerBridge()
     @ObservedObject private var recentPhotos = RecentPhotoStore.shared
     @ObservedObject private var realtime = Realtime.shared
+    @State private var lastRealtimeEventTick = 0
     @ObservedObject private var recorder = VoiceRecorder.shared
 
     @State private var pressStart: Date?
@@ -2782,76 +2783,7 @@ struct ChatDetailView: View {
             if !off { Task { await flushOutbox() } }
         }
         .onChange(of: realtime.event) { _ in
-            let ev = realtime.event
-
-            if !isGroup, let user = ev.user, user.id == peerId {
-                peerBanned = user.banned == true
-                peerBanReason = user.banReason?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            }
-
-            if ev.type == "typing", ev.chatId == chat.id {
-                peerTyping = "对方"
-                typingClear?.cancel()
-                typingClear = Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 5_000_000_000)
-                    if !Task.isCancelled { peerTyping = "" }
-                }
-            }
-
-            if ev.type == "message", ev.chatId == chat.id {
-                typingClear?.cancel()
-                peerTyping = ""
-            }
-
-            if ev.type == "pat", ev.chatId == chat.id {
-                UIImpactFeedbackGenerator(style: ev.patTo == myId ? .medium : .light).impactOccurred()
-            }
-
-            if ev.type == "burn", ev.chatId == chat.id, !ev.burnIds.isEmpty {
-                burnAway(ev.burnIds)
-            }
-
-            if ev.type == "recall", ev.chatId == chat.id, !ev.messageId.isEmpty {
-                markMessageRecalledLocally(ev.messageId)
-                pushTask?.cancel()
-                pushTask = Task {
-                    try? await Task.sleep(nanoseconds: 180_000_000)
-                    if !Task.isCancelled { await load(initial: true) }
-                }
-            }
-
-            if ev.type == "sync", ev.action == "read", ev.chatId == chat.id {
-                unreadHere = 0
-            }
-
-            if (ev.type == "receipt" || ev.type == "read"),
-               ev.chatId == chat.id,
-               !ev.userId.isEmpty,
-               ev.userId != myId {
-                var row = receiptCursors[ev.userId]
-                    ?? ChatReceiptCursor(userId: ev.userId, deliveredSeq: 0, readSeq: 0)
-                row.deliveredSeq = max(row.deliveredSeq, max(ev.deliveredSeq, ev.seq))
-                row.readSeq = max(row.readSeq, ev.readSeq)
-                receiptCursors[ev.userId] = row
-                receiptDeliveredSeq = max(receiptDeliveredSeq, row.deliveredSeq)
-                receiptReadSeq = max(receiptReadSeq, row.readSeq)
-            }
-
-            if ev.type == "message", ev.chatId == chat.id, let message = ev.message {
-                upsertVisibleMessage(message)
-                if message.kindName == "pat" {
-                    animateStarWhisper(message.id)
-                }
-                if let seq = message.seq { Realtime.shared.ackDelivery(chatId: chat.id, seq: seq) }
-                markConversationReadSoon()
-            } else if (ev.type == "message" || ev.type == "chat"), ev.chatId == chat.id {
-                pushTask?.cancel()
-                pushTask = Task {
-                    try? await Task.sleep(nanoseconds: 250_000_000)
-                    if Task.isCancelled { return }
-                    await load(initial: false)
-                }
-            }
+            handleRealtimeEvent(realtime.event)
         }
 
         .onChange(of: messages) { _ in
@@ -2867,6 +2799,9 @@ struct ChatDetailView: View {
         }
         .onAppear {
             InteractionKernel.shared.complete(page: "chat", id: chat.id)
+            Realtime.shared.setChatDetailEventHandler(chatId: chat.id) { event in
+                handleRealtimeEvent(event)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .chrisStickersChanged)) { _ in
             Task { await loadMyStickers() }
@@ -2881,6 +2816,7 @@ struct ChatDetailView: View {
         }
 
         .onDisappear {
+            Realtime.shared.clearChatDetailEventHandler(chatId: chat.id)
             if dismissDragActive {
                 dismissDragActive = false
                 ScrollGate.shared.setScrolling(false)
@@ -3259,6 +3195,88 @@ struct ChatDetailView: View {
         guard Date().timeIntervalSince(lastOlderLoad) > 0.08 else { return }
         lastOlderLoad = Date()
         Task { await loadOlder() }
+    }
+
+    private func handleRealtimeEvent(_ ev: PushEvent) {
+        if ev.tick > 0 {
+            guard ev.tick > lastRealtimeEventTick else { return }
+            lastRealtimeEventTick = ev.tick
+        }
+
+        if !isGroup, let user = ev.user, user.id == peerId {
+            peerBanned = user.banned == true
+            peerBanReason = user.banReason?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        }
+
+        if ev.type == "typing", ev.chatId == chat.id {
+            peerTyping = "对方"
+            typingClear?.cancel()
+            typingClear = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                if !Task.isCancelled { peerTyping = "" }
+            }
+        }
+
+        if ev.type == "message", ev.chatId == chat.id {
+            typingClear?.cancel()
+            peerTyping = ""
+        }
+
+        if ev.type == "pat", ev.chatId == chat.id {
+            UIImpactFeedbackGenerator(
+                style: ev.patTo == myId ? .medium : .light
+            ).impactOccurred()
+        }
+
+        if ev.type == "burn", ev.chatId == chat.id, !ev.burnIds.isEmpty {
+            burnAway(ev.burnIds)
+        }
+
+        if ev.type == "recall", ev.chatId == chat.id, !ev.messageId.isEmpty {
+            markMessageRecalledLocally(ev.messageId)
+            pushTask?.cancel()
+            pushTask = Task {
+                try? await Task.sleep(nanoseconds: 180_000_000)
+                if !Task.isCancelled { await load(initial: true) }
+            }
+        }
+
+        if ev.type == "sync", ev.action == "read", ev.chatId == chat.id {
+            unreadHere = 0
+        }
+
+        if (ev.type == "receipt" || ev.type == "read"),
+           ev.chatId == chat.id,
+           !ev.userId.isEmpty,
+           ev.userId != myId {
+            var row = receiptCursors[ev.userId]
+                ?? ChatReceiptCursor(userId: ev.userId, deliveredSeq: 0, readSeq: 0)
+            row.deliveredSeq = max(row.deliveredSeq, max(ev.deliveredSeq, ev.seq))
+            row.readSeq = max(row.readSeq, ev.readSeq)
+            receiptCursors[ev.userId] = row
+            receiptDeliveredSeq = max(receiptDeliveredSeq, row.deliveredSeq)
+            receiptReadSeq = max(receiptReadSeq, row.readSeq)
+        }
+
+        if ev.type == "message", ev.chatId == chat.id, let message = ev.message {
+            upsertVisibleMessage(message)
+            if message.kindName == "pat" {
+                animateStarWhisper(message.id)
+            }
+            if let seq = message.seq {
+                Realtime.shared.ackDelivery(chatId: chat.id, seq: seq)
+            }
+            markConversationReadSoon()
+        } else if (ev.type == "message" || ev.type == "chat"),
+                  ev.chatId == chat.id {
+            pushTask?.cancel()
+            pushTask = Task {
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                if Task.isCancelled { return }
+                await load(initial: false)
+            }
+        }
     }
 
     private func pinToBottomSoon(force: Bool = false) {
