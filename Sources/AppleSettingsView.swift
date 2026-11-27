@@ -36,12 +36,13 @@ struct AppleSettingsView: View {
                 }
 
                 Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     showQR = true
                 } label: {
                     settingsRow(Tr("我的二维码"), symbol: "qrcode",
                                 color: .blue)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(MenuPressStyle())
             }
 
             Section(header: Text(Tr("账号与安全"))) {
@@ -96,6 +97,8 @@ struct AppleSettingsView: View {
                 Toggle(isOn: Binding(
                     get: { momentsOn },
                     set: { value in
+                        guard value != momentsOn else { return }
+                        UISelectionFeedbackGenerator().selectionChanged()
                         momentsOn = value
                         MomentsPref.set(value)
                         app.show(value ? Tr("朋友圈已开启")
@@ -229,9 +232,9 @@ struct AppleSettingsView: View {
         .navigationTitle(Tr("设置"))
         .navigationBarTitleDisplayMode(.large)
         .hidesTabBar()
-        .onAppear { momentsOn = MomentsPref.isOn }
+        .onAppear { syncMomentsState() }
         .onReceive(NotificationCenter.default.publisher(for: .chrisUIPrefsChanged)) { _ in
-            momentsOn = MomentsPref.isOn
+            syncMomentsState()
         }
         .sheet(isPresented: $showQR) {
             NavigationStack {
@@ -264,6 +267,16 @@ struct AppleSettingsView: View {
                     RoundedRectangle(cornerRadius: 7, style: .continuous)
                         .fill(color)
                 )
+        }
+    }
+
+    private func syncMomentsState() {
+        let next = MomentsPref.isOn
+        guard next != momentsOn else { return }
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            momentsOn = next
         }
     }
 }
