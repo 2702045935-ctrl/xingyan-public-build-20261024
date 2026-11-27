@@ -57,8 +57,6 @@ struct MeView: View {
             currentMeRows
         }
         .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
-        .background(C.pageBg.ignoresSafeArea())
         .navigationTitle(Tr("我的"))
         .navigationBarTitleDisplayMode(.large)
         .refreshable {
@@ -128,7 +126,6 @@ struct MeView: View {
                 }
                 .padding(.vertical, 6)
             }
-            .listRowBackground(C.chatRowBg)
         }
 
         ForEach(grouped.indices, id: \.self) { gi in
@@ -137,7 +134,6 @@ struct MeView: View {
                     NavigationLink(value: routeKey(for: item)) {
                         nativeMeItemRow(item)
                     }
-                    .listRowBackground(C.chatRowBg)
                 }
             } header: {
                 meSectionHeader(meSectionTitle(grouped[gi]))
@@ -151,13 +147,11 @@ struct MeView: View {
                                           symbol: "person.2.badge.gearshape.fill",
                                           colors: MeVisual.violet)
                 }
-                .listRowBackground(C.chatRowBg)
                 NavigationLink(value: "faces") {
                     nativeSettingsIconRow(Tr("人脸比对"),
                                           symbol: "face.smiling",
                                           colors: MeVisual.green)
                 }
-                .listRowBackground(C.chatRowBg)
             } header: {
                 meSectionHeader(Tr("管理"))
             }

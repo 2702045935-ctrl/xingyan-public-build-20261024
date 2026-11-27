@@ -9,7 +9,6 @@ CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
 NAV = (ROOT / "Sources" / "NavGlass.swift").read_text(encoding="utf-8")
 MAIN_TAB = (ROOT / "Sources" / "MainTab.swift").read_text(encoding="utf-8")
-ME = (ROOT / "Sources" / "MeView.swift").read_text(encoding="utf-8")
 CONTACTS = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
 
 
@@ -72,9 +71,6 @@ require(
 )
 require(
     ".background(C.pageBg.ignoresSafeArea())" in MAIN_TAB
-    and ".scrollContentBackground(.hidden)" in ME
-    and ".background(C.pageBg.ignoresSafeArea())" in ME
-    and ME.count(".listRowBackground(C.chatRowBg)") >= 4
     and "scheme == .dark ? C.chatRowBg : contactsCanvas" in CONTACTS
     and "scheme == .dark ? C.searchBg : contactsCanvas" in CONTACTS
     and "chatsIsDark\n            ? C.pageBg" in CHATS
