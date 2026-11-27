@@ -34,9 +34,10 @@ check(
     "the direct Cell endpoint must retain certificate pinning",
 )
 check(
-    "API.publicIngressPath + \"/api/upload/raw\"" in API
-    and "API.publicIngressPath + \"/api/upload\"" in API,
-    "image uploads must retain a public-ingress fallback when direct connectivity is unavailable",
+    "API.directUploadBases[0] + \"/api/upload/raw\"" in API
+    and "API.publicIngressPath + \"/api/upload/raw\"" not in API
+    and "API.publicIngressPath + \"/api/upload\"" not in API,
+    "uploads must use the fast direct origin restored from build 2611261910",
 )
 check(
     "let up = try? await API.shared.uploadImageForSend(" not in
