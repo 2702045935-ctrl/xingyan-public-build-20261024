@@ -39,7 +39,7 @@ require(
 require(
     "locallyHiddenLastMessage" in APP
     and "locallyHiddenLastMessageAt" in APP
-    and "hiddenChatHasNewerActivity(incoming)" in APP,
+    and "!hiddenChatHasNewerActivity(" in APP,
     "stale realtime snapshots must not revive a deleted or hidden conversation",
 )
 require(

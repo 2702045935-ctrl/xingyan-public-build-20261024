@@ -115,6 +115,11 @@
       "path": "Sources/RecommendationEngine.swift",
       "size": 4078,
       "sha256": "41e36e809143a11150cdbe7101d09f3e07f425c31de5db14614cf179514da38f"
+    },
+    {
+      "path": "Sources/ChatUnreadKernel.swift",
+      "size": 3063,
+      "sha256": "59f66a96f27e668309b78e5c449d6c3ae4fc3d1afddb4468f366ebe91b127005"
     }
   ]
 }

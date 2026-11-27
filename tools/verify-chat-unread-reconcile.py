@@ -22,7 +22,8 @@ require("let recent = mergeServerChats(d.recentChats)" in APP
         and "combined.append(row)" in APP,
         "foreground badge polling must reconcile partial recent snapshots without dropping chats")
 require(
-    "let serverRows = Dictionary(uniqueKeysWithValues: d.recentChats.map { ($0.id, $0) })" in APP
+    "let serverRows = Dictionary(" in APP
+    and "d.recentChats.map { ($0.id, $0) }" in APP
     and "out.unread = server.unread" in APP
     and "out.flagged = server.flagged" in APP
     and "optimisticChats[row.id] = nil" in APP,
@@ -50,8 +51,8 @@ require(
     "realtime chat changes must preserve the server total and apply only their own delta",
 )
 require(
-    "for c in chats where c.muted != true { n += c.unreadCount }" in APP,
-    "the fallback badge total must keep the same muted-session rule as the server",
+    "ChatUnreadKernel.iconValue(" in APP,
+    "the fallback badge total must keep the shared muted-session rule",
 )
 require(
     "type: 'read',\n      chatId: chat.id,\n      userId: user.id,\n      seq: lastSeq" in SERVER,

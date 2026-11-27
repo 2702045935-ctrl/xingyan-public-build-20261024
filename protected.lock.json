@@ -200,6 +200,11 @@
       "path": "Sources/ContactIndex.swift",
       "size": 5821,
       "sha256": "b0f350be2045d6205a56e27f4f0980899847909149efe7c77c7a2872b7f0c981"
+    },
+    {
+      "path": "Sources/Core.swift",
+      "size": 121085,
+      "sha256": "34a1809ccd865b5ca00228c1d5e5a2a7a7e7e03bb9b7dde04c69b30b81a614c8"
     }
   ]
 }

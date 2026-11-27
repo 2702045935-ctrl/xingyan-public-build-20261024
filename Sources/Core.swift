@@ -449,11 +449,11 @@ func colorDyn(_ raw: String?, light: UInt32, dark: UInt32) -> Color {
 
 enum C {
 
-    static var pageBg      : Color { UIConfig.fixedDark("pageBg", 0xFFFFFF, 0x0A0A0A) }
-    static var navBg       : Color { UIConfig.fixedDark("navBg", 0xFFFFFF, 0x0A0A0A) }
-    static var tabBg       : Color { UIConfig.fixedDark("tabBg", 0xFFFFFF, 0x0A0A0A) }
+    static var pageBg      : Color { UIConfig.fixedDark("pageBg", 0xFFFFFF, 0x000000) }
+    static var navBg       : Color { UIConfig.fixedDark("navBg", 0xFFFFFF, 0x000000) }
+    static var tabBg       : Color { UIConfig.fixedDark("tabBg", 0xFFFFFF, 0x000000) }
     static var cardBg      : Color { UIConfig.fixedDark("cardBg", 0xFFFFFF, 0x1C1C1E) }
-    static var chatRowBg   : Color { UIConfig.fixedDark("chatRowBg", 0xFFFFFF, 0x0A0A0A) }
+    static var chatRowBg   : Color { UIConfig.fixedDark("chatRowBg", 0xFFFFFF, 0x000000) }
     static var pinnedBg    : Color { UIConfig.fixedDark("pinnedBg", 0xF2F2F2, 0x1C1C1E) }
     static var searchBg    : Color { UIConfig.fixedDark("searchBg", 0xFFFFFF, 0x1C1C1E) }
 
@@ -482,14 +482,14 @@ enum C {
     static var orange      : Color { UIConfig.color("orangeColor", 0xB27C37, 0xE3B464) }
     static var tabInk      : Color { UIConfig.color("tabInkColor", 0x191919, 0xB5B5B5) }
 
-    static var chatsTopBg  : Color { UIConfig.fixedDark("chatsTopBg", 0xFFFFFF, 0x0A0A0A) }
+    static var chatsTopBg  : Color { UIConfig.fixedDark("chatsTopBg", 0xFFFFFF, 0x000000) }
 
-    static var chatsPageBg : Color { UIConfig.fixedDark("chatsPageBg", 0xFFFFFF, 0x0A0A0A) }
-    static var chatsRowBg  : Color { UIConfig.fixedDark("chatsRowBg", 0xFFFFFF, 0x0A0A0A) }
+    static var chatsPageBg : Color { UIConfig.fixedDark("chatsPageBg", 0xFFFFFF, 0x000000) }
+    static var chatsRowBg  : Color { UIConfig.fixedDark("chatsRowBg", 0xFFFFFF, 0x000000) }
 
-    static var contactsBg  : Color { UIConfig.fixedDark("contactsBg", 0xFFFFFF, 0x0A0A0A) }
+    static var contactsBg  : Color { UIConfig.fixedDark("contactsBg", 0xFFFFFF, 0x000000) }
 
-    static var discoverBg  : Color { UIConfig.fixedDark("discoverBg", 0xEDEDED, 0x0A0A0A) }
+    static var discoverBg  : Color { UIConfig.fixedDark("discoverBg", 0xEDEDED, 0x000000) }
 
     static var discoverCardBg: Color { UIConfig.fixedDark("discoverCardBg", 0xFFFFFF, 0x1C1C1E) }
 
@@ -890,22 +890,10 @@ final class ScrollGate {
 enum ImageCacheKey {
     static func stablePath(_ path: String) -> String {
         let value = path.trimmingCharacters(in: .whitespacesAndNewlines)
-        var normalized = value
-        if let url = URL(string: value),
-           let scheme = url.scheme?.lowercased(),
-           scheme == "http" || scheme == "https" {
-            let mediaPath = url.path
-            for marker in ["/uploads/", "/emoji/", "/hls/"] {
-                if let range = mediaPath.range(of: marker) {
-                    normalized = String(mediaPath[range.lowerBound...])
-                    break
-                }
-            }
+        guard let cut = value.firstIndex(where: { $0 == "?" || $0 == "#" }) else {
+            return value
         }
-        guard let cut = normalized.firstIndex(where: { $0 == "?" || $0 == "#" }) else {
-            return normalized
-        }
-        return String(normalized[..<cut])
+        return String(value[..<cut])
     }
 
     static func avatar(_ path: String) -> String {
@@ -916,62 +904,14 @@ enum ImageCacheKey {
 final class ImageStore {
     static let shared = ImageStore()
     private var cache: [String: UIImage] = [:]
-    /* Avatars are visible in nearly every list and must not compete with
-       full-size photos in the general image cache.  A small pinned store
-       prevents list reuse from flashing the person placeholder. */
-    private var avatarCache: [String: UIImage] = [:]
 
     private var bytes = 0
-    private var avatarBytes = 0
 
     private let memoryCap = 96 * 1024 * 1024
     private let lock = NSLock()
     func get(_ key: String) -> UIImage? {
         lock.lock(); defer { lock.unlock() }
-        return avatarCache[key] ?? cache[key]
-    }
-    func getWallpaper(_ path: String) -> UIImage? {
-        let stable = ImageCacheKey.stablePath(path)
-        lock.lock(); defer { lock.unlock() }
-        if let exact = cache[stable] ?? cache[path] {
-            return exact
-        }
-        let prefix = stable + "#"
-        var best: UIImage?
-        var bestArea: CGFloat = 0
-        for (key, image) in cache where key.hasPrefix(prefix) {
-            let area = image.size.width * image.size.height
-            if area > bestArea {
-                best = image
-                bestArea = area
-            }
-        }
-        return best
-    }
-
-    func getBestAvailable(_ path: String) -> UIImage? {
-        let stable = ImageCacheKey.stablePath(path)
-        lock.lock(); defer { lock.unlock() }
-        if let exact = cache[stable] ?? cache[path] ?? avatarCache[stable] {
-            return exact
-        }
-        let prefix = stable + "#"
-        var best: UIImage?
-        var bestArea: CGFloat = 0
-        func consider(_ image: UIImage) {
-            let area = image.size.width * image.size.height
-            if area > bestArea {
-                best = image
-                bestArea = area
-            }
-        }
-        for (key, image) in cache where key.hasPrefix(prefix) {
-            consider(image)
-        }
-        for (key, image) in avatarCache where key.hasPrefix(prefix) {
-            consider(image)
-        }
-        return best
+        return cache[key]
     }
     func put(_ key: String, _ img: UIImage) {
         lock.lock(); defer { lock.unlock() }
@@ -987,51 +927,13 @@ final class ImageStore {
     }
 
     func putAvatar(_ key: String, _ img: UIImage) {
-        guard !key.isEmpty else { return }
-        lock.lock(); defer { lock.unlock() }
-        if avatarCache[key] != nil { return }
-        avatarCache[key] = img
-        avatarBytes += Int(img.size.width * img.size.height * 4)
-        while avatarBytes > 48 * 1024 * 1024, avatarCache.count > 24 {
-            let first = avatarCache.keys.first!
-            if let old = avatarCache.removeValue(forKey: first) {
-                avatarBytes -= Int(old.size.width * old.size.height * 4)
-            }
-        }
-    }
-
-    /// Warm the first screen of avatars from the existing disk cache before
-    /// the contact list appears. This never performs network I/O and leaves
-    /// rows without a cached image on the normal RemoteImage loading path.
-    func prefetchAvatars(_ paths: [String],
-                         maxSide: CGFloat = 120,
-                         limit: Int = 64) {
-        guard limit > 0 else { return }
-        var seen = Set<String>()
-        let keys = paths.compactMap { path -> String? in
-            let stable = ImageCacheKey.stablePath(path)
-            guard !stable.isEmpty, seen.insert(stable).inserted else { return nil }
-            return stable
-        }.prefix(limit)
-        guard !keys.isEmpty else { return }
-
-        Task.detached(priority: .utility) { [keys = Array(keys)] in
-            for key in keys {
-                if ImageStore.shared.get(key) != nil { continue }
-                guard let data = ImageStore.shared.diskRead(key),
-                      let image = RemoteImage.downsampled(data, maxSide: maxSide)
-                else { continue }
-                ImageStore.shared.putAvatar(key, image)
-            }
-        }
+        put(key, img)
     }
 
     func clear() {
         lock.lock(); defer { lock.unlock() }
         cache.removeAll(keepingCapacity: false)
-        avatarCache.removeAll(keepingCapacity: false)
         bytes = 0
-        avatarBytes = 0
         if let d = diskDir {
             try? FileManager.default.removeItem(at: d)
             try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
@@ -1135,22 +1037,14 @@ func chatWallpaperDecodeSide() -> CGFloat {
     return min(3200, max(2400, ceil(native)))
 }
 
-func chatWallpaperPreviewSide() -> CGFloat {
-    let native = max(UIScreen.main.bounds.width, UIScreen.main.bounds.height)
-        * UIScreen.main.scale
-    return min(1600, max(960, ceil(native)))
-}
-
 struct RemoteImage: View {
     let path: String
-    var cacheKey: String? = nil
     var icon: String = "photo"
     var mode: ContentMode = .fill
 
     var template: Bool = false
 
     var maxSide: CGFloat = 1600
-    var placeholder: Color? = nil
 
     var onLoaded: ((UIImage) -> Void)? = nil
 
@@ -1158,26 +1052,20 @@ struct RemoteImage: View {
     @State private var loadedPath = ""
 
     init(path: String,
-         cacheKey: String? = nil,
          icon: String = "photo",
          mode: ContentMode = .fill,
          template: Bool = false,
          maxSide: CGFloat = 1600,
-         placeholder: Color? = nil,
          onLoaded: ((UIImage) -> Void)? = nil) {
         self.path = path
-        self.cacheKey = cacheKey
         self.icon = icon
         self.mode = mode
         self.template = template
         self.maxSide = maxSide
-        self.placeholder = placeholder
         self.onLoaded = onLoaded
-        let identity = Self.cacheIdentity(path: path, cacheKey: cacheKey)
-        let exact = Self.cachedImage(path: identity, maxSide: maxSide)
-        let fallback = exact ?? ImageStore.shared.getBestAvailable(identity)
-        _image = State(initialValue: fallback)
-        _loadedPath = State(initialValue: exact == nil ? "" : identity)
+        let cached = Self.cachedImage(path: path, maxSide: maxSide)
+        _image = State(initialValue: cached)
+        _loadedPath = State(initialValue: cached == nil ? "" : path)
     }
 
     var body: some View {
@@ -1190,34 +1078,25 @@ struct RemoteImage: View {
                         .aspectRatio(contentMode: mode)
                 } else {
                     ZStack {
-                        if let placeholder {
-                            placeholder
-                        } else {
-                            Color.dyn(0xE9E9E9, 0x2C2C2E)
-                            Image(systemName: icon)
-                                .font(pf(max(
-                                    10,
-                                    min(geo.size.width, geo.size.height) * 0.40
-                                )))
-                                .foregroundColor(
-                                    Color.dyn(0xC4C4C4, 0x636366)
-                                )
-                        }
+                        Color.dyn(0xE9E9E9, 0x2C2C2E)
+                        Image(systemName: icon)
+                            .font(pf(max(10, min(geo.size.width, geo.size.height) * 0.40)))
+                            .foregroundColor(Color.dyn(0xC4C4C4, 0x636366))
                     }
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
             .clipped()
         }
-        .task(id: Self.cacheIdentity(path: path, cacheKey: cacheKey)) {
-            let identity = Self.cacheIdentity(path: path, cacheKey: cacheKey)
-            if loadedPath == identity { return }
-            if let cached = Self.cachedImage(path: identity, maxSide: maxSide) {
+        .task(id: path) {
+            if loadedPath == path { return }
+            if let cached = Self.cachedImage(path: path, maxSide: maxSide) {
                 image = cached
-                loadedPath = identity
+                loadedPath = path
                 onLoaded?(cached)
                 return
             }
+            image = nil
             await load()
         }
     }
@@ -1229,59 +1108,40 @@ struct RemoteImage: View {
         return ImageStore.shared.get(key) ?? ImageStore.shared.get(path)
     }
 
-    private static func cacheIdentity(path: String, cacheKey: String?) -> String {
-        let key = cacheKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return ImageCacheKey.stablePath(key.isEmpty ? path : key)
-    }
-
     private func load() async {
         if path.isEmpty { return }
         let requestedPath = path
-        let requestedKey = Self.cacheIdentity(path: path, cacheKey: cacheKey)
         let side = max(64, maxSide)
-        let memoryKey = requestedKey + "#" + String(Int(side))
+        let memoryKey = requestedPath + "#" + String(Int(side))
 
         if let hit = ImageStore.shared.get(memoryKey) {
-            guard !Task.isCancelled,
-                  Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
+            guard !Task.isCancelled, path == requestedPath else { return }
             image = hit
-            if icon == "person.fill" {
-                ImageStore.shared.putAvatar(memoryKey, hit)
-            }
-            loadedPath = requestedKey
+            loadedPath = requestedPath
             onLoaded?(hit)
             return
         }
-        if let direct = ImageStore.shared.get(requestedKey) {
-            guard !Task.isCancelled,
-                  Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
+        if let direct = ImageStore.shared.get(requestedPath) {
+            guard !Task.isCancelled, path == requestedPath else { return }
             image = direct
-            if icon == "person.fill" {
-                ImageStore.shared.putAvatar(memoryKey, direct)
-            }
-            loadedPath = requestedKey
+            loadedPath = requestedPath
             onLoaded?(direct)
             return
         }
 
         let diskBytes: Data? = await Task.detached(priority: .userInitiated) { () -> Data? in
-            ImageStore.shared.diskRead(ImageCacheKey.stablePath(requestedKey))
+            ImageStore.shared.diskRead(requestedPath)
         }.value
-        guard !Task.isCancelled,
-              Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
+        guard !Task.isCancelled, path == requestedPath else { return }
         if let diskBytes = diskBytes {
             let diskImg: UIImage? = await Task.detached(priority: .userInitiated) { () -> UIImage? in
                 RemoteImage.downsampled(diskBytes, maxSide: side)
             }.value
-            guard !Task.isCancelled,
-                  Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
+            guard !Task.isCancelled, path == requestedPath else { return }
             if let diskImg = diskImg {
                 ImageStore.shared.put(memoryKey, diskImg)
-                if icon == "person.fill" {
-                    ImageStore.shared.putAvatar(memoryKey, diskImg)
-                }
                 image = diskImg
-                loadedPath = requestedKey
+                loadedPath = requestedPath
                 onLoaded?(diskImg)
                 return
             }
@@ -1303,8 +1163,7 @@ struct RemoteImage: View {
                 } catch {
                     guard attempt == 0 else { return }
                     try? await Task.sleep(nanoseconds: 350_000_000)
-                    guard !Task.isCancelled,
-                          Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
+                    guard !Task.isCancelled, path == requestedPath else { return }
                 }
             }
             guard let remote else { return }
@@ -1314,20 +1173,13 @@ struct RemoteImage: View {
         let img = await Task.detached(priority: .userInitiated) {
             RemoteImage.downsampled(data, maxSide: side)
         }.value
-        guard !Task.isCancelled,
-              Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey,
-              let img = img else { return }
+        guard !Task.isCancelled, path == requestedPath, let img = img else { return }
         ImageStore.shared.put(memoryKey, img)
-        if icon == "person.fill" {
-            ImageStore.shared.putAvatar(memoryKey, img)
-        }
         image = img
-        loadedPath = requestedKey
+        loadedPath = requestedPath
         onLoaded?(img)
 
-        Task.detached(priority: .background) {
-            ImageStore.shared.diskWrite(ImageCacheKey.stablePath(requestedKey), data)
-        }
+        Task.detached(priority: .background) { ImageStore.shared.diskWrite(requestedPath, data) }
 
         if requestedPath.hasPrefix("/uploads/") || requestedPath.hasPrefix("/emoji/") {
             Task.detached(priority: .background) { LocalStore.keep(requestedPath, data: data) }
@@ -1388,11 +1240,9 @@ struct Avatar: View {
                 .frame(width: size, height: size)
                 .clipShape(shape)
             } else {
-                RemoteImage(path: path,
-                            cacheKey: ImageCacheKey.stablePath(path),
-                            icon: "person.fill",
+                RemoteImage(path: path, icon: "person.fill",
                             maxSide: max(96, size * 3))
-                    .id(ImageCacheKey.stablePath(path))
+                    .id(path)
                     .frame(width: size, height: size)
                     .clipShape(shape)
             }
@@ -2233,32 +2083,6 @@ enum TimeFmt {
             : fSystemYearMonthDay.string(from: d)
     }
 
-    static func listConversation(_ s: String?) -> String {
-        guard let d = date(s) else { return "" }
-        let cal = Calendar.current
-        if cal.isDateInToday(d) {
-            let seconds = max(0, Date().timeIntervalSince(d))
-            if seconds < 60 { return Tr("刚刚") }
-            if seconds < 3_600 {
-                let minutes = max(1, Int(seconds / 60))
-                if Lang.isEnglish { return "\(minutes) min ago" }
-                if Lang.isRussian { return "\(minutes) мин назад" }
-                return "\(minutes)分钟前"
-            }
-            return fClock.string(from: d)
-        }
-        if cal.isDateInYesterday(d) {
-            return fSystemRelative.localizedString(for: d, relativeTo: Date())
-        }
-        let days = cal.dateComponents([.day],
-                                      from: cal.startOfDay(for: d),
-                                      to: cal.startOfDay(for: Date())).day ?? 99
-        if days < 7 { return fSystemWeekday.string(from: d) }
-        return cal.isDate(d, equalTo: Date(), toGranularity: .year)
-            ? fSystemMonthDay.string(from: d)
-            : fSystemYearMonthDay.string(from: d)
-    }
-
     static func list(_ s: String?) -> String {
         guard let d = date(s) else { return "" }
         let cal = Calendar.current
@@ -2301,15 +2125,6 @@ enum TimeFmt {
         return day + " " + clock
     }
 
-    static func messageClock(_ s: String?) -> String {
-        guard let d = date(s) else { return "" }
-        return fClock.string(from: d)
-    }
-
-    static func messageClock(_ date: Date) -> String {
-        fClock.string(from: date)
-    }
-
     static func minutesBetween(_ a: String?, _ b: String?) -> Int {
         guard let d1 = date(a), let d2 = date(b) else { return 9999 }
         return abs(Int(d2.timeIntervalSince(d1) / 60))
@@ -2344,6 +2159,34 @@ enum TimeFmt {
     static func billClock(_ s: String?) -> String {
         guard let d = date(s) else { return "" }
         return fClock.string(from: d)
+    }
+
+    static func listConversation(_ s: String?) -> String {
+        guard let d = date(s) else { return "" }
+        let cal = Calendar.current
+        if cal.isDateInToday(d) {
+            let seconds = max(0, Date().timeIntervalSince(d))
+            if seconds < 60 { return Tr("刚刚") }
+            if seconds < 3_600 {
+                let minutes = max(1, Int(seconds / 60))
+                if Lang.isEnglish { return "\(minutes) min ago" }
+                if Lang.isRussian { return "\(minutes) мин назад" }
+                return "\(minutes)分钟前"
+            }
+            return fClock.string(from: d)
+        }
+        if cal.isDateInYesterday(d) {
+            return fSystemRelative.localizedString(for: d, relativeTo: Date())
+        }
+        let days = cal.dateComponents(
+            [.day],
+            from: cal.startOfDay(for: d),
+            to: cal.startOfDay(for: Date())
+        ).day ?? 99
+        if days < 7 { return fSystemWeekday.string(from: d) }
+        return cal.isDate(d, equalTo: Date(), toGranularity: .year)
+            ? fSystemMonthDay.string(from: d)
+            : fSystemYearMonthDay.string(from: d)
     }
 
     static func ago(_ s: String?) -> String {
@@ -2869,8 +2712,6 @@ struct PhotoPager: View {
     var showActions: Bool = false
 
     var onLongPress: (() -> Void)? = nil
-    var onIndexChange: ((Int) -> Void)? = nil
-    var onChromeVisibilityChange: ((Bool) -> Void)? = nil
     var onClose: () -> Void
 
     @EnvironmentObject private var app: AppState
@@ -2912,9 +2753,9 @@ struct PhotoPager: View {
             .onTapGesture {
                 if showActions {
                     toggleChrome()
-        } else {
-            closePager()
-        }
+                } else {
+                    closePager()
+                }
             }
             .onLongPressGesture {
                 if let cb = onLongPress { cb(); return }
@@ -2951,10 +2792,7 @@ struct PhotoPager: View {
             index = min(max(0, startIndex), max(0, paths.count - 1))
             revealChrome()
         }
-        .onChange(of: index) { value in
-            revealChrome()
-            onIndexChange?(value)
-        }
+        .onChange(of: index) { _ in revealChrome() }
         .onDisappear { hideChromeTask?.cancel() }
         .statusBarHidden(showActions && !chromeVisible)
 
@@ -3046,7 +2884,6 @@ struct PhotoPager: View {
         withAnimation(.easeInOut(duration: 0.2)) {
             chromeVisible.toggle()
         }
-        onChromeVisibilityChange?(chromeVisible)
         if chromeVisible { scheduleChromeHide() }
     }
 
@@ -3055,7 +2892,6 @@ struct PhotoPager: View {
         withAnimation(.easeInOut(duration: 0.18)) {
             chromeVisible = true
         }
-        onChromeVisibilityChange?(true)
         scheduleChromeHide()
     }
 
@@ -3068,7 +2904,6 @@ struct PhotoPager: View {
             withAnimation(.easeInOut(duration: 0.24)) {
                 chromeVisible = false
             }
-            onChromeVisibilityChange?(false)
         }
     }
 
