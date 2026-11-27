@@ -149,26 +149,7 @@ struct NativeChatsTopEdgeChrome: View {
 
     var body: some View {
         let tint = background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground))
-        Group {
-            if reduceTransparency {
-                tint
-            } else {
-                ZStack {
-                    NativeGlassHeaderMaterial(forcedDark: isDark)
-                    LinearGradient(
-                        stops: [
-                            .init(color: tint.opacity(isDark ? 0.50 : 0.34),
-                                  location: 0),
-                            .init(color: tint.opacity(isDark ? 0.24 : 0.14),
-                                  location: 0.64),
-                            .init(color: .clear, location: 1)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                }
-            }
-        }
+        tint
         .ignoresSafeArea(edges: .top)
         .allowsHitTesting(false)
     }

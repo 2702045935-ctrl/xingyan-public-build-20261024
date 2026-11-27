@@ -90,11 +90,10 @@ require(
     "chat timestamps must use intrinsic width and translucent system glass",
 )
 require(
-    "NativeGlassHeaderMaterial(forcedDark: isDark)" in NAV_GLASS
-    and "tint.opacity(isDark ? 0.50 : 0.34)" in NAV_GLASS
-    and "NativeGlassHeaderMaterial()\n                    LinearGradient(" in NAV_GLASS
+    "let tint = background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground))" in NAV_GLASS
+    and "        tint\n        .ignoresSafeArea(edges: .top)" in NAV_GLASS
     and "value: scrolled > 0" not in NAV_GLASS,
-    "the chats top chrome must use same-colour native glass without a first-scroll flash",
+    "the chats top chrome must use one solid page-colour surface",
 )
 
 print("handfeel: passed")
