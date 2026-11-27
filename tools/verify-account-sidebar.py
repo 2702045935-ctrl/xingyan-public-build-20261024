@@ -19,6 +19,7 @@ def require(condition: bool, message: str) -> None:
 require(
     "static let maxWidth: CGFloat = 320" in SIDEBAR
     and "static let minimumTrailingReveal: CGFloat = 48" in SIDEBAR
+    and "static let contentPush: CGFloat = 44" in SIDEBAR
     and "proxy.size.width - AccountSidebarMetrics.minimumTrailingReveal" in SIDEBAR
     and "static let cornerRadius: CGFloat = 24" in SIDEBAR
     and "struct AccountSidebarShape: Shape" in SIDEBAR,
@@ -49,14 +50,20 @@ require(
     "the drawer must support scrim dismissal and a restrained swipe-close gesture",
 )
 require(
-    "struct AccountSidebarAvatarRail: View" in SIDEBAR
-    and "accounts: railAccounts" in SIDEBAR
+    "struct AccountSidebarConversationRail: View" in SIDEBAR
+    and "chats: railChats" in SIDEBAR
+    and "Array(app.chats.lazy.filter" in SIDEBAR
+    and "app.openChatViaList(chat)" in SIDEBAR
     and ".frame(width: AccountSidebarMetrics.minimumTrailingReveal)" in SIDEBAR
     and ".offset(x: isOpen ? 0 : AccountSidebarMetrics.minimumTrailingReveal)" in SIDEBAR
     and ".scaleEffect(isOpen ? 1 : 0.96, anchor: .trailing)" in SIDEBAR
     and "Rectangle().fill(.regularMaterial)" in SIDEBAR
-    and "ForEach(Array(accounts.enumerated()), id: \\.element.username)" in SIDEBAR,
-    "the exposed trailing edge must cover conversation metadata with an avatar rail",
+    and "ForEach(Array(chats.enumerated()), id: \\.element.id)" in SIDEBAR,
+    "the exposed trailing edge must show conversation avatars and open their chats",
+)
+require(
+    "showAccountSidebar ? AccountSidebarMetrics.contentPush : 0" in MAIN,
+    "opening the drawer must push the active page to the right",
 )
 require(
     "Color.black.opacity(0.42)" in SIDEBAR

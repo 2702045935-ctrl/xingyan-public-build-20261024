@@ -5,9 +5,10 @@ extension Notification.Name {
     static let chrisOpenAccountSidebar = Notification.Name("chris.openAccountSidebar")
 }
 
-private enum AccountSidebarMetrics {
+enum AccountSidebarMetrics {
     static let maxWidth: CGFloat = 320
     static let minimumTrailingReveal: CGFloat = 48
+    static let contentPush: CGFloat = 44
     static let horizontal: CGFloat = 16
     static let rowHeight: CGFloat = 52
     static let sectionTitleHeight: CGFloat = 28
@@ -56,22 +57,14 @@ struct AccountSidebarOverlay: View {
     let onOpenProfile: () -> Void
 
     @GestureState private var dragTranslation: CGFloat = 0
-    @State private var showRailAccounts = false
 
-    private var railAccounts: [SavedAccount] {
-        var rows: [SavedAccount] = []
-        if let me = app.me {
-            rows.append(SavedAccount(
-                username: me.username ?? me.id,
-                nickname: me.name,
-                avatar: me.avatarPath ?? me.avatar ?? ""
-            ))
-        }
-        var seen = Set(rows.map(\.username))
-        for account in app.accounts where seen.insert(account.username).inserted {
-            rows.append(account)
-        }
-        return rows
+    private var railChats: [Chat] {
+        Array(app.chats.lazy.filter { chat in
+            guard (chat.botRank ?? 9) < 9 else { return false }
+            return !(chat.title ?? "").isEmpty
+                || !(chat.avatar ?? "").isEmpty
+                || chat.lastMessage != nil
+        }.prefix(16))
     }
 
     var body: some View {
@@ -122,9 +115,9 @@ struct AccountSidebarOverlay: View {
                         }
                 )
 
-                AccountSidebarAvatarRail(
-                    accounts: railAccounts,
-                    onSelect: openRailAccounts
+                AccountSidebarConversationRail(
+                    chats: railChats,
+                    onSelect: openRailChat
                 )
                 .frame(width: AccountSidebarMetrics.minimumTrailingReveal)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -139,12 +132,6 @@ struct AccountSidebarOverlay: View {
         .allowsHitTesting(isOpen)
         .accessibilityHidden(!isOpen)
         .animation(.spring(response: 0.26, dampingFraction: 0.88), value: isOpen)
-        .sheet(isPresented: $showRailAccounts) {
-            NavigationStack {
-                SwitchAccountView()
-                    .environmentObject(app)
-            }
-        }
     }
 
     private func close() {
@@ -160,28 +147,31 @@ struct AccountSidebarOverlay: View {
         }
     }
 
-    private func openRailAccounts() {
+    private func openRailChat(_ chat: Chat) {
         UISelectionFeedbackGenerator().selectionChanged()
         close()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            showRailAccounts = true
+            app.openChatViaList(chat)
         }
     }
 }
 
-private struct AccountSidebarAvatarRail: View {
+private struct AccountSidebarConversationRail: View {
+    @EnvironmentObject private var app: AppState
     @Environment(\.colorScheme) private var scheme
 
-    let accounts: [SavedAccount]
-    let onSelect: () -> Void
+    let chats: [Chat]
+    let onSelect: (Chat) -> Void
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 8) {
-                ForEach(Array(accounts.enumerated()), id: \.element.username) { index, account in
-                    Button(action: onSelect) {
+                ForEach(Array(chats.enumerated()), id: \.element.id) { index, chat in
+                    Button {
+                        onSelect(chat)
+                    } label: {
                         Avatar(
-                            path: account.avatar,
+                            path: avatarPath(chat),
                             size: 34,
                             radius: 17,
                             circle: true
@@ -201,8 +191,8 @@ private struct AccountSidebarAvatarRail: View {
                         }
                         .contentShape(Circle())
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(account.nickname)
+                    .buttonStyle(MenuPressStyle())
+                    .accessibilityLabel(chat.name)
                 }
             }
             .padding(.vertical, 10)
@@ -231,7 +221,18 @@ private struct AccountSidebarAvatarRail: View {
                 .fill(Color.primary.opacity(scheme == .dark ? 0.10 : 0.06))
                 .frame(width: 0.5)
         }
-        .accessibilityHidden(accounts.isEmpty)
+        .accessibilityHidden(chats.isEmpty)
+    }
+
+    private func avatarPath(_ chat: Chat) -> String {
+        let own = (chat.avatar ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !own.isEmpty { return own }
+        guard (chat.type ?? "direct") == "direct" else { return "" }
+        let peerId = (chat.memberIds ?? []).first { $0 != app.me?.id }
+            ?? chat.lastMessage?.senderId
+            ?? ""
+        guard !peerId.isEmpty, peerId != app.me?.id else { return "" }
+        return app.contact(for: peerId)?.avatarPath ?? ""
     }
 }
 
