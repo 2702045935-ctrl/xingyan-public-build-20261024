@@ -24,7 +24,7 @@ private enum ChatListVisual {
         // 10,10,10, so the same perceived weight needs a darker separator.
         trait.userInterfaceStyle == .dark
             ? UIColor(hex: 0x232326)
-            : UIColor(hex: 0xE9EDEF)
+            : UIColor(hex: 0xE5E5E5)
     })
     static let badgeRing = Color.dyn(0xFFFFFF, 0x0A0A0A)
     static let chipInk = Color.dyn(0x62636A, 0xA8A9AF)
@@ -1288,15 +1288,15 @@ struct ChatsView: View {
         // surface. Search and cards keep their raised tone.
         chatsIsDark
             ? Color(hex: 0x0A0A0A)
-            : UIConfig.fixedLight("chatsPageBg", 0xFFFFFF)
+            : UIConfig.fixedLight("chatsPageBg", 0xF5F5F5)
     }
     private var chatsRule: Color {
-        chatsIsDark ? Color(hex: 0x232326) : Color(hex: 0xE9EDEF)
+        chatsIsDark ? Color(hex: 0x232326) : Color(hex: 0xE5E5E5)
     }
     private var chatsSearchFill: Color {
         chatsIsDark
             ? Color(hex: 0x111111)
-            : Color(hex: 0xF0F2F5)
+            : Color(hex: 0xEDEDED)
     }
     private var chatsSearchBorder: Color {
         chatsIsDark ? Color.white.opacity(0.045) : Color.clear
@@ -1304,7 +1304,11 @@ struct ChatsView: View {
     private var chatsSearchInk: Color {
         chatsIsDark ? Color(hex: 0x6E7378) : Color(hex: 0x8A8A8A)
     }
-    private var chatsCardFill: Color { chatsPageFill }
+    private var chatsCardFill: Color {
+        chatsIsDark
+            ? Color(hex: 0x0A0A0A)
+            : UIConfig.fixedLight("chatsRowBg", 0xFFFFFF)
+    }
 
     @State private var chatTopScrolled: CGFloat = 0
     @State private var filterHidden = false
@@ -2892,7 +2896,7 @@ struct ChatsView: View {
             rowBackground: rowBg,
             dividerColor: isDark
                 ? UIColor(hex: 0x232326)
-                : UIColor(hex: 0xE9EDEF),
+                : UIColor(hex: 0xE5E5E5),
             showsDivider: true,
             badgeRing: isDark ? UIColor(hex: 0x0A0A0A) : .white,
             chatId: chat.id,

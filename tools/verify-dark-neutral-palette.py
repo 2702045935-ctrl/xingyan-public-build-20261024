@@ -30,7 +30,7 @@ for key, light in (
     ("tabBg", "0xFFFFFF"),
     ("chatRowBg", "0xFFFFFF"),
     ("chatsTopBg", "0xFFFFFF"),
-    ("chatsPageBg", "0xFFFFFF"),
+    ("chatsPageBg", "0xF5F5F5"),
     ("chatsRowBg", "0xFFFFFF"),
     ("contactsBg", "0xFFFFFF"),
     ("discoverBg", "0xEDEDED"),

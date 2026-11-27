@@ -484,7 +484,7 @@ enum C {
 
     static var chatsTopBg  : Color { UIConfig.fixedDark("chatsTopBg", 0xFFFFFF, 0x0A0A0A) }
 
-    static var chatsPageBg : Color { UIConfig.fixedDark("chatsPageBg", 0xFFFFFF, 0x0A0A0A) }
+    static var chatsPageBg : Color { UIConfig.fixedDark("chatsPageBg", 0xF5F5F5, 0x0A0A0A) }
     static var chatsRowBg  : Color { UIConfig.fixedDark("chatsRowBg", 0xFFFFFF, 0x0A0A0A) }
 
     static var contactsBg  : Color { UIConfig.fixedDark("contactsBg", 0xFFFFFF, 0x0A0A0A) }
