@@ -37,9 +37,11 @@ require(
     'static let directUploadBases = [' in API
     and '"https://43.242.194.89:8443"' in DIRECT_UPLOAD_BASES
     and '"https://43.242.194.89:5443"' not in DIRECT_UPLOAD_BASES
-    and 'API.directUploadBases[0] + "/api/upload/raw"' in UPLOAD_BINARY
+    and '(base: API.directUploadBases[0], path: "/api/upload/raw")' in UPLOAD_BINARY
+    and '(base: publicBase, path: API.publicIngressPath + "/api/upload/raw")' in UPLOAD_BINARY
     and "req.timeoutInterval = 180" in UPLOAD_BINARY
-    and 'API.directUploadBases[0] + "/api/upload/raw"' in UPLOAD_BINARY_FILE
+    and '(base: API.directUploadBases[0], path: "/api/upload/raw")' in UPLOAD_BINARY_FILE
+    and '(base: publicBase, path: API.publicIngressPath + "/api/upload/raw")' in UPLOAD_BINARY_FILE
     and "req.timeoutInterval = 600" in UPLOAD_BINARY_FILE
     and "private func uploadRaw(" not in API
     and "RawUploadSource" not in API
@@ -70,12 +72,14 @@ require(
     and 'req.setValue("1", forHTTPHeaderField: "x-chris-compressed")' in API
     and 'if let url = try? await uploadRawJPEG(data' in API
     and "let b64 = data.base64EncodedString()" in API
+    and 'path: String = "/api/upload"' in UPLOAD_DATA
     and "base: String = API.directUploadBases[0]" in API
     and 'post("/api/upload"' not in UPLOAD_DATA
     and "payload = try await postDirectUpload(body)" in UPLOAD_DATA
-    and "base: publicBase" not in UPLOAD_DATA
+    and "base: publicBase" in UPLOAD_DATA
+    and 'path: API.publicIngressPath + "/api/upload"' in UPLOAD_DATA
     and 'post("/api/upload"' not in API,
-    "base64 uploads must stay on the fast direct origin",
+    "base64 uploads must keep the direct origin first and use public ingress only as fallback",
 )
 require(
     "private final class ImageUploadProgress" in CHAT
@@ -86,8 +90,10 @@ require(
     "multi-image uploads must use the 11/21 three-lane progress flow",
 )
 require(
-    "progress - last >= 0.02" in API,
-    "upload percentage must follow the 11/26 low-overhead byte callback cadence",
+    "progress - last >= 0.002" in API
+    and "didCompleteWithError error: Error?" in API
+    and "onProgress?(1)" in API,
+    "upload percentage must follow real URLSession byte callbacks and settle at completion",
 )
 require(
     "@State private var sendingPreview: UIImage?" in CHAT
