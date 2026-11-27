@@ -91,7 +91,7 @@ require(
     "navigation must expose adaptive motion, contrast and HUD access",
 )
 require(
-    'case "map": StarMapView()' in DISCOVER
+    'case "map": StarWorldExperienceView()' in DISCOVER
     and "'map'" in SERVER
     and "parts[0] === 'ui-manifest'" in SERVER,
     "the star map must be registered behind the signed feature manifest",

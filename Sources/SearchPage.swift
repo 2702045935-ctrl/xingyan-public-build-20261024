@@ -1957,7 +1957,7 @@ struct SearchPage: View {
         inputMethodChanging = true
         inputMethodChangeToken += 1
         let token = inputMethodChangeToken
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
             if token == inputMethodChangeToken { inputMethodChanging = false }
         }
     }

@@ -14,7 +14,9 @@ def require(condition: bool, message: str) -> None:
 require(
     "private func selectTab(_ next: Int)" in MAIN
     and "mountedTabs.insert(next)" in MAIN
-    and "guard tab != next else { return }\n        tab = next" in MAIN,
+    and "guard tab != next else { return }" in MAIN
+    and "withTransaction(transaction)" in MAIN
+    and "transaction.disablesAnimations = true" in MAIN,
     "the destination tab must be mounted before selection is published",
 )
 require(
@@ -26,8 +28,7 @@ require(
 require(
     MAIN.count("selectTab(") >= 5
     and "\n                tab = 0" not in MAIN
-    and "if v { tab = 0;" not in MAIN
-    and "\n            tab = next" not in MAIN,
+    and "if v { tab = 0;" not in MAIN,
     "programmatic tab changes must not bypass the atomic mount path",
 )
 

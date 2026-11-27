@@ -500,12 +500,12 @@ private var funcs: [(String, String, Color, String)] {
                 } else if key == "newGroup" {
                     GroupCreateView { chat in
                         app.prepareChatForImmediatePresentation(chat)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { path.append(chat) }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { path.append(chat) }
                     }
                 } else if key == "faceGroup" {
                     FaceGroupView { chat in
                         app.prepareChatForImmediatePresentation(chat)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { path.append(chat) }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { path.append(chat) }
                     }
                 } else if key == "myQR" {
                     MyQRView()

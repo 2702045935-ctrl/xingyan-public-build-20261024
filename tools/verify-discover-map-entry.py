@@ -17,8 +17,9 @@ check(
     "the server must allow the map action instead of normalizing it to soon",
 )
 check(
-    'case "map": StarMapView()' in DISCOVER,
-    "the map action must open the native StarMapView",
+    'case "map": StarWorldExperienceView()' in DISCOVER
+    and 'case "map": StarMapView()' not in DISCOVER,
+    "the map action must open the new world and retire the legacy map",
 )
 check(
     '"星轨地图": "map.fill"' in (

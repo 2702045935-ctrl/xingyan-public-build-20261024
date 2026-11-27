@@ -126,15 +126,16 @@ final class SwipeBackCenter: NSObject, UIGestureRecognizerDelegate {
             let far = p.offset > p.width * 0.32
             let fast = g.velocity(in: v).x > 950
             if far || fast {
-                withAnimation(.interactiveSpring(response: 0.28, dampingFraction: 0.90)) {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.65)
+                withAnimation(.interactiveSpring(response: 0.24, dampingFraction: 0.92)) {
                     p.offset = p.width
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
                     if p.offset > 0 { p.onBack() }
                     p.offset = 0
                 }
             } else {
-                withAnimation(.interactiveSpring(response: 0.28, dampingFraction: 0.90)) {
+                withAnimation(.interactiveSpring(response: 0.24, dampingFraction: 0.92)) {
                     p.offset = 0
                 }
             }

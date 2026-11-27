@@ -23,7 +23,11 @@ struct MainTabView: View {
         guard (0..<5).contains(next) else { return }
         mountedTabs.insert(next)
         guard tab != next else { return }
-        tab = next
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            tab = next
+        }
     }
 
     private var unreadTotal: Int {
@@ -1117,7 +1121,10 @@ struct NavBar<Right: View>: View {
 
             HStack(spacing: 0) {
                 if let back = back {
-                    Button(action: back) {
+                    Button {
+                        UISelectionFeedbackGenerator().selectionChanged()
+                        back()
+                    } label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundStyle(backColor ?? Color.accentColor)
@@ -1132,7 +1139,7 @@ struct NavBar<Right: View>: View {
                                 }
                             }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(SystemNavBackPressStyle())
                     .contentShape(Rectangle())
                     .accessibilityLabel(Tr("返回"))
                     .padding(.leading, useFloating ? 2 : 0)
@@ -1405,11 +1412,26 @@ struct MenuPressStyle: ButtonStyle {
             .contentShape(Rectangle())
             .overlay {
                 Color.primary
-                    .opacity(configuration.isPressed ? 0.055 : 0)
+                    .opacity(configuration.isPressed ? 0.045 : 0)
                     .allowsHitTesting(false)
             }
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
+            .scaleEffect(configuration.isPressed ? 0.992 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.08),
                        value: configuration.isPressed)
+    }
+}
+
+private struct SystemNavBackPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.92 : 1)
+            .opacity(configuration.isPressed ? 0.68 : 1)
+            .animation(
+                reduceMotion ? nil : .interactiveSpring(response: 0.20, dampingFraction: 0.86),
+                value: configuration.isPressed
+            )
     }
 }
 

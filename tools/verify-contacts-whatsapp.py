@@ -126,8 +126,9 @@ require(
     "contact type and row rhythm must stay fixed until accessibility text sizes",
 )
 require(
-    "opacity(configuration.isPressed ? 0.055 : 0)" in MENU
-    and ".easeOut(duration: 0.09)" in MENU
+    "opacity(configuration.isPressed ? 0.045 : 0)" in MENU
+    and ".easeOut(duration: 0.08)" in MENU
+    and ".scaleEffect(configuration.isPressed ? 0.992 : 1)" in MENU
     and "Color.gray.opacity(0.16)" not in MENU,
     "shared menu press feedback must be subtle and animated",
 )

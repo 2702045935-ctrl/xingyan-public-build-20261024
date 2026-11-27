@@ -1337,7 +1337,7 @@ struct DiscoverView: View {
     private func worldDestination(_ key: String) -> some View {
         switch key {
         case "moments": MomentsView()
-        case "map": StarMapView()
+        case "map": StarWorldExperienceView()
         case "nearby": NearbyPageView()
         case "shake", "bottle": BottlePageView()
         case "live": LiveListView()
@@ -1365,6 +1365,20 @@ struct DiscoverView: View {
             .fill(OrbitTheme.divider)
             .frame(height: 0.5)
             .padding(.leading, L.menuLineInset)
+    }
+}
+
+private struct SystemComposerPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.58 : 1)
+            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .animation(
+                reduceMotion ? nil : .easeOut(duration: 0.08),
+                value: configuration.isPressed
+            )
     }
 }
 
@@ -1890,7 +1904,7 @@ struct MomentsView: View {
         .sheet(isPresented: $showCoverPhoto) {
             PhotoPicker { image in coverDraft = image }
         }
-        .sheet(isPresented: $posting) { publishSheet }
+        .fullScreenCover(isPresented: $posting) { publishSheet }
 
         .confirmationDialog(Tr("这条动态"), isPresented: Binding(
             get: { actionMoment != nil },
@@ -2426,17 +2440,39 @@ struct MomentsView: View {
 
     private var publishSheet: some View {
         VStack(spacing: 0) {
-
-            NavBar(title: Tr("发表"), back: { closeComposer() }) {
-                Button { publish() } label: {
-                    Text(uploading ? Tr("发布中…") : Tr("发表"))
-                        .font(pf(17, .semibold))
-                        .foregroundColor(canPublish ? C.green : C.subLabel)
+            HStack(spacing: 0) {
+                Button {
+                    closeComposer()
+                } label: {
+                    Text(Tr("取消"))
+                        .font(pfStyled(size: 16.5, weight: .regular))
+                        .foregroundStyle(C.label)
                         .frame(height: L.navH)
-                        .padding(.trailing, 16)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SystemComposerPressStyle())
+
+                Spacer(minLength: 12)
+
+                Button { publish() } label: {
+                    Text(uploading ? Tr("发表中…") : Tr("发表"))
+                        .font(pfStyled(size: 16.5, weight: .semibold))
+                        .foregroundColor(canPublish
+                                         ? Color(hex: 0x07C160)
+                                         : C.subLabel.opacity(0.62))
+                        .frame(height: L.navH)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(SystemComposerPressStyle())
                 .disabled(!canPublish)
+            }
+            .padding(.horizontal, 16)
+            .frame(height: L.navH)
+            .background(composerSurface)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(composerRule)
+                    .frame(height: 0.5)
             }
 
             if !publishError.isEmpty {
@@ -2452,7 +2488,7 @@ struct MomentsView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 11)
-                .background(Color.dyn(0xFFF2F2, 0x2A1518))
+                .background(Color.dyn(0xFFF5F5, 0x241719))
                 .overlay(alignment: .bottom) {
                     Rectangle()
                         .fill(C.hairline)
@@ -2464,20 +2500,30 @@ struct MomentsView: View {
                 VStack(alignment: .leading, spacing: 0) {
 
                     if uploading {
-                        HStack(spacing: 10) {
+                        VStack(spacing: 6) {
                             ProgressView(value: publishProgress)
-                                .tint(C.green)
-                                .frame(width: 72)
-                            Text(publishStatus.isEmpty ? Tr("正在发表…") : publishStatus)
-                                .font(pf(12.5, .medium))
-                                .foregroundColor(C.subLabel)
-                                .lineLimit(1)
-                            Spacer(minLength: 0)
+                                .progressViewStyle(.linear)
+                                .tint(Color(hex: 0x07C160))
+                            HStack(spacing: 6) {
+                                Text(publishStatus.isEmpty ? Tr("正在发表…") : publishStatus)
+                                    .font(pf(12))
+                                    .foregroundColor(C.subLabel)
+                                    .lineLimit(1)
+                                Spacer(minLength: 0)
+                                Text("\(Int(min(1, max(0, publishProgress)) * 100))%")
+                                    .font(pf(12, .medium))
+                                    .foregroundColor(C.subLabel)
+                                    .monospacedDigit()
+                            }
                         }
                         .padding(.horizontal, 16)
-                        .frame(height: 38)
-                        .background(C.cardBg)
-                        .padding(.bottom, 8)
+                        .padding(.vertical, 9)
+                        .background(composerSurface)
+                        .overlay(alignment: .bottom) {
+                            Rectangle()
+                                .fill(composerRule)
+                                .frame(height: 0.5)
+                        }
                     }
 
                     ZStack(alignment: .topLeading) {
@@ -2495,7 +2541,7 @@ struct MomentsView: View {
                             .scrollContentBackground(.hidden)
                     }
                     .padding(.horizontal, 12)
-                    .background(C.cardBg)
+                    .background(composerSurface)
 
                     composerGrid
                         .padding(.horizontal, 16)
@@ -2518,17 +2564,17 @@ struct MomentsView: View {
                             showPick = true
                         }
                     }
-                    .background(C.cardBg)
+                    .background(composerSurface)
                     .padding(.top, 18)
                 }
                 .padding(.bottom, 30)
             }
+            .scrollDismissesKeyboard(.interactively)
         }
 
-        .background(C.pageBg.ignoresSafeArea(edges: .bottom))
-        .presentationDetents([.large])
-        .presentationDragIndicator(.hidden)
+        .background(composerSurface.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
+        .interactiveDismissDisabled(uploading)
         .swipeBack { posting = false }
         .hidesTabBar()
 
@@ -2573,6 +2619,14 @@ struct MomentsView: View {
     private var canPublish: Bool {
         !uploading && (!draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                        || !picked.isEmpty || pickedVideo != nil)
+    }
+
+    private var composerSurface: Color {
+        Color.dyn(0xFFFFFF, 0x111111)
+    }
+
+    private var composerRule: Color {
+        Color.dyn(0xE7E7E7, 0x2A2A2A)
     }
 
     private var composerGrid: some View {

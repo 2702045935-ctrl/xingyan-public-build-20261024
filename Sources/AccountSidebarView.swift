@@ -155,7 +155,7 @@ struct AccountSidebarOverlay: View {
     private func routeToProfile() {
         UISelectionFeedbackGenerator().selectionChanged()
         onClose()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
             onOpenProfile()
         }
     }
@@ -163,7 +163,7 @@ struct AccountSidebarOverlay: View {
     private func openRailAccounts() {
         UISelectionFeedbackGenerator().selectionChanged()
         close()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
             showRailAccounts = true
         }
     }
