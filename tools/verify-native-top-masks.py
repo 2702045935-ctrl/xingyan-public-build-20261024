@@ -32,9 +32,10 @@ require("NativeGlassControlMaterial" in NAV
         "controls must use the single native system glass source")
 require(
     "table.topEdgeEffect.style = .automatic" in NATIVE_LIST
-    and "table.topEdgeEffect.isHidden = false" in NATIVE_LIST
+    and "table.topEdgeEffect.isHidden = true" in NATIVE_LIST
+    and "scrollView.topEdgeEffect.isHidden = hidden" in NATIVE_LIST
     and "NativeChatListScrollRegistry.shared.chats = table" in NATIVE_LIST,
-    "chat list must expose the native scroll-edge effect",
+    "chat list must expose the native scroll-edge effect only after leaving rest",
 )
 require(
     "UIScrollEdgeElementContainerInteraction" in NAV

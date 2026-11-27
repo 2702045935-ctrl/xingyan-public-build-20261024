@@ -33,10 +33,10 @@ require(
 )
 require(
     "table.topEdgeEffect.style = .automatic" in NATIVE_LIST
-    and "table.topEdgeEffect.isHidden = false" in NATIVE_LIST
-    and "controller.tableView.topEdgeEffect.isHidden = false" in NATIVE_LIST
+    and "table.topEdgeEffect.isHidden = true" in NATIVE_LIST
+    and "scrollView.topEdgeEffect.isHidden = hidden" in NATIVE_LIST
     and "dark: chatsIsDark" in CHATS,
-    "the chat surface must expose the native system edge effect",
+    "the chat surface must expose the native edge effect only after scrolling",
 )
 require(
     "previewLabel.attributedText = nil" in ROW

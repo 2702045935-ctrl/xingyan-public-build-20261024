@@ -62,7 +62,8 @@ require(
 )
 require(
     "return outbox.isEmpty ? 4 : ChatFeedMetrics.runGap" in CHAT
-    and "animated: Date() >= followOwnSendUntil" in CHAT
+    and "animated: shouldAnimateAutomaticBottomScroll" in CHAT
+    and "Date() >= max(followOwnSendUntil, initialOpenQuietUntil)" in CHAT
     and "animated: Date() < followOwnSendUntil" not in CHAT,
     "outgoing confirmation must preserve the row gap and pin without animation",
 )

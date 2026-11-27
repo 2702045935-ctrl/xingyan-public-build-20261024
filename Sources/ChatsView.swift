@@ -3003,13 +3003,19 @@ struct ChatsView: View {
     }
 
     var body: some View {
-        let snapshot = cachedSnapshot
+        let snapshot = hasInitializedChatCache ? cachedSnapshot : chatSnapshot()
+        let entries = hasInitializedChatCache
+            ? cachedChatEntries
+            : nativeChatEntries(snapshot)
+        let entriesRevision = hasInitializedChatCache
+            ? cachedChatEntriesRevision
+            : 0
         return NavigationStack(path: $path) {
 
             ZStack(alignment: .top) {
                 NativeChatList(
-                    items: cachedChatEntries,
-                    revision: cachedChatEntriesRevision,
+                    items: entries,
+                    revision: entriesRevision,
                     dark: chatsIsDark,
                     height: { entry in
                         nativeChatHeight(entry)

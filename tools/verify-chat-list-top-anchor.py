@@ -31,6 +31,13 @@ require(
     "chat lists must reset scroll identity when the active account changes",
 )
 require(
+    "let snapshot = hasInitializedChatCache ? cachedSnapshot : chatSnapshot()" in CHATS
+    and "let entries = hasInitializedChatCache" in CHATS
+    and "nativeChatEntries(snapshot)" in CHATS
+    and "items: entries" in CHATS,
+    "the search anchor and rows must exist in the first rendered list frame",
+)
+require(
     "python3 tools/verify-chat-list-top-anchor.py" in WORKFLOW,
     "chat-list auto-bottom regression must run in the iOS gate",
 )

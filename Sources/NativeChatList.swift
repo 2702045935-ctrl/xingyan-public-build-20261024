@@ -105,7 +105,7 @@ where Item.ID: Hashable {
         table.sectionHeaderTopPadding = 0
         if #available(iOS 26.0, *) {
             table.topEdgeEffect.style = .automatic
-            table.topEdgeEffect.isHidden = false
+            table.topEdgeEffect.isHidden = true
             table.bottomEdgeEffect.isHidden = true
         }
         NativeChatListScrollRegistry.shared.chats = table
@@ -177,7 +177,8 @@ where Item.ID: Hashable {
         context.coordinator.allowInsertionDuringScroll = allowInsertionDuringScroll
         if #available(iOS 26.0, *) {
             controller.tableView.topEdgeEffect.style = .automatic
-            controller.tableView.topEdgeEffect.isHidden = false
+            controller.tableView.topEdgeEffect.isHidden =
+                controller.tableView.contentOffset.y <= 8
             controller.tableView.bottomEdgeEffect.isHidden = true
         }
     }
@@ -612,6 +613,12 @@ where Item.ID: Hashable {
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
             let y = scrollView.contentOffset.y
+            if #available(iOS 26.0, *) {
+                let hidden = y <= 8
+                if scrollView.topEdgeEffect.isHidden != hidden {
+                    scrollView.topEdgeEffect.isHidden = hidden
+                }
+            }
             let topState: CGFloat = y > 8 ? 1 : 0
             if topState != lastReportedTopState {
                 lastReportedTopState = topState
