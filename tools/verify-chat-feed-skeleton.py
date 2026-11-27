@@ -45,8 +45,10 @@ require(
     and ".padding(.vertical,\n                                 ChatFeedMetrics.textVerticalPadding)"
     in CHAT
     and "Avatar(path: app.me?.avatarPath ?? \"\"" in CHAT
-    and "WhatsAppMessageTicks(count: 1," in CHAT,
-    "pending messages must use the same row, avatar and status skeleton",
+    and "private func pendingGapAfter" in CHAT
+    and "private func pendingTextLineSpacing" in CHAT
+    and "WhatsAppMessageTicks(count: 1," not in CHAT,
+    "pending messages must use the same row, avatar and spacing skeleton without checkmarks",
 )
 require(
     "L.bubblePadHPill" not in CHAT

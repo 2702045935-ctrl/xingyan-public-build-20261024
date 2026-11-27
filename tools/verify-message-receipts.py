@@ -36,12 +36,15 @@ require(
     "deliveryState: deliveryState(for: message)" in CHAT
     and "case sent" in CHAT
     and "case delivered" in CHAT
-    and "case read" in CHAT,
-    "message ticks must render the real receipt state",
+    and "case read" in CHAT
+    and "WhatsAppMessageTicks" not in CHAT
+    and "tickCount" not in CHAT,
+    "receipt state must stay real without drawing visual checkmarks",
 )
 require(
-    "WhatsAppMessageTicks(count: 2, color: ChatTheme.readReceipt)" not in CHAT,
-    "message ticks must not be hard-coded as delivered",
+    "Image(systemName: \"checkmark\")\n                    .font(.system(size: 8.2"
+    not in CHAT,
+    "the old double-check artwork must be fully removed",
 )
 require(
     'var deliveredSeq = 0' in REALTIME

@@ -248,7 +248,7 @@ struct CallView: View {
 
     private var backdrop: some View {
         ZStack {
-            Color(red: 0.10, green: 0.11, blue: 0.10)
+            Color(hex: 0x0B100E)
 
             if !call.peerAvatar.isEmpty {
                 RemoteImage(path: call.peerAvatar)
@@ -259,7 +259,25 @@ struct CallView: View {
                     .blur(radius: blurRadius)
                     .scaleEffect(1.25)
             }
-            Color.black.opacity(tint)
+            LinearGradient(
+                colors: [
+                    Color(hex: 0x07100C).opacity(0.78),
+                    Color(hex: 0x101814).opacity(tint),
+                    Color.black.opacity(0.82)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            RadialGradient(
+                colors: [
+                    OrbitTheme.jade.opacity(0.16),
+                    OrbitTheme.jade.opacity(0.035),
+                    Color.clear
+                ],
+                center: UnitPoint(x: 0.5, y: 0.30),
+                startRadius: 4,
+                endRadius: 250
+            )
         }
         .ignoresSafeArea()
     }
@@ -267,17 +285,59 @@ struct CallView: View {
     private var avatarLayer: some View {
         VStack(spacing: 0) {
 
-            Spacer().frame(height: max(30, 132 - L.safeTop))
-            Avatar(path: call.peerAvatar, size: 70, radius: 10)
+            Spacer().frame(height: max(58, 154 - L.safeTop))
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [Color.white.opacity(0.16), Color.clear],
+                            center: .center,
+                            startRadius: 12,
+                            endRadius: 92
+                        )
+                    )
+                    .frame(width: 174, height: 174)
+                Circle()
+                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                    .frame(width: 132, height: 132)
+                Avatar(path: call.peerAvatar, size: 90, radius: 28)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.52),
+                                        Color.white.opacity(0.08),
+                                        Color.black.opacity(0.18)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    }
+                    .shadow(color: Color.black.opacity(0.42), radius: 20, y: 10)
+            }
             Text(call.peerName)
-                .font(pfExact(17, .medium))
+                .font(pfExact(22, .semibold))
                 .foregroundColor(.white)
-                .padding(.top, 12)
-            Text(statusText)
-                .font(pfExact(13.5))
-                .foregroundColor(.white.opacity(0.7))
-                .padding(.top, 5)
-                .opacity(call.phase == .outgoing ? 0 : 1)
+                .padding(.top, 10)
+            HStack(spacing: 6) {
+                if call.phase == .active {
+                    Circle()
+                        .fill(OrbitTheme.jade)
+                        .frame(width: 6, height: 6)
+                }
+                Text(statusText)
+                    .font(pfExact(13, .medium))
+                    .foregroundColor(.white.opacity(0.78))
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 30)
+            .background(Capsule().fill(Color.black.opacity(0.22)))
+            .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.6))
+            .padding(.top, 8)
+            .opacity(call.phase == .outgoing ? 0 : 1)
             if call.phase == .outgoing {
 
                 if let err = call.errorText, !err.isEmpty {
@@ -289,17 +349,19 @@ struct CallView: View {
                         .padding(.top, 6)
                 } else {
 
-                    MarqueeText(text: "正在等待对方接受邀请…")
+                    Text(Tr("正在等待对方接听…"))
+                        .font(pfExact(13.5, .medium))
+                        .foregroundColor(.white.opacity(0.64))
                         .padding(.top, 6)
                 }
             }
             if !hintText.isEmpty {
                 Text(hintText)
-                    .font(pfExact(15))
-                    .foregroundColor(.white.opacity(0.55))
+                    .font(pfExact(14))
+                    .foregroundColor(.white.opacity(0.58))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
-                    .padding(.top, 142)
+                    .padding(.top, 20)
             }
             Spacer(minLength: 0)
         }
@@ -579,8 +641,8 @@ struct CallView: View {
             } else {
                 if call.phase == .active {
 
-                    VStack(spacing: 14) {
-                        HStack(spacing: 51) {
+                    VStack(spacing: 17) {
+                        HStack(spacing: 46) {
                             micKey
                             hangupKey
                             speakerKey
@@ -588,10 +650,20 @@ struct CallView: View {
 
                         if !call.isGroupCall {
                             Button { call.switchVideo() } label: { switchLabel }
-                                .buttonStyle(.plain)
+                            .buttonStyle(.plain)
                         }
                     }
-                    .padding(.bottom, 54)
+                    .padding(.top, 18)
+                    .padding(.bottom, 46)
+                    .frame(maxWidth: .infinity)
+                    .background {
+                        LinearGradient(
+                            colors: [Color.clear, Color.black.opacity(0.26)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .ignoresSafeArea(edges: .bottom)
+                    }
                 } else {
 
                     HStack(spacing: 72) {
@@ -742,6 +814,8 @@ struct CallView: View {
                 CallIcon(key: "ui.callMinimize", symbol: "rectangle.inset.bottomright.filled",
                          builtin: I.callMinimize, size: 20)
                     .frame(width: 44, height: 44)
+                    .background(Circle().fill(Color.black.opacity(0.22)))
+                    .overlay(Circle().stroke(Color.white.opacity(0.10), lineWidth: 0.6))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -754,6 +828,8 @@ struct CallView: View {
             } label: {
                 CallIcon(key: "ui.callAdd", symbol: "plus", builtin: I.callAdd, size: 17)
                     .frame(width: 44, height: 44)
+                    .background(Circle().fill(Color.black.opacity(0.22)))
+                    .overlay(Circle().stroke(Color.white.opacity(0.10), lineWidth: 0.6))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

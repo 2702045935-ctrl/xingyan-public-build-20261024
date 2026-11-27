@@ -86,6 +86,16 @@ struct SendLocationView: View {
             .onChange(of: region.center.latitude) { _ in centerMoved() }
             .onChange(of: region.center.longitude) { _ in centerMoved() }
 
+            LinearGradient(
+                colors: [C.pageBg.opacity(0.54), .clear],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 180)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .ignoresSafeArea(edges: .top)
+            .allowsHitTesting(false)
+
             VStack(spacing: 9) {
                 topControls
                 searchBar
@@ -105,7 +115,12 @@ struct SendLocationView: View {
                             .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
-                    .background { NativeGlassCircleBackground() }
+                    .background {
+                        Circle()
+                            .fill(C.floatingSurface)
+                            .overlay(Circle().stroke(C.hairline, lineWidth: 0.6))
+                            .shadow(color: Color.black.opacity(0.14), radius: 8, y: 3)
+                    }
                     .accessibilityLabel(Tr("回到当前位置"))
                 }
                 .padding(.horizontal, 20)
@@ -137,7 +152,12 @@ struct SendLocationView: View {
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
-            .background { NativeGlassCircleBackground() }
+            .background {
+                Circle()
+                    .fill(C.floatingSurface)
+                    .overlay(Circle().stroke(C.hairline, lineWidth: 0.6))
+                    .shadow(color: Color.black.opacity(0.14), radius: 8, y: 3)
+            }
             .accessibilityLabel(Tr("返回"))
 
             Spacer(minLength: 0)
@@ -147,9 +167,8 @@ struct SendLocationView: View {
                 .foregroundColor(C.label)
                 .padding(.horizontal, 14)
                 .frame(height: 36)
-                .background {
-                    GlassBackground(shape: Capsule(style: .continuous), shadow: true)
-                }
+                .background(Capsule(style: .continuous).fill(C.controlSurface))
+                .overlay(Capsule(style: .continuous).stroke(C.hairline, lineWidth: 0.6))
 
             Spacer(minLength: 0)
 
@@ -163,11 +182,21 @@ struct SendLocationView: View {
             }
             .buttonStyle(.plain)
             .background {
-                GlassBackground(
-                    shape: Capsule(style: .continuous),
-                    shadow: true,
-                    tint: places.isEmpty ? nil : C.green.opacity(0.88)
-                )
+                Capsule(style: .continuous)
+                    .fill(
+                        places.isEmpty
+                            ? AnyShapeStyle(C.controlSurface)
+                            : AnyShapeStyle(LinearGradient(
+                                colors: [Color(hex: 0x45C892), C.green],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ))
+                    )
+                    .overlay(Capsule(style: .continuous)
+                        .stroke(Color.white.opacity(places.isEmpty ? 0 : 0.16),
+                                lineWidth: 0.7))
+                    .shadow(color: places.isEmpty ? .clear : C.green.opacity(0.20),
+                            radius: 8, y: 3)
             }
             .disabled(places.isEmpty)
             .accessibilityLabel(Tr("发送位置"))
@@ -204,9 +233,9 @@ struct SendLocationView: View {
         .foregroundColor(C.label)
         .padding(.horizontal, 12)
         .frame(height: 34)
-        .background {
-            GlassBackground(shape: Capsule(style: .continuous), shadow: true)
-        }
+        .background(Capsule(style: .continuous).fill(C.floatingSurface))
+        .overlay(Capsule(style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+        .shadow(color: Color.black.opacity(0.12), radius: 7, y: 3)
     }
 
     private var locationPanel: some View {
@@ -263,10 +292,20 @@ struct SendLocationView: View {
         }
         .frame(height: locationPanelHeight)
         .background {
-            GlassBackground(
-                shape: RoundedRectangle(cornerRadius: 26, style: .continuous),
-                shadow: true
-            )
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(C.cardBg)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.13), C.hairline],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 0.7
+                        )
+                }
+                .shadow(color: Color.black.opacity(0.18), radius: 20, y: 8)
         }
         .padding(.horizontal, 10)
         .padding(.bottom, 7)
@@ -304,9 +343,9 @@ struct SendLocationView: View {
         }
         .padding(.horizontal, 12)
         .frame(height: 42)
-        .background {
-            GlassBackground(shape: Capsule(style: .continuous), shadow: true)
-        }
+        .background(Capsule(style: .continuous).fill(C.floatingSurface))
+        .overlay(Capsule(style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+        .shadow(color: Color.black.opacity(0.12), radius: 8, y: 3)
         .padding(.horizontal, 14)
     }
 
@@ -525,75 +564,211 @@ struct LiveLocationView: View {
     private var peers: [LiveLocationStore.Peer] { store.peers }
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("共享实时位置"), back: { stopAndClose() })
-
+        ZStack {
             Map(coordinateRegion: $region, showsUserLocation: true,
                 annotationItems: peers) { p in
-                MapMarker(coordinate: CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng),
-                          tint: p.id == app.me?.id ? C.green : .red)
-            }
-            .frame(maxHeight: .infinity)
-
-            VStack(spacing: 8) {
-                HStack(spacing: 10) {
-                    Circle().fill(store.active ? C.green : C.subLabel).frame(width: 8, height: 8)
-                    Text(store.active ? Tr("正在共享实时位置") : Tr("共享已结束"))
-                        .font(pf(15)).foregroundColor(C.label)
-                    Spacer()
-                    Text("\(peers.count) " + Tr("个人在共享"))
-                        .font(pf(13)).foregroundColor(C.subLabel)
-                }
-                if !peers.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(peers) { p in
-                                HStack(spacing: 6) {
-                                    Avatar(path: p.avatar, size: 26, radius: 13, circle: true)
-                                    Text(p.name).font(pf(13)).foregroundColor(C.label)
-                                }
-                                .padding(.horizontal, 8)
-                                .frame(height: 34)
-                                .background { CardGlassBox(radius: 17) }
+                MapAnnotation(coordinate: CLLocationCoordinate2D(latitude: p.lat,
+                                                                 longitude: p.lng)) {
+                    VStack(spacing: 4) {
+                        Avatar(path: p.avatar, size: 38, radius: 19, circle: true)
+                            .overlay {
+                                Circle().stroke(
+                                    p.id == app.me?.id ? OrbitTheme.jade : Color.white,
+                                    lineWidth: 2
+                                )
                             }
-                        }
+                            .shadow(color: Color.black.opacity(0.24),
+                                    radius: 7, y: 3)
+                        Text(p.name.isEmpty ? Tr("成员") : p.name)
+                            .font(pf(10.5, .semibold))
+                            .foregroundColor(C.label)
+                            .lineLimit(1)
+                            .padding(.horizontal, 7)
+                            .frame(height: 21)
+                            .background(Capsule().fill(C.floatingSurface))
+                            .overlay(Capsule().stroke(C.hairline, lineWidth: 0.5))
                     }
                 }
-                if !hint.isEmpty {
-                    Button {
-                        if let url = URL(string: UIApplication.openSettingsURLString) {
-                            UIApplication.shared.open(url)
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "location.slash")
-                            Text(hint).font(pf(13))
-                            Text(Tr("去设置")).font(pf(13, .medium)).foregroundColor(C.link)
-                        }
-                        .foregroundColor(C.subLabel)
-                    }
-                    .buttonStyle(.plain)
-                }
-                Button { stopAndClose() } label: {
-                    Text(Tr("停止共享"))
-                        .font(pf(16, .medium))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(C.red))
-                }
-                .buttonStyle(.plain)
             }
-            .padding(14)
-            .background(C.pageBg)
+            .ignoresSafeArea()
+
+            LinearGradient(
+                stops: [
+                    .init(color: C.pageBg.opacity(0.70), location: 0),
+                    .init(color: .clear, location: 0.22),
+                    .init(color: .clear, location: 0.64),
+                    .init(color: C.pageBg.opacity(0.28), location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+
+            VStack(spacing: 0) {
+                floatingHeader
+                Spacer(minLength: 0)
+                floatingPanel
+            }
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
+        .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .hidesTabBar()
-
         .swipeBack { stopAndClose() }
         .task { await start() }
         .onDisappear { timer?.cancel() }
+    }
+
+    private var floatingHeader: some View {
+        HStack(spacing: 12) {
+            Button { stopAndClose() } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(C.label)
+                    .frame(width: 42, height: 42)
+                    .background(Circle().fill(C.floatingSurface))
+                    .overlay(Circle().stroke(C.hairline, lineWidth: 0.6))
+            }
+            .buttonStyle(.plain)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Tr("共享实时位置"))
+                    .font(pf(16, .semibold))
+                    .foregroundColor(C.label)
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(store.active ? OrbitTheme.jade : C.subLabel)
+                        .frame(width: 6, height: 6)
+                    Text(store.active ? Tr("实时更新中") : Tr("共享已结束"))
+                        .font(pf(11.5, .medium))
+                        .foregroundColor(C.subLabel)
+                }
+            }
+            Spacer(minLength: 0)
+            Button(action: recenter) {
+                Image(systemName: "location.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(OrbitTheme.jade)
+                    .frame(width: 42, height: 42)
+                    .background(Circle().fill(C.floatingSurface))
+                    .overlay(Circle().stroke(C.hairline, lineWidth: 0.6))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("回到我的位置"))
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 8)
+    }
+
+    private var floatingPanel: some View {
+        VStack(spacing: 13) {
+            Capsule()
+                .fill(C.subLabel.opacity(0.26))
+                .frame(width: 34, height: 4)
+
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(OrbitTheme.jadeSoft)
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(OrbitTheme.jade)
+                }
+                .frame(width: 34, height: 34)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Tr("一起看位置"))
+                        .font(pf(15, .semibold))
+                        .foregroundColor(C.label)
+                    Text("\(peers.count) " + Tr("个人正在共享"))
+                        .font(pf(11.5))
+                        .foregroundColor(C.subLabel)
+                }
+                Spacer(minLength: 0)
+                Text(store.active ? Tr("进行中") : Tr("已结束"))
+                    .font(pf(11.5, .semibold))
+                    .foregroundColor(store.active ? OrbitTheme.jade : C.subLabel)
+                    .padding(.horizontal, 9)
+                    .frame(height: 25)
+                    .background(Capsule().fill(
+                        store.active ? OrbitTheme.jadeSoft : C.controlSurface
+                    ))
+            }
+
+            if !peers.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 9) {
+                        ForEach(peers) { p in
+                            HStack(spacing: 7) {
+                                Avatar(path: p.avatar, size: 28, radius: 14, circle: true)
+                                Text(p.name.isEmpty ? Tr("成员") : p.name)
+                                    .font(pf(12.5, .medium))
+                                    .foregroundColor(C.label)
+                                    .lineLimit(1)
+                            }
+                            .padding(.leading, 4)
+                            .padding(.trailing, 10)
+                            .frame(height: 38)
+                            .background(Capsule().fill(C.controlSurface))
+                            .overlay(Capsule().stroke(C.hairline, lineWidth: 0.5))
+                        }
+                    }
+                }
+            }
+
+            if !hint.isEmpty {
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "location.slash")
+                        Text(hint).font(pf(12.5))
+                        Text(Tr("去设置")).font(pf(12.5, .semibold)).foregroundColor(C.link)
+                        Spacer(minLength: 0)
+                    }
+                    .foregroundColor(C.subLabel)
+                    .padding(.horizontal, 11)
+                    .frame(height: 36)
+                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(C.controlSurface))
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button { stopAndClose() } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(Tr("停止共享"))
+                        .font(pf(15.5, .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 46)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color(hex: 0xE34F4A))
+                )
+                .shadow(color: Color(hex: 0xE34F4A).opacity(0.22),
+                        radius: 8, y: 3)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 15)
+        .padding(.top, 9)
+        .padding(.bottom, max(14, L.safeBottom + 8))
+        .background(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(C.cardBg)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .stroke(C.hairline, lineWidth: 0.7)
+                }
+                .shadow(color: Color.black.opacity(0.20), radius: 22, y: 9)
+        )
+        .padding(.horizontal, 10)
+        .padding(.bottom, 7)
     }
 
     private func start() async {
@@ -642,6 +817,14 @@ struct LiveLocationView: View {
         store.upsert(userId: app.me?.id ?? "", name: app.me?.name ?? "",
                      avatar: app.me?.avatarPath ?? "",
                      lat: loc.coordinate.latitude, lng: loc.coordinate.longitude)
+    }
+
+    private func recenter() {
+        guard let mine = peers.first(where: { $0.id == app.me?.id }) else { return }
+        withAnimation(.easeOut(duration: 0.24)) {
+            region.center = CLLocationCoordinate2D(latitude: mine.lat, longitude: mine.lng)
+            region.span = MKCoordinateSpan(latitudeDelta: 0.008, longitudeDelta: 0.008)
+        }
     }
 
     private func stopAndClose() {

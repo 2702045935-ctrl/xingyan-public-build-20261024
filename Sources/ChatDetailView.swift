@@ -3412,13 +3412,6 @@ struct ChatDetailView: View {
                         .opacity(p.failed ? 0.9 : 1)
                 }
 
-                if !p.failed {
-                    WhatsAppMessageTicks(count: 1,
-                                         color: Color.white.opacity(0.72))
-                        .padding(.top, ChatFeedMetrics.statusGap)
-                        .padding(.trailing, 3)
-                }
-
                 if p.failed, let reason = p.failureReason, !reason.isEmpty {
                     deliveryFailureCard(DeliveryFailureCopy.make(reason: reason))
                 }
@@ -7047,26 +7040,107 @@ struct CallRecordBubble: View {
     let message: Message
     let mine: Bool
 
-    var body: some View {
-        HStack(spacing: 6) {
-            Text(message.callText)
-                .font(pf(L.chatFontSize))
-                .foregroundColor(ink)
-            callIcon
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .background(BubbleFill(mine: mine))
-        .frame(maxWidth: L.bubbleMaxW, alignment: mine ? .trailing : .leading)
-        .accessibilityElement(children: .combine)
+    private var accent: Color {
+        message.isBadCallRecord ? Color(hex: 0xE36A63) : OrbitTheme.jade
     }
 
-    private var callIcon: some View {
-        CallIcon(key: callIconKey,
-                 symbol: message.isVideoCall ? "video.fill" : "phone.fill",
-                 builtin: callIconMarkup,
-                 size: 15,
-                 color: ink)
+    var body: some View {
+        HStack(spacing: 11) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: mine
+                                ? [Color.white.opacity(0.22), Color.white.opacity(0.10)]
+                                : [accent.opacity(0.18), accent.opacity(0.08)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                CallIcon(key: callIconKey,
+                         symbol: message.isVideoCall ? "video.fill" : "phone.fill",
+                         builtin: callIconMarkup,
+                         size: 18,
+                         color: mine ? .white : accent)
+            }
+            .frame(width: 38, height: 38)
+            .overlay {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .stroke(mine ? Color.white.opacity(0.18) : accent.opacity(0.16),
+                            lineWidth: 0.7)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(message.isVideoCall ? Tr("视频通话") : Tr("语音通话"))
+                    .font(pf(14.5, .semibold))
+                    .foregroundColor(primaryInk)
+                Text(detailText)
+                    .font(pf(12.5, .medium))
+                    .foregroundColor(message.isBadCallRecord
+                                     ? (mine ? Color.white.opacity(0.82) : accent)
+                                     : secondaryInk)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 10)
+
+            Image(systemName: "phone.arrow.up.right.fill")
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundColor(secondaryInk)
+                .frame(width: 28, height: 28)
+                .background(
+                    Circle().fill(mine ? Color.white.opacity(0.12) : C.controlSurface)
+                )
+        }
+        .padding(.leading, 10)
+        .padding(.trailing, 11)
+        .padding(.vertical, 10)
+        .background {
+            BubbleFill(mine: mine, tail: true)
+                .overlay {
+                    BubbleShape(mine: mine, tail: true)
+                        .stroke(
+                            mine ? Color.white.opacity(0.12) : Color.black.opacity(0.05),
+                            lineWidth: 0.6
+                        )
+                }
+        }
+        .frame(minWidth: 208, maxWidth: min(L.bubbleMaxW, 274),
+               alignment: mine ? .trailing : .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(Tr("点按回拨"))
+    }
+
+    private var detailText: String {
+        let raw = message.callText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else {
+            return message.isBadCallRecord ? Tr("未接通") : Tr("通话已结束")
+        }
+        if raw.contains("通话时长") {
+            let duration = raw.replacingOccurrences(of: "通话时长", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return duration.isEmpty ? Tr("通话已结束") : Tr("通话时长 ") + duration
+        }
+        if raw.contains("已取消") || raw.localizedCaseInsensitiveContains("cancel") {
+            return mine ? Tr("你已取消") : Tr("对方已取消")
+        }
+        if raw.contains("已拒绝") || raw.localizedCaseInsensitiveContains("reject") {
+            return mine ? Tr("已拒绝") : Tr("对方已拒绝")
+        }
+        if raw.contains("未接听") || raw.contains("无人接听")
+            || raw.localizedCaseInsensitiveContains("missed") {
+            return mine ? Tr("未接通") : Tr("未接听")
+        }
+        if raw.contains("忙线") || raw.localizedCaseInsensitiveContains("busy") {
+            return Tr("对方忙线")
+        }
+        if raw.contains("不在线") || raw.localizedCaseInsensitiveContains("offline") {
+            return Tr("对方不在线")
+        }
+        if raw.contains("无应答") || raw.localizedCaseInsensitiveContains("timeout") {
+            return Tr("无人接听")
+        }
+        return raw
     }
 
     private var callIconKey: String {
@@ -7083,8 +7157,15 @@ struct CallRecordBubble: View {
         return message.isVideoCall ? I.callRecordVideo : I.callRecord
     }
 
-    private var ink: Color {
-        message.isBadCallRecord ? ChatTheme.mentionMe : ChatTheme.ink
+    private var primaryInk: Color {
+        mine ? Color.white.opacity(0.98) : ChatTheme.ink
+    }
+
+    private var secondaryInk: Color {
+        if mine { return Color.white.opacity(0.68) }
+        return message.isBadCallRecord
+            ? Color(hex: 0xC75A54)
+            : ChatTheme.secondary
     }
 }
 
@@ -7193,35 +7274,10 @@ struct QuoteInspectSheet: View {
     }
 }
 
-private struct WhatsAppMessageTicks: View {
-    let count: Int
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: -4.4) {
-            ForEach(0..<max(1, min(2, count)), id: \.self) { index in
-                Image(systemName: "checkmark")
-                    .font(.system(size: 8.2, weight: .bold))
-                    .foregroundStyle(color)
-            }
-        }
-        .frame(height: 10)
-        .accessibilityHidden(true)
-    }
-}
-
 enum MessageDeliveryState: Equatable {
     case sent
     case delivered
     case read
-
-    var tickCount: Int { self == .sent ? 1 : 2 }
-
-    var color: Color {
-        self == .read
-            ? ChatTheme.readReceipt
-            : Color.dyn(0xA5A9AE, 0xB7BBC0)
-    }
 
     var accessibilityText: String {
         switch self {
@@ -7396,22 +7452,6 @@ struct MessageRow: View {
                 .padding(.leading, 3)
             }
             content
-
-            if mine,
-               !message.isRecalled,
-               !message.isCallRecord,
-               message.kindName != "system",
-               message.kindName != "pat" {
-                HStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    WhatsAppMessageTicks(count: deliveryState.tickCount,
-                                         color: deliveryState.color)
-                }
-                .padding(.top, ChatFeedMetrics.statusGap)
-                .padding(.trailing, 3)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(deliveryState.accessibilityText)
-            }
 
             if asrBusy || !asrText.isEmpty {
                 asrLine
