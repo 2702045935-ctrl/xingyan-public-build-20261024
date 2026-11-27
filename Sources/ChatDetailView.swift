@@ -3083,12 +3083,16 @@ struct ChatDetailView: View {
         return items
     }
 
+    private var olderPrefetchWaitingVisible: Bool {
+        loadingOlder && olderPrefetch.isEmpty
+    }
+
     private func nativeGroupSignature(_ item: NativeGroupItem) -> String {
         switch item.kind {
         case .securityNotice:
             return "security-notice"
         case .older:
-            return "older:\(hasOlder)"
+            return "older:\(hasOlder):\(olderPrefetchWaitingVisible)"
         case .message(let message):
             return [
                 "message",
@@ -3132,8 +3136,11 @@ struct ChatDetailView: View {
             securityNotice
 
         case .older:
-            Color.clear
-                .frame(height: 1)
+            PrefetchWaitingIndicator(
+                waiting: olderPrefetchWaitingVisible,
+                label: Tr("正在加载更早消息…")
+            )
+                .frame(height: 44)
                 .onAppear { autoLoadOlder() }
 
         case .message(let message):

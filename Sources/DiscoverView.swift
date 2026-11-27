@@ -2300,11 +2300,11 @@ struct MomentsView: View {
             }
 
             if hasMoreMoments {
-                Text(loadingMore ? "正在加载…" : " ")
-                    .font(pf(14))
-                    .foregroundColor(C.subLabel)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
+                PrefetchWaitingIndicator(
+                    waiting: loadingMore,
+                    label: Tr("正在加载…")
+                )
+                    .frame(height: 49)
                     .onAppear {
                         Task { await loadMoreMoments() }
                     }

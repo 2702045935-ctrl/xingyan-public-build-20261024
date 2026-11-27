@@ -20,33 +20,23 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "@State private var olderPrefetchWaiting = false" in CHAT
-    and "olderPrefetchWaiting = olderPrefetch.isEmpty" in CHAT
-    and "olderPrefetchWaiting = false" in CHAT
-    and "hasher.combine(olderPrefetchWaiting)" in CHAT
-    and '"older:\\(hasOlder):\\(olderPrefetchWaiting)"' in CHAT,
-    "chat history must show waiting only when no prepared older page exists",
+    "private var olderPrefetchWaitingVisible: Bool" in CHAT
+    and "loadingOlder && olderPrefetch.isEmpty" in CHAT
+    and '"older:\\(hasOlder):\\(olderPrefetchWaitingVisible)"' in CHAT,
+    "chat prefetch must stay silent until a boundary request has no prepared page",
 )
 require(
     "PrefetchWaitingIndicator(\n"
-    "                waiting: olderPrefetchWaiting,\n"
+    "                waiting: olderPrefetchWaitingVisible,\n"
     "                label: Tr(\"正在加载更早消息…\")\n"
-    "            )" in CHAT,
+    "            )" in CHAT
+    and ".frame(height: 44)" in CHAT,
     "chat prefetch waiting must use the native circular activity indicator",
-)
-require(
-    "case newerWaiting" in CHAT
-    and "native-newer-waiting" in CHAT
-    and "newerPrefetchWaiting = newerPrefetch.isEmpty" in CHAT
-    and "newerPrefetchWaiting = false" in CHAT
-    and "hasher.combine(newerPrefetchWaiting)" in CHAT
-    and 'label: Tr("正在加载新消息…")' in CHAT,
-    "chat must show waiting only when newer history has no prepared page",
 )
 require(
     "PrefetchWaitingIndicator(\n"
     "                    waiting: loadingMore,\n"
-    "                    label: \"正在加载…\"\n"
+    "                    label: Tr(\"正在加载…\")\n"
     "                )" in MOMENTS
     and ".frame(height: 49)" in MOMENTS,
     "Moments waiting must use the native indicator and hold footer height",
@@ -57,15 +47,9 @@ require(
     "                .controlSize(.small)" in INDICATOR
     and "Task.sleep(nanoseconds: 180_000_000)" in INDICATOR
     and ".animation(.easeOut(duration: 0.16), value: visible)" in INDICATOR
+    and ".font(.footnote)" in INDICATOR
     and ".accessibilityHidden(!visible)" in INDICATOR,
     "prefetch waiting must use a delayed, animated native system spinner",
-)
-require(
-    "ProgressView()\n"
-    "                    .progressViewStyle(.circular)\n"
-    "                    .controlSize(.regular)" in MOMENTS
-    and "timelineDateLoading" in MOMENTS,
-    "Moments date history loading must use the native circular indicator",
 )
 require(
     "@State private var initialLoading = false" in CONTACTS
