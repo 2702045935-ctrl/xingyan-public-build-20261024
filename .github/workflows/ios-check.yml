@@ -8,7 +8,7 @@ on:
 
 jobs:
   typecheck:
-    runs-on: macos-15-intel
+    runs-on: macos-15
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -34,16 +34,6 @@ jobs:
         run: |
           set -o pipefail
           SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
-          mkdir -p /tmp/XingyanMallCore
-          xcrun --sdk iphoneos swiftc \
-            -sdk "$SDK" \
-            -target arm64-apple-ios16.0 \
-            -swift-version 5 \
-            -parse-as-library \
-            -emit-module \
-            -module-name XingyanMallCore \
-            -emit-module-path /tmp/XingyanMallCore/XingyanMallCore.swiftmodule \
-            Modules/MallModule/MallModule.swift
           xcrun --sdk iphoneos swiftc \
             -sdk "$SDK" \
             -target arm64-apple-ios16.0 \
@@ -52,7 +42,6 @@ jobs:
             -typecheck \
             -F "$SDK/System/Library/Frameworks" \
             -F WebRTCKit/WebRTC.xcframework/ios-arm64 \
-            -I /tmp/XingyanMallCore \
             Sources/*.swift 2>&1 | tee /tmp/ios-typecheck.log
           ! grep -q "error:" /tmp/ios-typecheck.log
 

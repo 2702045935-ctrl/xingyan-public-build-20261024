@@ -73,7 +73,6 @@ struct User: Codable, Identifiable, Hashable {
     var momentsRange: String?
 
     var requestMessage: String?
-    var createdAt: String?
 
     var remark: String?
 
@@ -289,8 +288,6 @@ struct MessageEventEnvelope: Decodable, Hashable {
         var chatId: String?
         var messageId: String?
         var userId: String?
-        var ownerId: String?
-        var targetId: String?
         var clearedSeq: Int?
         var readSeq: Int?
         var recalled: Bool?
@@ -355,7 +352,6 @@ struct Message: Codable, Identifiable, Hashable {
     var call: CallMeta?
 
     var mentions: [String]?
-    var mentionAll: Bool? = nil
 
     var imgW: Int?
     var imgH: Int?
@@ -386,9 +382,8 @@ struct Message: Codable, Identifiable, Hashable {
     }
 
     func mentionsUser(_ userId: String) -> Bool {
-        guard !userId.isEmpty else { return false }
-        if mentionAll == true { return true }
-        return mentions?.contains(userId) == true
+        guard !userId.isEmpty, let ids = mentions else { return false }
+        return ids.contains(userId)
     }
 
     private var patInfo: [String: Any]? {
@@ -695,9 +690,6 @@ private struct ChatMembersPayload: Decodable {
     var ownerId: String?
     var createdAt: String?
     var avatar: String?
-    var memberCount: Int?
-    var nextCursor: Int?
-    var hasMore: Bool?
 }
 private struct PinPayload: Decodable { var pinned: Bool?; var forced: Bool? }
 private struct ChatInfoPayload: Decodable { var name: String?; var announce: String? }
@@ -1619,29 +1611,6 @@ private struct UploadPayload: Decodable {
     var image: Bool?
 }
 
-/// 11/16 基线使用真实 URLSession 发送字节回调。保留它作为图片和
-/// 普通文件的首选链路，分片内核只负责需要断点续传的大文件。
-private final class UploadProgressDelegate: NSObject, URLSessionTaskDelegate {
-    private let onProgress: (Double) -> Void
-    private var last = -1.0
-
-    init(_ onProgress: @escaping (Double) -> Void) { self.onProgress = onProgress }
-
-    func urlSession(_ session: URLSession,
-                    task: URLSessionTask,
-                    didSendBodyData bytesSent: Int64,
-                    totalBytesSent: Int64,
-                    totalBytesExpectedToSend: Int64) {
-        guard totalBytesExpectedToSend > 0 else { return }
-        let progress = min(1, max(0,
-            Double(totalBytesSent) / Double(totalBytesExpectedToSend)))
-        if progress >= 1 || progress - last >= 0.02 {
-            last = progress
-            onProgress(progress)
-        }
-    }
-}
-
 struct ChatBgPayload: Decodable {
     struct Item: Decodable {
         var path: String?
@@ -1680,15 +1649,8 @@ enum ServerTrustPolicy {
     static func canAccept(_ trust: SecTrust, host: String) -> Bool {
         guard API.trustedHost(host) else { return false }
 
-        // The public ingress uses a normal publicly trusted certificate.
-        // The direct Cell endpoint keeps a pinned self-signed certificate as
-        // a fallback, so accept either a valid system chain or the exact pin.
-        if SecTrustEvaluateWithError(trust, nil) {
-            return true
-        }
-
         if API.isLocalHost(host) {
-            return false
+            return SecTrustEvaluateWithError(trust, nil)
         }
 
         guard let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate] else {
@@ -1718,6 +1680,25 @@ final class SecureURLSessionDelegate: NSObject, URLSessionDelegate {
             }
         } else {
             completionHandler(.performDefaultHandling, nil)
+        }
+    }
+}
+
+final class UploadProgressDelegate: NSObject, URLSessionTaskDelegate {
+    private let onProgress: (Double) -> Void
+    private var last = -1.0
+
+    init(_ onProgress: @escaping (Double) -> Void) { self.onProgress = onProgress }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    didSendBodyData bytesSent: Int64,
+                    totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
+        guard totalBytesExpectedToSend > 0 else { return }
+        let p = min(1, max(0, Double(totalBytesSent) / Double(totalBytesExpectedToSend)))
+
+        if p >= 1 || p - last >= 0.02 {
+            last = p
+            onProgress(p)
         }
     }
 }
@@ -1790,24 +1771,15 @@ final class API {
     let session: URLSession
     private let trustDelegate = SecureURLSessionDelegate()
 
-    static let publicIngressServer = "mail.xingyanmail.site:443"
-    static let publicIngressPath = "/xy"
-    private static let legacyDirectServer = "43.242.194.89:8443"
-    /// Keep the exact direct upload origin used by build 2611200641.
-    static let directUploadBases = [
-        "https://43.242.194.89:8443"
-    ]
-
     private(set) var token: String = ""
 
-    private(set) var server: String = API.publicIngressServer
+    private(set) var server: String = "43.242.194.89:8443"
 
     private(set) var backups: [String] = API.builtinBackups
 
     static let trustedHosts: Set<String> = [
         "43.242.194.89",
-        "u.598218.xyz",
-        "mail.xingyanmail.site"
+        "u.598218.xyz"
     ]
     static func trustedHost(_ s: String) -> Bool {
         var h = s.lowercased()
@@ -1848,10 +1820,8 @@ final class API {
 
     static let builtinBackups: [String] = []
     private static let retiredEndpoints: Set<String> = [
-        "43.242.194.89:8443",
         "43.242.194.89:443",
         "43.242.194.89:5443",
-        "u.598218.xyz:8443",
         "u.598218.xyz:443",
         "u.598218.xyz:5443",
         "u.598218.xyz:8443"
@@ -1885,13 +1855,7 @@ final class API {
            !legacyServers.contains(API.normalizeServer(saved)),
            !API.retiredEndpoints.contains(API.normalizeServer(saved)),
            API.trustedHost(saved) {
-            let normalized = API.normalizeServer(saved)
-            if normalized == API.legacyDirectServer {
-                server = API.publicIngressServer
-                UserDefaults.standard.set(server, forKey: "chris.server")
-            } else {
-                server = normalized
-            }
+            server = API.normalizeServer(saved)
         } else {
             UserDefaults.standard.set(server, forKey: "chris.server")
         }
@@ -1968,19 +1932,9 @@ final class API {
     }
 
     func searchAll(_ q: String, scope: String = "all") async throws -> SearchAllData {
-        let path = "/api/search?q="
-            + (q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
-            + "&scope=" + scope + "&limit=30"
+        let path = "/api/search?q=" + (q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
+            + "&scope=" + scope
         return try await get(path, as: SearchAllData.self)
-    }
-
-    func searchEvents(_ events: [[String: Any]]) async {
-        guard !events.isEmpty else { return }
-        _ = try? await request(
-            "POST",
-            "/api/search/events",
-            body: ["events": Array(events.prefix(100))]
-        )
     }
 
     func searchHot() async throws -> [String] {
@@ -2001,26 +1955,14 @@ final class API {
         }
     }
 
-    var base: String {
-        let root = "https://\(server)"
-        return server == API.publicIngressServer
-            ? root + API.publicIngressPath
-            : root
-    }
+    var base: String { "https://\(server)" }
 
     var realtimeServer: String {
         server == "43.242.194.89:443" ? "43.242.194.89:8443" : server
     }
 
-    var realtimePathPrefix: String {
-        server == API.publicIngressServer ? API.publicIngressPath : ""
-    }
-
     var cacheNamespace: String {
-        let namespaceServer = server == API.publicIngressServer
-            ? API.legacyDirectServer
-            : API.normalizeServer(server)
-        let raw = namespaceServer.lowercased()
+        let raw = API.normalizeServer(server).lowercased()
         let safe = raw.map { $0.isLetter || $0.isNumber ? $0 : "_" }
         return "v2_" + String(safe)
     }
@@ -2030,11 +1972,7 @@ final class API {
         v = v.replacingOccurrences(of: "https://", with: "")
         v = v.replacingOccurrences(of: "http://", with: "")
         while v.hasSuffix("/") { v.removeLast() }
-        if v == "mail.xingyanmail.site" {
-            v += ":443"
-        } else if !v.contains(":") {
-            v += ":5443"
-        }
+        if !v.contains(":") { v += ":5443" }
         v = v.replacingOccurrences(of: ":5180", with: ":5443")
         v = v.replacingOccurrences(of: ":80", with: ":5443")
         return v
@@ -2506,16 +2444,10 @@ final class API {
         return r.items ?? []
     }
 
-    func musicNow(_ t: MusicTrack,
-                  playing: Bool = true,
-                  seconds: Double = 0,
-                  duration: Double = 0) async {
+    func musicNow(_ t: MusicTrack) async {
         _ = try? await request("POST", "/api/music/now", body: [
             "id": t.id, "title": t.title, "artist": t.artist ?? "",
-            "cover": t.cover ?? "", "url": t.url,
-            "playing": playing,
-            "position": seconds.isFinite ? max(0, seconds) : 0,
-            "duration": duration.isFinite ? max(0, duration) : 0
+            "cover": t.cover ?? "", "url": t.url
         ])
     }
 
@@ -2967,15 +2899,6 @@ final class API {
     func feed(tab: String = "recommend") async throws -> (items: [FeedItem], style: FeedStyle, flags: FeedFlags) {
         let p: FeedPayload = try await get("/api/feed?tab=\(tab)", as: FeedPayload.self)
         return (p.items, p.style ?? FeedStyle(), p.flags ?? FeedFlags())
-    }
-
-    func feedEvents(_ events: [VideoKernelFeedbackEvent]) async -> Bool {
-        struct P: Decodable { var accepted: Int?; var rejected: Int?; var duplicates: Int? }
-        let body: [String: Any] = ["events": events.map { $0.dictionary }]
-        guard let p: P = try? await post("/api/feed/events", body, as: P.self) else {
-            return false
-        }
-        return (p.accepted ?? 0) + (p.rejected ?? 0) + (p.duplicates ?? 0) > 0
     }
 
     struct GeoPlace: Decodable {
@@ -3973,13 +3896,6 @@ private struct StarredPayload: Decodable {
         return APICatalogCache.load(MusicTrack.self, key: cacheKey)
     }
 
-    func cachedMusicTracks() -> [MusicTrack] {
-        APICatalogCache.load(
-            MusicTrack.self,
-            key: "catalog.music." + cacheNamespace
-        )
-    }
-
     func miniApps(kind: String = "") async -> [MiniApp] {
         struct Payload: Decodable { var items: [MiniApp]? }
         let path = kind.isEmpty ? "/api/miniapps" : "/api/miniapps?kind=\(kind)"
@@ -3990,13 +3906,6 @@ private struct StarredPayload: Decodable {
             return items
         }
         return APICatalogCache.load(MiniApp.self, key: cacheKey)
-    }
-
-    func cachedMiniApps(kind: String = "") -> [MiniApp] {
-        APICatalogCache.load(
-            MiniApp.self,
-            key: "catalog.miniapps." + cacheNamespace + "." + kind
-        )
     }
 
     func removeDevice(id: String) async -> String? {
@@ -4157,38 +4066,6 @@ private struct StarredPayload: Decodable {
         }
         let p: ChatMembersPayload = try await get("/api/chats/\(chatId)/members", as: ChatMembersPayload.self)
         return (p.members ?? [], p.ownerId ?? "", p.createdAt ?? "")
-    }
-
-    func chatMembersPage(chatId: String, limit: Int = 100, cursor: Int = 0)
-        async throws -> (members: [User], ownerId: String, createdAt: String,
-                         memberCount: Int, nextCursor: Int, hasMore: Bool) {
-        if MessageStressFixture.isStressChat(chatId) {
-            let users = MessageStressFixture.members
-            let start = max(0, min(users.count, cursor))
-            let end = max(start, min(users.count, start + max(1, limit)))
-            return (
-                Array(users[start..<end]),
-                users.first?.id ?? "",
-                "2026-11-16T00:00:00Z",
-                users.count,
-                end,
-                end < users.count
-            )
-        }
-        let p: ChatMembersPayload = try await get(
-            "/api/chats/\(chatId)/members?limit=\(max(1, limit))&cursor=\(max(0, cursor))",
-            as: ChatMembersPayload.self
-        )
-        let members = p.members ?? []
-        let next = p.nextCursor ?? (cursor + members.count)
-        return (
-            members,
-            p.ownerId ?? "",
-            p.createdAt ?? "",
-            p.memberCount ?? next,
-            next,
-            p.hasMore ?? false
-        )
     }
 
     @discardableResult
@@ -5500,14 +5377,6 @@ private struct StarredPayload: Decodable {
         return payload.items.filter { $0.enabled != false }
     }
 
-    func signedFeatureManifest() async throws -> Data {
-        let envelope: FeatureManifestEnvelope = try await get(
-            "/api/ui-manifest",
-            as: FeatureManifestEnvelope.self
-        )
-        return try JSONEncoder().encode(envelope)
-    }
-
     func news(source: String, limit: Int = 40, offset: Int = 0) async throws -> NewsFeed {
         let s = source.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? source
         return try await get("/api/news?source=" + s + "&limit=\(limit)&offset=\(offset)", as: NewsFeed.self)
@@ -5721,9 +5590,7 @@ private struct StarredPayload: Decodable {
     }
 
     func uploadBinary(_ data: Data, mime: String) async throws -> String {
-        guard let url = URL(string: API.directUploadBases[0] + "/api/upload/raw") else {
-            throw APIError.message("服务器地址不正确")
-        }
+        guard let url = URL(string: base + "/api/upload/raw") else { throw APIError.message("服务器地址不正确") }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.timeoutInterval = 180
@@ -5731,8 +5598,7 @@ private struct StarredPayload: Decodable {
         req.setValue(mime, forHTTPHeaderField: "Content-Type")
         req.httpBody = data
         let (d, resp) = try await session.data(for: req)
-        guard let http = resp as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw APIError.message("上传失败，请检查网络后再试")
         }
         return try Self.rawUploadURL(from: d)
@@ -5741,28 +5607,30 @@ private struct StarredPayload: Decodable {
     func uploadBinaryFile(_ file: URL, mime: String,
                           skipTranscode: Bool = false,
                           onProgress: @escaping (Double) -> Void) async throws -> String {
-        guard let url = URL(string: API.directUploadBases[0] + "/api/upload/raw") else {
-            throw APIError.message("服务器地址不正确")
-        }
+        guard let url = URL(string: base + "/api/upload/raw") else { throw APIError.message("服务器地址不正确") }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
+
         req.timeoutInterval = 600
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue(mime, forHTTPHeaderField: "Content-Type")
-        if skipTranscode {
-            req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
-        }
+
+        if skipTranscode { req.setValue("1", forHTTPHeaderField: "x-chris-compressed") }
         let delegate = UploadProgressDelegate(onProgress)
-        let (d, resp) = try await session.upload(
-            for: req,
-            fromFile: file,
-            delegate: delegate
-        )
-        guard let http = resp as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
+        let (d, resp) = try await session.upload(for: req, fromFile: file, delegate: delegate)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw APIError.message("上传失败，请检查网络后再试")
         }
         return try Self.rawUploadURL(from: d)
+    }
+
+    private static func rawUploadURL(from d: Data) throws -> String {
+        struct RawUpload: Decodable { var url: String? }
+        if let parsed = try? JSONDecoder().decode(RawUpload.self, from: d),
+           let u = parsed.url, !u.isEmpty { return u }
+        struct Wrapper: Decodable { struct D: Decodable { var url: String? }; var data: D? }
+        if let w = try? JSONDecoder().decode(Wrapper.self, from: d), let u = w.data?.url, !u.isEmpty { return u }
+        throw APIError.message("上传返回异常")
     }
 
     func uploadOriginal(image: UIImage) async throws -> String {
@@ -5784,47 +5652,22 @@ private struct StarredPayload: Decodable {
         guard let data = data else {
             throw APIError.message("图片处理失败")
         }
-        if let url = try? await uploadRawJPEG(data, onProgress: onProgress) {
-            return url
-        }
+
+        if let url = try? await uploadRawJPEG(data, onProgress: onProgress) { return url }
         onProgress?(0.15)
         let b64 = data.base64EncodedString()
-        let body: [String: Any] = [
-            "dataUrl": "data:image/jpeg;base64," + b64,
-            "filename": "photo.jpg"
-        ]
-        let payload: UploadPayload = try await postDirectUpload(body)
-        guard let path = payload.url else { throw APIError.message("上传失败") }
+        let payload: UploadPayload = try await post("/api/upload",
+                                                    ["dataUrl": "data:image/jpeg;base64," + b64,
+                                                     "filename": "photo.jpg"],
+                                                    as: UploadPayload.self)
+        guard let url = payload.url else { throw APIError.message("上传失败") }
         onProgress?(1)
-        return path
-    }
-
-    private func postDirectUpload<T: Decodable>(_ body: [String: Any],
-                                                base: String = API.directUploadBases[0],
-                                                path: String = "/api/upload",
-                                                timeout: TimeInterval = 120) async throws -> T {
-        guard let url = URL(string: base + path) else {
-            throw APIError.message("服务器地址不正确")
-        }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.timeoutInterval = timeout
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let (responseData, response) = try await session.data(for: req)
-        guard let http = response as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败，请检查网络后再试")
-        }
-        return try JSONDecoder().decode(T.self, from: responseData)
+        return url
     }
 
     private func uploadRawJPEG(_ data: Data,
-                               base: String = API.directUploadBases[0],
-                               path: String = "/api/upload/raw",
                                onProgress: ((Double) -> Void)? = nil) async throws -> String {
-        guard let url = URL(string: base + path) else {
+        guard let url = URL(string: base + "/api/upload/raw") else {
             throw APIError.message("服务器地址不正确")
         }
         var req = URLRequest(url: url)
@@ -5832,6 +5675,7 @@ private struct StarredPayload: Decodable {
         req.timeoutInterval = 120
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+
         req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
         let delegate = onProgress.map(UploadProgressDelegate.init)
         let (d, resp): (Data, URLResponse)
@@ -5840,34 +5684,16 @@ private struct StarredPayload: Decodable {
         } else {
             (d, resp) = try await session.upload(for: req, from: data)
         }
-        guard let http = resp as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw APIError.message("上传失败，请检查网络后再试")
         }
         return try Self.rawUploadURL(from: d)
     }
 
-    private static func rawUploadURL(from d: Data) throws -> String {
-        struct RawUpload: Decodable { var url: String? }
-        if let parsed = try? JSONDecoder().decode(RawUpload.self, from: d),
-           let url = parsed.url, !url.isEmpty {
-            return url
-        }
-        struct Wrapper: Decodable {
-            struct D: Decodable { var url: String? }
-            var data: D?
-        }
-        if let wrapper = try? JSONDecoder().decode(Wrapper.self, from: d),
-           let url = wrapper.data?.url, !url.isEmpty {
-            return url
-        }
-        throw APIError.message("上传返回异常")
-    }
-
     func send(chatId: String, kind: String, content: String, mentions: [String] = [],
               imgW: Int = 0, imgH: Int = 0, quote: [String: Any]? = nil) async throws -> Message? {
         var body: [String: Any] = ["kind": kind, "content": content]
-        body["mentions"] = mentions
+        if !mentions.isEmpty { body["mentions"] = mentions }
 
         if imgW > 1, imgH > 1 { body["imgW"] = imgW; body["imgH"] = imgH }
 
@@ -5882,7 +5708,7 @@ private struct StarredPayload: Decodable {
               clientId: String, imgW: Int = 0, imgH: Int = 0,
               quote: [String: Any]? = nil) async throws -> Message? {
         var body: [String: Any] = ["kind": kind, "content": content, "clientId": clientId]
-        body["mentions"] = mentions
+        if !mentions.isEmpty { body["mentions"] = mentions }
         if imgW > 1, imgH > 1 { body["imgW"] = imgW; body["imgH"] = imgH }
         if let q = quote, !q.isEmpty { body["quote"] = q }
         let payload: MessagePayload = try await post("/api/chats/\(chatId)/messages",
@@ -6028,7 +5854,7 @@ private struct StarredPayload: Decodable {
     }
 
     func rawUpload(_ body: [String: Any]) async throws -> (url: String, name: String, bytes: Int) {
-        let payload: UploadPayload = try await postDirectUpload(body)
+        let payload: UploadPayload = try await post("/api/upload", body, as: UploadPayload.self)
         guard let url = payload.url else { throw APIError.message("上传失败") }
         return (url, payload.name ?? "", payload.bytes ?? 0)
     }

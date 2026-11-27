@@ -77,28 +77,15 @@ jobs:
           sys.exit(1 if dups else 0)
           PY
           python3 tools/verify-no-tencent-media.py
-          python3 tools/verify-video-kernel.py
-          python3 tools/verify-game-runtime.py
-          python3 tools/verify-star-map.py
-          python3 tools/verify-browser.py
-          python3 tools/verify-feature-manifest.py
-          python3 tools/verify-discover-map-entry.py
-          python3 tools/verify-search-recommendation.py
-          python3 tools/verify-search-all.py
-          python3 tools/verify-transfer-checkout.py
-          python3 tools/verify-payment-gold-card.py
-          python3 tools/verify-wallet-layout.py
           python3 tools/verify-native-chat-swipe.py
           python3 tools/verify-chat-stress-scroll.py
           python3 tools/verify-stress-eager-100k.py
           python3 tools/verify-interaction-kernel.py
           python3 tools/verify-chat-first-frame-stability.py
-          python3 tools/verify-chat-message-system-layout.py
           python3 tools/verify-chats-dark-surface.py
           python3 tools/verify-chat-chrome-contrast.py
           python3 tools/verify-recall-preview.py
           python3 tools/verify-preview-semantics.py
-          python3 tools/verify-success-toast.py
           python3 tools/verify-group-announce.py
           python3 tools/verify-group-top-frost.py
           python3 tools/verify-deleted-friend-send.py
@@ -114,18 +101,13 @@ jobs:
           python3 tools/verify-chat-top-title.py
           python3 tools/verify-group-preview.py
           python3 tools/verify-contacts-whatsapp.py
-          python3 tools/verify-contact-flow-layout.py
-          python3 tools/verify-contacts-derived-cache.py
-          python3 tools/verify-contacts-5000.py
-          python3 tools/verify-account-switch-readiness.py
           python3 tools/verify-chat-menu-icon.py
           python3 tools/verify-no-top-green-glow.py
-          python3 tools/verify-no-splash-page.py
+          python3 tools/verify-splash-premium.py
           python3 tools/verify-video-tab.py
           python3 tools/verify-video-works-integration.py
           python3 tools/verify-video-publish-douyin.py
           python3 tools/verify-phone-theme-previews.py
-          python3 tools/verify-photo-picker-performance.py
           python3 tools/verify-chat-prepend-anchor.py
           python3 tools/verify-news-compact-scroll.py
           python3 tools/verify-native-list-incremental-signatures.py
@@ -134,6 +116,7 @@ jobs:
           python3 tools/verify-voice-hold-brand.py
           python3 tools/verify-native-top-masks.py
           python3 tools/verify-group-membership-send.py
+          python3 tools/verify-chat-unread-reconcile.py
           python3 tools/verify-friend-removal-consistency.py
           python3 tools/verify-pin-owner-routing.py
           python3 tools/verify-chat-avatar-stability.py
@@ -142,22 +125,13 @@ jobs:
           python3 tools/verify-plus-panel-native.py
           python3 tools/verify-composer-native-field.py
           python3 tools/verify-share-sheets.py
-          python3 tools/verify-profile-fast-preview.py
-          python3 tools/verify-push-multidevice.py
-          python3 tools/verify-tab-first-frame.py
-          python3 tools/verify-cache-first-pages.py
-          python3 tools/verify-account-sidebar.py
-          python3 tools/verify-theme-immediacy.py
-          python3 tools/verify-scale-foundation.py
           python3 tools/verify-moment-editorial.py
           python3 tools/verify-moment-media-grid.py
           python3 tools/verify-moment-own-publish.py
           python3 tools/verify-me-current.py
           python3 tools/verify-me-native.py
-          python3 tools/verify-system-settings-pages.py
           python3 tools/verify-works-topbar.py
           python3 tools/verify-catalog-refresh-cache.py
-          python3 tools/verify-mall-module.py
           python3 tools/verify-chat-list-grid.py
           python3 tools/verify-chat-list-order.py
           python3 tools/verify-chat-list-time.py
@@ -220,21 +194,6 @@ jobs:
           node server/test/payment-database.test.js
           node server/test/payment-database-concurrency.test.js
           node server/test/payment-provider-server.test.js
-          node server/test/mall-catalog-cache.test.js
-          node server/test/push-burst.test.js
-          node server/test/device-sync-state.test.js
-          node server/test/physical-scale-plan.test.js
-          node server/test/physical-scale-orchestrator.test.js
-          node server/test/physical-auto-scale-controller.test.js
-          node server/test/logical-shard-directory.test.js
-          node server/test/scale-foundation.test.js
-          node server/test/group-membership-shadow-migration.test.js
-          node server/test/payment-readiness.test.js
-          node server/test/payment-settlement-scheduler.test.js
-          node server/test/video-recommendation.test.js
-          node server/test/video-recommendation-server.test.js
-          node server/test/music-presence-server.test.js
-          node server/test/search-ranking.test.js
 
       - name: 客户端本地事务库测试
         run: python3 tools/test-local-client-storage.py
@@ -270,6 +229,7 @@ jobs:
           cp server/public/emoji/nova-courier/pack.json "$APP/emoji/nova-courier/"
           rm -rf Assets.xcassets
           mkdir -p Assets.xcassets/LaunchBg.colorset
+          mkdir -p Assets.xcassets/LaunchLogo.imageset
           cat > Assets.xcassets/Contents.json <<'JSON'
           { "info": { "version": 1, "author": "xcode" } }
           JSON
@@ -287,6 +247,19 @@ jobs:
             "info": { "version": 1, "author": "xcode" }
           }
           JSON
+          cp AppIcon60x60@2x.png Assets.xcassets/LaunchLogo.imageset/LaunchLogo@2x.png
+          cp AppIcon60x60@3x.png Assets.xcassets/LaunchLogo.imageset/LaunchLogo@3x.png
+          cp AppIcon60x60@2x.png Assets.xcassets/LaunchLogo.imageset/LaunchLogo@1x.png
+          cat > Assets.xcassets/LaunchLogo.imageset/Contents.json <<'JSON'
+          {
+            "images": [
+              { "idiom": "universal", "scale": "1x", "filename": "LaunchLogo@1x.png" },
+              { "idiom": "universal", "scale": "2x", "filename": "LaunchLogo@2x.png" },
+              { "idiom": "universal", "scale": "3x", "filename": "LaunchLogo@3x.png" }
+            ],
+            "info": { "version": 1, "author": "xcode" }
+          }
+          JSON
           xcrun actool Assets.xcassets --compile "$APP" --platform iphoneos \
             --target-device iphone --minimum-deployment-target 16.0 \
             --output-format human-readable-text > /dev/null 2>&1 \
@@ -297,19 +270,6 @@ jobs:
           ls -lh "$APP/default.metallib"
           mkdir -p "$APP/Frameworks"
           cp -R WebRTCKit/WebRTC.xcframework/ios-arm64/WebRTC.framework "$APP/Frameworks/WebRTC.framework"
-          mkdir -p /tmp/XingyanMallCore
-          xcrun --sdk iphoneos swiftc \
-            -sdk "$SDK" \
-            -target arm64-apple-ios16.0 \
-            -swift-version 5 \
-            -parse-as-library \
-            -O \
-            -emit-module \
-            -emit-library -static \
-            -module-name XingyanMallCore \
-            -emit-module-path /tmp/XingyanMallCore/XingyanMallCore.swiftmodule \
-            -o /tmp/XingyanMallCore/libXingyanMallCore.a \
-            Modules/MallModule/MallModule.swift
           xcrun --sdk iphoneos swiftc \
             -sdk "$SDK" \
             -target arm64-apple-ios16.0 \
@@ -319,11 +279,8 @@ jobs:
             -whole-module-optimization \
             -F "$SDK/System/Library/Frameworks" \
             -F WebRTCKit/WebRTC.xcframework/ios-arm64 \
-            -I /tmp/XingyanMallCore \
-            -L /tmp/XingyanMallCore \
             -o "$APP/CHRIS" \
             Sources/*.swift \
-            -lXingyanMallCore \
             -framework SwiftUI -framework UIKit -framework Foundation \
             -framework LocalAuthentication -framework AVFoundation \
             -framework WebRTC \

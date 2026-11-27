@@ -6,7 +6,6 @@ struct PushEvent: Equatable {
     var type = ""
     var action = ""
     var userId = ""
-    var nickname = ""
     var chatId = ""
     var messageId = ""
     var seq = 0
@@ -20,7 +19,6 @@ struct PushEvent: Equatable {
     var user: User? = nil
 
     var momentUnread: Int? = nil
-    var momentUnreadDelta: Int? = nil
     var momentId = ""
 
     var momentNoticeUnread: Int? = nil
@@ -128,29 +126,12 @@ final class Realtime: ObservableObject {
 
     private var pending: PushEvent?
     private var publishTask: Task<Void, Never>?
-    private var chatEventHandler: ((PushEvent) -> Void)?
 
     private var heartbeat: Task<Void, Never>?
     private let rxClock = RxClock()
 
     private var ackPending: [String: Int] = [:]
     private var ackTask: Task<Void, Never>?
-
-    /// 会话摘要不能走 `@Published event` 的单槽合并：高频群消息会在 SwiftUI
-    /// 合并刷新前覆盖中间事件。这里逐条同步交给 AppState，其他页面仍继续
-    /// 使用公开的 event 流。
-    func setChatEventHandler(_ handler: ((PushEvent) -> Void)?) {
-        chatEventHandler = handler
-    }
-
-    static func isChatStateEvent(_ type: String) -> Bool {
-        switch type {
-        case "message", "chat", "read", "receipt", "sync", "recall", "ready":
-            return true
-        default:
-            return false
-        }
-    }
 
     func ackDelivery(chatId: String, seq: Int) {
         guard !chatId.isEmpty, seq > 0 else { return }
@@ -186,8 +167,7 @@ final class Realtime: ObservableObject {
 
         let plainHost = host.replacingOccurrences(of: ":5443", with: ":5180")
         let lanOnly = Self.isLanHost(host)
-        let raw = ((plainFallback && lanOnly) ? "ws://\(plainHost)" : "wss://\(host)")
-            + API.shared.realtimePathPrefix
+        let raw = (plainFallback && lanOnly) ? "ws://\(plainHost)" : "wss://\(host)"
         guard let url = URL(string: "\(raw)/?token=\(API.shared.token)") else { return }
 
         var req = URLRequest(url: url)
@@ -398,7 +378,6 @@ final class Realtime: ObservableObject {
         }
         ev.action = (obj["action"] as? String) ?? ""
         ev.userId = (obj["userId"] as? String) ?? ""
-        ev.nickname = (obj["nickname"] as? String) ?? ""
         ev.chatId = (obj["chatId"] as? String) ?? ""
         ev.messageId = (obj["messageId"] as? String) ?? ""
         ev.seq = (obj["seq"] as? NSNumber)?.intValue ?? 0
@@ -456,7 +435,6 @@ final class Realtime: ObservableObject {
         }
         if let ca = obj["callActive"] as? Bool { ev.callActive = ca }
         if let n = obj["momentUnread"] as? Int { ev.momentUnread = n }
-        if let n = obj["momentUnreadDelta"] as? Int { ev.momentUnreadDelta = n }
         ev.momentId = (obj["momentId"] as? String) ?? ""
         if let n = obj["momentNoticeUnread"] as? Int { ev.momentNoticeUnread = n }
 
@@ -512,16 +490,6 @@ final class Realtime: ObservableObject {
            let data = try? JSONSerialization.data(withJSONObject: cand),
            let text = String(data: data, encoding: .utf8) {
             ev.callCandidate = text
-        }
-        if ev.type == "musicPresence" {
-            NotificationCenter.default.post(
-                name: .chrisMusicPresenceChanged,
-                object: nil
-            )
-        }
-
-        if Self.isChatStateEvent(ev.type) {
-            chatEventHandler?(ev)
         }
 
         let important = ["ui", "friend", "call", "transfer", "transferRemind",

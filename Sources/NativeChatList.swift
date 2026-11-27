@@ -59,6 +59,7 @@ where Item.ID: Hashable {
     let dark: Bool
     let height: (Item) -> CGFloat
     let nativeRow: ((Item) -> NativeChatRowConfiguration?)?
+    let onScrollStateChange: (Bool) -> Void
     let onOffsetChange: (CGFloat) -> Void
     let onZoneChange: (Int) -> Void
     let onApproachingStart: () -> Void
@@ -69,6 +70,7 @@ where Item.ID: Hashable {
 
     func makeCoordinator() -> Coordinator {
         Coordinator(dark: dark,
+                    onScrollStateChange: onScrollStateChange,
                     onOffsetChange: onOffsetChange,
                     onZoneChange: onZoneChange,
                     onApproachingStart: onApproachingStart,
@@ -175,6 +177,7 @@ where Item.ID: Hashable {
             context.coordinator.itemsRevision = revision
             context.coordinator.apply(items, animated: false)
         }
+        context.coordinator.onScrollStateChange = onScrollStateChange
         context.coordinator.onOffsetChange = onOffsetChange
         context.coordinator.onZoneChange = onZoneChange
         context.coordinator.onApproachingStart = onApproachingStart
@@ -197,6 +200,7 @@ where Item.ID: Hashable {
         var height: (Item) -> CGFloat
         var nativeRow: ((Item) -> NativeChatRowConfiguration?)?
         var itemsRevision = -1
+        var onScrollStateChange: (Bool) -> Void
         var onOffsetChange: (CGFloat) -> Void
         var onZoneChange: (Int) -> Void
         var onApproachingStart: () -> Void
@@ -209,6 +213,7 @@ where Item.ID: Hashable {
         private var lastZone = -1
         private var pendingZone = 0
         private var zoneFlushScheduled = false
+        private var lastScrollActive = false
         private var lastReportedOffsetY = CGFloat.greatestFiniteMagnitude
         private var pendingItems: [Item]?
         private var applyGeneration = 0
@@ -219,6 +224,7 @@ where Item.ID: Hashable {
         private var layoutObservers: [NSObjectProtocol] = []
 
         init(dark: Bool,
+             onScrollStateChange: @escaping (Bool) -> Void,
              onOffsetChange: @escaping (CGFloat) -> Void,
              onZoneChange: @escaping (Int) -> Void,
              onApproachingStart: @escaping () -> Void,
@@ -229,6 +235,7 @@ where Item.ID: Hashable {
              nativeRow: ((Item) -> NativeChatRowConfiguration?)?,
              row: @escaping (Item) -> Row) {
             self.dark = dark
+            self.onScrollStateChange = onScrollStateChange
             self.onOffsetChange = onOffsetChange
             self.onZoneChange = onZoneChange
             self.onApproachingStart = onApproachingStart
@@ -299,16 +306,6 @@ where Item.ID: Hashable {
                 let sameBoundaries = next.count >= oldCount
                     && next.first?.id == order.first
                     && next[oldCount - 1].id == order[oldCount - 1]
-                if allowInsertionDuringScroll,
-                   next.count == oldCount,
-                   prependWindowDuringScroll(next) {
-                    return
-                }
-                if allowInsertionDuringScroll,
-                   next.count == oldCount,
-                   slideWindowDuringScroll(next) {
-                    return
-                }
                 if next.count == oldCount {
                     /* 滚动期间不为未变化的 13k+ 行做全量相等比较。
                        可见行状态变化在手指停止后统一 flush。 */
@@ -319,6 +316,11 @@ where Item.ID: Hashable {
                    next.count > oldCount,
                    sameBoundaries,
                    appendPureTail(next, from: oldCount, keepPending: true) {
+                    return
+                }
+                if allowInsertionDuringScroll,
+                   next.count == oldCount,
+                   slideWindowDuringScroll(next) {
                     return
                 }
                 pendingItems = next
@@ -456,63 +458,6 @@ where Item.ID: Hashable {
         }
 
         @discardableResult
-        private func prependWindowDuringScroll(_ next: [Item]) -> Bool {
-            guard next.count == order.count,
-                  let oldFirst = order.first,
-                  let insertedCount = next.firstIndex(where: { $0.id == oldFirst }),
-                  insertedCount > 0,
-                  let dataSource,
-                  let table else { return false }
-
-            let nextOrder = next.map(\.id)
-            let retainedCount = nextOrder.count - insertedCount
-            guard retainedCount > 0,
-                  nextOrder[insertedCount...].elementsEqual(order.prefix(retainedCount))
-            else { return false }
-
-            let added = Array(next.prefix(insertedCount))
-            let addedIDs = added.map(\.id)
-            let removedIDs = Array(order.suffix(insertedCount))
-            let retainedFirst = nextOrder[insertedCount]
-            let visibleRow = table.indexPathsForVisibleRows?.min()
-            let visibleID = visibleRow.flatMap { dataSource.itemIdentifier(for: $0) }
-            let visibleDelta = visibleRow.map {
-                table.rectForRow(at: $0).minY - table.contentOffset.y
-            }
-            let previousOffset = table.contentOffset
-            for id in removedIDs { lookup.removeValue(forKey: id) }
-            for item in added { lookup[item.id] = item }
-            order = nextOrder
-            appliedItemCount = order.count
-            endRequestInFlight = false
-            pendingItems = nil
-            applyGeneration += 1
-            let generation = applyGeneration
-
-            var snapshot = dataSource.snapshot()
-            snapshot.insertItems(addedIDs, beforeItem: retainedFirst)
-            snapshot.deleteItems(removedIDs)
-            dataSource.apply(snapshot, animatingDifferences: false) {
-                [weak self, weak table] in
-                guard let self, let table,
-                      generation == self.applyGeneration,
-                      self.table === table else { return }
-                table.layoutIfNeeded()
-                self.revealInitialTableIfNeeded(table)
-                self.prefetchEndRunwayIfNeeded(table)
-                if let visibleID, let indexPath = dataSource.indexPath(for: visibleID),
-                   let delta = visibleDelta {
-                    let targetY = table.rectForRow(at: indexPath).minY - delta
-                    table.setContentOffset(
-                        CGPoint(x: previousOffset.x, y: targetY),
-                        animated: false
-                    )
-                }
-            }
-            return true
-        }
-
-        @discardableResult
         private func slideWindowDuringScroll(_ next: [Item]) -> Bool {
             guard next.count == order.count,
                   let nextFirst = next.first?.id,
@@ -597,6 +542,9 @@ where Item.ID: Hashable {
         }
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            publishScrollState(scrollView.isDragging
+                               || scrollView.isTracking
+                               || scrollView.isDecelerating)
             let y = scrollView.contentOffset.y
             if abs(y - lastReportedOffsetY) >= 12 {
                 lastReportedOffsetY = y
@@ -659,15 +607,19 @@ where Item.ID: Hashable {
             // permanently at an arbitrary loaded boundary.
             endRequestInFlight = false
             startRequestInFlight = false
+            publishScrollState(true)
             applyGeneration += 1
             NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
         }
 
         func scrollViewDidEndDragging(_ scrollView: UIScrollView,
                                       willDecelerate decelerate: Bool) {
-            if !decelerate {
+            if decelerate {
+                publishScrollState(true)
+            } else {
                 endRequestInFlight = false
                 startRequestInFlight = false
+                publishScrollState(false)
                 flushPendingItems()
             }
         }
@@ -675,6 +627,7 @@ where Item.ID: Hashable {
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
             endRequestInFlight = false
             startRequestInFlight = false
+            publishScrollState(false)
             flushPendingItems()
         }
 
@@ -768,6 +721,14 @@ where Item.ID: Hashable {
             let swipe = UISwipeActionsConfiguration(actions: actions)
             swipe.performsFirstActionWithFullSwipe = true
             return swipe
+        }
+
+        private func publishScrollState(_ active: Bool) {
+            guard active != lastScrollActive else { return }
+            lastScrollActive = active
+            DispatchQueue.main.async { [weak self] in
+                self?.onScrollStateChange(active)
+            }
         }
 
         private func refreshMetrics() {

@@ -146,7 +146,6 @@ enum NativeChatAvatarPrefetcher {
 
 final class NativeChatRowCell: UITableViewCell {
     private static let previewAccentInk = UIColor(hex: 0xFA5151)
-    private static let utilityInk = UIColor.secondaryLabel
 
     private let foreground = UIView()
     private let avatarView = NativeChatAvatarView()
@@ -231,7 +230,7 @@ final class NativeChatRowCell: UITableViewCell {
         divider.isHidden = !configuration.showsDivider
         unreadBell.isHidden = !configuration.isManuallyUnread
         unreadBell.image = UIImage(systemName: "bell.fill")
-        unreadBell.tintColor = Self.utilityInk
+        unreadBell.tintColor = configuration.timeColor
         unreadBell.contentMode = .scaleAspectFit
         unreadLabel.isHidden = configuration.isManuallyUnread || configuration.unread <= 0
         if !configuration.isManuallyUnread, configuration.unread > 0 {
@@ -239,8 +238,8 @@ final class NativeChatRowCell: UITableViewCell {
                 unreadLabel.text = "●"
                 unreadLabel.font = NativeChatRowMetrics.font(7, weight: .bold,
                                                              textStyle: .caption2)
-                unreadLabel.backgroundColor = Self.utilityInk
-                unreadLabel.textColor = Self.utilityInk
+                unreadLabel.backgroundColor = configuration.timeColor
+                unreadLabel.textColor = configuration.timeColor
                 unreadLabel.layer.cornerRadius = 4
                 unreadLabel.frame.size.width = 8
             } else {

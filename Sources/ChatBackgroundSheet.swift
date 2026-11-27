@@ -170,7 +170,6 @@ struct ChatBackgroundSheet: View {
     @State private var picking = false
     @State private var busy = false
     @State private var composingImage: UIImage?
-    @State private var composingSource: UIImage?
     @State private var showingComposer = false
 
     static let presets: [String] = ["solid:white", "solid:black"]
@@ -185,6 +184,18 @@ struct ChatBackgroundSheet: View {
 
     private var inChat: Bool { !chatId.isEmpty }
     @ObservedObject private var store = ChatBgStore.shared
+
+    private var wallpaperCardFill: Color {
+        scheme == .dark ? C.cardBg : C.meCardBg
+    }
+
+    private var wallpaperCardLine: Color {
+        scheme == .dark ? C.hairline : Color.primary.opacity(0.055)
+    }
+
+    private var wallpaperCardLineWidth: CGFloat {
+        scheme == .dark ? 0.8 : 0.6
+    }
 
     private var defaultWallpaperPath: String {
         effectiveDefaultChatBackground(app.defaultChatBackground)
@@ -215,89 +226,94 @@ struct ChatBackgroundSheet: View {
     }
 
     private var standardBody: some View {
-        Form {
-            Section {
+        ScrollView {
+            VStack(spacing: 18) {
                 backgroundPreview
-                    .frame(maxWidth: .infinity)
-                    .listRowInsets(EdgeInsets(top: 14, leading: 14,
-                                             bottom: 14, trailing: 14))
-                    .listRowBackground(Color.clear)
-            } header: {
-                Text(Tr("预览"))
-            }
 
-            Section {
-                wallpaperChoiceRow(
-                    symbol: "photo.on.rectangle.angled",
-                    tint: .accentColor,
-                    title: Tr("默认壁纸"),
-                    subtitle: Tr("星言全景壁纸，上下连续"),
-                    selected: usingDefaultWallpaper
-                ) {
-                    pick(defaultWallpaperPath.isEmpty
-                         ? "auto"
-                         : defaultWallpaperPath)
-                }
-                .listRowInsets(EdgeInsets())
-
-                if inChat {
+                VStack(spacing: 0) {
                     wallpaperChoiceRow(
-                        symbol: "arrow.triangle.2.circlepath",
-                        tint: .secondary,
-                        title: Tr("使用全局背景"),
-                        subtitle: Tr("跟随聊天背景设置自动变化"),
-                        selected: current == "auto"
+                        symbol: "photo.on.rectangle.angled",
+                        tint: Color(hex: 0x128C7E),
+                        title: Tr("默认壁纸"),
+                        subtitle: Tr("星言全景壁纸，上下连续"),
+                        selected: usingDefaultWallpaper
                     ) {
-                        pick("auto")
+                        pick(defaultWallpaperPath.isEmpty
+                             ? "auto"
+                             : defaultWallpaperPath)
                     }
-                    .listRowInsets(EdgeInsets())
-                }
-            } header: {
-                Text(Tr("当前壁纸"))
-            }
 
-            Section {
-                HStack(spacing: 12) {
-                    ForEach(shownPresets, id: \.path) { item in
-                        wallpaperSwatch(item)
+                    if inChat {
+                        wallpaperDivider
+                        wallpaperChoiceRow(
+                            symbol: "arrow.triangle.2.circlepath",
+                            tint: Color(hex: 0x667781),
+                            title: Tr("使用全局背景"),
+                            subtitle: Tr("跟随聊天背景设置自动变化"),
+                            selected: current == "auto"
+                        ) {
+                            pick("auto")
+                        }
                     }
                 }
-                .padding(.vertical, 2)
-            } header: {
-                Text(Tr("纯色"))
-            } footer: {
-                Text(Tr("纯色壁纸始终可用，并会跟随深浅模式使用相应层级。"))
-            }
-
-            Section {
-                wallpaperChoiceRow(
-                    symbol: "photo.badge.plus",
-                    tint: .accentColor,
-                    title: Tr("从相册选择"),
-                    subtitle: Tr("选择一张照片作为聊天壁纸"),
-                    selected: false,
-                    showsChevron: true
-                ) {
-                    picking = true
+                .background(wallpaperCardFill)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(wallpaperCardLine, lineWidth: wallpaperCardLineWidth)
                 }
-                .listRowInsets(EdgeInsets())
-            } header: {
-                Text(Tr("自定义"))
-            } footer: {
+
+                VStack(alignment: .leading, spacing: 10) {
+                    wallpaperSectionHeader(Tr("纯色"), detail: Tr("始终可用"))
+
+                    HStack(spacing: 12) {
+                        ForEach(shownPresets, id: \.path) { item in
+                            wallpaperSwatch(item)
+                        }
+                    }
+                }
+
+                VStack(spacing: 0) {
+                    wallpaperChoiceRow(
+                        symbol: "photo.badge.plus",
+                        tint: Color(hex: 0x0A84FF),
+                        title: Tr("从相册选择"),
+                        subtitle: Tr("选择一张照片作为聊天壁纸"),
+                        selected: false,
+                        showsChevron: true
+                    ) {
+                        picking = true
+                    }
+                }
+                .background(wallpaperCardFill)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(wallpaperCardLine, lineWidth: wallpaperCardLineWidth)
+                }
+
                 Text(Tr("相册壁纸会保留完整全景；深色模式使用同一张壁纸的自然黑模糊。"))
-            }
+                    .font(pfStyled(size: 11.5))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 2)
 
-            if busy {
-                Section {
+                if busy {
                     HStack(spacing: 9) {
                         ProgressView()
                         Text(Tr("正在更新壁纸…"))
+                            .font(pfStyled(size: 12.5, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
+                    .padding(.top, 2)
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, max(28, L.safeBottom + 20))
         }
-        .listStyle(.insetGrouped)
+        .scrollIndicators(.hidden)
+        .background(C.pageBg.ignoresSafeArea())
         .navigationTitle(Tr(inChat ? "选择背景图" : "聊天背景"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -317,32 +333,48 @@ struct ChatBackgroundSheet: View {
             }
         }
         .sheet(isPresented: $picking) {
-            PhotoPicker(
-                maxSide: chatWallpaperDecodeSide(),
-                onPreviewPick: beginComposingPreview,
-                onPick: beginComposing
-            )
+            PhotoPicker { image in beginComposing(image) }
         }
         .fullScreenCover(isPresented: $showingComposer) {
             if let image = composingImage {
                 WallpaperCropView(
                     image: image,
-                    originalImage: composingSource,
                     onCancel: {
                         showingComposer = false
                         composingImage = nil
-                        composingSource = nil
                     },
                     onApply: { rendered in
                         showingComposer = false
                         composingImage = nil
-                        composingSource = nil
                         upload(rendered)
                     }
                 )
             }
         }
         .tint(.accentColor)
+    }
+
+    private var wallpaperDivider: some View {
+        Rectangle()
+            .fill(scheme == .dark ? C.hairline : Color.primary.opacity(0.075))
+            .frame(height: 0.5)
+            .padding(.leading, 60)
+    }
+
+    private func wallpaperSectionHeader(_ title: String,
+                                        detail: String? = nil) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(pfStyled(size: 13.5, weight: .semibold))
+                .foregroundStyle(.primary)
+            Spacer(minLength: 8)
+            if let detail {
+                Text(detail)
+                    .font(pfStyled(size: 11.5, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 2)
     }
 
     private func wallpaperChoiceRow(symbol: String,
@@ -378,7 +410,7 @@ struct ChatBackgroundSheet: View {
                 if selected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color(hex: 0x128C7E))
                 } else if showsChevron {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 12, weight: .semibold))
@@ -440,7 +472,7 @@ struct ChatBackgroundSheet: View {
             .overlay {
                 RoundedRectangle(cornerRadius: 17, style: .continuous)
                     .stroke(selected
-                            ? Color.accentColor
+                            ? Color(hex: 0x128C7E)
                             : Color.primary.opacity(0.10),
                             lineWidth: selected ? 2.2 : 0.7)
             }
@@ -522,26 +554,19 @@ struct ChatBackgroundSheet: View {
         .toolbar(.hidden, for: .navigationBar)
         .preferredColorScheme(scheme)
         .sheet(isPresented: $picking) {
-            PhotoPicker(
-                maxSide: chatWallpaperDecodeSide(),
-                onPreviewPick: beginComposingPreview,
-                onPick: beginComposing
-            )
+            PhotoPicker { image in beginComposing(image) }
         }
         .fullScreenCover(isPresented: $showingComposer) {
             if let image = composingImage {
                 WallpaperCropView(
                     image: image,
-                    originalImage: composingSource,
                     onCancel: {
                         showingComposer = false
                         composingImage = nil
-                        composingSource = nil
                     },
                     onApply: { rendered in
                         showingComposer = false
                         composingImage = nil
-                        composingSource = nil
                         upload(rendered)
                     }
                 )
@@ -804,9 +829,9 @@ struct ChatBackgroundSheet: View {
                 if let saved = await API.shared.changeChatBackground(chatId: chatId, path: storedPath) {
                     ChatBgStore.shared.set(chatId, storedPath)
                     applySyncedChatBackgrounds(saved)
-                    app.show(path == "auto" ? Tr("已改用全局背景") : Tr("聊天背景已更新"))
+                    app.show(path == "auto" ? Tr("已改用全局背景") : Tr("这个聊天的背景换好了"))
                 } else {
-                    app.show(Tr("已在本机生效，联网后自动同步"))
+                    app.show(Tr("已在本机切换，服务器暂未保存"))
                 }
                 busy = false
             }
@@ -845,10 +870,10 @@ struct ChatBackgroundSheet: View {
                 if let user = await API.shared.changeBackgroundSaved(storedPath) {
                     store.setGlobal(user.chatBackground ?? storedPath)
                     app.applyMyProfileUser(user)
-                    app.show(Tr("聊天背景已更新"))
+                    app.show(Tr("背景换好了"))
                 } else {
                     store.setGlobal(storedPath)
-                    app.show(Tr("聊天背景已更新"))
+                    app.show(Tr("聊天背景换好了"))
                 }
             }
             busy = false
@@ -878,10 +903,10 @@ struct ChatBackgroundSheet: View {
                     if let saved = await API.shared.changeChatBackground(chatId: chatId, path: url) {
                         applyChatBackground(url)
                         applySyncedChatBackgrounds(saved)
-                        app.show(Tr("聊天背景已更新"))
+                        app.show(Tr("这个聊天的背景换好了"))
                     } else {
                         applyChatBackground(localPath)
-                        app.show(Tr("已在本机生效，联网后自动同步"))
+                        app.show(Tr("已在本机换好，联网后自动同步"))
                     }
                 } else {
                     ChatBgStore.shared.setGlobal(url)
@@ -893,14 +918,14 @@ struct ChatBackgroundSheet: View {
                     if let user = await API.shared.changeBackgroundSaved(url) {
                         ChatBgStore.shared.setGlobal(user.chatBackground ?? url)
                         app.applyMyProfileUser(user)
-                        app.show(Tr("聊天背景已更新"))
+                        app.show(Tr("聊天背景换好了"))
                     } else {
                         ChatBgStore.shared.setGlobal(url)
-                        app.show(Tr("聊天背景已更新"))
+                        app.show(Tr("聊天背景换好了"))
                     }
                 }
             } else {
-                app.show(Tr("已在本机生效，联网后自动同步"))
+                app.show(Tr("已在本机换好，联网后自动同步"))
             }
             busy = false
         }
@@ -908,22 +933,35 @@ struct ChatBackgroundSheet: View {
 
     private func beginComposing(_ image: UIImage) {
         picking = false
-        if showingComposer {
-            composingSource = image
-            return
+        busy = true
+        let maxSide = chatWallpaperDecodeSide()
+        Task {
+            let prepared = await Task.detached(priority: .userInitiated) {
+                Self.downsampledWallpaper(image, maxSide: maxSide)
+            }.value
+            await MainActor.run {
+                composingImage = prepared
+                showingComposer = true
+                busy = false
+            }
         }
-        composingImage = image
-        composingSource = image
-        showingComposer = true
-        busy = false
     }
 
-    private func beginComposingPreview(_ image: UIImage) {
-        picking = false
-        composingImage = image
-        composingSource = nil
-        showingComposer = true
-        busy = false
+    private nonisolated static func downsampledWallpaper(_ image: UIImage,
+                                                        maxSide: CGFloat) -> UIImage {
+        let sourceSide = max(image.size.width, image.size.height)
+        guard sourceSide > maxSide, sourceSide > 1 else { return image }
+        let scale = maxSide / sourceSide
+        let target = CGSize(width: max(1, image.size.width * scale),
+                            height: max(1, image.size.height * scale))
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+        return UIGraphicsImageRenderer(size: target, format: format).image { _ in
+            UIColor.black.setFill()
+            UIRectFill(CGRect(origin: .zero, size: target))
+            image.draw(in: CGRect(origin: .zero, size: target))
+        }
     }
 
     private func applyChatBackground(_ path: String) {

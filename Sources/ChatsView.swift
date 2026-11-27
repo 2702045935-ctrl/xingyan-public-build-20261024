@@ -12,13 +12,11 @@ private enum ChatListVisual {
     static let avatarGap: CGFloat = 12
     static let dividerLeading: CGFloat = 77
 
-    static let ink = Color.dyn(0x1A1A1A, 0xD1D1D1)
-    static let iconInk = Color.dyn(0x3A3A3C, 0xC7C7CC)
-    static let utilityIconInk = Color.dyn(0x8A8A8E, 0x8E8E93)
+    static let ink = Color.dyn(0x1A1A1A, 0xEBEBF0)
     static let previewInk = Color.dyn(0x8A8A8A, 0x8A8F93)
-    static let conversationPreviewInk = Color.dyn(0x999999, 0x5E5E5E)
+    static let conversationPreviewInk = Color.dyn(0x999999, 0x8C8C8C)
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
-    static let timeInk = Color.dyn(0xB2B2B2, 0x303030)
+    static let timeInk = Color.dyn(0xB2B2B2, 0x6E6E6E)
     static let rule = Color(UIColor { trait in
         // WeChat measures 48,48,48 on its 25,25,25 canvas. Our canvas is
         // 10,10,10, so the same perceived weight needs a darker separator.
@@ -30,31 +28,6 @@ private enum ChatListVisual {
     static let chipInk = Color.dyn(0x62636A, 0xA8A9AF)
     static let selectedChipFill = Color.dyn(0x161823, 0xF1F1F3)
     static let selectedChipInk = Color.dyn(0xFFFFFF, 0x17171A)
-}
-
-private enum OfficialRowVisual {
-    static let officialAvatar = LinearGradient(
-        colors: [
-            Color(hex: 0x1FAE79),
-            Color(hex: 0x0E805E),
-            Color(hex: 0x075E54)
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-
-    static let weatherAvatar = LinearGradient(
-        colors: [
-            Color(hex: 0x64D2FF),
-            Color(hex: 0x2E9BEC),
-            Color(hex: 0x0A6FC2)
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-
-    static let weatherSun = Color(hex: 0xFFD60A)
-    static let avatarRim = Color.white.opacity(0.18)
 }
 
 private struct XingyanMainStarTitle: View {
@@ -712,13 +685,13 @@ struct ChatRow: View, Equatable {
         if chat.flagged == true, chat.bot != "qqnews" {
             Image(systemName: "bell.fill")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(ChatListVisual.utilityIconInk)
+                .foregroundStyle(ChatListVisual.timeInk)
                 .frame(width: 16, height: 16)
                 .accessibilityLabel(Tr("标为未读"))
         } else if chat.unreadCount > 0 {
             if chat.muted == true, chat.bot != "qqnews" {
                 Circle()
-                    .fill(ChatListVisual.utilityIconInk)
+                    .fill(ChatListVisual.timeInk)
                     .frame(width: 8, height: 8)
                     .overlay(Circle().stroke(ChatListVisual.badgeRing, lineWidth: 1.5))
             } else {
@@ -1306,7 +1279,9 @@ struct ChatsView: View {
     }
     private var chatsCardFill: Color { chatsPageFill }
 
+    @State private var scrolled: CGFloat = 0
     @State private var chatTopScrolled: CGFloat = 0
+    @State private var chatsScrollActive = false
     @State private var filterHidden = false
 
     @State private var pullDown: CGFloat = 0
@@ -1342,7 +1317,6 @@ struct ChatsView: View {
     @State private var stressLoadedCount = ChatStressFixture.initialWindow
     @State private var stressCountedEnd = ChatStressFixture.initialWindow
     @State private var stressChatEntries: [NativeChatEntry] = []
-    @State private var hasInitializedChatCache = false
     @State private var cachedChatEntries: [NativeChatEntry] = []
     @State private var cachedChatEntriesRevision = 0
 
@@ -1541,6 +1515,7 @@ struct ChatsView: View {
     private func chooseFilter(_ item: ChatFilter) {
         guard chatFilter != item else { return }
         NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
+        scrolled = 0
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         withAnimation(.spring(response: 0.30, dampingFraction: 0.92)) {
             chatFilter = item
@@ -1674,13 +1649,16 @@ struct ChatsView: View {
     }
 
     private func handleScrollZone(_ zone: Int) {
-        if zone == 2 {
+        let wasNearTop = scrolled <= 8
+        if zone >= 2, wasNearTop {
             NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
         }
 
         if zone == 0 {
+            if scrolled != 0 { scrolled = 0 }
             setFilterHidden(false)
         } else if zone >= 2 {
+            if scrolled != 9 { scrolled = 9 }
             setFilterHidden(true)
         }
 
@@ -1802,12 +1780,12 @@ struct ChatsView: View {
                     }
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(ChatListVisual.iconInk)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(ChatListVisual.ink)
                         .frame(width: 40, height: 40)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(ChatChromeIconPressStyle())
+                .buttonStyle(NavPlusPressStyle())
                 .accessibilityLabel(Tr("更多"))
             }
         }
@@ -1838,12 +1816,11 @@ struct ChatsView: View {
         } label: {
             HStack(spacing: 7) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(ChatListVisual.utilityIconInk)
+                    .font(.system(size: 15, weight: .semibold))
                 Text(Tr("搜索"))
                     .font(pfStyled(size: 15, weight: .regular))
-                    .foregroundStyle(chatsSearchInk)
             }
+            .foregroundStyle(chatsSearchInk)
             .frame(maxWidth: .infinity)
             .frame(height: 36)
             .background {
@@ -2316,26 +2293,13 @@ struct ChatsView: View {
                     if officialRowAvatar.isEmpty {
                         ZStack {
                             Circle()
-                                .fill(OfficialRowVisual.officialAvatar)
-                            Circle()
-                                .fill(
-                                    RadialGradient(
-                                        colors: [Color.white.opacity(0.12), .clear],
-                                        center: .topLeading,
-                                        startRadius: 0,
-                                        endRadius: ChatListVisual.avatarSize * 0.68
-                                    )
-                                )
+                                .fill(Color(hex: 0x25D366))
                             Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: ChatListVisual.avatarSize * 0.40,
-                                              weight: .semibold))
-                                .foregroundStyle(.white.opacity(0.94))
-                            Circle()
-                                .strokeBorder(OfficialRowVisual.avatarRim, lineWidth: 0.7)
+                                .font(.system(size: ChatListVisual.avatarSize * 0.42, weight: .semibold))
+                                .foregroundStyle(.white)
                         }
                         .frame(width: ChatListVisual.avatarSize,
                                height: ChatListVisual.avatarSize)
-                        .shadow(color: Color.black.opacity(0.16), radius: 3, y: 1.5)
                     } else {
                         Avatar(path: officialRowAvatar,
                                size: ChatListVisual.avatarSize,
@@ -2445,23 +2409,6 @@ struct ChatsView: View {
                 HStack(spacing: ChatListVisual.avatarGap) {
                     if payOfficialRowAvatar.isEmpty {
                         StarPayAvatar(size: ChatListVisual.avatarSize)
-                            .overlay {
-                                Circle()
-                                    .stroke(PayVisual.tint.opacity(0.20),
-                                            lineWidth: 0.8)
-                            }
-                            .overlay(alignment: .bottomTrailing) {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 7.5, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .frame(width: 15, height: 15)
-                                    .background(PayVisual.tint, in: Circle())
-                                    .overlay {
-                                        Circle().stroke(ChatListVisual.badgeRing,
-                                                        lineWidth: 1.2)
-                                    }
-                                    .offset(x: 1.5, y: 1.5)
-                            }
                     } else {
                         Avatar(path: payOfficialRowAvatar, size: ChatListVisual.avatarSize,
                                radius: 14, circle: true)
@@ -2538,31 +2485,20 @@ struct ChatsView: View {
             } label: {
                 HStack(spacing: ChatListVisual.avatarGap) {
                     if weatherRowAvatar.isEmpty {
-                        ZStack {
-                            Circle()
-                                .fill(OfficialRowVisual.weatherAvatar)
-                            Circle()
-                                .fill(
-                                    RadialGradient(
-                                        colors: [Color.white.opacity(0.15), .clear],
-                                        center: .topLeading,
-                                        startRadius: 0,
-                                        endRadius: ChatListVisual.avatarSize * 0.68
-                                    )
-                                )
-                            Image(systemName: "cloud.sun.fill")
-                                .font(.system(size: ChatListVisual.avatarSize * 0.40,
-                                              weight: .semibold))
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white.opacity(0.96),
-                                                 OfficialRowVisual.weatherSun)
-                            Circle()
-                                .strokeBorder(OfficialRowVisual.avatarRim, lineWidth: 0.7)
-                        }
-                        .frame(width: ChatListVisual.avatarSize,
-                               height: ChatListVisual.avatarSize)
-                        .shadow(color: Color(hex: 0x2E9BEC).opacity(0.18),
-                                radius: 3.5, y: 1.5)
+                        Image(systemName: "cloud.sun.fill")
+                            .font(.system(size: ChatListVisual.avatarSize * 0.42, weight: .semibold))
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, Color(hex: 0xFFD35C))
+                            .frame(width: ChatListVisual.avatarSize,
+                                   height: ChatListVisual.avatarSize)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color(hex: 0x4C9DFF), Color(hex: 0x1558B8)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                in: Circle()
+                            )
                     } else {
                         Avatar(path: weatherRowAvatar, size: ChatListVisual.avatarSize,
                                radius: 14, circle: true)
@@ -2869,12 +2805,12 @@ struct ChatsView: View {
 
         let isDark = chatsIsDark
         let titleColor: UIColor = chat.showsOfficialMark
-            ? UIColor(hex: isDark ? 0x31C48D : 0x0F8B65)
-            : UIColor(hex: isDark ? 0xD1D1D1 : 0x191919)
-        let previewColor = UIColor(hex: isDark ? 0x5E5E5E : 0x999999)
+            ? UIColor(hex: 0x25D366)
+            : UIColor(hex: isDark ? 0xEBEBF0 : 0x191919)
+        let previewColor = UIColor(hex: isDark ? 0x8C8C8C : 0x999999)
         let memberColor = nativePeerColor(chat.memberColor)
         let rowBg: UIColor = isDark ? UIColor(hex: 0x0A0A0A) : UIColor.white
-        let timeColor = UIColor(hex: isDark ? 0x303030 : 0xB2B2B2)
+        let timeColor = UIColor(hex: isDark ? 0x6E6E6E : 0xB2B2B2)
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
 
@@ -3014,6 +2950,12 @@ struct ChatsView: View {
                         guard entry.kind == .chat, let chat = entry.chat else { return nil }
                         return nativeChatRowConfiguration(chat)
                     },
+                    onScrollStateChange: { scrolling in
+                        guard chatsScrollActive != scrolling else { return }
+                        withAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
+                            chatsScrollActive = scrolling
+                        }
+                    },
                     onOffsetChange: { y in
                         let next: CGFloat = y > 8 ? 1 : 0
                         if chatTopScrolled != next { chatTopScrolled = next }
@@ -3135,10 +3077,8 @@ struct ChatsView: View {
             }
 
             .onAppear {
-                if !hasInitializedChatCache {
-                    refreshChatListCache(chatSnapshot())
-                    hasInitializedChatCache = true
-                }
+                let next = chatSnapshot()
+                refreshChatListCache(next)
                 if MessageStressFixture.autoOpen,
                    !stressAutoOpened,
                    let first = MessageStressFixture.firstChat {
@@ -3325,23 +3265,8 @@ struct ChatsView: View {
         }
         .task {
             HitchWatch.shared.start("会话列表")
-            if app.chats.isEmpty {
-                await app.loadChats()
-            }
-            try? await Task.sleep(nanoseconds: 250_000_000)
-            while !Task.isCancelled {
-                let pollSeconds: UInt64 = Realtime.shared.connected ? 60 : 4
-                try? await Task.sleep(nanoseconds: pollSeconds * 1_000_000_000)
-                guard !Task.isCancelled else { break }
-                await app.loadChats()
-            }
-        }
-        .task {
-            try? await Task.sleep(nanoseconds: 900_000_000)
-            guard !Task.isCancelled else { return }
 
             let got = await API.shared.miniApps()
-            guard !Task.isCancelled else { return }
             if !got.isEmpty {
                 floorApps = got
                 if let d = try? JSONEncoder().encode(got) {
@@ -3354,6 +3279,12 @@ struct ChatsView: View {
             }
 
             MallWeather.shared.refresh()
+
+            while !Task.isCancelled {
+                await app.loadChats()
+                let pollSeconds: UInt64 = Realtime.shared.connected ? 60 : 4
+                try? await Task.sleep(nanoseconds: pollSeconds * 1_000_000_000)
+            }
         }
 
     }
@@ -3589,12 +3520,27 @@ struct ChatsView: View {
 struct NavPlusPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background {
-                Circle()
-                    .fill(Color.primary.opacity(configuration.isPressed ? 0.055 : 0))
+            .scaleEffect(configuration.isPressed ? 0.92 : 1)
+
+            .overlay {
+                ZStack {
+                    RadialGradient(colors: [Color.white.opacity(0.95),
+                                            Color.white.opacity(0.30),
+                                            Color.white.opacity(0)],
+                                   center: .center, startRadius: 0, endRadius: 34)
+                    Circle()
+                        .fill(Color.white.opacity(0.55))
+                        .frame(width: 16, height: 16)
+                        .blur(radius: 7)
+                }
+                .blendMode(.plusLighter)
+                .opacity(configuration.isPressed ? 1 : 0)
+                .clipShape(Capsule(style: .continuous))
+                .allowsHitTesting(false)
             }
-            .scaleEffect(configuration.isPressed ? 0.94 : 1)
-            .animation(.easeOut(duration: 0.10), value: configuration.isPressed)
+            .brightness(configuration.isPressed ? 0.10 : 0)
+            .shadow(color: Color.white.opacity(configuration.isPressed ? 0.5 : 0), radius: 10)
+            .animation(.easeOut(duration: 0.13), value: configuration.isPressed)
     }
 }
 

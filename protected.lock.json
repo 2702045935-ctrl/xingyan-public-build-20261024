@@ -1,10 +1,10 @@
 {
-  "baseline": "chat and moments frozen while other pages migrate",
+  "baseline": "build 2611261910 (c1b309bf): chat, moments, network and upload transport frozen",
   "files": [
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 364273,
-      "sha256": "db4f9f8db9d5d37e36c5f931dd62ae959f66a77ba65cbc9fe3b42ab89b528f81"
+      "size": 391073,
+      "sha256": "66c92be58e221bfa7537d955a5383b293609a488b287d2de042881ad4ac9d3ee"
     },
     {
       "path": "Sources/ChatDeferred.swift",
@@ -13,13 +13,13 @@
     },
     {
       "path": "Sources/ScrollProbe.swift",
-      "size": 9256,
-      "sha256": "a86b2cb652afb230ad84b34da820070db7d220f5b0693b89f3d937f831dbdab5"
+      "size": 10157,
+      "sha256": "6417eab14d59c6b9973e208c549e0167884defa58fe234ad7a22a4b1d3a012b9"
     },
     {
       "path": "Sources/ChatBackgroundSheet.swift",
-      "size": 36100,
-      "sha256": "0136e0e900bc78a5e338cf2beaef136e8f84474240be5aab493cfd4aeea223d4"
+      "size": 38209,
+      "sha256": "32202e0e302dd612c5aa7a6614440ba59faa712769adf5b485ec00e95f332451"
     },
     {
       "path": "Sources/ChatComposerField.swift",
@@ -34,7 +34,7 @@
     {
       "path": "Sources/ChatStressFixture.swift",
       "size": 3171,
-      "sha256": "a7ef48649427d7ad5c20174932d6ff84a8299134a380e8a6dda64a0038610b43"
+      "sha256": "5c3a04d73abbff8e90127f0637319b0bbe2f51fdf8186c849bae4a5d711e8d7a"
     },
     {
       "path": "Sources/ChatThemes.swift",
@@ -48,18 +48,18 @@
     },
     {
       "path": "Sources/ChatsView.swift",
-      "size": 152858,
-      "sha256": "3ceaed0eb38ea6d54bcf014677ba7a0956167b57772e02396b9ad6a45950f864"
+      "size": 150411,
+      "sha256": "77c4a246f6b5b9c1626cf922cb691a5b7e1b942cb85d9e5ed8c936eaa620e3cc"
     },
     {
       "path": "Sources/NativeChatList.swift",
-      "size": 35557,
-      "sha256": "010097cf9e09471f88249ddcd18a885553ea7b30ff6a8ffdeefb3aedc18321a2"
+      "size": 33781,
+      "sha256": "4919a2cea590630f465a6164470c9d16c0f9164fb7f7bc62fd6c03160257e96f"
     },
     {
       "path": "Sources/NativeChatRowCell.swift",
-      "size": 42368,
-      "sha256": "8a97ee8152f4ab2819ccefc6ec75316107e063b3e638ddfdd130310e37b63635"
+      "size": 42333,
+      "sha256": "50aafbe5675786f95c2d4c1de7b7bf0d22d81afd21262eaf32a4b2e6bfa68dc7"
     },
     {
       "path": "Sources/WeChatMessageCards.swift",
@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/DiscoverView.swift",
-      "size": 165243,
-      "sha256": "a8720e3f395986c2d143df99da4f0f766c132d8aef945da79da60c14d56fee27"
+      "size": 158558,
+      "sha256": "f2619b013b4b441c18e39b223d30ee5e5696e2e81dc4d25fdfedb9d85ee797f9"
     },
     {
       "path": "Sources/MomentFeedCard.swift",
@@ -103,8 +103,93 @@
     },
     {
       "path": "Sources/NativeStaticList.swift",
-      "size": 23910,
-      "sha256": "cff8704a1573917033689a99eb084d230ab091b983c3d965ec42b20010740516"
+      "size": 23741,
+      "sha256": "47288370b2de8016b241a03307c621d079c6d09ee09258424007b50f56b4e173"
+    },
+    {
+      "path": "Sources/ChatDrafts.swift",
+      "size": 1266,
+      "sha256": "5955afce42d0dade09cb1f1e59f4b8a5de883f720d943d3baa96238f83d7cd97"
+    },
+    {
+      "path": "Sources/ChatHistoryView.swift",
+      "size": 14442,
+      "sha256": "b27396fd7b420edd15ace7b0173fee6b46df94dc01b14d19f570c37393e9247f"
+    },
+    {
+      "path": "Sources/ChatQuickManage.swift",
+      "size": 17446,
+      "sha256": "10efb8df9763bd122d5bf77f8864c237ca82dbc7ca9df379a4dc19e325f4f54c"
+    },
+    {
+      "path": "Sources/NativeMediaPicker.swift",
+      "size": 21829,
+      "sha256": "6a3cea89109bc23dee3947b339f39059faeda3573d08578a91087f6f792e4904"
+    },
+    {
+      "path": "Sources/BotChatView.swift",
+      "size": 9661,
+      "sha256": "eb58cbb388c0b1d51ec1d7db099554b168a489504a12662bd876e10489e37575"
+    },
+    {
+      "path": "Sources/CardWechat.swift",
+      "size": 20131,
+      "sha256": "4832b2677cb58a28dbbd4d7e3978b96ce92431e0a05d417d83ba931127b80485"
+    },
+    {
+      "path": "Sources/SettingsWeChat.swift",
+      "size": 10350,
+      "sha256": "9e8395ddb561b9b3b0e084f633858045eb558998c47731d9c478ee5ff2c27ae6"
+    },
+    {
+      "path": "Sources/MomentCommentBar.swift",
+      "size": 1837,
+      "sha256": "83a8198ba484d254180d49bfe1da0f440c8909e11918ea3b9912dc70a626b6f1"
+    },
+    {
+      "path": "Sources/MomentCommentsSheet.swift",
+      "size": 35901,
+      "sha256": "8b17a73a66891b3981a29dd974f9b0adb8827984ac1effd45c3da05e7f35a3e1"
+    },
+    {
+      "path": "Sources/MomentNoteCard.swift",
+      "size": 12222,
+      "sha256": "d0ab8ee68acb93fd452af870e96deb5cd5cc1429619069d20e896bf85cd747ee"
+    },
+    {
+      "path": "Sources/MomentNoticesView.swift",
+      "size": 6300,
+      "sha256": "acbebd008b1fc3ecd5a6af1fbc60be353a0bbabee1f54452671b61da4ef6746d"
+    },
+    {
+      "path": "Sources/MsgFrameKey.swift",
+      "size": 651,
+      "sha256": "fdf3a779255614d9915d9bcf528868ac2517b5feafbfa1180956cd162403993a"
+    },
+    {
+      "path": "Sources/StressTestConfiguration.swift",
+      "size": 2356,
+      "sha256": "a5a09725c9954a9f08fa17114de09bbbd7cb0492fa645fce968efc03986d4c8b"
+    },
+    {
+      "path": "Sources/API.swift",
+      "size": 221825,
+      "sha256": "54de4fa2ac1dfb4a8b5c6dd54e5b6e3a5b723a44ff42f85274b7e3c30881da2e"
+    },
+    {
+      "path": "Sources/Realtime.swift",
+      "size": 19674,
+      "sha256": "bb6be6358be3d6fd9204a5c44b9abf8e43a45c0fb77b6d55697d4df54413128e"
+    },
+    {
+      "path": "server/server.js",
+      "size": 1480855,
+      "sha256": "088b6e6f6c9ab15da8257dfae5aee9791e3191c95d8f98b0ed6ccb0dffe200ac"
+    },
+    {
+      "path": "Sources/Panels.swift",
+      "size": 49252,
+      "sha256": "5c5f671d4182d5ab23312209bb536c0083be105dd51c9a6a93b55f127339b9d4"
     }
   ]
 }

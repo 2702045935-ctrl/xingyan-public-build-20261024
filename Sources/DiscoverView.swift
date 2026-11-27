@@ -142,101 +142,6 @@ private struct WorldStarfield: View {
     }
 }
 
-private struct WorldTopIconPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background {
-                Circle()
-                    .fill(Color.primary.opacity(configuration.isPressed ? 0.06 : 0))
-            }
-            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.92 : 1))
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
-                       value: configuration.isPressed)
-    }
-}
-
-private enum WorldVisual {
-    static let iconSize: CGFloat = 52
-    static let iconRadius: CGFloat = 14
-
-    static let social = [
-        Color(hex: 0x28B987),
-        Color(hex: 0x0E7D62)
-    ]
-    static let utility = [
-        Color(hex: 0x4A9EFF),
-        Color(hex: 0x176BD3)
-    ]
-    static let commerce = [
-        Color(hex: 0xE89032),
-        Color(hex: 0xB84C16)
-    ]
-    static let local = [
-        Color(hex: 0x25B8B1),
-        Color(hex: 0x0D7C82)
-    ]
-    static let entertainment = [
-        Color(hex: 0x7C72F2),
-        Color(hex: 0x4E47C8)
-    ]
-    static let neutral = [
-        Color(hex: 0x8A919C),
-        Color(hex: 0x59616D)
-    ]
-
-    static var topIconInk: Color { Color.dyn(0x3A3A3C, 0xC7C7CC) }
-    static var scanInk: Color { social[1] }
-    static var chevronInk: Color { Color.dyn(0xA2A2A7, 0x6E6E73) }
-    static let originalIconActions: Set<String> = [
-        "music", "games", "channels", "look", "miniapps",
-        "news", "live", "nearby", "shake", "bottle"
-    ]
-
-    static func keepsOriginalIcon(_ action: String?) -> Bool {
-        originalIconActions.contains((action ?? "").lowercased())
-    }
-
-    static func colors(for color: String?,
-                       action: String?,
-                       label: String = "") -> [Color] {
-        if let raw = color?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !raw.isEmpty {
-            let custom = Color(hexString: raw, fallback: 0x4A90D9)
-            return [custom, custom.opacity(0.82)]
-        }
-        let key = (action ?? "").lowercased()
-        let title = label.lowercased()
-        if ["shop", "mall", "order", "payment"].contains(where: {
-            key == $0 || title.contains($0)
-        }) {
-            return commerce
-        }
-        if ["nearby", "map", "shake", "bottle", "live", "local"].contains(where: {
-            key == $0 || title.contains($0)
-        }) {
-            return local
-        }
-        if ["games", "game", "music", "channels", "video", "works"].contains(where: {
-            key == $0 || title.contains($0)
-        }) {
-            return entertainment
-        }
-        if ["moments", "favorites", "look", "cards", "friend", "social"].contains(where: {
-            key == $0 || title.contains($0)
-        }) {
-            return social
-        }
-        if ["settings", "general", "privacy"].contains(where: {
-            key == $0 || title.contains($0)
-        }) {
-            return neutral
-        }
-        return utility
-    }
-}
-
 private struct XingyanMallMark: View {
     var size: CGFloat = 52
 
@@ -369,50 +274,54 @@ struct DiscoverView: View {
     }
 
     private var discoverTopHeader: some View {
-        ZStack {
-            Text(Tr("世界"))
-                .font(systemTextFont(17, .semibold, relativeTo: .headline))
-                .foregroundStyle(OrbitTheme.ink)
-                .accessibilityAddTraits(.isHeader)
-                .frame(maxWidth: .infinity)
-
-            HStack(spacing: 2) {
-                Spacer(minLength: 0)
-
-                Button {
-                    path.append("search")
-                } label: {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(WorldVisual.topIconInk)
-                        .frame(width: 42, height: 42)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(WorldTopIconPressStyle())
-                .accessibilityLabel(Tr("搜索"))
-
-                Button {
-                    showScan = true
-                } label: {
-                    Image(systemName: "qrcode.viewfinder")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(WorldVisual.scanInk)
-                        .frame(width: 42, height: 42)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(WorldTopIconPressStyle())
-                .accessibilityLabel(Tr("扫一扫"))
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(Tr("世界"))
+                    .font(systemTextFont(26, .bold, relativeTo: .largeTitle))
+                    .foregroundStyle(OrbitTheme.ink)
+                    .accessibilityAddTraits(.isHeader)
+                Text(app.moments.isEmpty ? Tr("去发现、聊天、生活")
+                                         : momentCountText)
+                    .font(systemTextFont(12, .regular, relativeTo: .caption1))
+                    .foregroundStyle(OrbitTheme.secondary)
+                    .lineLimit(1)
             }
+
+            Spacer(minLength: 8)
+
+            Button {
+                path.append("search")
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(OrbitTheme.ink)
+                    .frame(width: 42, height: 42)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("搜索"))
+
+            Button {
+                showScan = true
+            } label: {
+                Image(systemName: "qrcode.viewfinder")
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundStyle(OrbitTheme.jadeDeep)
+                    .frame(width: 42, height: 42)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("扫一扫"))
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 16)
         .frame(height: discoverHeaderHeight)
     }
 
     private var discoverHeaderHeight: CGFloat {
-        let preferred = 17 * fontScale * CareMode.scale
-        let titleHeight = UIFontMetrics(forTextStyle: .headline)
+        let preferred = 26 * fontScale * CareMode.scale
+        let titleHeight = UIFontMetrics(forTextStyle: .largeTitle)
             .scaledValue(for: preferred)
-        return max(L.navH, ceil(titleHeight + 12))
+        return max(L.navH, ceil(titleHeight + 14))
     }
 
     private var worldCanvas: Color {
@@ -446,7 +355,7 @@ struct DiscoverView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
-        .frame(height: 30)
+        .frame(height: 34)
         .background(worldSectionFill)
         .accessibilityAddTraits(.isHeader)
     }
@@ -460,7 +369,7 @@ struct DiscoverView: View {
                     Circle()
                         .stroke(
                             LinearGradient(
-                                colors: WorldVisual.social,
+                                colors: [OrbitTheme.jadeDeep, Color(hex: 0x6FD84B)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -482,7 +391,7 @@ struct DiscoverView: View {
                 VStack(alignment: .leading, spacing: scheme == .dark ? 4 : 5) {
                     Text(Tr(item.label))
                         .font(pfStyled(size: scheme == .dark ? 16.5 : 17,
-                                       weight: .medium))
+                                       weight: .semibold))
                         .foregroundStyle(OrbitTheme.ink)
                         .lineLimit(1)
                     Text(heroStatusText)
@@ -500,15 +409,15 @@ struct DiscoverView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, app.moments.count > 9 ? 6 : 0)
                         .frame(minWidth: 20, minHeight: 20)
-                        .background(Capsule().fill(WorldVisual.social[1]))
+                        .background(Capsule().fill(OrbitTheme.jadeDeep))
                 }
             }
             .padding(.horizontal, 16)
-            .frame(height: 72)
+            .frame(height: 78)
             .background(worldRowFill)
             .contentShape(Rectangle())
         }
-        .buttonStyle(MenuPressStyle())
+        .buttonStyle(.plain)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(worldHairline)
@@ -519,12 +428,7 @@ struct DiscoverView: View {
     }
 
     private func worldFlatRow(_ item: DiscoverItem) -> some View {
-        let colors = WorldVisual.colors(
-            for: item.color,
-            action: item.action,
-            label: item.label
-        )
-        let keepsOriginalIcon = WorldVisual.keepsOriginalIcon(item.action)
+        let accent = Color(hexString: item.color ?? "#4A90D9", fallback: 0x4A90D9)
         let artwork = worldArtworkPath(item)
 
         return Button {
@@ -532,69 +436,27 @@ struct DiscoverView: View {
         } label: {
             HStack(spacing: 12) {
                 ZStack {
-                    if keepsOriginalIcon {
-                        RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
-                                         style: .continuous)
-                            .fill(colors[0])
-                    } else {
-                        RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
-                                         style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: colors,
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-
-                        RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
-                                         style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.18), .clear],
-                                    startPoint: .top,
-                                    endPoint: .center
-                                )
-                            )
-                    }
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(accent)
 
                     if !artwork.isEmpty {
                         RemoteImage(path: artwork, mode: .fill, maxSide: 180)
-                            .frame(width: WorldVisual.iconSize,
-                                   height: WorldVisual.iconSize)
-                            .clipShape(RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
+                            .frame(width: 52, height: 52)
+                            .clipShape(RoundedRectangle(cornerRadius: 14,
                                                        style: .continuous))
                     } else {
                         Image(systemName: RowIcon.sf(action: item.action,
                                                      label: item.label))
-                            .font(.system(size: keepsOriginalIcon ? 21 : 20,
-                                          weight: .semibold))
+                            .font(.system(size: 21, weight: .semibold))
                             .foregroundStyle(.white)
-                            .shadow(color: keepsOriginalIcon
-                                    ? .clear
-                                    : Color.black.opacity(0.16),
-                                    radius: keepsOriginalIcon ? 0 : 0.8,
-                                    y: keepsOriginalIcon ? 0 : 0.6)
-                    }
-
-                    if !keepsOriginalIcon {
-                        RoundedRectangle(cornerRadius: WorldVisual.iconRadius,
-                                         style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.7)
                     }
                 }
-                .frame(width: WorldVisual.iconSize,
-                       height: WorldVisual.iconSize)
-                .shadow(color: keepsOriginalIcon
-                        ? .clear
-                        : colors[1].opacity(0.18),
-                        radius: keepsOriginalIcon ? 0 : 4.5,
-                        y: keepsOriginalIcon ? 0 : 2)
+                .frame(width: 52, height: 52)
 
                 VStack(alignment: .leading, spacing: scheme == .dark ? 3 : 4) {
                     Text(Tr(item.label))
                         .font(pfStyled(size: 16.5,
-                                       weight: .medium))
+                                       weight: scheme == .dark ? .semibold : .medium))
                         .foregroundStyle(OrbitTheme.ink)
                         .lineLimit(1)
                     Text(worldSubtitle(item))
@@ -608,14 +470,14 @@ struct DiscoverView: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(WorldVisual.chevronInk)
+                    .foregroundStyle(OrbitTheme.tertiary)
             }
             .padding(.horizontal, 16)
-            .frame(height: 64)
+            .frame(height: 74)
             .background(worldRowFill)
             .contentShape(Rectangle())
         }
-        .buttonStyle(MenuPressStyle())
+        .buttonStyle(.plain)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(worldHairline)
@@ -645,14 +507,14 @@ struct DiscoverView: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(WorldVisual.chevronInk)
+                    .foregroundStyle(OrbitTheme.tertiary)
             }
             .padding(.horizontal, 16)
-            .frame(height: 64)
+            .frame(height: 74)
             .background(worldRowFill)
             .contentShape(Rectangle())
         }
-        .buttonStyle(MenuPressStyle())
+        .buttonStyle(.plain)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(worldHairline)
@@ -672,7 +534,6 @@ struct DiscoverView: View {
                         if let hero = worldHeroItem {
                             worldSectionHeader(Tr("动态"))
                             worldUpdatesRow(hero)
-                            Color.clear.frame(height: 8)
                         }
 
                         if worldShopItem != nil || !worldEntryGroups.isEmpty {
@@ -680,7 +541,6 @@ struct DiscoverView: View {
 
                             if let shop = worldShopItem {
                                 worldShopRow(shop)
-                                Color.clear.frame(height: 8)
                             }
 
                             ForEach(worldEntryGroups) { group in
@@ -690,7 +550,6 @@ struct DiscoverView: View {
                                         worldFlatRow(item)
                                     }
                                 }
-                                Color.clear.frame(height: 8)
                             }
                         }
 
@@ -701,8 +560,6 @@ struct DiscoverView: View {
                         NativeTopScrollObserver { y in
                             let next = y > 8 ? y : 0
                             if navScrolled != next { navScrolled = next }
-                        } onScrollViewReady: { scroll in
-                            NativeTopScrollRegistry.shared.discover = scroll
                         }
                     }
                 }
@@ -712,15 +569,7 @@ struct DiscoverView: View {
                 discoverTopHeader
                     .measure("discover.nav")
                     .background {
-                        ZStack {
-                            NativeTopGlassMask(active: navScrolled > 0)
-                            if #available(iOS 26.0, *) {
-                                NativeScrollEdgeElementBridge(
-                                    scrollView: { NativeTopScrollRegistry.shared.discover }
-                                )
-                            }
-                        }
-                        .ignoresSafeArea(edges: .top)
+                        NativeTopGlassMask(active: navScrolled > 0)
                     }
                     .contentShape(Rectangle())
                     .zIndex(10)
@@ -839,7 +688,7 @@ struct DiscoverView: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 22)
                     .frame(height: 42)
-                    .background(WorldVisual.social[1], in: Capsule())
+                    .background(OrbitTheme.jade, in: Capsule())
             }
             .buttonStyle(.plain)
         }
@@ -945,7 +794,6 @@ struct DiscoverView: View {
         case "channels": return Tr("短视频与创作者内容")
         case "live": return Tr("正在直播与热门房间")
         case "scan": return Tr("扫描二维码与条形码")
-        case "map": return Tr("星轨地图与导航")
         case "bottle", "shake": return Tr("随机遇见有趣的人")
         case "look": return Tr("发现值得阅读的内容")
         case "search": return Tr("搜人、消息与世界内容")
@@ -1289,27 +1137,13 @@ struct DiscoverView: View {
     }
 
     private func loadItems() async {
-        if items.isEmpty {
-            items = DiscoverItem.builtin
-            loaded = true
-        }
-        if let cached = FeatureManifestStore.cachedItems(),
-           !cached.isEmpty {
-            items = cached
-            loaded = true
-        }
-        if let data = try? await API.shared.signedFeatureManifest(),
-           let list = try? FeatureManifestStore.verifyAndCache(data),
-           !list.isEmpty {
-            items = list
-            loaded = true
-        } else if let list = try? await API.shared.discover(),
-                  !list.isEmpty {
+        if let list = try? await API.shared.discover(), !list.isEmpty {
+
             items = list
             loaded = true
         } else if items.isEmpty {
+
             items = DiscoverItem.builtin
-            loaded = true
         }
     }
 
@@ -1337,7 +1171,6 @@ struct DiscoverView: View {
     private func worldDestination(_ key: String) -> some View {
         switch key {
         case "moments": MomentsView()
-        case "map": StarMapView()
         case "nearby": NearbyPageView()
         case "shake", "bottle": BottlePageView()
         case "live": LiveListView()
@@ -1390,8 +1223,6 @@ extension DiscoverItem {
                          color: "#59C47E", action: "search", group: 4, enabled: true),
             DiscoverItem(id: "d08", label: "附近", icon: "i.nearby", svg: I.nearby,
                          color: "#3D83E7", action: "nearby", group: 5, enabled: true),
-            DiscoverItem(id: "d-map", label: "星轨地图", icon: "i.map", svg: "",
-                         color: "#2C7BE5", action: "map", group: 5, enabled: true),
             DiscoverItem(id: "d10", label: "游戏", icon: "i.game", svg: I.game,
                          color: "#9A6AE8", action: "games", group: 7, enabled: true),
             DiscoverItem(id: "d11", label: "商城", icon: "i.shop", svg: I.wallet,
@@ -3237,7 +3068,7 @@ struct MomentsView: View {
             uploading = true
             guard let url = try? await API.shared.uploadCover(image: image) else {
                 uploading = false
-                app.show(Tr("已在本机生效，联网后自动同步"))
+                app.show(Tr("已在本机换好，联网后自动同步"))
                 return
             }
 
@@ -3253,14 +3084,14 @@ struct MomentsView: View {
                 } else {
                     app.applyMyProfileFields(["momentCover": url])
                 }
-                app.show(Tr("生活圈封面已更新"))
+                app.show(Tr("封面换好了"))
             } catch {
                 setCoverOverride(localPath)
                 if var me = app.me {
                     me.momentCover = localPath
                     app.me = me
                 }
-                app.show(Tr("已在本机生效，联网后自动同步"))
+                app.show(Tr("已在本机换好，联网后自动同步"))
             }
             uploading = false
         }

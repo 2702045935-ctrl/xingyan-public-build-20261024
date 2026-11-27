@@ -350,15 +350,70 @@ struct BubbleFill: View {
     var seed: Double = 0
 
     var glass: Bool = true
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.bubbleUsesLightInk) private var wallpaperUsesLightInk
+    private var usesDarkBackdrop: Bool { wallpaperUsesLightInk ?? (scheme == .dark) }
+
+    private var gloss: Color {
+        return Color.white.opacity(UIConfig.num("bubbleGloss", 0))
+    }
+    private var shade: Color {
+        Color.black.opacity(UIConfig.num("bubbleShade", 0))
+    }
+
+    private var edgeAlpha: CGFloat { UIConfig.num("bubbleEdge", 0) }
+
+    private var mineFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                ChatTheme.bubbleMine,
+                ChatTheme.bubbleMine.opacity(0.88)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
 
     var body: some View {
         ZStack {
             if mine {
                 BubbleShape(mine: mine, tail: tail, pill: pill)
-                    .fill(ChatTheme.bubbleMine)
+                    .fill(mineFill)
             } else {
                 BubbleShape(mine: mine, tail: tail, pill: pill)
                     .fill(ChatTheme.bubbleOther)
+            }
+
+            if UIConfig.num("bubbleGloss", 0) > 0
+                || UIConfig.num("bubbleShade", 0) > 0 {
+                BubbleShape(mine: mine, tail: tail, pill: pill)
+                    .fill(LinearGradient(stops: [
+                        .init(color: gloss, location: 0),
+                        .init(color: Color.clear, location: 0.42),
+                        .init(color: Color.clear, location: 0.68),
+                        .init(color: shade, location: 1)
+                    ], startPoint: .top, endPoint: .bottom))
+            }
+
+            if edgeAlpha > 0 {
+                BubbleShape(mine: mine, tail: tail, pill: pill)
+                    .stroke(Color.white.opacity(edgeAlpha), lineWidth: 0.9)
+            }
+
+            if UIConfig.num("bubbleIridescent", 0) > 0 {
+                BubbleShape(mine: mine, tail: tail, pill: pill)
+                    .stroke(AngularGradient(
+                        colors: [
+                            Color(red: 0.32, green: 0.86, blue: 1.00).opacity(0.55),
+                            Color(red: 0.72, green: 0.58, blue: 1.00).opacity(0.50),
+                            Color(red: 1.00, green: 0.58, blue: 0.78).opacity(0.46),
+                            Color(red: 1.00, green: 0.86, blue: 0.48).opacity(0.50),
+                            Color(red: 0.55, green: 1.00, blue: 0.72).opacity(0.46),
+                            Color(red: 0.32, green: 0.86, blue: 1.00).opacity(0.55)
+                        ],
+                        center: .center,
+                        angle: .degrees(seed * 360)),
+                            lineWidth: 1.1)
             }
         }
         .allowsHitTesting(false)
@@ -1273,6 +1328,7 @@ struct ChatDetailView: View {
 
     @State private var wasAtBottom = true
 
+    @State private var scroller: ScrollViewProxy?
     @State private var nativeMessageController = NativeStaticListController()
 
     @State private var lastOlderLoad = Date.distantPast
@@ -2123,9 +2179,15 @@ struct ChatDetailView: View {
                         Spacer(minLength: 0)
                         VStack(spacing: 8) {
 
-                            if messages.last != nil {
+                            if let lastMsg = messages.last?.id {
                                 Button {
-                                    nativeMessageController.scrollToBottom(animated: true)
+                                    if isGroup {
+                                        nativeMessageController.scrollToBottom(animated: true)
+                                    } else {
+                                        withAnimation(.easeOut(duration: 0.26)) {
+                                            scroller?.scrollTo(lastMsg, anchor: .bottom)
+                                        }
+                                    }
                                     unreadHere = 0
                                 } label: {
                                     HStack(spacing: 5) {
@@ -2308,16 +2370,10 @@ struct ChatDetailView: View {
             let screenH = (UIApplication.shared.connectedScenes
                 .compactMap { ($0 as? UIWindowScene)?.screen.bounds.height }.first) ?? UIScreen.main.bounds.height
             let h = max(0, screenH - f.origin.y)
-            guard abs(kbHeight - h) > 0.5 else { return }
-            let duration = n.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
-                as? Double ?? 0.25
-            withAnimation(.easeOut(duration: duration)) { kbHeight = h }
+            withAnimation(.easeOut(duration: 0.25)) { kbHeight = h }
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { n in
-            guard kbHeight != 0 else { return }
-            let duration = n.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
-                as? Double ?? 0.22
-            withAnimation(.easeOut(duration: duration)) { kbHeight = 0 }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.easeOut(duration: 0.22)) { kbHeight = 0 }
         }
         .onChange(of: panel) { next in
             if next != .none { kbHeight = 0 }
@@ -2594,7 +2650,11 @@ struct ChatDetailView: View {
             UserDefaults.standard.removeObject(forKey: deletedMessageKey)
             rebuildIndex()
             DispatchQueue.main.async {
-                nativeMessageController.scrollToBottom(animated: false)
+                if isGroup {
+                    nativeMessageController.scrollToBottom(animated: false)
+                } else {
+                    scroller?.scrollTo("__bottom", anchor: .bottom)
+                }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .chrisChatUnavailable)) { note in
@@ -2922,7 +2982,11 @@ struct ChatDetailView: View {
 
     @ViewBuilder
     private var conversationSurface: some View {
-        nativeMessageList
+        if usesShortConversationSurface {
+            shortConversationSurface
+        } else {
+            messageList
+        }
     }
 
     /* Small conversations do not need the history prefetch/pinning kernel. On
@@ -2930,6 +2994,294 @@ struct ChatDetailView: View {
        bottom offset can clamp repeatedly while content-size observers try to
        pin it again. A light ScrollView keeps the same message rows without that
        feedback path. */
+    private var shortConversationSurface: some View {
+        GeometryReader { geometry in
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        securityNotice
+                            .padding(.horizontal, L.msgPad)
+
+                        ForEach(messages) { message in
+                            messageBlock(message)
+                                .id(message.id)
+                                .padding(.horizontal, L.msgPad)
+                        }
+
+                        ForEach(outbox) { pending in
+                            pendingBubble(pending)
+                        }
+
+                        if !sendingMedia.isEmpty {
+                            HStack(spacing: 8) {
+                                Spacer(minLength: 0)
+                                SendingVideoBubble(cover: sendingPreview,
+                                                   progress: sendProgress)
+                            }
+                            .padding(.bottom, 12)
+                            .padding(.trailing, 6)
+                        }
+
+                        if let progress = sendingFileProgress, !sendingFileName.isEmpty {
+                            HStack(spacing: 8) {
+                                Spacer(minLength: 0)
+                                SendingFileBubble(name: sendingFileName,
+                                                  bytes: sendingFileBytes,
+                                                  progress: progress)
+                            }
+                            .padding(.bottom, 12)
+                            .padding(.trailing, 6)
+                        }
+
+                        Color.clear
+                            .frame(height: 8 + L.msgPad)
+                            .id("short-conversation-bottom")
+                    }
+                    .padding(L.msgPad)
+                    // Short conversations begin directly below the navigation
+                    // bar. Bottom alignment made the oldest bubble float just
+                    // above the composer when there were only a few messages.
+                    .frame(minHeight: geometry.size.height, alignment: .top)
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .onAppear {
+                    scrollShortConversationToBottom(proxy, animated: false)
+                }
+                .onChange(of: messages.count) { _ in
+                    scrollShortConversationToBottom(proxy, animated: true)
+                }
+                .onChange(of: outbox.count) { _ in
+                    scrollShortConversationToBottom(proxy, animated: true)
+                }
+                .onReceive(NotificationCenter.default.publisher(
+                    for: UIResponder.keyboardDidShowNotification
+                )) { _ in
+                    scrollShortConversationToBottom(proxy, animated: false)
+                }
+            }
+        }
+    }
+
+    private func scrollShortConversationToBottom(_ proxy: ScrollViewProxy,
+                                                 animated: Bool) {
+        DispatchQueue.main.async {
+            if animated {
+                withAnimation(.easeOut(duration: 0.18)) {
+                    proxy.scrollTo("short-conversation-bottom", anchor: .bottom)
+                }
+            } else {
+                proxy.scrollTo("short-conversation-bottom", anchor: .bottom)
+            }
+        }
+    }
+
+    private var messageList: some View {
+
+        let nearTopIds = hasOlder ? Set(messages.prefix(24).map { $0.id }) : Set<String>()
+        return ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+
+                    securityNotice
+
+                    if hasOlder {
+                        Color.clear
+                            .frame(height: 1)
+                            .onAppear { autoLoadOlder() }
+                    }
+                    ForEach(messages) { message in
+                        messageBlock(message)
+                            .id(message.id)
+
+                            .onAppear {
+                                if nearTopIds.contains(message.id) { autoLoadOlder() }
+
+                                if message.id == messages.last?.id { atBottom = true }
+                            }
+                    }
+
+                    ForEach(outbox) { p in
+                        pendingBubble(p)
+                    }
+
+                    if !sendingMedia.isEmpty {
+                        HStack(spacing: 8) {
+                            Spacer(minLength: 0)
+
+                            SendingVideoBubble(cover: sendingPreview,
+                                               progress: sendProgress)
+                        }
+                        .id("__sending")
+                        .padding(.bottom, 12)
+                        .padding(.trailing, 6)
+                    }
+                    if let progress = sendingFileProgress, !sendingFileName.isEmpty {
+                        HStack(spacing: 8) {
+                            Spacer(minLength: 0)
+                            SendingFileBubble(name: sendingFileName,
+                                              bytes: sendingFileBytes,
+                                              progress: progress)
+                        }
+                        .id("__sending-file")
+                        .padding(.bottom, 12)
+                        .padding(.trailing, 6)
+                    }
+                    Color.clear
+                        .frame(height: 1)
+                        .onAppear { atBottom = true }
+                        .onDisappear { atBottom = false }
+                        .id("__bottom")
+
+                    Spacer().frame(height: 8)
+                }
+                .padding(L.msgPad)
+
+                .background(GeometryReader { geo in
+                    Color.clear.preference(key: ChatContentHeightKey.self, value: geo.size.height)
+                })
+                .onPreferenceChange(ChatContentHeightKey.self) { h in
+                    let grew = h > lastContentHeight + 0.5
+                    lastContentHeight = h
+                    if grew, atBottomNow {
+                        scrollToEnd(proxy, animated: false)
+                        scheduleSettledBottom()
+                    }
+                }
+
+                .overlay(alignment: .topLeading) {
+                    ScrollOffsetProbe(onChange: { _, _ in
+                        if ChatScrollHandle.shared.moving, let g = ChatScrollHandle.shared.gap {
+                            let next = g <= 16
+                            if wasAtBottom != next { wasAtBottom = next }
+                        }
+                    }, onScrollStateChange: { scrolling in
+                        if scrolling {
+                            actionMessage = nil
+                            if !isGroup {
+                                atBottom = false
+                                wasAtBottom = false
+                            }
+                            initialOpenSettling = false
+                            if !initialScrollReady {
+                                initialScrollTask?.cancel()
+                                initialScrollTask = nil
+                                initialScrollReady = true
+                                allowSettledBottom = false
+                            }
+                            ScrollGate.shared.setScrolling(true)
+                            followOwnSendUntil = Date.distantPast
+                        } else {
+                            if !isGroup, let gap = ChatScrollHandle.shared.gap {
+                                atBottom = gap <= 16
+                                wasAtBottom = gap <= 16
+                            }
+                            ScrollGate.shared.setScrolling(false)
+                            frameCaptureTick &+= 1
+                        }
+                    }, onSizeChange: {
+                        let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
+                        if initialOpenSettling { return }
+                        guard (isGroup ? wasAtBottom : atBottomNow), !holdScroll else { return }
+                        if ChatScrollHandle.shared.moving { return }
+                        ChatScrollDiag.shared.note("内容变高 → 哨兵贴底")
+                        ChatScrollHandle.shared.pinToBottom(animated: false)
+                    })
+                        .frame(width: 1, height: 1)
+                        .allowsHitTesting(false)
+                }
+            }
+            .coordinateSpace(name: "chatScroll")
+            .scrollDismissesKeyboard(.interactively)
+        .onChange(of: messages.count) { _ in
+
+                backfillVoiceText()
+                if initialOpenSettling { return }
+                if !initialScrollReady {
+                    if !loading { settleInitialScroll(proxy) }
+                    return
+                }
+                ChatScrollDiag.shared.note("消息数变了=\(messages.count) atBottom=\(atBottomNow ? 1 : 0)")
+                guard !holdScroll else { return }
+                guard atBottomNow || messages.last?.senderId == myId else { return }
+                scrollToEnd(proxy, animated: Date() < followOwnSendUntil)
+                scheduleSettledBottom()
+                markConversationReadSoon()
+            }
+            .onChange(of: loading) { value in
+                if value {
+                    allowSettledBottom = false
+                } else {
+                    if !initialScrollReady {
+                        initialOpenSettling = true
+                        settleInitialScroll(proxy)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        allowSettledBottom = true
+                    }
+                }
+            }
+            .onChange(of: scrollTick) { _ in
+                atBottom = true
+                wasAtBottom = true
+                scrollToEnd(proxy, animated: true)
+                markConversationReadSoon()
+            }
+
+            .onChange(of: pinTick) { _ in
+                scrollToEnd(proxy, animated: false)
+            }
+
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { n in
+                ChatScrollDiag.shared.note("键盘位置变了")
+                pinThroughKeyboardTransition(proxy, notice: n)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
+                ChatScrollDiag.shared.note("键盘弹起")
+                pinToBottomImmediately(proxy)
+            }
+
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                ChatScrollDiag.shared.note("回前台 atBottom=\(atBottomNow ? 1 : 0)")
+                if atBottomNow { scrollToEnd(proxy, animated: false) }
+            }
+            .onAppear {
+                ChatScrollDiag.shared.note("onAppear 打开会话")
+
+                CrashCatcher.note("聊天页", "9 页面出现 " + chat.id)
+                scroller = proxy
+                backfillVoiceText()
+                wasAtBottom = true
+                atBottom = true
+                if initialCacheReady || !loading {
+                    initialOpenSettling = true
+                    settleInitialScroll(proxy)
+                } else {
+                    initialScrollReady = false
+                }
+                if initialCacheReady || !loading {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        allowSettledBottom = true
+                    }
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+                    CrashCatcher.note("聊天页",
+                        "打开 \(chat.id) 条数=\(messages.count) 内容高=\(Int(lastContentHeight))"
+                        + " 离底=\(Int(ChatScrollHandle.shared.gap ?? -999))"
+                        + " 哨兵=\(atBottom) 跟随=\(wasAtBottom)")
+                }
+            }
+            .onChange(of: initialCacheReady) { ready in
+                if ready {
+                    initialOpenSettling = true
+                    settleInitialScroll(proxy)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        allowSettledBottom = true
+                    }
+                }
+            }
+        }
+    }
+
     private var nativeMessageList: some View {
         NativeStaticList(
             items: nativeGroupItems,
@@ -2939,10 +3291,11 @@ struct ChatDetailView: View {
             },
             onScrollStateChange: { scrolling in
                 if scrolling {
-                    if actionMessage != nil { actionMessage = nil }
-                    if atBottom { atBottom = false }
-                    if wasAtBottom { wasAtBottom = false }
-                    if initialOpenSettling { initialOpenSettling = false }
+                    actionMessage = nil
+                    atBottom = false
+                    wasAtBottom = false
+                    initialOpenSettling = false
+                    if isGroup { autoLoadOlder() }
                     if !initialScrollReady {
                         initialScrollTask?.cancel()
                         initialScrollTask = nil
@@ -2950,21 +3303,18 @@ struct ChatDetailView: View {
                         allowSettledBottom = false
                     }
                     ScrollGate.shared.setScrolling(true)
-                    if followOwnSendUntil != .distantPast {
-                        followOwnSendUntil = .distantPast
-                    }
+                    followOwnSendUntil = Date.distantPast
                 } else {
                     if let gap = ChatScrollHandle.shared.gap {
-                        let next = gap <= 16
-                        if atBottom != next { atBottom = next }
-                        if wasAtBottom != next { wasAtBottom = next }
+                        atBottom = gap <= 16
+                        wasAtBottom = gap <= 16
                     }
                     ScrollGate.shared.setScrolling(false)
                     frameCaptureTick &+= 1
                 }
             },
             onScrollOffset: { y in
-                if y < 4200 {
+                if isGroup, y < 4200 {
                     autoLoadOlder()
                 }
             },
@@ -3222,6 +3572,213 @@ struct ChatDetailView: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// Kept temporarily for reference while direct chats transition independently.
+    private var legacyNativeMessageList: some View {
+        let nearTopIds = hasOlder ? Set(messages.prefix(24).map { $0.id }) : Set<String>()
+        return ScrollViewReader { proxy in
+            List {
+                if hasOlder {
+                    Color.clear
+                        .frame(height: 1)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .onAppear { autoLoadOlder() }
+                }
+
+                ForEach(messages) { message in
+                    messageBlock(message)
+                        .id(message.id)
+                        .padding(.horizontal, L.msgPad)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .onAppear {
+                            if nearTopIds.contains(message.id) { autoLoadOlder() }
+                            if message.id == messages.last?.id { atBottom = true }
+                        }
+                }
+
+                ForEach(outbox) { p in
+                    pendingBubble(p)
+                        .padding(.horizontal, L.msgPad)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                }
+
+                if !sendingMedia.isEmpty {
+                    HStack(spacing: 8) {
+                        Spacer(minLength: 0)
+                        SendingVideoBubble(cover: sendingPreview, progress: sendProgress)
+                    }
+                    .id("__sending")
+                    .padding(.horizontal, L.msgPad)
+                    .padding(.bottom, 12)
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                }
+
+                if let progress = sendingFileProgress, !sendingFileName.isEmpty {
+                    HStack(spacing: 8) {
+                        Spacer(minLength: 0)
+                        SendingFileBubble(name: sendingFileName,
+                                          bytes: sendingFileBytes,
+                                          progress: progress)
+                    }
+                    .id("__sending-file")
+                    .padding(.horizontal, L.msgPad)
+                    .padding(.bottom, 12)
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                }
+
+                Color.clear
+                    .frame(height: 1)
+                    .onAppear { atBottom = true }
+                    .onDisappear { atBottom = false }
+                    .id("__bottom")
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+
+                Color.clear
+                    .frame(height: 8 + L.msgPad)
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .environment(\.defaultMinListRowHeight, 0)
+            .overlay(alignment: .topLeading) {
+                ScrollOffsetProbe(onChange: { _, _ in
+                    if ChatScrollHandle.shared.moving, let g = ChatScrollHandle.shared.gap {
+                        let next = g <= 16
+                        if wasAtBottom != next { wasAtBottom = next }
+                    }
+                    }, onScrollStateChange: { scrolling in
+                        if scrolling {
+                            atBottom = false
+                            wasAtBottom = false
+                            if !initialScrollReady {
+                                initialScrollTask?.cancel()
+                                initialScrollTask = nil
+                            initialScrollReady = true
+                            allowSettledBottom = false
+                        }
+                            ScrollGate.shared.setScrolling(true)
+                            followOwnSendUntil = Date.distantPast
+                        } else {
+                            if let gap = ChatScrollHandle.shared.gap {
+                                atBottom = gap <= 16
+                                wasAtBottom = gap <= 16
+                            }
+                            ScrollGate.shared.setScrolling(false)
+                            frameCaptureTick &+= 1
+                    }
+                }, onSizeChange: {
+                    let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
+                    guard atBottomNow, !holdScroll else { return }
+                    if ChatScrollHandle.shared.moving { return }
+                    ChatScrollDiag.shared.note("内容变高 → 原生消息列表贴底")
+                    ChatScrollHandle.shared.pinToBottom(animated: false)
+                })
+                .frame(width: 1, height: 1)
+                .allowsHitTesting(false)
+            }
+            .coordinateSpace(name: "chatScroll")
+            .scrollDismissesKeyboard(.interactively)
+            .onChange(of: messages.count) { _ in
+                backfillVoiceText()
+                if !initialScrollReady {
+                    if !loading { settleInitialScroll(proxy) }
+                    return
+                }
+                guard !holdScroll else { return }
+                guard atBottomNow || messages.last?.senderId == myId else { return }
+                scrollToEnd(proxy, animated: Date() < followOwnSendUntil)
+                scheduleSettledBottom()
+                markConversationReadSoon()
+            }
+            .onChange(of: loading) { value in
+                if value {
+                    allowSettledBottom = false
+                } else {
+                    if !initialScrollReady { settleInitialScroll(proxy) }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        allowSettledBottom = true
+                    }
+                }
+            }
+            .onChange(of: scrollTick) { _ in
+                atBottom = true
+                wasAtBottom = true
+                scrollToEnd(proxy, animated: true)
+                markConversationReadSoon()
+            }
+            .onChange(of: pinTick) { _ in
+                scrollToEnd(proxy, animated: false)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { n in
+                ChatScrollDiag.shared.note("键盘位置变了")
+                pinThroughKeyboardTransition(proxy, notice: n)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
+                pinToBottomImmediately(proxy)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                if atBottomNow { scrollToEnd(proxy, animated: false) }
+            }
+            .onAppear {
+                scroller = proxy
+                backfillVoiceText()
+                wasAtBottom = true
+                atBottom = true
+                if initialCacheReady || !loading {
+                    settleInitialScroll(proxy)
+                } else {
+                    initialScrollReady = false
+                }
+            }
+            .onChange(of: initialCacheReady) { ready in
+                if ready {
+                    settleInitialScroll(proxy)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        allowSettledBottom = true
+                    }
+                }
+            }
+        }
+    }
+
+    private func settleInitialScroll(_ proxy: ScrollViewProxy) {
+        guard !initialScrollReady else { return }
+        initialScrollTask?.cancel()
+        ChatScrollHandle.shared.allowAutomaticPinning()
+        initialScrollTask = Task { @MainActor in
+            initialOpenSettling = true
+            atBottom = true
+            wasAtBottom = true
+            for delay in [0, 24, 70, 150, 260] {
+                if delay > 0 {
+                    try? await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000)
+                }
+                if Task.isCancelled { return }
+                if ChatScrollHandle.shared.moving { return }
+                proxy.scrollTo("__bottom", anchor: .bottom)
+            }
+            if Task.isCancelled { return }
+            initialScrollReady = true
+            pinTick += 1
+            await Task.yield()
+            if Task.isCancelled { return }
+            initialOpenSettling = false
+        }
+    }
+
     private func settleInitialNativeScroll() {
         guard !initialScrollReady else { return }
         initialScrollTask?.cancel()
@@ -3263,7 +3820,15 @@ struct ChatDetailView: View {
             atBottom = true
             if force {
                 ChatScrollHandle.shared.allowAutomaticPinning()
-                nativeMessageController.scrollToBottom(animated: true)
+                if isGroup {
+                    nativeMessageController.scrollToBottom(animated: true)
+                } else {
+                    withAnimation(.spring(response: 0.24,
+                                          dampingFraction: 0.92,
+                                          blendDuration: 0.04)) {
+                        scroller?.scrollTo("__bottom", anchor: .bottom)
+                    }
+                }
                 return
             }
             pinTick += 1
@@ -3284,8 +3849,32 @@ struct ChatDetailView: View {
         ChatScrollHandle.shared.allowAutomaticPinning()
         atBottom = true
         wasAtBottom = true
-        nativeMessageController.scrollToBottom(animated: false)
+        if isGroup {
+            nativeMessageController.scrollToBottom(animated: false)
+        } else {
+            scroller?.scrollTo("__bottom", anchor: .bottom)
+        }
         pinTick += 1
+    }
+
+    private func pinToBottomImmediately(_ proxy: ScrollViewProxy) {
+        guard atBottomNow else { return }
+        ChatScrollHandle.shared.allowAutomaticPinning()
+        scrollToEnd(proxy, animated: false)
+    }
+
+    private func pinThroughKeyboardTransition(_ proxy: ScrollViewProxy,
+                                              notice: Notification) {
+        guard atBottomNow else { return }
+        let value = notice.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
+            as? Double ?? 0.25
+        pinToBottomImmediately(proxy)
+        DispatchQueue.main.async {
+            pinToBottomImmediately(proxy)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + value + 0.02) {
+            pinToBottomImmediately(proxy)
+        }
     }
 
     private func pinThroughKeyboardTransition(_ notice: Notification) {
@@ -3294,10 +3883,27 @@ struct ChatDetailView: View {
             as? Double ?? 0.25
         pinToBottomImmediately()
         DispatchQueue.main.async {
-            pinToBottomImmediately()
+            self.pinToBottomImmediately()
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + value + 0.02) {
-            pinToBottomImmediately()
+            self.pinToBottomImmediately()
+        }
+    }
+
+    private func scrollToEnd(_ proxy: ScrollViewProxy, animated: Bool) {
+
+        ChatScrollDiag.shared.note("scrollToEnd anim=\(animated ? 1 : 0)")
+        if ChatScrollHandle.shared.pinToBottom(animated: animated) { return }
+        if isGroup {
+            nativeMessageController.scrollToBottom(animated: animated)
+            return
+        }
+        let target = "__bottom"
+        guard !target.isEmpty else { return }
+        if animated {
+            withAnimation(.easeOut(duration: 0.22)) { proxy.scrollTo(target, anchor: .bottom) }
+        } else {
+            proxy.scrollTo(target, anchor: .bottom)
         }
     }
 
@@ -5117,10 +5723,9 @@ struct ChatDetailView: View {
                        mine: myStickers,
                        onExpandedChange: { emojiPanelExpanded = $0 })
         case .plus:
-            NativePlusPanel(items: plusItems,
-                            onTap: { item in handlePlus(item) },
-                            onLongPress: { item in handlePlusLong(item) })
-                .frame(height: NativePlusPanel.requiredHeight(for: plusItems))
+            PlusPanel(items: plusItems,
+                      onTap: { item in handlePlus(item) },
+                      onLongPress: { item in handlePlusLong(item) })
         case .mention:
             MentionPanel(members: mentionMembers,
                          query: $mentionQuery,
@@ -6246,7 +6851,11 @@ struct ChatDetailView: View {
     private func jumpToMessage(_ id: String, seq targetSeq: Int? = nil) {
         guard !id.isEmpty else { return }
         if messages.contains(where: { $0.id == id }) {
-            nativeMessageController.scrollToID(id, at: .centeredVertically, animated: true)
+            if isGroup {
+                nativeMessageController.scrollToID(id, at: .centeredVertically, animated: true)
+            } else {
+                withAnimation(.easeInOut(duration: 0.25)) { scroller?.scrollTo(id, anchor: .center) }
+            }
             return
         }
         Task { @MainActor in
@@ -6265,7 +6874,11 @@ struct ChatDetailView: View {
                 return
             }
             try? await Task.sleep(nanoseconds: 80_000_000)
-            nativeMessageController.scrollToID(id, at: .centeredVertically, animated: true)
+            if isGroup {
+                nativeMessageController.scrollToID(id, at: .centeredVertically, animated: true)
+            } else {
+                withAnimation(.easeInOut(duration: 0.25)) { scroller?.scrollTo(id, anchor: .center) }
+            }
         }
     }
 
@@ -6310,10 +6923,8 @@ struct ChatDetailView: View {
         hasOlder = pageHasMore
         rebuildIndex()
 
-        if let keep {
-            DispatchQueue.main.async {
-                nativeMessageController.scrollToID(keep, at: .top, animated: false)
-            }
+        if let keep, let proxy = scroller {
+            DispatchQueue.main.async { proxy.scrollTo(keep, anchor: .top) }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { holdScroll = false }
     }
@@ -6712,16 +7323,27 @@ struct ChatDetailView: View {
                 messages = Array(visibleMessages(merged).suffix(maxMessageWindow))
                 hasOlder = true
                 rebuildIndex()
-                if followBottom {
+                if followBottom, isGroup {
                     ChatScrollHandle.shared.allowAutomaticPinning()
                     DispatchQueue.main.async {
                         nativeMessageController.scrollToBottom(animated: false)
                     }
-                } else if let keepAnchor {
+                } else if followBottom, let scroller {
+                    ChatScrollHandle.shared.allowAutomaticPinning()
+                    DispatchQueue.main.async {
+                        scroller.scrollTo("__bottom", anchor: .bottom)
+                    }
+                } else if let keepAnchor, isGroup {
                     holdScroll = true
                     DispatchQueue.main.async {
                         nativeMessageController.scrollToID(keepAnchor, at: .top, animated: false)
                     }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        holdScroll = false
+                    }
+                } else if let keepAnchor, let scroller {
+                    holdScroll = true
+                    DispatchQueue.main.async { scroller.scrollTo(keepAnchor, anchor: .top) }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                         holdScroll = false
                     }
@@ -6757,11 +7379,15 @@ struct ChatDetailView: View {
         hasOlder = !reachedStart
         rebuildIndex()
 
-        if !followBottom, let keepAnchor {
+        if !followBottom, let keepAnchor, isGroup {
             holdScroll = true
             DispatchQueue.main.async {
                 nativeMessageController.scrollToID(keepAnchor, at: .top, animated: false)
             }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { holdScroll = false }
+        } else if !followBottom, let keepAnchor, let scroller {
+            holdScroll = true
+            DispatchQueue.main.async { scroller.scrollTo(keepAnchor, anchor: .top) }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { holdScroll = false }
         }
     }
@@ -7364,8 +7990,17 @@ struct MessageRow: View {
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
-        .background(C.cardBg,
-                    in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(.thinMaterial)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(
+                        LinearGradient(colors: [C.green.opacity(0.16), C.green.opacity(0.04)],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
+            }
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 11, style: .continuous)
                 .stroke(C.green.opacity(0.22), lineWidth: 0.8)
@@ -7420,14 +8055,12 @@ struct MessageRow: View {
 
     private var bubbleMentionInk: Color {
         mine
-            ? Color.white.opacity(0.98)
-            : Color.dyn(0x0F8B65, 0x36CA95)
+            ? Color.white.opacity(0.96)
+            : Color.dyn(0x576B95, 0x7D90A9)
     }
 
     private var bubbleLinkInk: Color {
-        mine
-            ? Color.white.opacity(0.98)
-            : Color.dyn(0x0068D9, 0x64D2FF)
+        mine ? Color(hex: 0xEFFFFC) : ChatTheme.link
     }
 
     private var quoteSurface: Color {
@@ -7722,17 +8355,9 @@ struct MessageRow: View {
         let linkRanges = linked.runs.compactMap { $0.link == nil ? nil : $0.range }
         for range in linkRanges {
             linked[range].foregroundColor = bubbleLinkInk
-            linked[range].font = pfStyled(size: richBaseFontSize, weight: .medium)
             linked[range].underlineStyle = .single
         }
         return linked
-    }
-
-    private var richBaseFontSize: CGFloat {
-        let preferredSize = L.chatFontSize * fontScale * CareMode.scale
-        return max(12, UIFontMetrics(forTextStyle: .body)
-            .scaledValue(for: preferredSize)
-            .rounded())
     }
 
     private func linkFallbackText(_ raw: String) -> String {
@@ -7769,24 +8394,17 @@ struct MessageRow: View {
 
     private func richBody(_ raw: String) -> AttributedString {
 
-        let cacheKey = [
-            message.id,
-            raw,
-            mine ? "mine" : "other",
-            senderNameUsesLightInk ? "light" : "adaptive",
-            ChatTheme.preset.rawValue,
-            String(format: "%.2f", fontScale),
-            String(format: "%.2f", CareMode.scale),
-            currentNickname,
-            currentUsername
-        ].joined(separator: "|")
+        let cacheKey = message.id + "|" + raw
         if let hit = RichBodyCache.get(cacheKey) { return hit }
 
         let s = ClassicEmojiSet.expand(raw).trimmingCharacters(in: .whitespacesAndNewlines)
         let atMe = message.mentionsUser(myId)
         let mineNames = atMe ? myMentionNames : []
 
-        let baseSize = richBaseFontSize
+        let preferredSize = L.chatFontSize * fontScale * CareMode.scale
+        let baseSize = max(12, UIFontMetrics(forTextStyle: .body)
+            .scaledValue(for: preferredSize)
+            .rounded())
         let mono = Font.system(size: baseSize, weight: .regular, design: .monospaced)
         let base = pfStyled(baseSize)
         var out = AttributedString()
@@ -7796,10 +8414,10 @@ struct MessageRow: View {
             if RichText.looksLikeCode(line) {
                 var seg = AttributedString(line)
                 seg.font = mono
-                seg.foregroundColor = bubblePrimaryInk
                 out += seg
             } else if line.contains("@") || line.contains("http") {
-                let seg = decorateLine(line, atMe: atMe, mineNames: mineNames)
+                var seg = decorateLine(line, atMe: atMe, mineNames: mineNames)
+                seg.font = base
                 out += seg
             } else {
                 var seg = AttributedString(line)
@@ -7821,7 +8439,6 @@ struct MessageRow: View {
                 while j < s.endIndex, !isMentionStop(s[j]) { j = s.index(after: j) }
                 let token = String(s[i..<j])
                 var seg = AttributedString(token)
-                seg.font = pfStyled(size: richBaseFontSize, weight: .medium)
                 let name = String(token.dropFirst())
                 if atMe && mineNames.contains(name) {
                     seg.foregroundColor = bubbleMentionInk
@@ -8418,7 +9035,7 @@ struct MessageRow: View {
         .frame(width: min(224, maxBubbleWidth), height: 72, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .fill(C.cardBg)
+                .fill(.regularMaterial)
                 .overlay {
                     RoundedRectangle(cornerRadius: 15, style: .continuous)
                         .stroke(Color.primary.opacity(0.07), lineWidth: 0.6)

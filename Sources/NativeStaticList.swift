@@ -189,11 +189,6 @@ where Item.ID: Hashable {
         private var pending: [Item]?
         private var applyGeneration = 0
         private var sizeChangeScheduled = false
-        private lazy var measurementHost: UIHostingController<AnyView> = {
-            let host = UIHostingController(rootView: AnyView(Color.clear))
-            host.view.backgroundColor = .clear
-            return host
-        }()
 
         init(controller: NativeStaticListController?,
              onScrollViewReady: ((UIScrollView) -> Void)?,
@@ -532,8 +527,10 @@ where Item.ID: Hashable {
         }
 
         private func measuredHeight(_ item: Item, width: CGFloat) -> CGFloat {
-            let host = measurementHost
-            host.rootView = AnyView(row(item).frame(width: width))
+            let host = UIHostingController(
+                rootView: AnyView(row(item).frame(width: width))
+            )
+            host.view.backgroundColor = .clear
             host.view.frame = CGRect(x: 0, y: 0, width: width, height: 240)
             host.view.setNeedsLayout()
             host.view.layoutIfNeeded()

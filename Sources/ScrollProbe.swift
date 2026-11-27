@@ -6,16 +6,16 @@ final class ChatScrollHandle {
     weak var scroll: UIScrollView?
     /// 用户刚滑动过的短暂保护期：列表预渲染/图片解码触发的“补底”
     /// 不能在这一小段时间里抢走滚动位置。
-    private var lastUserMotionAt = -Double.greatestFiniteMagnitude
+    private var lastUserMotionAt = Date.distantPast
     private var pendingPrepend: (height: CGFloat, offset: CGPoint)?
 
     func noteUserMotion() {
-        lastUserMotionAt = CFAbsoluteTimeGetCurrent()
+        lastUserMotionAt = Date()
     }
 
     /// 用户点输入框/键盘弹出时允许立即回到最新消息。
     func allowAutomaticPinning() {
-        lastUserMotionAt = -Double.greatestFiniteMagnitude
+        lastUserMotionAt = .distantPast
     }
 
     /// 在向聊天顶部插入旧消息前记录当前内容高度与位置。
@@ -51,7 +51,7 @@ final class ChatScrollHandle {
     @discardableResult
     func pinToBottom(animated: Bool) -> Bool {
         guard let sv = scroll, sv.window != nil else { return false }
-        if moving || CFAbsoluteTimeGetCurrent() - lastUserMotionAt < 0.45 {
+        if moving || Date().timeIntervalSince(lastUserMotionAt) < 0.45 {
             return true
         }
         let bottom = sv.contentSize.height - sv.bounds.height + sv.adjustedContentInset.bottom
@@ -99,7 +99,6 @@ final class ChatScrollDiag: ObservableObject {
     }()
 
     func note(_ reason: String) {
-        guard UIConfig.num("chatScrollDiag", 0) > 0 else { return }
         let gap = ChatScrollHandle.shared.gap
         let g = gap.map { String(Int($0)) } ?? "?"
         let hand = ChatScrollHandle.shared.moving ? "指" : "-"
@@ -153,11 +152,16 @@ struct ChatScrollDiagView: View {
 struct ScrollOffsetProbe: UIViewRepresentable {
     final class Coordinator {
         var obsOffset: NSKeyValueObservation?
+        var obsDrag: NSKeyValueObservation?
+        var obsDecelerating: NSKeyValueObservation?
+        var obsTracking: NSKeyValueObservation?
         var obsBounds: NSKeyValueObservation?
         var obsSize: NSKeyValueObservation?
         var scroll: UIScrollView?
         var lastScrollState: Bool?
+        var lastDragState: Bool?
         var report: (CGFloat, Bool) -> Void = { _, _ in }
+        var reportDrag: (Bool) -> Void = { _ in }
         var reportScrollState: (Bool) -> Void = { _ in }
         var reportBounds: () -> Void = { }
         var reportSize: () -> Void = { }
@@ -168,10 +172,17 @@ struct ScrollOffsetProbe: UIViewRepresentable {
             reportScrollState(active)
         }
 
+        func publishDragState(_ dragging: Bool) {
+            guard lastDragState != dragging else { return }
+            lastDragState = dragging
+            reportDrag(dragging)
+        }
+
         func attach(_ sv: UIScrollView) {
             scroll = sv
             ChatScrollHandle.shared.scroll = sv
             lastScrollState = nil
+            lastDragState = nil
 
             if #available(iOS 26.0, *) {
                 sv.topEdgeEffect.style = .automatic
@@ -186,6 +197,17 @@ struct ScrollOffsetProbe: UIViewRepresentable {
                 self?.publishScrollState(active)
                 self?.report(s.contentOffset.y, active)
             }
+            obsDrag = sv.observe(\.isDragging, options: [.new]) { [weak self] s, _ in
+                if s.isDragging { ChatScrollHandle.shared.noteUserMotion() }
+                self?.publishDragState(s.isDragging)
+            }
+            obsDecelerating = sv.observe(\.isDecelerating, options: [.new]) { [weak self] s, _ in
+                self?.publishScrollState(s.isDragging || s.isDecelerating || s.isTracking)
+            }
+            obsTracking = sv.observe(\.isTracking, options: [.new]) { [weak self] s, _ in
+                self?.publishScrollState(s.isDragging || s.isDecelerating || s.isTracking)
+            }
+
             obsBounds = sv.observe(\.bounds, options: [.new]) { [weak self] _, _ in
                 self?.reportBounds()
             }
@@ -198,8 +220,6 @@ struct ScrollOffsetProbe: UIViewRepresentable {
 
     var onChange: (CGFloat, Bool) -> Void
 
-    /// Kept for source compatibility. Active-state changes are delivered through
-    /// `onScrollStateChange`, so no duplicate KVO observer is needed.
     var onDragChange: (Bool) -> Void = { _ in }
 
     var onScrollStateChange: (Bool) -> Void = { _ in }
@@ -219,6 +239,7 @@ struct ScrollOffsetProbe: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIView, context: Context) {
         context.coordinator.report = onChange
+        context.coordinator.reportDrag = onDragChange
         context.coordinator.reportScrollState = onScrollStateChange
         context.coordinator.reportBounds = onBoundsChange
         context.coordinator.reportSize = onSizeChange
@@ -230,6 +251,7 @@ struct ScrollOffsetProbe: UIViewRepresentable {
             if c.scroll !== sv { c.attach(sv) }
             c.report(sv.contentOffset.y,
                      sv.isDragging || sv.isDecelerating || sv.isTracking)
+            c.publishDragState(sv.isDragging)
             c.publishScrollState(sv.isDragging || sv.isDecelerating || sv.isTracking)
             return
         }
