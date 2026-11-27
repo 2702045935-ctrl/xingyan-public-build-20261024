@@ -97,6 +97,7 @@ struct MainTabView: View {
                 .zIndex(tab == 4 ? 1 : 0)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(C.pageBg.ignoresSafeArea())
 
             .ignoresSafeArea(edges: rootTabBarVisible ? [] : .bottom)
 

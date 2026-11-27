@@ -57,6 +57,8 @@ struct MeView: View {
             currentMeRows
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(C.pageBg.ignoresSafeArea())
         .navigationTitle(Tr("我的"))
         .navigationBarTitleDisplayMode(.large)
         .refreshable {

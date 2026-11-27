@@ -9,6 +9,7 @@ CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
 NAV = (ROOT / "Sources" / "NavGlass.swift").read_text(encoding="utf-8")
 MAIN_TAB = (ROOT / "Sources" / "MainTab.swift").read_text(encoding="utf-8")
+ME = (ROOT / "Sources" / "MeView.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -67,6 +68,12 @@ require(
     and "circularAvatar(avatar, selected: selected)" in TAB
     and "ring.lineWidth = 1.5" in TAB,
     "tab icons must share one template tint hierarchy in every layout",
+)
+require(
+    ".background(C.pageBg.ignoresSafeArea())" in MAIN_TAB
+    and ".scrollContentBackground(.hidden)" in ME
+    and ".background(C.pageBg.ignoresSafeArea())" in ME,
+    "root tab pages must share the same app canvas without changing the native tab bar",
 )
 
 print("dark-neutral-palette: passed")
