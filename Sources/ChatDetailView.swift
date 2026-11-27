@@ -3015,9 +3015,7 @@ struct ChatDetailView: View {
                     initialOpenSettling = true
                     settleInitialNativeScroll()
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    allowSettledBottom = true
-                }
+                allowSettledBottom = true
             }
         }
         .onChange(of: scrollTick) { _ in
@@ -3054,9 +3052,7 @@ struct ChatDetailView: View {
             if ready {
                 initialOpenSettling = true
                 settleInitialNativeScroll()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    allowSettledBottom = true
-                }
+                allowSettledBottom = true
             }
         }
     }
@@ -3232,8 +3228,6 @@ struct ChatDetailView: View {
             await Task.yield()
             if Task.isCancelled { return }
             nativeMessageController.scrollToBottom(animated: false)
-            try? await Task.sleep(nanoseconds: 100_000_000)
-            if Task.isCancelled { return }
             initialScrollReady = true
             initialOpenSettling = false
             allowSettledBottom = true
@@ -3257,7 +3251,7 @@ struct ChatDetailView: View {
         if force { ChatScrollHandle.shared.allowAutomaticPinning() }
         pinTask?.cancel()
         pinTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: force ? 24_000_000 : 280_000_000)
+            await Task.yield()
             if Task.isCancelled { return }
             guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
             atBottom = true
@@ -3321,13 +3315,13 @@ struct ChatDetailView: View {
         }
     }
 
-    private func scheduleSettledBottom(delayMs: UInt64 = 120) {
+    private func scheduleSettledBottom() {
         guard allowSettledBottom else { return }
         guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
         let followOwnSend = Date() < followOwnSendUntil
         settleTask?.cancel()
         settleTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: delayMs * 1_000_000)
+            await Task.yield()
             if Task.isCancelled { return }
             guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
             if !followOwnSend, let gap = ChatScrollHandle.shared.gap, gap > 24 { return }
@@ -6313,9 +6307,10 @@ struct ChatDetailView: View {
         if let keep {
             DispatchQueue.main.async {
                 nativeMessageController.scrollToID(keep, at: .top, animated: false)
+                holdScroll = false
             }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { holdScroll = false }
+        if keep == nil { holdScroll = false }
     }
 
     private func report(_ message: Message) {
@@ -6590,6 +6585,7 @@ struct ChatDetailView: View {
             rebuildIndex()
             DispatchQueue.main.async {
                 _ = ChatScrollHandle.shared.compensatePendingPrepend()
+                holdScroll = false
             }
 
             ChatScrollDiag.shared.note("上翻加载完 → 原子补偿当前位置")
@@ -6597,7 +6593,6 @@ struct ChatDetailView: View {
             scheduleOlderPrefetch(before: nextCursor,
                                   knownIds: Set(bounded.map(\.id)),
                                   continues: more)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { holdScroll = false }
         } catch {
             // Continuous scroll events must not turn one failed prefetch into a
             // request storm. Hold the next automatic retry for a short, silent
@@ -6721,8 +6716,6 @@ struct ChatDetailView: View {
                     holdScroll = true
                     DispatchQueue.main.async {
                         nativeMessageController.scrollToID(keepAnchor, at: .top, animated: false)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                         holdScroll = false
                     }
                 }
@@ -6761,8 +6754,8 @@ struct ChatDetailView: View {
             holdScroll = true
             DispatchQueue.main.async {
                 nativeMessageController.scrollToID(keepAnchor, at: .top, animated: false)
+                holdScroll = false
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { holdScroll = false }
         }
     }
 }
