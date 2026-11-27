@@ -59,6 +59,7 @@ struct MainTabView: View {
                 .allowsHitTesting(tab == 0)
                 .accessibilityHidden(tab != 0)
                 .zIndex(tab == 0 ? 1 : 0)
+                .statusBarHidden(false)
 
                 Group {
                     if mountedTabs.contains(1) { ContactsView() } else { Color.clear }
@@ -67,6 +68,7 @@ struct MainTabView: View {
                 .allowsHitTesting(tab == 1)
                 .accessibilityHidden(tab != 1)
                 .zIndex(tab == 1 ? 1 : 0)
+                .statusBarHidden(false)
 
                 Group {
                     if mountedTabs.contains(2) { VideoTabView() } else { Color.clear }
@@ -75,6 +77,7 @@ struct MainTabView: View {
                 .allowsHitTesting(tab == 2)
                 .accessibilityHidden(tab != 2)
                 .zIndex(tab == 2 ? 1 : 0)
+                .statusBarHidden(false)
 
                 Group {
                     if mountedTabs.contains(3) { DiscoverView() } else { Color.clear }
@@ -83,6 +86,7 @@ struct MainTabView: View {
                 .allowsHitTesting(tab == 3)
                 .accessibilityHidden(tab != 3)
                 .zIndex(tab == 3 ? 1 : 0)
+                .statusBarHidden(false)
 
                 Group {
                     if mountedTabs.contains(4) { MeView() } else { Color.clear }
@@ -91,6 +95,7 @@ struct MainTabView: View {
                 .allowsHitTesting(tab == 4)
                 .accessibilityHidden(tab != 4)
                 .zIndex(tab == 4 ? 1 : 0)
+                .statusBarHidden(false)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(C.pageBg.ignoresSafeArea())

@@ -36,8 +36,9 @@ require(
     and "StarWorldExperienceView(embedded: true)" not in MAIN_TAB
     and "StarWorldDirectoryView" not in WORLD
     and ".statusBarHidden(true)" not in WORLD
+    and MAIN_TAB.count(".statusBarHidden(false)") == 5
     and "DiscoverView()" not in WORLD,
-    "the World tab must restore Discover and never hide the shared status bar",
+    "all five app tabs must restore Discover and keep the shared status bar visible",
 )
 require(
     ".opacity(entered ? 1 : 0.01)" not in WORLD
