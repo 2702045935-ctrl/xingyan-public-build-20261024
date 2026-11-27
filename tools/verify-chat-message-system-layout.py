@@ -35,7 +35,7 @@ require(
 require(
     "private func textLineSpacing(_ raw: String) -> CGFloat" in CHAT
     and "let isLong = raw.count >= 120 || lineCount >= 5" in CHAT
-    and "padding(.horizontal, L.bubblePadHPill)" in CHAT
+    and "padding(.horizontal, ChatFeedMetrics.textHorizontalPadding)" in CHAT
     and "textWithInlineMetadata" not in CHAT
     and "MessageRowVisual" not in CHAT,
     "plain text, images and multi-image layout must remain on the stable baseline",
@@ -47,11 +47,12 @@ require(
     "image, multi-image and video message rendering must remain unchanged",
 )
 require(
-    "showsAvatar: !isGroup || isRunStart(message)" in CHAT
-    and "return same ? 3 : 14" in CHAT
-    and 'UIConfig.num("msgGapSame", 6)' in CHAT
-    and 'UIConfig.num("msgGapOther", 16)' in CHAT,
-    "consecutive group messages must share one stable avatar/name run hierarchy",
+    "showsAvatar: isRunStart(message)" in CHAT
+    and "return same ? ChatFeedMetrics.runGap : ChatFeedMetrics.senderChangeGap"
+    in CHAT
+    and "if mine {\n                Spacer().frame(width: ChatFeedMetrics.avatarGap)"
+    in CHAT,
+    "direct and group messages must share one stable avatar/name run hierarchy",
 )
 require(
     ".fill(ChatTheme.bubbleMine)" in CHAT

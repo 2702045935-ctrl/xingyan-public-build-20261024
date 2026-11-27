@@ -78,6 +78,21 @@ private enum ChatTheme {
     static let mentionMeOnMine = Color.dyn(0x7A1717, 0xFFD2CA)
 }
 
+private enum ChatFeedMetrics {
+    static var avatarSize: CGFloat { L.chatAvatar }
+    static var avatarGap: CGFloat { L.chatGapMsg }
+    static var maxBubbleWidth: CGFloat { L.bubbleMaxW }
+    static let runGap: CGFloat = 6
+    static let senderChangeGap: CGFloat = 14
+    static let systemGap: CGFloat = 12
+    static let metadataGap: CGFloat = 3
+    static let statusGap: CGFloat = 3
+    static let timeGapTop: CGFloat = 16
+    static let timeGapBottom: CGFloat = 10
+    static let textHorizontalPadding: CGFloat = 13
+    static let textVerticalPadding: CGFloat = 8
+}
+
 enum AlbumFold {
     private static let key = "chris.albumOpen"
 
@@ -3369,44 +3384,79 @@ struct ChatDetailView: View {
 
     private var atBottomNow: Bool { wasAtBottom || atBottom }
 
+    private func pendingIsRunStart(_ p: PendingMsg) -> Bool {
+        if let index = outbox.firstIndex(where: { $0.id == p.id }), index > 0 {
+            return false
+        }
+        guard let last = messages.last else { return true }
+        if last.senderId != myId { return true }
+        return TimeFmt.minutesBetween(
+            last.createdAt,
+            TimeFmt.isoFrac.string(from: p.at)
+        ) >= 5
+    }
+
     private func pendingBubble(_ p: PendingMsg) -> some View {
-        VStack(alignment: .trailing, spacing: 3) {
-            HStack(alignment: .center, spacing: 7) {
-                Spacer(minLength: 0)
-                if p.failed {
-                    Button {
-                        Task { await flushOutbox() }
-                    } label: {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(C.red)
-                    }
-                    .buttonStyle(.plain)
-                }
-                Text(p.preview)
-                    .font(pf(16))
-                    .foregroundColor(ChatTheme.ink)
-                    .lineLimit(6)
-                    .multilineTextAlignment(.leading)
-                    .padding(.leading, 12)
-                    .padding(.trailing, p.failed ? 12 : 26)
-                    .padding(.vertical, 9)
-                    .background(BubbleFill(mine: true, tail: false))
-                    .opacity(p.failed ? 0.9 : 1)
-                    .overlay(alignment: .bottomTrailing) {
-                        if !p.failed {
-                            WhatsAppMessageTicks(count: 1,
-                                                 color: Color.white.opacity(0.72))
-                                .padding(.trailing, 7)
-                                .padding(.bottom, 5)
+        let showsAvatar = pendingIsRunStart(p)
+        return HStack(alignment: .top, spacing: 0) {
+            Spacer(minLength: 0)
+
+            VStack(alignment: .trailing,
+                   spacing: ChatFeedMetrics.metadataGap) {
+                HStack(alignment: .center, spacing: 7) {
+                    Spacer(minLength: 0)
+                    if p.failed {
+                        Button {
+                            Task { await flushOutbox() }
+                        } label: {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(C.red)
                         }
+                        .buttonStyle(.plain)
                     }
+                    Text(p.preview)
+                        .font(pf(L.chatFontSize))
+                        .foregroundColor(Color.white.opacity(0.98))
+                        .lineLimit(6)
+                        .multilineTextAlignment(.leading)
+                        .padding(.horizontal,
+                                 ChatFeedMetrics.textHorizontalPadding)
+                        .padding(.vertical,
+                                 ChatFeedMetrics.textVerticalPadding)
+                        .background(BubbleFill(mine: true,
+                                               tail: showsAvatar,
+                                               glass: false))
+                        .opacity(p.failed ? 0.9 : 1)
+                }
+
+                if !p.failed {
+                    WhatsAppMessageTicks(count: 1,
+                                         color: Color.white.opacity(0.72))
+                        .padding(.top, ChatFeedMetrics.statusGap)
+                        .padding(.trailing, 3)
+                }
+
+                if p.failed, let reason = p.failureReason, !reason.isEmpty {
+                    deliveryFailureCard(DeliveryFailureCopy.make(reason: reason))
+                }
             }
-            if p.failed, let reason = p.failureReason, !reason.isEmpty {
-                deliveryFailureCard(DeliveryFailureCopy.make(reason: reason))
+            .frame(maxWidth: ChatFeedMetrics.maxBubbleWidth,
+                   alignment: .trailing)
+
+            Spacer().frame(width: ChatFeedMetrics.avatarGap)
+            if showsAvatar {
+                Avatar(path: app.me?.avatarPath ?? "",
+                       size: ChatFeedMetrics.avatarSize,
+                       radius: ChatFeedMetrics.avatarSize / 2)
+            } else {
+                Color.clear.frame(
+                    width: ChatFeedMetrics.avatarSize,
+                    height: ChatFeedMetrics.avatarSize
+                )
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 3)
         .id(p.id)
         .transition(
             .asymmetric(
@@ -3680,8 +3730,8 @@ struct ChatDetailView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.top, L.o("chatTimeGapTop", 10))
-            .padding(.bottom, L.o("chatTimeGapBottom", 10))
+            .padding(.top, ChatFeedMetrics.timeGapTop)
+            .padding(.bottom, ChatFeedMetrics.timeGapBottom)
     }
 
     @ViewBuilder
@@ -3734,7 +3784,7 @@ struct ChatDetailView: View {
                    senderOnline: senderIsOnline(message),
                    avatarSize: L.chatAvatar,
                    maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
-                   showsAvatar: !isGroup || isRunStart(message),
+                   showsAvatar: isRunStart(message),
                    reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
@@ -3992,20 +4042,19 @@ struct ChatDetailView: View {
     }
 
     private func gapAfter(_ message: Message) -> CGFloat {
-        guard let i = indexOf(message) else { return 15 }
+        guard let i = indexOf(message) else { return ChatFeedMetrics.senderChangeGap }
         guard i + 1 < messages.count else { return 4 }
         let next = messages[i + 1]
         if showTime(for: next) { return 0 }
-        if next.kindName == "system" || next.kindName == "pat" || next.isRecalled { return 12 }
-        if message.kindName == "system" || message.kindName == "pat" || message.isRecalled { return 12 }
+        if next.kindName == "system" || next.kindName == "pat" || next.isRecalled {
+            return ChatFeedMetrics.systemGap
+        }
+        if message.kindName == "system" || message.kindName == "pat" || message.isRecalled {
+            return ChatFeedMetrics.systemGap
+        }
         let same = (next.senderId ?? "") == (message.senderId ?? "")
 
-        if isGroup {
-            return same ? 3 : 14
-        }
-        return same
-            ? UIConfig.num("msgGapSame", 6)
-            : UIConfig.num("msgGapOther", 16)
+        return same ? ChatFeedMetrics.runGap : ChatFeedMetrics.senderChangeGap
     }
 
     private var leftUnreadBadge: AnyView? {
@@ -7284,9 +7333,14 @@ struct MessageRow: View {
             bubbleColumn
 
             if mine {
+                Spacer().frame(width: ChatFeedMetrics.avatarGap)
                 if showsAvatar {
-                    Spacer().frame(width: L.chatGapMsg)
                     avatarView
+                } else if reservesAvatarSpace {
+                    Color.clear.frame(
+                        width: ChatFeedMetrics.avatarSize,
+                        height: ChatFeedMetrics.avatarSize
+                    )
                 }
             }
 
@@ -7336,12 +7390,13 @@ struct MessageRow: View {
     }
 
     private var bubbleColumn: some View {
-        VStack(alignment: mine ? .trailing : .leading, spacing: 2) {
+        VStack(alignment: mine ? .trailing : .leading,
+               spacing: ChatFeedMetrics.metadataGap) {
             if !senderName.isEmpty {
 
                 HStack(spacing: 4) {
                     Text(senderName)
-                        .font(pf(12, .regular))
+                        .font(pf(12, .medium))
                         .foregroundColor(senderNameColor ?? (senderNameUsesLightInk
                                          ? ChatTheme.groupSenderNameOnDark
                                          : ChatTheme.groupSenderNameOnLight))
@@ -7352,7 +7407,7 @@ struct MessageRow: View {
                         QQLevelBadge(level: senderQQLevel, size: 11, maxIcons: 2).fixedSize()
                     }
                 }
-                .padding(.leading, 4)
+                .padding(.leading, 3)
             }
             content
 
@@ -7366,8 +7421,8 @@ struct MessageRow: View {
                     WhatsAppMessageTicks(count: deliveryState.tickCount,
                                          color: deliveryState.color)
                 }
-                .padding(.trailing, 4)
-                .offset(y: -2)
+                .padding(.top, ChatFeedMetrics.statusGap)
+                .padding(.trailing, 3)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(deliveryState.accessibilityText)
             }
@@ -7539,8 +7594,8 @@ struct MessageRow: View {
                 Text(linkFallbackText(message.body))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, ChatFeedMetrics.textHorizontalPadding)
+                    .padding(.vertical, ChatFeedMetrics.textVerticalPadding)
                 .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
 
@@ -7569,8 +7624,8 @@ struct MessageRow: View {
                      : Tr("[名片]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, ChatFeedMetrics.textHorizontalPadding)
+                    .padding(.vertical, ChatFeedMetrics.textVerticalPadding)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
 
@@ -7586,8 +7641,8 @@ struct MessageRow: View {
                 Text(Tr("[音乐]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, ChatFeedMetrics.textHorizontalPadding)
+                    .padding(.vertical, ChatFeedMetrics.textVerticalPadding)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
 
@@ -7601,8 +7656,8 @@ struct MessageRow: View {
                 Text(Tr("[商品]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, ChatFeedMetrics.textHorizontalPadding)
+                    .padding(.vertical, ChatFeedMetrics.textVerticalPadding)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
 
@@ -7625,8 +7680,8 @@ struct MessageRow: View {
                 Text(Tr("[小游戏]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, ChatFeedMetrics.textHorizontalPadding)
+                    .padding(.vertical, ChatFeedMetrics.textVerticalPadding)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
 
@@ -7638,8 +7693,8 @@ struct MessageRow: View {
                 Text(Tr("[通知]"))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, ChatFeedMetrics.textHorizontalPadding)
+                    .padding(.vertical, ChatFeedMetrics.textVerticalPadding)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
             }
 
@@ -7658,8 +7713,8 @@ struct MessageRow: View {
                 Text(unknownCardText(message.body))
                     .font(pf(L.chatFontSize))
                     .foregroundColor(bubblePrimaryInk)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, ChatFeedMetrics.textHorizontalPadding)
+                    .padding(.vertical, ChatFeedMetrics.textVerticalPadding)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
                 } else if let q = message.quote {
 
@@ -7673,8 +7728,8 @@ struct MessageRow: View {
                 .lineSpacing(textLineSpacing(message.body))
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, L.bubblePadHPill)
-                .padding(.vertical, L.bubblePadV)
+                .padding(.horizontal, ChatFeedMetrics.textHorizontalPadding)
+                .padding(.vertical, ChatFeedMetrics.textVerticalPadding)
                 .background(
                     BubbleFill(mine: mine, tail: showTail, glass: false)
                 )
@@ -7690,8 +7745,8 @@ struct MessageRow: View {
                 .lineSpacing(textLineSpacing(raw))
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, L.bubblePadHPill)
-                .padding(.vertical, L.bubblePadV)
+                .padding(.horizontal, ChatFeedMetrics.textHorizontalPadding)
+                .padding(.vertical, ChatFeedMetrics.textVerticalPadding)
                 .background(BubbleFill(mine: mine, tail: showTail, glass: false))
 
             Button {
@@ -8499,8 +8554,8 @@ struct MessageRow: View {
                 }
             }
         }
-        .padding(.horizontal, L.bubblePadHPill)
-        .padding(.vertical, L.bubblePadV)
+        .padding(.horizontal, ChatFeedMetrics.textHorizontalPadding)
+        .padding(.vertical, ChatFeedMetrics.textVerticalPadding)
         .background(
             BubbleFill(mine: mine, tail: showTail)
         )

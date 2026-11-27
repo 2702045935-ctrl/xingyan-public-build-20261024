@@ -96,6 +96,7 @@ jobs:
           python3 tools/verify-interaction-kernel.py
           python3 tools/verify-chat-first-frame-stability.py
           python3 tools/verify-chat-message-system-layout.py
+          python3 tools/verify-chat-feed-skeleton.py
           python3 tools/verify-chats-dark-surface.py
           python3 tools/verify-chat-chrome-contrast.py
           python3 tools/verify-recall-preview.py
