@@ -50,11 +50,11 @@ require(
     "conversation title must use the calibrated semibold optical rhythm",
 )
 require(
-    "UIGlassEffect" not in NAV
-    and "glassEffect(" not in NAV
-    and NAV.count("UIBlurEffect(") == 1
+    "glassEffect(" not in NAV
+    and NAV.count("UIBlurEffect(") == 2
+    and NAV.count("UIGlassEffect(") == 1
     and "shape\n            .fill(C.floatingSurface)" in NAV,
-    "custom glass must be removed while the native system mask remains",
+    "custom glass must be removed while native masks and media glass remain",
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT

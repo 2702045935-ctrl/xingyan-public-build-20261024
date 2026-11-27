@@ -22,7 +22,6 @@ for token in (
     ".thinMaterial",
     ".regularMaterial",
     ".glassEffect(",
-    "UIGlassEffect",
 ):
     require(token not in SOURCES, "glass API remains: " + token)
 
@@ -37,6 +36,13 @@ require(
         "UIBlurEffect(style: scheme == .dark", ""
     ),
     "native system material is allowed only for the scroll-edge mask",
+)
+require(
+    SOURCES.count("UIGlassEffect(") == 1
+    and "struct NativeMediaGlassMaterial" in NAV
+    and "UIGlassEffect(style: .regular)" in NAV
+    and "struct NativeMediaGlassSurface" in NAV,
+    "media controls may use exactly one native system glass component",
 )
 
 require(

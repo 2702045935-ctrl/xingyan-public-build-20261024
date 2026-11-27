@@ -2938,7 +2938,7 @@ struct PhotoPager: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background {
-                            NativeGlassControlMaterial()
+                            NativeMediaGlassSurface()
                         }
                         .padding(.bottom, showActions ? max(16, L.safeBottom + 6) : 26)
                         .transition(.opacity.combined(with: .scale(scale: 0.94)))
@@ -2998,7 +2998,7 @@ struct PhotoPager: View {
                 .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(.white)
                 .frame(width: 38, height: 38)
-                .background { NativeGlassCircleBackground() }
+                .background { NativeMediaGlassCircleBackground() }
                 .frame(width: 44, height: 44)
                 .contentShape(Circle())
         }
@@ -3021,7 +3021,7 @@ struct PhotoPager: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background {
-            NativeGlassControlMaterial()
+            NativeMediaGlassSurface()
         }
         .padding(.horizontal, 14)
         .padding(.bottom, max(10, L.safeBottom))

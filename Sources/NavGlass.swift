@@ -113,6 +113,68 @@ struct NativeFrostedHeaderMaterial: UIViewRepresentable {
 }
 #endif
 
+#if canImport(UIKit)
+struct NativeMediaGlassMaterial: UIViewRepresentable {
+    var interactive = false
+
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        let view = UIVisualEffectView(effect: effect)
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ view: UIVisualEffectView, context: Context) {
+        view.effect = effect
+    }
+
+    private var effect: UIVisualEffect? {
+        guard !reduceTransparency else { return nil }
+        if #available(iOS 26.0, *) {
+            let glass = UIGlassEffect(style: .regular)
+            glass.isInteractive = interactive
+            return glass
+        }
+        return UIBlurEffect(style: scheme == .dark
+                            ? .systemThinMaterialDark
+                            : .systemThinMaterialLight)
+    }
+}
+#endif
+
+struct NativeMediaGlassSurface: View {
+    var shape: AnyShape = AnyShape(Capsule(style: .continuous))
+    var interactive = false
+
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        Group {
+            if reduceTransparency {
+                shape.fill(C.controlSurface)
+            } else {
+                NativeMediaGlassMaterial(interactive: interactive)
+                    .clipShape(shape)
+            }
+        }
+        .overlay {
+            shape.stroke(Color.white.opacity(0.12), lineWidth: 0.6)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+struct NativeMediaGlassCircleBackground: View {
+    var body: some View {
+        NativeMediaGlassSurface(
+            shape: AnyShape(Circle()),
+            interactive: true
+        )
+    }
+}
+
 struct NativeTopGlassMask: View {
     var active: Bool
 

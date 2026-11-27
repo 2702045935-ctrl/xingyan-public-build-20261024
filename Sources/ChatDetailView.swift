@@ -2665,7 +2665,8 @@ struct ChatDetailView: View {
         .fullScreenCover(item: $filePreview) { f in
             FilePreviewSheet(name: f.name, local: f.local,
                              favoriteTitle: f.favoriteTitle,
-                             favoriteFrom: f.favoriteFrom)
+                             favoriteFrom: f.favoriteFrom,
+                             transfer: f.transfer)
                 .environmentObject(app)
         }
         .sheet(item: $shareFile) { f in
@@ -6072,13 +6073,32 @@ struct ChatDetailView: View {
     }
 
     private func sendFile(_ url: URL) {
-        Task { await uploadAndSendFile(url) }
+        sendFiles([url])
     }
 
     private func sendFiles(_ urls: [URL]) {
         guard !urls.isEmpty else { return }
-        Task {
-            for u in urls { await uploadAndSendFile(u) }
+        let transfer = FileTransferState(
+            name: urls[0].lastPathComponent,
+            bytes: (try? urls[0].resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0,
+            fileCount: urls.count
+        )
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
+            filePreview = FilePreviewData(
+                name: urls[0].lastPathComponent,
+                local: urls[0],
+                favoriteTitle: chat.name,
+                favoriteFrom: Tr("聊天文件"),
+                transfer: transfer
+            )
+            Task {
+                for (index, u) in urls.enumerated() {
+                    let accessing = u.startAccessingSecurityScopedResource()
+                    transfer.begin(index: index + 1)
+                    await uploadAndSendFile(u, transfer: transfer)
+                    if accessing { u.stopAccessingSecurityScopedResource() }
+                }
+            }
         }
     }
 
@@ -6142,7 +6162,7 @@ struct ChatDetailView: View {
         send(kind: "file", content: content)
     }
 
-    private func uploadAndSendFile(_ url: URL) async {
+    private func uploadAndSendFile(_ url: URL, transfer: FileTransferState? = nil) async {
         let ok = url.startAccessingSecurityScopedResource()
         defer { if ok { url.stopAccessingSecurityScopedResource() } }
 
@@ -6183,15 +6203,21 @@ struct ChatDetailView: View {
             return
         }
         uploading = true
-        sendingFileName = name
-        sendingFileBytes = sizeBytes
-        sendingFileProgress = 0.01
-        scrollTick += 1
+        if transfer == nil {
+            sendingFileName = name
+            sendingFileBytes = sizeBytes
+            sendingFileProgress = 0.01
+            scrollTick += 1
+        } else {
+            transfer?.prepare(name: name, bytes: sizeBytes)
+        }
         defer {
             uploading = false
-            sendingFileName = ""
-            sendingFileBytes = 0
-            sendingFileProgress = nil
+            if transfer == nil {
+                sendingFileName = ""
+                sendingFileBytes = 0
+                sendingFileProgress = nil
+            }
         }
 
         let sourceMime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType
@@ -6201,8 +6227,12 @@ struct ChatDetailView: View {
                 uploadURL, mime: "application/octet-stream", skipTranscode: true, onProgress: { p in
                     let value = min(1, max(0.01, p))
                     DispatchQueue.main.async {
-                        guard sendingFileName == name else { return }
-                        sendingFileProgress = value
+                        if let transfer {
+                            transfer.upload(progress: value)
+                        } else {
+                            guard sendingFileName == name else { return }
+                            sendingFileProgress = value
+                        }
                     }
                 })
             if let preview = try? await RemoteFileCache.shared.rememberLocal(
@@ -6222,6 +6252,7 @@ struct ChatDetailView: View {
                 "bytes": sizeBytes,
                 "mime": sourceMime
             ]
+            transfer?.processing()
             let jsonData = try JSONSerialization.data(withJSONObject: body)
             guard let content = String(data: jsonData, encoding: .utf8) else {
                 throw APIError.message("文件信息生成失败")
@@ -6229,10 +6260,14 @@ struct ChatDetailView: View {
             if let message = try await API.shared.send(chatId: chat.id, kind: "file", content: content) {
                 appendVisibleMessage(message)
             }
-            sendingFileProgress = nil
-            sendingFileName = ""
-            sendingFileBytes = 0
+            transfer?.sent()
+            if transfer == nil {
+                sendingFileProgress = nil
+                sendingFileName = ""
+                sendingFileBytes = 0
+            }
         } catch {
+            transfer?.failed((error as? APIError)?.errorDescription ?? "文件发送失败")
             app.show((error as? APIError)?.errorDescription ?? "文件发送失败")
         }
         await app.loadChats()
@@ -8880,12 +8915,67 @@ extension MessageRow: Equatable {
 
 }
 
+final class FileTransferState: ObservableObject {
+    enum Phase: Equatable {
+        case preparing
+        case uploading
+        case processing
+        case sent
+        case failed(String)
+    }
+
+    @Published private(set) var phase: Phase = .preparing
+    @Published private(set) var progress: Double = 0
+    @Published private(set) var name: String
+    @Published private(set) var bytes: Int
+    @Published private(set) var fileIndex = 1
+    @Published private(set) var fileCount: Int
+
+    init(name: String = "", bytes: Int = 0, fileCount: Int = 1) {
+        self.name = name
+        self.bytes = bytes
+        self.fileCount = max(1, fileCount)
+    }
+
+    func begin(index: Int) {
+        fileIndex = max(1, index)
+        phase = .preparing
+        progress = 0
+    }
+
+    func prepare(name: String, bytes: Int) {
+        self.name = name
+        self.bytes = bytes
+        if phase != .sent { phase = .preparing }
+    }
+
+    func upload(progress value: Double) {
+        progress = min(1, max(progress, value))
+        phase = .uploading
+    }
+
+    func processing() {
+        progress = 1
+        phase = .processing
+    }
+
+    func sent() {
+        progress = 1
+        phase = .sent
+    }
+
+    func failed(_ reason: String) {
+        phase = .failed(reason)
+    }
+}
+
 struct FilePreviewData: Identifiable {
     let id = UUID()
     var name: String
     var local: URL
     var favoriteTitle: String = ""
     var favoriteFrom: String = ""
+    var transfer: FileTransferState? = nil
 }
 
 struct FilePreviewSheet: View {
@@ -8893,6 +8983,7 @@ struct FilePreviewSheet: View {
     let local: URL
     var favoriteTitle: String = ""
     var favoriteFrom: String = ""
+    var transfer: FileTransferState? = nil
 
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -8968,7 +9059,7 @@ struct FilePreviewSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
+                C.pageBg.ignoresSafeArea()
                 VStack(spacing: 10) {
                     if let kind = officeKind {
                         OfficeDocumentHeader(kind: kind, name: displayName, local: local)
@@ -8976,14 +9067,19 @@ struct FilePreviewSheet: View {
                         fileHero
                     }
 
+                    if let transfer {
+                        FileTransferProgressCard(transfer: transfer)
+                            .padding(.horizontal, 12)
+                    }
+
                     QuickLookView(url: local, title: displayName)
-                        .background(Color(uiColor: .secondarySystemGroupedBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .background(C.cardBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .overlay {
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .stroke(Color.primary.opacity(0.075), lineWidth: 0.7)
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .stroke(C.hairline, lineWidth: 0.7)
                         }
-                        .shadow(color: Color.black.opacity(0.055), radius: 12, y: 5)
+                        .shadow(color: Color.black.opacity(0.12), radius: 18, y: 7)
                         .padding(.horizontal, 12)
                         .padding(.bottom, 8)
                 }
@@ -9090,11 +9186,11 @@ struct FilePreviewSheet: View {
         .padding(13)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                .fill(C.cardBg)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.primary.opacity(0.07), lineWidth: 0.7)
+                .stroke(C.hairline, lineWidth: 0.7)
         }
         .padding(.horizontal, 12)
     }
@@ -9118,7 +9214,7 @@ struct FilePreviewSheet: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
                 .background(RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .fill(Color.primary.opacity(0.045)))
+                    .fill(C.controlSurface))
             }
             .buttonStyle(.plain)
             .disabled(favoriting)
@@ -9134,7 +9230,7 @@ struct FilePreviewSheet: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
                 .background(RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .fill(Color.primary.opacity(0.045)))
+                    .fill(C.controlSurface))
             }
             .buttonStyle(.plain)
 
@@ -9163,13 +9259,7 @@ struct FilePreviewSheet: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
         .background {
-            GlassBackground(
-                shape: Rectangle(),
-                opacity: 0.92,
-                edgeAlpha: 0.18,
-                seed: 0.27,
-                native: true
-            )
+            NativeMediaGlassSurface(shape: AnyShape(Rectangle()))
             .ignoresSafeArea(edges: .bottom)
         }
     }
@@ -9197,6 +9287,115 @@ struct FilePreviewSheet: View {
                                                   from: favoriteFrom)
             favoriting = false
             app.show(ok ? Tr("已收藏") : Tr("收藏失败"))
+        }
+    }
+}
+
+private struct FileTransferProgressCard: View {
+    @ObservedObject var transfer: FileTransferState
+
+    private var accent: Color {
+        if case .failed = transfer.phase { return C.red }
+        return OrbitTheme.jade
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle().fill(accent.opacity(0.12))
+                    Image(systemName: symbol)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(accent)
+                }
+                .frame(width: 34, height: 34)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(statusTitle)
+                        .font(pf(14, .semibold))
+                        .foregroundColor(C.label)
+                    Text(detail)
+                        .font(pf(11.5))
+                        .foregroundColor(C.subLabel)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                if transfer.phase == .sent {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(OrbitTheme.jade)
+                } else if case .processing = transfer.phase {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Text("\(Int(transfer.progress * 100))%")
+                        .font(pf(12, .semibold))
+                        .foregroundColor(accent)
+                        .monospacedDigit()
+                }
+            }
+
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(C.fieldBg)
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(hex: 0x55D6A2), accent],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: max(transfer.progress > 0 ? 5 : 0,
+                                          geo.size.width * transfer.progress))
+                }
+            }
+            .frame(height: 5)
+            .animation(.linear(duration: 0.14), value: transfer.progress)
+        }
+        .padding(13)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(C.cardBg)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(C.hairline, lineWidth: 0.7)
+                }
+        )
+        .accessibilityElement(children: .combine)
+    }
+
+    private var statusTitle: String {
+        switch transfer.phase {
+        case .preparing: return Tr("准备发送文件")
+        case .uploading: return Tr("正在上传")
+        case .processing: return Tr("服务器处理中")
+        case .sent: return Tr("文件已发送")
+        case .failed: return Tr("文件发送失败")
+        }
+    }
+
+    private var detail: String {
+        let size = ByteCountFormatter.string(
+            fromByteCount: Int64(transfer.bytes),
+            countStyle: .file
+        )
+        let index = transfer.fileCount > 1
+            ? "\(transfer.fileIndex)/\(transfer.fileCount) · "
+            : ""
+        if case .failed(let reason) = transfer.phase {
+            return index + reason
+        }
+        return index + transfer.name + " · " + size
+    }
+
+    private var symbol: String {
+        switch transfer.phase {
+        case .preparing: return "doc.badge.clock"
+        case .uploading: return "arrow.up.circle.fill"
+        case .processing: return "gearshape.2.fill"
+        case .sent: return "paperplane.fill"
+        case .failed: return "exclamationmark.circle.fill"
         }
     }
 }

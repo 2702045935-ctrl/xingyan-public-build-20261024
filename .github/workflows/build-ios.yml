@@ -137,6 +137,7 @@ jobs:
           python3 tools/verify-message-receipts.py
           python3 tools/verify-message-send-handoff.py
           python3 tools/verify-location-call-polish.py
+          python3 tools/verify-file-transfer-preview.py
           python3 tools/verify-realtime-chat-direct.py
           python3 tools/verify-voice-hold-brand.py
           python3 tools/verify-native-top-masks.py

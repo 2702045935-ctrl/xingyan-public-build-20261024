@@ -17,28 +17,29 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "struct NativeGlassControlMaterial: View" in NAV
+    "struct NativeMediaGlassMaterial" in NAV
+    and "UIGlassEffect(style: .regular)" in NAV
+    and "struct NativeMediaGlassSurface: View" in NAV
     and "var shape: AnyShape = AnyShape(Capsule(style: .continuous))" in NAV
-    and "shape\n            .fill(C.floatingSurface)" in NAV
-    and "shape.stroke(C.hairline" in NAV
     and "glassEffect(" not in NAV
-    and "shape: AnyShape(Circle())" in NAV
-    and "interactive: true" in NAV,
-    "viewer controls must share the opaque floating surface",
+    and "struct NativeMediaGlassCircleBackground" in NAV,
+    "viewer controls must share one native system glass component",
 )
 require(
-    CORE.count("NativeGlassControlMaterial()") >= 2
+    CORE.count("NativeMediaGlassSurface()") >= 2
+    and "NativeMediaGlassCircleBackground()" in CORE
     and "GlassBackground(\n                                shape: Capsule(style: .continuous)"
     not in CORE
     and "GlassBackground(shape: Capsule(style: .continuous), shadow: true)" not in CORE,
-    "photo viewer count and action bar must use opaque controls",
+    "photo viewer count and action bar must use native system glass",
 )
 require(
-    "shape: AnyShape(\n                                RoundedRectangle(" in VIDEO
-    and "NativeGlassControlMaterial(\n                                        interactive: true" in VIDEO
-    and "NativeGlassControlMaterial()" in VIDEO
+    "NativeMediaGlassSurface(\n                            shape: AnyShape(\n                                RoundedRectangle(" in VIDEO
+    and "NativeMediaGlassSurface(\n                                        shape: AnyShape(Capsule(style: .continuous)),\n                                        interactive: true" in VIDEO
+    and "NativeMediaGlassSurface()" in VIDEO
+    and "NativeMediaGlassCircleBackground()" in VIDEO
     and "GlassBackground(" not in VIDEO,
-    "video viewer scrubber, speed and message controls must use opaque controls",
+    "video viewer scrubber, speed and message controls must use native system glass",
 )
 require(
     "python3 tools/verify-media-viewer-glass.py" in WORKFLOW,
