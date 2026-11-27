@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import AVFoundation
 
 struct NativeMomentActions {
     let openComments: (Moment) -> Void
@@ -122,6 +123,72 @@ private final class NativeMomentImageView: UIImageView {
     }
 }
 
+private enum NativeMomentTextLayout {
+    static func normalized(_ raw: String) -> String {
+        let lines = raw
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.replacingOccurrences(
+                of: #"[ \t]+$"#,
+                with: "",
+                options: .regularExpression
+            ) }
+        var out: [String] = []
+        var blankRun = 0
+        for line in lines {
+            if line.isEmpty {
+                blankRun += 1
+                if blankRun > 1 { continue }
+            } else {
+                blankRun = 0
+            }
+            out.append(line)
+        }
+        return out.joined(separator: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+private final class NativeMomentLikeParticleBurst: UIView {
+    func burst() {
+        layer.removeAllAnimations()
+        subviews.forEach { $0.removeFromSuperview() }
+        let reduceMotion = UIAccessibility.isReduceMotionEnabled
+        let count = reduceMotion ? 6 : 14
+        let origin = CGPoint(x: bounds.maxX - 92, y: bounds.midY + 2)
+        for index in 0..<count {
+            let particle = UIView(frame: CGRect(
+                x: origin.x,
+                y: origin.y,
+                width: index.isMultiple(of: 2) ? 4 : 3,
+                height: index.isMultiple(of: 2) ? 4 : 3
+            ))
+            particle.backgroundColor = UIColor(hex: 0xFF3B4D)
+            particle.layer.cornerRadius = particle.bounds.width / 2
+            addSubview(particle)
+            let angle = Double(index) / Double(count) * Double.pi * 2
+            let distance = reduceMotion ? 13.0 : 24.0
+            let dx = cos(angle) * distance
+            let dy = sin(angle) * distance - 8
+            UIView.animate(
+                withDuration: reduceMotion ? 0.22 : 0.52,
+                delay: 0,
+                options: [.curveEaseOut, .allowUserInteraction]
+            ) {
+                particle.center = CGPoint(
+                    x: origin.x + dx,
+                    y: origin.y + dy
+                )
+                particle.alpha = 0
+                particle.transform = CGAffineTransform(scaleX: 0.55, y: 0.55)
+            } completion: { _ in
+                particle.removeFromSuperview()
+            }
+        }
+    }
+}
+
 private final class NativeMomentAvatarView: UIImageView {
     private var requestID = UUID()
 
@@ -182,6 +249,10 @@ private final class NativeMomentAvatarView: UIImageView {
 
 private final class NativeMomentMediaControl: UIControl {
     let imageView = NativeMomentImageView()
+    private let videoSurface = UIView()
+    private var playerLayer: AVPlayerLayer?
+    private var player: AVPlayer?
+    private var playbackActive = false
     private let playCircle = UIView()
     private let playIcon = UIImageView(image: UIImage(systemName: "play.fill"))
     private let durationLabel = UILabel()
@@ -198,6 +269,16 @@ private final class NativeMomentMediaControl: UIControl {
             imageView.trailingAnchor.constraint(equalTo: trailingAnchor),
             imageView.topAnchor.constraint(equalTo: topAnchor),
             imageView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+
+        videoSurface.translatesAutoresizingMaskIntoConstraints = false
+        videoSurface.isUserInteractionEnabled = false
+        addSubview(videoSurface)
+        NSLayoutConstraint.activate([
+            videoSurface.leadingAnchor.constraint(equalTo: leadingAnchor),
+            videoSurface.trailingAnchor.constraint(equalTo: trailingAnchor),
+            videoSurface.topAnchor.constraint(equalTo: topAnchor),
+            videoSurface.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
 
         playCircle.translatesAutoresizingMaskIntoConstraints = false
@@ -267,6 +348,7 @@ private final class NativeMomentMediaControl: UIControl {
 
     func configureImage(path: String, radius: CGFloat) {
         imageView.set(path: path, maxSide: 1440, symbol: "photo")
+        clearVideo()
         playCircle.isHidden = true
         pinnedLabel.isHidden = true
         pinnedIcon.isHidden = true
@@ -276,8 +358,25 @@ private final class NativeMomentMediaControl: UIControl {
         layer.borderColor = UIColor(C.label).withAlphaComponent(0.075).cgColor
     }
 
-    func configureVideo(cover: String, seconds: Int, pinned: Bool, radius: CGFloat) {
+    func configureVideo(cover: String,
+                        videoPath: String,
+                        seconds: Int,
+                        pinned: Bool,
+                        radius: CGFloat) {
         imageView.set(path: cover, maxSide: 1440, symbol: "video")
+        clearVideo()
+        if let url = API.shared.assetURL(videoPath) {
+            let player = AVPlayer(url: url)
+            player.isMuted = true
+            player.actionAtItemEnd = .pause
+            let layer = AVPlayerLayer(player: player)
+            layer.videoGravity = .resizeAspectFill
+            layer.frame = videoSurface.bounds
+            videoSurface.layer.addSublayer(layer)
+            self.player = player
+            playerLayer = layer
+            if playbackActive { player.playImmediately(atRate: 1) }
+        }
         playCircle.isHidden = false
         pinnedLabel.isHidden = !pinned
         pinnedIcon.isHidden = !pinned
@@ -287,6 +386,28 @@ private final class NativeMomentMediaControl: UIControl {
         layer.cornerRadius = radius
         layer.borderWidth = 0.6
         layer.borderColor = UIColor(C.label).withAlphaComponent(0.075).cgColor
+    }
+
+    func setPlaybackActive(_ active: Bool) {
+        playbackActive = active
+        guard let player else { return }
+        if active {
+            player.playImmediately(atRate: 1)
+        } else {
+            player.pause()
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        playerLayer?.frame = videoSurface.bounds
+    }
+
+    private func clearVideo() {
+        player?.pause()
+        player = nil
+        playerLayer?.removeFromSuperlayer()
+        playerLayer = nil
     }
 }
 
@@ -316,6 +437,7 @@ final class NativeMomentRowCell: UITableViewCell {
 
     private let bodyView = UITextView()
     private let mediaCanvas = UIView()
+    private var mediaControls: [NativeMomentMediaControl] = []
     private var mediaWidthConstraint: NSLayoutConstraint!
     private var mediaHeightConstraint: NSLayoutConstraint!
 
@@ -325,6 +447,7 @@ final class NativeMomentRowCell: UITableViewCell {
     private let likeButton = UIButton(type: .system)
     private let commentButton = UIButton(type: .system)
     private let actionMoreButton = UIButton(type: .system)
+    private let likeBurst = NativeMomentLikeParticleBurst()
 
     private let socialView = UIView()
     private let socialStack = UIStackView()
@@ -361,6 +484,8 @@ final class NativeMomentRowCell: UITableViewCell {
         optimisticLiked = nil
         bodyView.attributedText = nil
         mediaCanvas.subviews.forEach { $0.removeFromSuperview() }
+        mediaControls.forEach { $0.setPlaybackActive(false) }
+        mediaControls.removeAll(keepingCapacity: true)
         socialStack.arrangedSubviews.forEach {
             socialStack.removeArrangedSubview($0)
             $0.removeFromSuperview()
@@ -407,6 +532,10 @@ final class NativeMomentRowCell: UITableViewCell {
         configureFooter(text: footerText,
                         waiting: footerWaiting,
                         isLast: item.isLast)
+    }
+
+    func setPlaybackActive(_ active: Bool) {
+        mediaControls.forEach { $0.setPlaybackActive(active) }
     }
 
     private func configureHierarchy() {
@@ -487,11 +616,18 @@ final class NativeMomentRowCell: UITableViewCell {
         cardStack.layoutMargins = UIEdgeInsets(top: 16, left: 16, bottom: 14, right: 16)
         cardStack.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(cardStack)
+        likeBurst.translatesAutoresizingMaskIntoConstraints = false
+        likeBurst.isUserInteractionEnabled = false
+        card.addSubview(likeBurst)
         NSLayoutConstraint.activate([
             cardStack.leadingAnchor.constraint(equalTo: card.leadingAnchor),
             cardStack.trailingAnchor.constraint(equalTo: card.trailingAnchor),
             cardStack.topAnchor.constraint(equalTo: card.topAnchor),
-            cardStack.bottomAnchor.constraint(equalTo: card.bottomAnchor)
+            cardStack.bottomAnchor.constraint(equalTo: card.bottomAnchor),
+            likeBurst.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            likeBurst.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+            likeBurst.topAnchor.constraint(equalTo: card.topAnchor),
+            likeBurst.bottomAnchor.constraint(equalTo: card.bottomAnchor)
         ])
 
         configurePromotionView()
@@ -584,8 +720,10 @@ final class NativeMomentRowCell: UITableViewCell {
 
         moreButton.tintColor = UIColor(C.subLabel)
         moreButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
-        moreButton.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 17,
-                                                                               weight: .semibold)
+        moreButton.setPreferredSymbolConfiguration(
+            UIImage.SymbolConfiguration(pointSize: 17, weight: .semibold),
+            forImageIn: .normal
+        )
         moreButton.addTarget(self, action: #selector(showMore), for: .touchUpInside)
         moreButton.translatesAutoresizingMaskIntoConstraints = false
         moreButton.widthAnchor.constraint(equalToConstant: 40).isActive = true
@@ -763,10 +901,9 @@ final class NativeMomentRowCell: UITableViewCell {
             bodyView.attributedText = nil
             return
         }
-        let linked = RichText.linkified(text)
-        let value = NSMutableAttributedString(
-            attributedString: NSAttributedString(linked)
-        )
+        let normalized = NativeMomentTextLayout.normalized(text)
+        let linked = RichText.lines(normalized, size: 16.5)
+        let value = NSMutableAttributedString(attributedString: NSAttributedString(linked))
         let range = NSRange(location: 0, length: value.length)
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = 7
@@ -789,6 +926,8 @@ final class NativeMomentRowCell: UITableViewCell {
     }
 
     private func configureMedia(_ moment: Moment, actions: NativeMomentActions) {
+        mediaControls.forEach { $0.setPlaybackActive(false) }
+        mediaControls.removeAll(keepingCapacity: true)
         mediaCanvas.subviews.forEach { $0.removeFromSuperview() }
         let images = moment.images ?? []
         let video = moment.video ?? ""
@@ -803,9 +942,11 @@ final class NativeMomentRowCell: UITableViewCell {
             let control = NativeMomentMediaControl()
             control.translatesAutoresizingMaskIntoConstraints = false
             control.configureVideo(cover: moment.videoCover ?? "",
+                                   videoPath: video,
                                    seconds: moment.videoSeconds ?? 0,
                                    pinned: moment.pinned == true,
                                    radius: 18)
+            mediaControls.append(control)
             control.addAction(UIAction { [weak self] _ in
                 guard let self, let moment = self.moment else { return }
                 let raw = moment.video ?? ""
@@ -836,6 +977,7 @@ final class NativeMomentRowCell: UITableViewCell {
             control.translatesAutoresizingMaskIntoConstraints = false
             control.configureImage(path: path,
                                    radius: MomentMediaLayout.singleRadius)
+            mediaControls.append(control)
             control.addAction(UIAction { [weak self] _ in
                 guard let moment = self?.moment else { return }
                 actions.openImage(moment, 0)
@@ -879,6 +1021,7 @@ final class NativeMomentRowCell: UITableViewCell {
             control.translatesAutoresizingMaskIntoConstraints = false
             control.configureImage(path: path,
                                    radius: MomentMediaLayout.gridRadius)
+            mediaControls.append(control)
             control.addAction(UIAction { [weak self] _ in
                 guard let moment = self?.moment else { return }
                 actions.openImage(moment, index)
@@ -1143,7 +1286,10 @@ final class NativeMomentRowCell: UITableViewCell {
         guard let moment else { return }
         let base = optimisticLiked ?? (moment.likedByMe == true)
         optimisticLiked = !base
-        if !base { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+        if !base {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            likeBurst.burst()
+        }
         configureActions(moment, actions: actions!)
     }
 

@@ -482,9 +482,16 @@ struct NativeMomentFeed<Header: View>: UIViewControllerRepresentable {
         func tableView(_ tableView: UITableView,
                        willDisplay cell: UITableViewCell,
                        forRowAt indexPath: IndexPath) {
+            (cell as? NativeMomentRowCell)?.setPlaybackActive(true)
             if indexPath.row >= max(0, items.count - 24) {
                 requestNextPage()
             }
+        }
+
+        func tableView(_ tableView: UITableView,
+                       didEndDisplaying cell: UITableViewCell,
+                       forRowAt indexPath: IndexPath) {
+            (cell as? NativeMomentRowCell)?.setPlaybackActive(false)
         }
     }
 }

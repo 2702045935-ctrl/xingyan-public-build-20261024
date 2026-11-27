@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CARD = (ROOT / "Sources" / "MomentFeedCard.swift").read_text(encoding="utf-8")
+CARD = (ROOT / "Sources" / "NativeMomentRowCell.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -15,22 +15,25 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "struct MomentAutoplayVideo: View" in CARD
-    and "AVPlayer(url: url)" in CARD
-    and "next.isMuted = true" in CARD,
-    "moment videos must use a muted inline AVPlayer rather than a static image",
+    "AVPlayer(url: url)" in CARD
+    and "player.isMuted = true" in CARD
+    and "AVPlayerLayer(player: player)" in CARD,
+    "moment videos must use a muted native AVPlayerLayer rather than a static image",
 )
 require(
-    "visible >= 0.60" in CARD
-    and "safeCenter" in CARD
-    and "visible >= 0.86" in CARD
+    "setPlaybackActive(true)" in (
+        ROOT / "Sources" / "NativeMomentFeed.swift"
+    ).read_text(encoding="utf-8")
+    and "didEndDisplaying cell" in (
+        ROOT / "Sources" / "NativeMomentFeed.swift"
+    ).read_text(encoding="utf-8")
     and "playImmediately(atRate: 1)" in CARD
     and "player?.pause()" in CARD
-    and ".onDisappear" in CARD,
-    "autoplay must start only near the viewport and pause when leaving",
+    and "setPlaybackActive(false)" in CARD,
+    "autoplay must follow native cell visibility and pause when leaving",
 )
 require(
-    "onOpenVideo(videoURL)" in CARD,
+    "actions.openVideo(url)" in CARD,
     "tapping an inline video must still open the full-screen player",
 )
 require(

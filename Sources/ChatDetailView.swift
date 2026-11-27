@@ -612,12 +612,9 @@ private struct ComposerIconButtonStyle: ButtonStyle {
         configuration.label
             .background {
                 ZStack {
-                    GlassBackground(
-                        shape: Circle(),
-                        opacity: 0.92,
-                        edgeAlpha: 0,
-                        seed: 0.19,
-                        native: true
+                    NativeMediaGlassSurface(
+                        shape: AnyShape(Circle()),
+                        interactive: true
                     )
                     Circle()
                         .fill((active || configuration.isPressed)
@@ -3691,7 +3688,9 @@ struct ChatDetailView: View {
             .padding(.vertical, L.o("chatTimePadY", 4))
             .background {
                 ZStack {
-                    NativeGlassControlMaterial()
+                    NativeMediaGlassSurface(
+                        shape: AnyShape(Capsule(style: .continuous))
+                    )
                     Capsule(style: .continuous)
                         .fill(adaptiveSystemSurface.opacity(
                             scheme == .dark ? 0.08 : 0.12
@@ -4478,11 +4477,10 @@ struct ChatDetailView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background {
-            GlassBackground(shape: Rectangle(),
-                            opacity: max(UIConfig.num("glassAlpha", 0.8), 0.92),
-                            edgeAlpha: UIConfig.num("glassEdgeAlpha", 0.65),
-                            seed: 0.31,
-                            native: true)
+            NativeMediaGlassSurface(
+                shape: AnyShape(Rectangle()),
+                showsEdge: false
+            )
             .ignoresSafeArea(edges: .bottom)
         }
     }
@@ -5102,7 +5100,7 @@ struct ChatDetailView: View {
                         } else if panel == .plus {
                             ChatPlusPanelMaterial()
                         } else if panel != .none {
-                            ChatPanelGlassBackground()
+                            ChatPanelNativeGlassMaterial()
                         } else {
                             Color.clear
                         }
@@ -8497,9 +8495,10 @@ struct MessageRow: View {
             }
             .padding(4)
             .background {
-                GlassBackground(
-                    shape: RoundedRectangle(cornerRadius: 18, style: .continuous),
-                    shadow: true
+                NativeMediaGlassSurface(
+                    shape: AnyShape(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    )
                 )
             }
         } else {
@@ -8537,10 +8536,10 @@ struct MessageRow: View {
                                         .padding(.horizontal, 8)
                                         .frame(height: 25)
                                         .background {
-                                            GlassBackground(
-                                                shape: Capsule(style: .continuous),
-                                                opacity: 0.84,
-                                                tint: Color.black.opacity(0.30)
+                                            NativeMediaGlassSurface(
+                                                shape: AnyShape(
+                                                    Capsule(style: .continuous)
+                                                )
                                             )
                                         }
                                         .padding(6)
@@ -8563,9 +8562,10 @@ struct MessageRow: View {
             }
             .padding(4)
             .background {
-                GlassBackground(
-                    shape: RoundedRectangle(cornerRadius: 18, style: .continuous),
-                    shadow: true
+                NativeMediaGlassSurface(
+                    shape: AnyShape(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    )
                 )
             }
         }

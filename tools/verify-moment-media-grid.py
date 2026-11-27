@@ -4,7 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LAYOUT = (ROOT / "Sources" / "MomentMediaLayout.swift").read_text(encoding="utf-8")
-FEED = (ROOT / "Sources" / "MomentFeedCard.swift").read_text(encoding="utf-8")
+FEED = (ROOT / "Sources" / "NativeMomentRowCell.swift").read_text(encoding="utf-8")
 DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"

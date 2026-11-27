@@ -147,6 +147,7 @@ struct NativeMediaGlassMaterial: UIViewRepresentable {
 struct NativeMediaGlassSurface: View {
     var shape: AnyShape = AnyShape(Capsule(style: .continuous))
     var interactive = false
+    var showsEdge = true
 
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
@@ -160,7 +161,9 @@ struct NativeMediaGlassSurface: View {
             }
         }
         .overlay {
-            shape.stroke(Color.white.opacity(0.12), lineWidth: 0.6)
+            if showsEdge {
+                shape.stroke(Color.white.opacity(0.12), lineWidth: 0.6)
+            }
         }
         .allowsHitTesting(false)
     }
@@ -441,20 +444,8 @@ struct NativeGlassControlMaterial: View {
     var shape: AnyShape = AnyShape(Capsule(style: .continuous))
     var interactive = false
 
-    @Environment(\.colorScheme) private var scheme
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
     var body: some View {
-        fallback
-        .overlay {
-            shape.stroke(C.hairline, lineWidth: 0.5)
-        }
-        .allowsHitTesting(false)
-    }
-
-    private var fallback: some View {
-        shape
-            .fill(C.floatingSurface)
+        NativeMediaGlassSurface(shape: shape, interactive: interactive)
     }
 }
 

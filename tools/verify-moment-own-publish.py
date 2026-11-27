@@ -34,11 +34,11 @@ require(
     "publish failures must stay visible and must not silently clear the draft",
 )
 
-CARD = (ROOT / "Sources" / "MomentFeedCard.swift").read_text(encoding="utf-8")
+CARD = (ROOT / "Sources" / "NativeMomentRowCell.swift").read_text(encoding="utf-8")
 require(
-    "HStack(spacing: -7)" in CARD
-    and "stroke(socialSurface, lineWidth: 2)" in CARD,
-    "liked-user avatars must overlap as one connected stack",
+    "constant: CGFloat(index) * 17" in CARD
+    and "layer.borderWidth = 2" in CARD,
+    "liked-user native avatars must overlap as one connected stack",
 )
 
 SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")

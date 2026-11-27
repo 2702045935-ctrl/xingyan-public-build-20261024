@@ -2,17 +2,15 @@ import SwiftUI
 
 var panelH: CGFloat { L.v(198, 53, 240) }
 
-struct ChatPanelGlassBackground: View {
+struct ChatPanelNativeGlassMaterial: View {
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         ZStack {
-            GlassBackground(shape: Rectangle(),
-                            opacity: scheme == .dark ? 0.74 : 0.94,
-                            edgeAlpha: scheme == .dark ? 0.16 : 0.26,
-                            shadow: false,
-                            seed: 0.83,
-                            native: true)
+            NativeMediaGlassSurface(
+                shape: AnyShape(Rectangle()),
+                showsEdge: false
+            )
             C.tabBg.opacity(scheme == .dark ? 0.32 : 0.18)
             LinearGradient(colors: [Color.white.opacity(scheme == .dark ? 0.015 : 0.12),
                                     Color.clear],
@@ -26,7 +24,10 @@ struct ChatEmojiPanelMaterial: View {
 
     var body: some View {
         ZStack {
-            Rectangle().fill(C.floatingSurface)
+            NativeMediaGlassSurface(
+                shape: AnyShape(Rectangle()),
+                showsEdge: false
+            )
             Rectangle().fill(
                 scheme == .dark
                     ? Color.black.opacity(0.08)
@@ -41,7 +42,10 @@ struct ChatPlusPanelMaterial: View {
 
     var body: some View {
         ZStack {
-            Rectangle().fill(C.floatingSurface)
+            NativeMediaGlassSurface(
+                shape: AnyShape(Rectangle()),
+                showsEdge: false
+            )
             Rectangle().fill(
                 Color(uiColor: .systemBackground)
                     .opacity(scheme == .dark ? 0.28 : 0.54)

@@ -58,10 +58,10 @@ struct FullScreenComposerView: View {
                     .foregroundStyle(C.label)
                     .frame(width: 42, height: 42)
                     .background {
-                        GlassBackground(shape: Circle(),
-                                        opacity: scheme == .dark ? 0.82 : 0.92,
-                                        edgeAlpha: scheme == .dark ? 0.12 : 0.22,
-                                        seed: 0.18)
+                        NativeMediaGlassSurface(
+                            shape: AnyShape(Circle()),
+                            interactive: true
+                        )
                     }
             }
             .buttonStyle(.plain)
@@ -90,12 +90,10 @@ struct FullScreenComposerView: View {
                 .frame(height: 42)
                 .background {
                     ZStack {
-                        GlassBackground(shape: Capsule(),
-                                        opacity: 0.96,
-                                        edgeAlpha: 0.22,
-                                        shadow: true,
-                                        seed: 0.61,
-                                        tint: tint.opacity(scheme == .dark ? 0.72 : 0.84))
+                        NativeMediaGlassSurface(
+                            shape: AnyShape(Capsule(style: .continuous)),
+                            interactive: true
+                        )
                         Capsule().fill(tint.opacity(scheme == .dark ? 0.64 : 0.82))
                     }
                 }
@@ -139,11 +137,7 @@ struct FullScreenComposerView: View {
                 .fill(C.pageBg.opacity(scheme == .dark ? 0.20 : 0.10))
         }
         .background {
-            GlassBackground(shape: editorShape,
-                            opacity: scheme == .dark ? 0.90 : 0.96,
-                            edgeAlpha: scheme == .dark ? 0.10 : 0.18,
-                            shadow: true,
-                            seed: 0.42)
+            NativeMediaGlassSurface(shape: AnyShape(editorShape))
         }
         .overlay {
             editorShape.stroke(
@@ -179,10 +173,9 @@ struct FullScreenComposerView: View {
         .padding(.horizontal, 16)
         .frame(height: 42)
         .background {
-            GlassBackground(shape: Capsule(),
-                            opacity: scheme == .dark ? 0.78 : 0.90,
-                            edgeAlpha: scheme == .dark ? 0.08 : 0.16,
-                            seed: 0.73)
+            NativeMediaGlassSurface(
+                shape: AnyShape(Capsule(style: .continuous))
+            )
         }
         .overlay {
             Capsule().stroke(C.hairline.opacity(scheme == .dark ? 0.34 : 0.22),
@@ -194,10 +187,10 @@ struct FullScreenComposerView: View {
         ZStack {
             C.pageBg.ignoresSafeArea()
 
-            GlassBackground(shape: Rectangle(),
-                            opacity: scheme == .dark ? 0.82 : 0.92,
-                            edgeAlpha: 0.025,
-                            seed: 0.91)
+            NativeMediaGlassSurface(
+                shape: AnyShape(Rectangle()),
+                showsEdge: false
+            )
                 .ignoresSafeArea()
 
             LinearGradient(

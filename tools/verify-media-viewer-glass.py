@@ -6,6 +6,9 @@ ROOT = Path(__file__).resolve().parents[1]
 NAV = (ROOT / "Sources" / "NavGlass.swift").read_text(encoding="utf-8")
 CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
 VIDEO = (ROOT / "Sources" / "ChatMediaBubbles.swift").read_text(encoding="utf-8")
+CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+COMPOSER = (ROOT / "Sources" / "ChatComposerField.swift").read_text(encoding="utf-8")
+PANELS = (ROOT / "Sources" / "Panels.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -40,6 +43,23 @@ require(
     and "NativeMediaGlassCircleBackground()" in VIDEO
     and "GlassBackground(" not in VIDEO,
     "video viewer scrubber, speed and message controls must use native system glass",
+)
+require(
+    "GlassBackground(" not in CHAT
+    and "NativeMediaGlassSurface(" in CHAT
+    and "interactive: true" in CHAT
+    and "showsEdge: false" in CHAT,
+    "chat timestamps, composer controls and media containers must use native system glass",
+)
+require(
+    "GlassBackground(" not in COMPOSER
+    and COMPOSER.count("NativeMediaGlassSurface(") >= 4,
+    "full-screen composer controls must use native system glass",
+)
+require(
+    "GlassBackground(" not in PANELS
+    and PANELS.count("NativeMediaGlassSurface(") >= 3,
+    "emoji and attachment panels must use native system glass",
 )
 require(
     "python3 tools/verify-media-viewer-glass.py" in WORKFLOW,
