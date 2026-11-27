@@ -59,6 +59,13 @@ require(
     "pull-to-refresh must attach only after the first native list layout",
 )
 require(
+    "private var heightCache: [Item.ID: CGFloat]" in NATIVE_CHAT_LIST
+    and "if let cached = heightCache[id] { return cached }" in NATIVE_CHAT_LIST
+    and "let topState: CGFloat = y > 8 ? 1 : 0" in NATIVE_CHAT_LIST
+    and "abs(y - lastReportedOffsetY) >= 12" not in NATIVE_CHAT_LIST,
+    "conversation scrolling must use cached native row heights and edge-only callbacks",
+)
+require(
     "ChatThemeStore.shared.activate(chat.id)" in CHAT_DETAIL
     and "chatTheme.activate(chat.id)" not in CHAT_DETAIL,
     "chat appearance must be active before the first rendered frame",

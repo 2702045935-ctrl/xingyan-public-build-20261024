@@ -44,9 +44,11 @@ require(
 )
 require(
     "NativeChatsTopEdgeChrome" in NAV
-    and "(background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground)))" in NAV
-    and ".opacity(scrolled > 0 ? 1 : 0)" in NAV,
-    "dark chat-list chrome must remain a continuous near-black surface",
+    and "let tint = background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground))" in NAV
+    and "NativeGlassHeaderMaterial(forcedDark: isDark)" in NAV
+    and "tint.opacity(isDark ? 0.62 : 0.58)" in NAV
+    and ".opacity(scrolled > 0 ? 1 : 0)" not in NAV,
+    "conversation chrome must use same-colour native glass without a first-scroll transition",
 )
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         and "NativeTopScrollObserver" in CONTACTS

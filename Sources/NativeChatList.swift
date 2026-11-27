@@ -203,13 +203,15 @@ where Item.ID: Hashable {
         private var lastZone = -1
         private var pendingZone = 0
         private var zoneFlushScheduled = false
-        private var lastReportedOffsetY = CGFloat.greatestFiniteMagnitude
+        private var lastReportedTopState: CGFloat = -1
         private var pendingItems: [Item]?
         private var applyGeneration = 0
         private var endRequestInFlight = false
         private var startRequestInFlight = false
         private var appliedItemCount = 0
         private var hasCompletedInitialApply = false
+        private var heightCache: [Item.ID: CGFloat] = [:]
+        private var heightCacheWidth: CGFloat = 0
         private var layoutObservers: [NSObjectProtocol] = []
 
         init(dark: Bool,
@@ -363,6 +365,9 @@ where Item.ID: Hashable {
             let reload = next.compactMap { item -> Item.ID? in
                 guard let old = lookup[item.id] else { return nil }
                 return old == item ? nil : item.id
+            }
+            for id in reload {
+                heightCache.removeValue(forKey: id)
             }
             let previousOffset = table.contentOffset
             let minimumYBeforeApply = -table.adjustedContentInset.top
@@ -587,7 +592,15 @@ where Item.ID: Hashable {
                 ? order[indexPath.row] : nil
             guard let id = resolvedId ?? fallbackId,
                   let item = lookup[id] else { return 1 }
-            return max(1, height(item))
+            let width = max(1, tableView.bounds.width)
+            if abs(width - heightCacheWidth) > 0.5 {
+                heightCacheWidth = width
+                heightCache.removeAll(keepingCapacity: true)
+            }
+            if let cached = heightCache[id] { return cached }
+            let measured = max(1, height(item))
+            heightCache[id] = measured
+            return measured
         }
 
         @objc func refreshPulled(_ sender: UIRefreshControl) {
@@ -599,8 +612,9 @@ where Item.ID: Hashable {
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
             let y = scrollView.contentOffset.y
-            if abs(y - lastReportedOffsetY) >= 12 {
-                lastReportedOffsetY = y
+            let topState: CGFloat = y > 8 ? 1 : 0
+            if topState != lastReportedTopState {
+                lastReportedTopState = topState
                 onOffsetChange(max(0, y))
             }
             let remaining = scrollView.contentSize.height
@@ -774,6 +788,7 @@ where Item.ID: Hashable {
         private func refreshMetrics() {
             guard let table, let dataSource else { return }
             NativeChatRowMetrics.invalidateScaleCache()
+            heightCache.removeAll(keepingCapacity: true)
             let previousOffset = table.contentOffset
             var snapshot = dataSource.snapshot()
             guard !snapshot.itemIdentifiers.isEmpty else { return }
