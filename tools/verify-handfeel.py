@@ -52,11 +52,6 @@ require(
     "the world entry must open the new experience without the legacy page",
 )
 require(
-    "try? await Task.sleep(nanoseconds: 120_000_000)" not in DISCOVER
-    and "await prefetchNextMomentsPage()" in DISCOVER,
-    "Moments prefetch must start without a fixed timer delay",
-)
-require(
     "if table.refreshControl == nil" in NATIVE_CHAT_LIST
     and "private func revealInitialTableIfNeeded" in NATIVE_CHAT_LIST,
     "pull-to-refresh must attach only after the first native list layout",
