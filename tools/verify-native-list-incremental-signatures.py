@@ -25,5 +25,16 @@ require(
     "if nextOrder == order && nextSignatures == signatures" in LIST,
     "unchanged scroll frames must return before diff bookkeeping",
 )
+cell_start = LIST.index("private final class NativeStaticHostCell")
+cell_end = LIST.index("final class NativeStaticListController", cell_start)
+cell = LIST[cell_start:cell_end]
+require(
+    "contentConfiguration = UIHostingConfiguration { rootView }" in cell
+    and ".margins(.all, 0)" in cell
+    and ".background(.clear)" in cell
+    and "UIHostingController<AnyView>" not in cell
+    and "addSubview(" not in cell,
+    "native list cells must use system hosting configuration without a manual host lifecycle",
+)
 
 print("native-list-incremental-signatures: passed")

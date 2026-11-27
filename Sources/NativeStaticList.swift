@@ -7,31 +7,15 @@ struct NativeStaticItem: Identifiable, Equatable {
 }
 
 private final class NativeStaticHostCell: UICollectionViewCell {
-    private var host: UIHostingController<AnyView>?
-    private var hostedID = ""
-
     override func prepareForReuse() {
         super.prepareForReuse()
+        contentConfiguration = nil
     }
 
-    func setRootView(_ rootView: AnyView, id: String) {
-        if host == nil {
-            let next = UIHostingController(rootView: rootView)
-            next.view.backgroundColor = .clear
-            contentView.addSubview(next.view)
-            host = next
-        } else if hostedID != id {
-            host?.rootView = rootView
-        } else {
-            host?.rootView = rootView
-        }
-        hostedID = id
-        host?.view.frame = contentView.bounds
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        host?.view.frame = contentView.bounds
+    func setRootView(_ rootView: AnyView) {
+        contentConfiguration = UIHostingConfiguration { rootView }
+            .margins(.all, 0)
+            .background(.clear)
     }
 }
 
@@ -133,7 +117,7 @@ where Item.ID: Hashable {
             guard let coordinator,
                   let item = coordinator.lookup[id],
                   let rootView = coordinator.rootView(for: item) else { return }
-            cell.setRootView(rootView, id: String(describing: id))
+            cell.setRootView(rootView)
             cell.backgroundConfiguration = .clear()
             cell.backgroundColor = .clear
             cell.clipsToBounds = true
