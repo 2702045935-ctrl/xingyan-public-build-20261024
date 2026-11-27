@@ -132,7 +132,7 @@ final class NativePlusPanelView: UIView, UIScrollViewDelegate {
             pageView.onTap = { [weak self] item in self?.onTap?(item) }
             pageView.onLongPress = { [weak self] item in
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                if let onLongPress = self?.onLongPress, onLongPress(item) { return }
+                if self?.onLongPress?(item) == true { return }
                 self?.onTap?(item)
             }
             pageHost.addSubview(pageView)
@@ -224,7 +224,7 @@ private final class NativePlusDotView: UIView {
 
 private final class NativePlusPageView: UIView {
     var onTap: ((PlusItem) -> Void)?
-    var onLongPress: ((PlusItem) -> Bool)?
+    var onLongPress: ((PlusItem) -> Void)?
     private var tileViews: [NativePlusTileView] = []
 
     init(items: [PlusItem]) {

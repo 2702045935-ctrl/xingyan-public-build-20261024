@@ -3288,6 +3288,19 @@ struct ChatDetailView: View {
         pinTick += 1
     }
 
+    private func pinThroughKeyboardTransition(_ notice: Notification) {
+        guard atBottomNow else { return }
+        let value = notice.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
+            as? Double ?? 0.25
+        pinToBottomImmediately()
+        DispatchQueue.main.async { [weak self] in
+            self?.pinToBottomImmediately()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + value + 0.02) { [weak self] in
+            self?.pinToBottomImmediately()
+        }
+    }
+
     private func repinIfAtBottom() {
         ChatScrollDiag.shared.note("repinIfAtBottom atBottom=\(atBottomNow ? 1 : 0)")
         guard atBottomNow else { return }
