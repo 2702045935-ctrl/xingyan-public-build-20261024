@@ -162,13 +162,18 @@ struct SendLocationView: View {
 
             Spacer(minLength: 0)
 
-            Text(Tr("发送位置"))
-                .font(pf(15, .semibold))
-                .foregroundColor(C.label)
-                .padding(.horizontal, 14)
-                .frame(height: 36)
-                .background(Capsule(style: .continuous).fill(C.controlSurface))
-                .overlay(Capsule(style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+            VStack(spacing: 1) {
+                Text(Tr("发送位置"))
+                    .font(pf(15, .semibold))
+                    .foregroundColor(C.label)
+                Text(Tr("选择地图上的地点"))
+                    .font(pf(9.5, .medium))
+                    .foregroundColor(C.subLabel)
+            }
+            .padding(.horizontal, 14)
+            .frame(height: 42)
+            .background(Capsule(style: .continuous).fill(C.controlSurface))
+            .overlay(Capsule(style: .continuous).stroke(C.hairline, lineWidth: 0.6))
 
             Spacer(minLength: 0)
 

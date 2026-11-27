@@ -7074,12 +7074,16 @@ struct CallRecordBubble: View {
                 Text(message.isVideoCall ? Tr("视频通话") : Tr("语音通话"))
                     .font(pf(14.5, .semibold))
                     .foregroundColor(primaryInk)
-                Text(detailText)
-                    .font(pf(12.5, .medium))
-                    .foregroundColor(message.isBadCallRecord
-                                     ? (mine ? Color.white.opacity(0.82) : accent)
-                                     : secondaryInk)
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    Image(systemName: statusSymbol)
+                        .font(.system(size: 9.5, weight: .semibold))
+                    Text(detailText)
+                        .font(pf(12.5, .medium))
+                        .lineLimit(1)
+                }
+                .foregroundColor(message.isBadCallRecord
+                                 ? (mine ? Color.white.opacity(0.82) : accent)
+                                 : secondaryInk)
             }
 
             Spacer(minLength: 10)
@@ -7148,6 +7152,20 @@ struct CallRecordBubble: View {
             return message.isVideoCall ? "ui.callRecordVideoMissed" : "ui.callRecordMissed"
         }
         return message.isVideoCall ? "ui.callRecordVideo" : "ui.callRecord"
+    }
+
+    private var statusSymbol: String {
+        let raw = message.callText
+        if raw.contains("取消") || raw.localizedCaseInsensitiveContains("cancel") {
+            return "xmark.circle.fill"
+        }
+        if raw.contains("拒绝") || raw.localizedCaseInsensitiveContains("reject") {
+            return "phone.down.fill"
+        }
+        if message.isBadCallRecord {
+            return "phone.down.fill"
+        }
+        return "clock.fill"
     }
 
     private var callIconMarkup: String {

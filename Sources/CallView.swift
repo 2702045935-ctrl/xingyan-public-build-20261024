@@ -650,7 +650,7 @@ struct CallView: View {
 
                         if !call.isGroupCall {
                             Button { call.switchVideo() } label: { switchLabel }
-                            .buttonStyle(.plain)
+                                .buttonStyle(.plain)
                         }
                     }
                     .padding(.top, 18)
@@ -798,11 +798,27 @@ struct CallView: View {
                     .foregroundColor(ink)
                     .frame(width: 72, height: 72)
                     .background(Circle().fill(bg))
+                    .overlay {
+                        Circle()
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.16),
+                                        Color.white.opacity(0.03),
+                                        Color.black.opacity(0.14)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 0.8
+                            )
+                    }
+                    .shadow(color: Color.black.opacity(0.28), radius: 12, y: 6)
             }
             .buttonStyle(.plain)
             Text(label)
-                .font(pfExact(14))
-                .foregroundColor(.white.opacity(0.92))
+                .font(pfExact(13, .medium))
+                .foregroundColor(.white.opacity(0.78))
         }
     }
 
