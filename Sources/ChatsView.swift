@@ -3329,20 +3329,25 @@ struct ChatsView: View {
         }
         .task {
             HitchWatch.shared.start("会话列表")
-            if app.chats.isEmpty {
-                await app.loadChats()
-            }
-            try? await Task.sleep(nanoseconds: 250_000_000)
-            while !Task.isCancelled {
-                let pollSeconds: UInt64 = Realtime.shared.connected ? 60 : 4
-                try? await Task.sleep(nanoseconds: pollSeconds * 1_000_000_000)
-                guard !Task.isCancelled else { break }
-                await app.loadChats()
+            /* The local stress fixture is a deterministic list kernel test.
+               Real conversation polling must not mutate the backing state in
+               the middle of a frame measurement. */
+            if !ChatStressFixture.isActive {
+                if app.chats.isEmpty {
+                    await app.loadChats()
+                }
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                while !Task.isCancelled {
+                    let pollSeconds: UInt64 = Realtime.shared.connected ? 60 : 4
+                    try? await Task.sleep(nanoseconds: pollSeconds * 1_000_000_000)
+                    guard !Task.isCancelled else { break }
+                    await app.loadChats()
+                }
             }
         }
         .task {
             try? await Task.sleep(nanoseconds: 900_000_000)
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, !ChatStressFixture.isActive else { return }
 
             let got = await API.shared.miniApps()
             guard !Task.isCancelled else { return }

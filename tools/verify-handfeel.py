@@ -10,6 +10,7 @@ CONTACTS = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
 SIDEBAR = (ROOT / "Sources" / "AccountSidebarView.swift").read_text(encoding="utf-8")
 DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
+CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 CHAT_DETAIL = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 NAV_GLASS = (ROOT / "Sources" / "NavGlass.swift").read_text(encoding="utf-8")
 
@@ -66,6 +67,12 @@ require(
     and "lastReportedTopState = scrollView.contentOffset.y > 8 ? 1 : 0"
     in NATIVE_CHAT_LIST,
     "conversation scrolling must use cached native row heights and edge-only callbacks",
+)
+require(
+    "if !ChatStressFixture.isActive {" in CHATS
+    and "guard !Task.isCancelled, !ChatStressFixture.isActive else { return }"
+    in CHATS,
+    "local conversation stress measurements must be isolated from live polling",
 )
 require(
     "ChatThemeStore.shared.activate(chat.id)" in CHAT_DETAIL
