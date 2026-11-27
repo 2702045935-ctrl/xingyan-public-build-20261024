@@ -25,7 +25,6 @@ require(
 )
 require(
     "struct StarWorldExperienceView: View" in WORLD
-    and "var embedded = false" in WORLD
     and "StarWorldSceneView(" in WORLD
     and "StarWorldLoadingOverlay(destination: loadingMap)" in WORLD
     and "StarWorldUSDZScene.preloadIfNeeded()" in WORLD
@@ -33,15 +32,12 @@ require(
     "the world entry must use the immersive SceneKit experience",
 )
 require(
-    "if mountedTabs.contains(3) {\n                        StarWorldExperienceView(embedded: true)"
-    in MAIN_TAB
-    and "if mountedTabs.contains(3) { DiscoverView() }" not in MAIN_TAB
-    and "@State private var showWorldDirectory = false" in WORLD
-    and "showWorldDirectory = true" in WORLD
-    and "struct StarWorldDirectoryView" in WORLD
-    and "StarWorldDirectoryView(current: activeMap)" in WORLD
+    "if mountedTabs.contains(3) { DiscoverView() }" in MAIN_TAB
+    and "StarWorldExperienceView(embedded: true)" not in MAIN_TAB
+    and "StarWorldDirectoryView" not in WORLD
+    and ".statusBarHidden(true)" not in WORLD
     and "DiscoverView()" not in WORLD,
-    "the World tab and its directory must stay entirely on the immersive world system",
+    "the World tab must restore Discover and never hide the shared status bar",
 )
 require(
     ".opacity(entered ? 1 : 0.01)" not in WORLD
@@ -57,11 +53,12 @@ require(
     "the world must own its native 3D first frame and camera reset",
 )
 require(
-    'case "map": StarWorldExperienceView()' in DISCOVER
-    and 'case "map": StarMapView()' not in DISCOVER
+    'grouped.flatMap { $0 }.filter { $0.action != "map" }' in DISCOVER
+    and 'case "map": ComingSoonView(title: Tr("星轨地图"))' in DISCOVER
+    and "StarWorldExperienceView()" not in DISCOVER
     and "'map'" in SERVER
     and "parts[0] === 'ui-manifest'" in SERVER,
-    "the map action must open only the new world behind the signed manifest",
+    "the 3D world must stay unreachable until its later release",
 )
 require(
     "UIBackgroundModes" in INFO,

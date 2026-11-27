@@ -66,13 +66,10 @@ struct World3DEntryPressStyle: ButtonStyle {
 }
 
 struct StarWorldExperienceView: View {
-    var embedded = false
-
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
     @State private var avatarProfile = StarAvatarProfile.fallback
     @State private var showAvatarStudio = false
-    @State private var showWorldDirectory = false
     @State private var activeMap: StarWorldMap = .room
     @State private var loadingMap: StarWorldMap? = .room
 
@@ -110,15 +107,8 @@ struct StarWorldExperienceView: View {
 
             VStack(spacing: 0) {
                 HStack {
-                    if embedded {
-                        worldGlassButton("square.grid.2x2") {
-                            showWorldDirectory = true
-                        }
-                        .accessibilityLabel(Tr("打开世界入口"))
-                    } else {
-                        worldGlassButton("chevron.left") { dismiss() }
-                            .accessibilityLabel(Tr("返回"))
-                    }
+                    worldGlassButton("chevron.left") { dismiss() }
+                        .accessibilityLabel(Tr("返回"))
                     Spacer()
                     VStack(spacing: 1) {
                         Text(Tr(activeMap.title))
@@ -156,9 +146,7 @@ struct StarWorldExperienceView: View {
                         activeMap == .room ? Tr("房间") : Tr("广场")
                     ) { }
                     worldAction("tshirt.fill", Tr("换装")) { }
-                    worldAction("globe.asia.australia.fill", Tr("世界")) {
-                        showWorldDirectory = true
-                    }
+                    worldAction("globe.asia.australia.fill", Tr("世界")) { }
                 }
                 .padding(.horizontal, 22)
                 .frame(height: 70)
@@ -191,18 +179,6 @@ struct StarWorldExperienceView: View {
             )
                 .environmentObject(app)
         }
-        .sheet(isPresented: $showWorldDirectory) {
-            StarWorldDirectoryView(current: activeMap) { destination in
-                showWorldDirectory = false
-                if destination != activeMap {
-                    beginTravel(to: destination)
-                }
-            }
-                .environmentObject(app)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.hidden)
-        }
-        .statusBarHidden(true)
     }
 
     private func beginTravel(to destination: StarWorldMap) {
@@ -251,206 +227,6 @@ struct StarWorldExperienceView: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
-    }
-}
-
-private struct StarWorldDirectoryView: View {
-    let current: StarWorldMap
-    let onSelect: (StarWorldMap) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-
-    private let destinations: [StarWorldMap] = [.room, .plaza]
-
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color(hex: 0x030914),
-                    Color(hex: 0x071E2A),
-                    Color(hex: 0x0D2C2A)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-
-            RadialGradient(
-                colors: [
-                    Color(hex: 0x63E0C5).opacity(0.16),
-                    Color.clear
-                ],
-                center: UnitPoint(x: 0.82, y: 0.10),
-                startRadius: 10,
-                endRadius: 320
-            )
-            .ignoresSafeArea()
-
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    header
-                    worldHero
-
-                    Text(Tr("选择世界"))
-                        .font(pf(19, .semibold))
-                        .foregroundColor(.white)
-
-                    ForEach(destinations, id: \.rawValue) { destination in
-                        destinationCard(destination)
-                    }
-
-                    HStack(spacing: 8) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 12, weight: .semibold))
-                        Text(Tr("世界场景持续扩展，人物与房间会自动保存"))
-                            .font(pf(11.5))
-                    }
-                    .foregroundColor(.white.opacity(0.46))
-                    .padding(.horizontal, 3)
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, max(24, L.safeBottom + 12))
-            }
-        }
-        .preferredColorScheme(.dark)
-    }
-
-    private var header: some View {
-        HStack {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.86))
-                    .frame(width: 38, height: 38)
-                    .background(Circle().fill(Color.white.opacity(0.08)))
-                    .overlay(Circle().stroke(Color.white.opacity(0.10), lineWidth: 0.6))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Tr("关闭"))
-
-            Spacer()
-
-            Text(Tr("世界入口"))
-                .font(pf(16, .semibold))
-                .foregroundColor(.white)
-
-            Spacer()
-
-            Image(systemName: "globe.asia.australia.fill")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(Color(hex: 0x77E7CE))
-                .frame(width: 38, height: 38)
-                .background(Circle().fill(Color.white.opacity(0.08)))
-                .overlay(Circle().stroke(Color.white.opacity(0.10), lineWidth: 0.6))
-        }
-    }
-
-    private var worldHero: some View {
-        ZStack(alignment: .bottomLeading) {
-            LinearGradient(
-                colors: [
-                    Color(hex: 0x08263A),
-                    Color(hex: 0x12534E),
-                    Color(hex: 0xB09B62)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            Circle()
-                .fill(Color(hex: 0x7BEBCF).opacity(0.22))
-                .frame(width: 170, height: 170)
-                .blur(radius: 26)
-                .offset(x: 220, y: -38)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("XINGYAN WORLD")
-                    .font(.system(size: 9, weight: .bold))
-                    .tracking(1.8)
-                    .foregroundColor(.white.opacity(0.58))
-                Text(Tr("从房间走进海边广场"))
-                    .font(pf(22, .bold))
-                    .foregroundColor(.white)
-                Text(Tr("同一形象，两种沉浸空间"))
-                    .font(pf(12))
-                    .foregroundColor(.white.opacity(0.72))
-            }
-            .padding(18)
-        }
-        .frame(height: 142)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
-        }
-        .shadow(color: Color.black.opacity(0.20), radius: 18, y: 8)
-    }
-
-    private func destinationCard(_ destination: StarWorldMap) -> some View {
-        let isCurrent = destination == current
-        let room = destination == .room
-        return Button {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            onSelect(destination)
-        } label: {
-            HStack(spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: room
-                                    ? [Color(hex: 0x25555B), Color(hex: 0x10272D)]
-                                    : [Color(hex: 0x257A86), Color(hex: 0xB37E4E)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    Image(systemName: room ? "sofa.fill" : "water.waves")
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.94))
-                }
-                .frame(width: 72, height: 72)
-
-                VStack(alignment: .leading, spacing: 5) {
-                    HStack(spacing: 7) {
-                        Text(Tr(destination.title))
-                            .font(pf(17, .semibold))
-                            .foregroundColor(.white)
-                        if isCurrent {
-                            Text(Tr("当前"))
-                                .font(pf(9.5, .semibold))
-                                .foregroundColor(Color(hex: 0x77E7CE))
-                                .padding(.horizontal, 7)
-                                .frame(height: 20)
-                                .background(Capsule().fill(Color(hex: 0x77E7CE).opacity(0.12)))
-                        }
-                    }
-                    Text(Tr(destination.subtitle))
-                        .font(pf(11.5))
-                        .foregroundColor(.white.opacity(0.52))
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 8)
-                Image(systemName: isCurrent ? "location.fill" : "arrow.up.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(isCurrent ? Color(hex: 0x77E7CE) : .white.opacity(0.54))
-            }
-            .padding(13)
-            .background(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Color.white.opacity(isCurrent ? 0.09 : 0.055))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .stroke(Color.white.opacity(isCurrent ? 0.16 : 0.08),
-                                    lineWidth: 0.7)
-                    }
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        }
-        .buttonStyle(World3DEntryPressStyle())
-        .accessibilityLabel(Tr(destination.title))
-        .accessibilityValue(isCurrent ? Tr("当前场景") : Tr("可前往"))
     }
 }
 

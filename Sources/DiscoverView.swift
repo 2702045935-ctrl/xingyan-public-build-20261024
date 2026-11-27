@@ -881,7 +881,7 @@ struct DiscoverView: View {
     }
 
     private var visibleWorldItems: [DiscoverItem] {
-        grouped.flatMap { $0 }
+        grouped.flatMap { $0 }.filter { $0.action != "map" }
     }
 
     private var worldShopItem: DiscoverItem? {
@@ -1334,7 +1334,7 @@ struct DiscoverView: View {
     private func worldDestination(_ key: String) -> some View {
         switch key {
         case "moments": MomentsView()
-        case "map": StarWorldExperienceView()
+        case "map": ComingSoonView(title: Tr("星轨地图"))
         case "nearby": NearbyPageView()
         case "shake", "bottle": BottlePageView()
         case "live": LiveListView()
@@ -1401,8 +1401,6 @@ extension DiscoverItem {
                          color: "#59C47E", action: "search", group: 4, enabled: true),
             DiscoverItem(id: "d08", label: "附近", icon: "i.nearby", svg: I.nearby,
                          color: "#3D83E7", action: "nearby", group: 5, enabled: true),
-            DiscoverItem(id: "d-map", label: "星轨地图", icon: "i.map", svg: "",
-                         color: "#2C7BE5", action: "map", group: 5, enabled: true),
             DiscoverItem(id: "d10", label: "游戏", icon: "i.game", svg: I.game,
                          color: "#9A6AE8", action: "games", group: 7, enabled: true),
             DiscoverItem(id: "d11", label: "商城", icon: "i.shop", svg: I.wallet,

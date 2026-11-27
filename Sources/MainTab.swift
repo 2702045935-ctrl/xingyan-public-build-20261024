@@ -77,11 +77,7 @@ struct MainTabView: View {
                 .zIndex(tab == 2 ? 1 : 0)
 
                 Group {
-                    if mountedTabs.contains(3) {
-                        StarWorldExperienceView(embedded: true)
-                    } else {
-                        Color.clear
-                    }
+                    if mountedTabs.contains(3) { DiscoverView() } else { Color.clear }
                 }
                 .opacity(tab == 3 ? 1 : 0)
                 .allowsHitTesting(tab == 3)
