@@ -5,6 +5,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 MOMENTS = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
+MOMENT_ROW = (ROOT / "Sources" / "NativeMomentRowCell.swift").read_text(
+    encoding="utf-8"
+)
 INDICATOR = (ROOT / "Sources" / "PrefetchWaitingIndicator.swift").read_text(
     encoding="utf-8"
 )
@@ -34,11 +37,12 @@ require(
     "chat prefetch waiting must use the native circular activity indicator",
 )
 require(
-    "PrefetchWaitingIndicator(" in MOMENTS
-    and "waiting: loadingMore" in MOMENTS
-    and 'label: Tr("正在加载…")' in MOMENTS
-    and ".frame(height: 49)" in MOMENTS,
-    "Moments waiting must use the native indicator and hold footer height",
+    "footerWaiting: loadingMore" in MOMENTS
+    and "UIActivityIndicatorView(style: .medium)" in MOMENT_ROW
+    and "footerSpinner.startAnimating()" in MOMENT_ROW
+    and "footerSpinner.stopAnimating()" in MOMENT_ROW
+    and 'Tr("正在加载…")' in MOMENTS,
+    "Moments waiting must use the native UIKit indicator in the native row",
 )
 require(
     "ProgressView()\n"
