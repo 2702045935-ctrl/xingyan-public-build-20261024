@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MAP = (ROOT / "Sources" / "StarMapView.swift").read_text(encoding="utf-8")
+WORLD = (ROOT / "Sources" / "StarWorld3D.swift").read_text(encoding="utf-8")
 DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
@@ -15,90 +15,48 @@ INFO = plistlib.loads((ROOT / "Info.plist").read_bytes())
 
 def require(condition: bool, message: str) -> None:
     if not condition:
-        raise SystemExit("star map verification failed: " + message)
+        raise SystemExit("star world verification failed: " + message)
 
 
 require(
-    "import MapKit" in MAP
-    and "MKMapCamera(" in MAP
-    and "map.showsBuildings = true" in MAP
-    and "map.showsTraffic = true" in MAP
-    and "let approach = max(" in MAP
-    and "let basePitch = model.use3D" in MAP
-    and "pitch: basePitch" in MAP,
-    "star map must use native MapKit 3D camera, buildings and traffic",
+    not (ROOT / "Sources" / "StarMapView.swift").exists(),
+    "the retired 2D world page must be removed from the client target",
 )
 require(
-    "MKLocalSearch(request: request).start()" in MAP
-    and "MKDirections.Request()" in MAP
-    and "Figure" not in MAP
-    and "Baidu" not in MAP
-    and "baidu" not in MAP,
-    "place search and routing must use the provider abstraction without Baidu SDK",
+    "struct StarWorldExperienceView: View" in WORLD
+    and "StarWorldSceneView(" in WORLD
+    and "StarWorldLoadingOverlay(destination: loadingMap)" in WORLD
+    and "StarWorldUSDZScene.preloadIfNeeded()" in WORLD
+    and "beginTravel(to destination: StarWorldMap)" in WORLD,
+    "the world entry must use the immersive SceneKit experience",
 )
 require(
-    "struct StarRouteGeometry" in MAP
-    and "crossTrack" in MAP
-    and "offRouteSamples >= 3" in MAP
-    and "planRoute(preserveNavigation: true)" in MAP,
-    "navigation must match the route, detect drift and reroute safely",
+    ".opacity(entered ? 1 : 0.01)" not in WORLD
+    and ".scaleEffect(entered ? 1 : 0.92)" not in WORLD
+    and "value: entered" not in WORLD,
+    "the world must render directly instead of revealing a legacy first page",
 )
 require(
-    "private struct StarManeuverIcon: View" in MAP
-    and "private struct StarMapControlIcon: View" in MAP
-    and "case straight, left, right, slightLeft, slightRight, uTurn, roundabout, arrive" in MAP
-    and "Color(hex: 0x2F86FF)" in MAP
-    and "maneuverKind" in MAP,
-    "navigation must use map-grade custom blue maneuver and control iconography",
-)
-require(
-    "private var navigationChrome: some View" in MAP
-    and "private var navigationInstructionCard: some View" in MAP
-    and "private var followingInstructionStrip: some View" in MAP
-    and "private var navigationTripCard: some View" in MAP
-    and "private var routeOptions: some View" in MAP
-    and "model.showingRouteOverview" in MAP
-    and "model.voiceGuidanceEnabled" in MAP
-    and "model.navigationCenter" in MAP
-    and "smoothedCourse(" in MAP
-    and "AVSpeechSynthesizer()" in MAP,
-    "navigation must provide native system-grade guidance, options and camera behavior",
-)
-require(
-    "private enum StarNavigationPhase" in MAP
-    and "phase = .rerouting" in MAP
-    and "private struct StarSavedPlace" in MAP
-    and "StarPlaceStore.activeKey" in MAP
-    and "recentPlaces" in MAP
-    and "favoritePlaces" in MAP
-    and "StarRouteRanking" in MAP
-    and "allowsBackgroundLocationUpdates = true" in MAP
-    and "location" in INFO.get("UIBackgroundModes", [])
-    and "星轨地图导航" in INFO.get(
-        "NSLocationWhenInUseUsageDescription", ""
-    ),
-    "navigation must persist recoverable state and declare background location use",
-)
-require(
-    "private struct StarNavigationHUD: View" in MAP
-    and "accessibilityReduceMotion" in MAP
-    and "colorSchemeContrast" in MAP
-    and "dynamicTypeSize" in MAP
-    and "verticalSizeClass" in MAP
-    and "adaptiveStrokeWidth" in MAP
-    and "accessibilityLabel(kind.accessibilityTitle)" in MAP
-    and "打开 HUD 抬头显示" in MAP,
-    "navigation must expose adaptive motion, contrast and HUD access",
+    "SCNView" in WORLD
+    and "SCNSceneRendererDelegate" in WORLD
+    and "onFirstFrame" in WORLD
+    and "resetViewport(for: map)" in WORLD,
+    "the world must own its native 3D first frame and camera reset",
 )
 require(
     'case "map": StarWorldExperienceView()' in DISCOVER
+    and 'case "map": StarMapView()' not in DISCOVER
     and "'map'" in SERVER
     and "parts[0] === 'ui-manifest'" in SERVER,
-    "the star map must be registered behind the signed feature manifest",
+    "the map action must open only the new world behind the signed manifest",
+)
+require(
+    "UIBackgroundModes" in INFO,
+    "the app must retain the navigation-capable background contract",
 )
 require(
     "python3 tools/verify-star-map.py" in WORKFLOW,
-    "star map regression must run in the iOS gate",
+    "world regression must run in the iOS gate",
 )
 
-print("star-map: passed")
+print("star-world: passed")

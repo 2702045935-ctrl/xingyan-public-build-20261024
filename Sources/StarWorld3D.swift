@@ -68,7 +68,6 @@ struct World3DEntryPressStyle: ButtonStyle {
 struct StarWorldExperienceView: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
-    @State private var entered = false
     @State private var avatarProfile = StarAvatarProfile.fallback
     @State private var showAvatarStudio = false
     @State private var activeMap: StarWorldMap = .room
@@ -105,9 +104,6 @@ struct StarWorldExperienceView: View {
                 onFirstFrame: finishWorldLoad
             )
                 .ignoresSafeArea()
-                .opacity(entered ? 1 : 0.01)
-                .scaleEffect(entered ? 1 : 0.92)
-                .animation(.easeOut(duration: 0.8), value: entered)
 
             VStack(spacing: 0) {
                 HStack {
@@ -187,9 +183,6 @@ struct StarWorldExperienceView: View {
 
     private func beginTravel(to destination: StarWorldMap) {
         guard destination != activeMap, loadingMap == nil else { return }
-        withAnimation(.easeOut(duration: 0.18)) {
-            entered = false
-        }
         withAnimation(.easeIn(duration: 0.24)) {
             loadingMap = destination
         }
@@ -204,7 +197,6 @@ struct StarWorldExperienceView: View {
     private func finishWorldLoad() {
         guard loadingMap == activeMap else { return }
         withAnimation(.easeOut(duration: 0.58)) {
-            entered = true
             loadingMap = nil
         }
     }
