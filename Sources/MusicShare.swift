@@ -5078,7 +5078,7 @@ struct MusicPlayingView: View {
     private func portraitPlayer(size: CGSize) -> some View {
         let cardWidth = max(280, min(380, size.width - 40))
         let cardHeight = min(380, max(320, L.height * 0.398))
-        VStack(spacing: 0) {
+        return VStack(spacing: 0) {
             lyricTrackHeader
 
             lyricsCard(width: cardWidth, height: cardHeight)
