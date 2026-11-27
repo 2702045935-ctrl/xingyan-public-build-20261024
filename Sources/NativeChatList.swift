@@ -667,7 +667,7 @@ where Item.ID: Hashable {
         }
 
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
-            lastReportedOffsetY = scrollView.contentOffset.y
+            lastReportedTopState = scrollView.contentOffset.y > 8 ? 1 : 0
             // A no-op end request can leave this latch set when the caller is
             // processing a stale SwiftUI snapshot. Every new physical gesture
             // must get one fresh runway opportunity; otherwise the list stops

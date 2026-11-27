@@ -62,7 +62,9 @@ require(
     "private var heightCache: [Item.ID: CGFloat]" in NATIVE_CHAT_LIST
     and "if let cached = heightCache[id] { return cached }" in NATIVE_CHAT_LIST
     and "let topState: CGFloat = y > 8 ? 1 : 0" in NATIVE_CHAT_LIST
-    and "abs(y - lastReportedOffsetY) >= 12" not in NATIVE_CHAT_LIST,
+    and "lastReportedOffsetY" not in NATIVE_CHAT_LIST
+    and "lastReportedTopState = scrollView.contentOffset.y > 8 ? 1 : 0"
+    in NATIVE_CHAT_LIST,
     "conversation scrolling must use cached native row heights and edge-only callbacks",
 )
 require(
