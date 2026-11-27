@@ -16,13 +16,13 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private var initialOpenSettling" in CHAT
-    and CHAT.count("if initialOpenSettling { return }") >= 2,
+    and CHAT.count("if initialOpenSettling {") >= 2,
     "first-frame settling must suppress direct and native size-change pinning",
 )
 require(
-    "for delay in [0, 24, 70, 150, 260]" in CHAT
+    "private func settleInitialNativeScroll()" in CHAT
     and "nativeMessageController.scrollToBottom(animated: false)" in CHAT,
-    "direct chats must settle across stable layout frames and native chats must pin once",
+    "the shared native chat must settle before its first visible frame",
 )
 require(
     "collection.alpha = initiallyPinnedToBottom ? 0 : 1" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
@@ -30,7 +30,7 @@ require(
     "native chats must reveal only after the first bottom position is committed",
 )
 require(
-    CHAT.count("initialOpenSettling = false") >= 3,
+    CHAT.count("initialOpenSettling = false") >= 2,
     "settling must end after restore, user interaction, or transition completion",
 )
 require(
