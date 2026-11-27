@@ -24,10 +24,19 @@ require(
     "transaction.disablesAnimations = true" in CHAT
     and "withTransaction(transaction) {\n            outbox.append(pending)" in CHAT
     and "app.previewOutgoingMessage(" in CHAT
+    and "nativeMessageController.prepareForOutgoingTailAppend()" in CHAT
     and "pinToBottomImmediately(force: true)\n        pinToBottomSoon(force: true)" in CHAT
     and "ChatScrollHandle.shared.allowAutomaticPinning()\n                nativeMessageController.scrollToBottom(animated: false)"
     in CHAT,
     "the pending bubble and list preview must appear and pin without an insertion animation delay",
+)
+require(
+    "func prepareForOutgoingTailAppend()" in NATIVE
+    and "prepareForOutgoingTailAppendHandler" in NATIVE
+    and "collection.isDecelerating" in NATIVE
+    and "collection.setContentOffset(collection.contentOffset, animated: false)"
+    in NATIVE,
+    "outgoing sends must stop inertia through a send-only hook without changing scroll policy",
 )
 require(
     "let prependDetector: (([Item], [Item]) -> Bool)?" in NATIVE

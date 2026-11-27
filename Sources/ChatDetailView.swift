@@ -5565,6 +5565,7 @@ struct ChatDetailView: View {
         }
 
         if isStarWorld, newsMode { withAnimation(.easeInOut(duration: 0.18)) { newsMode = false } }
+        nativeMessageController.prepareForOutgoingTailAppend()
 
         var qJSON: String?
         if let q = quote, !q.isEmpty,

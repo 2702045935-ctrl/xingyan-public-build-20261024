@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 369506,
-      "sha256": "412f503fc46c95d7b7ac7c2dc2fd79e35c1e6f5c22b299c5aa9c9e309ce35795"
+      "size": 369569,
+      "sha256": "e6fb15db87b40fe2f4713d92c4ce9fd2fb41328a83e79378b1f8f5ab3366b466"
     },
     {
       "path": "Sources/ChatDeferred.swift",
@@ -103,8 +103,8 @@
     },
     {
       "path": "Sources/NativeStaticList.swift",
-      "size": 24087,
-      "sha256": "87d57025f1f923812fe5586461dbe68e28fe6dcef1f416de5c7e73355b315981"
+      "size": 24706,
+      "sha256": "79a2192d9955d9801e078a5a8590098ac4e1c6c9cd140ac2e6bc05f152fb70da"
     },
     {
       "path": "Sources/NativeMomentFeed.swift",

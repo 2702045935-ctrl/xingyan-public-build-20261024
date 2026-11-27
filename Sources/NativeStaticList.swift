@@ -22,6 +22,7 @@ private final class NativeStaticHostCell: UICollectionViewCell {
 final class NativeStaticListController {
     fileprivate var scrollToIDHandler: ((String, UICollectionView.ScrollPosition, Bool) -> Bool)?
     fileprivate var scrollToBottomHandler: ((Bool) -> Bool)?
+    fileprivate var prepareForOutgoingTailAppendHandler: (() -> Void)?
 
     @discardableResult
     func scrollToID(_ id: String,
@@ -35,9 +36,14 @@ final class NativeStaticListController {
         scrollToBottomHandler?(animated) ?? false
     }
 
+    func prepareForOutgoingTailAppend() {
+        prepareForOutgoingTailAppendHandler?()
+    }
+
     fileprivate func clear() {
         scrollToIDHandler = nil
         scrollToBottomHandler = nil
+        prepareForOutgoingTailAppendHandler = nil
     }
 }
 
@@ -262,6 +268,14 @@ where Item.ID: Hashable {
                 collection.layoutIfNeeded()
                 self.setBottom(collection, animated: animated)
                 return true
+            }
+            controller.prepareForOutgoingTailAppendHandler = { [weak self] in
+                guard let self, let collection = self.collection else { return }
+                if collection.isDecelerating {
+                    collection.setContentOffset(collection.contentOffset, animated: false)
+                }
+                self.flush()
+                collection.layoutIfNeeded()
             }
         }
 
