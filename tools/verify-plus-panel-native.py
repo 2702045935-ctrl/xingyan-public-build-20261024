@@ -36,5 +36,15 @@ require(
     "RoundedRectangle(cornerRadius: L.v(14, 4.5, 16)" not in PANELS,
     "plus tiles must not retain the old glass-card layers",
 )
+require(
+    "_plusItems = State(initialValue: Self.localPlusItems)" in CHAT
+    and "private static var localPlusItems: [PlusItem]" in CHAT
+    and "private func refreshPlusPanelConfig() async" in CHAT
+    and '.task(id: "plus-panel-\\(chat.id)")' in CHAT
+    and "if panel == .plus && plusItems.isEmpty" not in CHAT
+    and "NativePlusPanel(items: plusItems" in CHAT
+    and ".accessibilityHidden(panel != .plus)" in CHAT,
+    "the plus panel must be prebuilt from local defaults and refreshed in the background",
+)
 
 print("plus-panel-native: passed")

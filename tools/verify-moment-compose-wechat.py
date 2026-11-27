@@ -59,7 +59,10 @@ require(
 require(
     ".fullScreenCover(isPresented: $posting)" in VIEW
     and ".scrollDismissesKeyboard(.interactively)" in VIEW
-    and ".background(composerSurface.ignoresSafeArea())" in VIEW,
+    and ".background(composerSurface.ignoresSafeArea())" in VIEW
+    and "NativeGlassHeaderMaterial(forcedDark: scheme == .dark)" in VIEW
+    and "composerSurface\n                        .opacity(scheme == .dark ? 0.76 : 0.84)"
+    in VIEW,
     "the composer must use one immersive, keyboard-interactive canvas",
 )
 require(

@@ -790,6 +790,7 @@ struct ChatDetailView: View {
         _outbox = State(initialValue: LocalPersistence.loadOutbox(chat.id))
         _input = State(initialValue: draft)
         _lastInputSnapshot = State(initialValue: draft)
+        _plusItems = State(initialValue: Self.localPlusItems)
     }
 
     @EnvironmentObject var app: AppState
@@ -2739,10 +2740,6 @@ struct ChatDetailView: View {
 
             LocalNotify.clearChat(chat.id)
             await app.loadChats()
-            if plusItems.isEmpty {
-                let items = (try? await API.shared.plusPanel()) ?? []
-                plusItems = normalizedPlusItems(items)
-            }
             await loadMyStickers()
 
             await StickerCatalog.shared.loadIfNeeded()
@@ -2759,6 +2756,9 @@ struct ChatDetailView: View {
                     if !gone.isEmpty { burnAway(gone) }
                 }
             }
+        }
+        .task(id: "plus-panel-\(chat.id)") {
+            await refreshPlusPanelConfig()
         }
         .onDisappear {
             if pendingVoiceURL != nil { discardPendingVoice() }
@@ -4979,14 +4979,7 @@ struct ChatDetailView: View {
                             UISelectionFeedbackGenerator().selectionChanged()
                             focused = false
                             panel = (panel == .plus) ? .none : .plus
-                            if panel == .plus && plusItems.isEmpty {
-                                Task {
-                                    await recentPhotos.loadIfNeeded(force: true,
-                                                                    requestAccess: true)
-                                    let items = (try? await API.shared.plusPanel()) ?? []
-                                    plusItems = normalizedPlusItems(items)
-                                }
-                            } else if panel == .plus {
+                            if panel == .plus {
                                 Task {
                                     await recentPhotos.loadIfNeeded(force: true,
                                                                     requestAccess: true)
@@ -5102,7 +5095,19 @@ struct ChatDetailView: View {
 
     @ViewBuilder
     private var panelView: some View {
-        switch panel {
+        ZStack(alignment: .top) {
+            NativePlusPanel(items: plusItems,
+                            onTap: { item in handlePlus(item) },
+                            onLongPress: { item in handlePlusLong(item) })
+                .frame(height: NativePlusPanel.requiredHeight(for: plusItems))
+                .frame(height: panel == .plus
+                       ? NativePlusPanel.requiredHeight(for: plusItems) : 0)
+                .opacity(panel == .plus ? 1 : 0)
+                .clipped()
+                .allowsHitTesting(panel == .plus)
+                .accessibilityHidden(panel != .plus)
+
+            switch panel {
         case .emoji:
             EmojiPanel(draft: $input,
                        onSend: { sendText(); panel = .none },
@@ -5120,10 +5125,7 @@ struct ChatDetailView: View {
                        mine: myStickers,
                        onExpandedChange: { emojiPanelExpanded = $0 })
         case .plus:
-            NativePlusPanel(items: plusItems,
-                            onTap: { item in handlePlus(item) },
-                            onLongPress: { item in handlePlusLong(item) })
-                .frame(height: NativePlusPanel.requiredHeight(for: plusItems))
+            EmptyView()
         case .mention:
             MentionPanel(members: mentionMembers,
                          query: $mentionQuery,
@@ -5139,6 +5141,7 @@ struct ChatDetailView: View {
             }
         case .none:
             EmptyView()
+            }
         }
     }
 
@@ -6046,6 +6049,33 @@ struct ChatDetailView: View {
             items.insert(file, at: min(7, items.count))
         }
         return items
+    }
+
+    private static var localPlusItems: [PlusItem] {
+        [
+            PlusItem(id: "p01", label: "照片", icon: "photo", action: "photo", enabled: true),
+            PlusItem(id: "p02", label: "拍摄", icon: "camera", action: "camera", enabled: true),
+            PlusItem(id: "p03", label: "视频通话", icon: "video", action: "videocall", enabled: true),
+            PlusItem(id: "p04", label: "位置", icon: "location", action: "location", enabled: true),
+            PlusItem(id: "p05", label: "红包", icon: "redpacket", action: "redpacket", enabled: true),
+            PlusItem(id: "p06", label: "礼物", icon: "gift", action: "gift", enabled: true),
+            PlusItem(id: "p07", label: "转账", icon: "transfer", action: "transfer", enabled: true),
+            PlusItem(id: "p08", label: "语音输入", icon: "voice", action: "voice", enabled: true),
+            PlusItem(id: "p09", label: "收藏", icon: "favorite", action: "favorite", enabled: true),
+            PlusItem(id: "p10", label: "名片", icon: "card", action: "card", enabled: true),
+            PlusItem(id: "p11", label: "文件", icon: "file", action: "file", enabled: true),
+            PlusItem(id: "p12", label: "音乐", icon: "music", action: "music", enabled: true),
+            PlusItem(id: "p13", label: "卡券", icon: "coupon", action: "coupon", enabled: true),
+            PlusItem(id: "p16", label: "共享屏幕", icon: "screen",
+                     action: "screenshare", enabled: true)
+        ]
+    }
+
+    private func refreshPlusPanelConfig() async {
+        guard let items = try? await API.shared.plusPanel(), !items.isEmpty else { return }
+        let next = normalizedPlusItems(items)
+        guard next != plusItems else { return }
+        plusItems = next
     }
 
     private func sendExistingFile(_ f: API.MyFileItem) {

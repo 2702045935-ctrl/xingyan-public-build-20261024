@@ -480,43 +480,54 @@ struct NavPlusGlassBackground: View {
 }
 
 struct NativeGlassCircleBackground: View {
-    private let shape = Circle()
+    var body: some View {
+        NativeGlassControlMaterial(
+            shape: AnyShape(Circle()),
+            interactive: true
+        )
+    }
+}
+
+struct NativeGlassControlMaterial: View {
+    var shape: AnyShape = AnyShape(Capsule(style: .continuous))
+    var interactive = false
 
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
+        Group {
         #if compiler(>=6.2)
         if #available(iOS 26.0, *), !reduceTransparency {
-            Color.clear
-                .glassEffect(.regular.interactive(), in: shape)
-                .overlay(shape.stroke(Color.white.opacity(0.20), lineWidth: 0.7))
-                .shadow(color: Color.black.opacity(0.10), radius: 7, y: 3)
-                .allowsHitTesting(false)
+            if interactive {
+                Color.clear
+                    .glassEffect(.regular.interactive(), in: shape)
+            } else {
+                Color.clear
+                    .glassEffect(.regular, in: shape)
+            }
         } else if reduceTransparency {
             shape
                 .fill(UIConfig.fixedDark("glassReducedSurface", 0xFFFFFF, 0x1C1C1E))
-                .overlay {
-                    shape.stroke(C.hairline.opacity(scheme == .dark ? 0.72 : 0.55),
-                                 lineWidth: 0.7)
-                }
-                .shadow(color: Color.black.opacity(scheme == .dark ? 0.24 : 0.08),
-                        radius: 6, y: 3)
-                .allowsHitTesting(false)
         } else {
             fallback
         }
         #else
         fallback
         #endif
+        }
+        .overlay {
+            shape.stroke(Color.white.opacity(scheme == .dark ? 0.22 : 0.32),
+                         lineWidth: 0.7)
+        }
+        .shadow(color: Color.black.opacity(scheme == .dark ? 0.22 : 0.10),
+                radius: 7, y: 3)
+        .allowsHitTesting(false)
     }
 
     private var fallback: some View {
         shape
             .fill(.ultraThinMaterial)
-            .overlay(shape.stroke(Color.white.opacity(0.32), lineWidth: 0.7))
-            .shadow(color: Color.black.opacity(0.10), radius: 7, y: 3)
-            .allowsHitTesting(false)
     }
 }
 

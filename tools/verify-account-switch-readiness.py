@@ -51,6 +51,15 @@ require(
     "the account picker must dismiss as soon as the target identity is ready",
 )
 require(
+    "private var nativeBody: some View {\n        Form {" in SWITCH
+    and ".listStyle(.insetGrouped)" in SWITCH
+    and ".swipeActions(edge: .trailing, allowsFullSwipe: false)" in SWITCH
+    and "Image(systemName: \"checkmark\")" in SWITCH
+    and "Color.accentColor" in SWITCH
+    and "private var addAccountRow: some View" in SWITCH,
+    "the account picker must use native grouped rows and system selection feedback",
+)
+require(
     "python3 tools/verify-account-switch-readiness.py" in WORKFLOW,
     "account switch responsiveness must run in the iOS gate",
 )

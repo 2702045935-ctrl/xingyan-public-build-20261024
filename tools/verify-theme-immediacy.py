@@ -55,9 +55,9 @@ require(
 require(
     "@Environment(\\.colorScheme) private var scheme" in SIDEBAR
     and "Color.dyn(" in SIDEBAR
-    and "@Environment(\\.colorScheme) private var scheme" in ACCOUNTS
-    and "private var pageBackground: Color" in ACCOUNTS,
-    "account surfaces must resolve semantic colors from the current scheme",
+    and "Color(uiColor: .systemGroupedBackground)" in ACCOUNTS
+    and ".scrollContentBackground(.hidden)" in ACCOUNTS,
+    "account surfaces must resolve through system semantic colors",
 )
 require(
     "python3 tools/verify-theme-immediacy.py" in WORKFLOW,

@@ -2932,12 +2932,7 @@ struct PhotoPager: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background {
-                            GlassBackground(
-                                shape: Capsule(style: .continuous),
-                                edgeAlpha: 0.18,
-                                seed: 0.29,
-                                native: true
-                            )
+                            NativeGlassControlMaterial()
                         }
                         .padding(.bottom, showActions ? max(16, L.safeBottom + 6) : 26)
                         .transition(.opacity.combined(with: .scale(scale: 0.94)))
@@ -3020,7 +3015,7 @@ struct PhotoPager: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background {
-            GlassBackground(shape: Capsule(style: .continuous), shadow: true)
+            NativeGlassControlMaterial()
         }
         .padding(.horizontal, 14)
         .padding(.bottom, max(10, L.safeBottom))

@@ -327,9 +327,10 @@ struct VideoPlayerSheet: View {
                     .multilineTextAlignment(.center)
                     .padding(14)
                     .background {
-                        GlassBackground(
-                            shape: RoundedRectangle(cornerRadius: 14, style: .continuous),
-                            shadow: true
+                        NativeGlassControlMaterial(
+                            shape: AnyShape(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            )
                         )
                     }
                     .padding(30)
@@ -378,11 +379,8 @@ struct VideoPlayerSheet: View {
                                                  ? Color(hex: 0x0A84FF) : .white)
                                 .frame(width: 42, height: 24)
                                 .background {
-                                    GlassBackground(
-                                        shape: Capsule(style: .continuous),
-                                        shadow: false,
-                                        tint: abs(speed - 1) > 0.01
-                                            ? Color(hex: 0x0A84FF).opacity(0.18) : nil
+                                    NativeGlassControlMaterial(
+                                        interactive: true
                                     )
                                 }
                         }
@@ -396,7 +394,7 @@ struct VideoPlayerSheet: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background {
-                        GlassBackground(shape: Capsule(style: .continuous), shadow: true)
+                        NativeGlassControlMaterial()
                     }
                     .padding(.horizontal, 12)
                     .padding(.top, 8)

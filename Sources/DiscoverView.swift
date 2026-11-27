@@ -2468,10 +2468,17 @@ struct MomentsView: View {
             }
             .padding(.horizontal, 16)
             .frame(height: L.navH)
-            .background(composerSurface)
+            .background {
+                ZStack {
+                    NativeGlassHeaderMaterial(forcedDark: scheme == .dark)
+                    composerSurface
+                        .opacity(scheme == .dark ? 0.76 : 0.84)
+                }
+                .ignoresSafeArea(edges: .top)
+            }
             .overlay(alignment: .bottom) {
                 Rectangle()
-                    .fill(composerRule)
+                    .fill(composerRule.opacity(0.72))
                     .frame(height: 0.5)
             }
 

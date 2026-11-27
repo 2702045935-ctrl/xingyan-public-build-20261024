@@ -143,6 +143,7 @@ jobs:
           python3 tools/verify-prefetch-waiting.py
           python3 tools/verify-group-avatar-three.py
           python3 tools/verify-plus-panel-native.py
+          python3 tools/verify-media-viewer-glass.py
           python3 tools/verify-composer-native-field.py
           python3 tools/verify-share-sheets.py
           python3 tools/verify-profile-fast-preview.py
