@@ -26,9 +26,10 @@ require("struct NativeTopGlassMask" in NAV
         and NAV.count("UIGlassEffect(") == 1
         and "glassEffect(" not in NAV,
         "shared top mask must use native materials while media controls keep one system glass component")
-require("shape\n            .fill(C.floatingSurface)" in NAV
-        and "shape.stroke(C.hairline" in NAV,
-        "controls must use an opaque floating surface")
+require("NativeGlassControlMaterial" in NAV
+        and "NativeMediaGlassSurface(shape: shape, interactive: interactive)" in NAV
+        and "shape\n            .fill(C.floatingSurface)" not in NAV,
+        "controls must use the single native system glass source")
 require(
     "table.topEdgeEffect.style = .automatic" in NATIVE_LIST
     and "table.topEdgeEffect.isHidden = false" in NATIVE_LIST

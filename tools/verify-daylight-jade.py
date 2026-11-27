@@ -53,7 +53,7 @@ require(
     "glassEffect(" not in NAV
     and NAV.count("UIBlurEffect(") == 2
     and NAV.count("UIGlassEffect(") == 1
-    and "shape\n            .fill(C.floatingSurface)" in NAV,
+    and "NativeMediaGlassSurface(shape: shape, interactive: interactive)" in NAV,
     "custom glass must be removed while native masks and media glass remain",
 )
 require(
