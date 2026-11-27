@@ -3293,11 +3293,11 @@ struct ChatDetailView: View {
         let value = notice.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
             as? Double ?? 0.25
         pinToBottomImmediately()
-        DispatchQueue.main.async { [weak self] in
-            self?.pinToBottomImmediately()
+        DispatchQueue.main.async {
+            pinToBottomImmediately()
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + value + 0.02) { [weak self] in
-            self?.pinToBottomImmediately()
+        DispatchQueue.main.asyncAfter(deadline: .now() + value + 0.02) {
+            pinToBottomImmediately()
         }
     }
 
