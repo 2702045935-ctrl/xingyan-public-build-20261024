@@ -3367,6 +3367,15 @@ struct ChatDetailView: View {
         return index + 1 < outbox.count ? ChatFeedMetrics.runGap : 4
     }
 
+    private func pendingTextLineSpacing(_ raw: String) -> CGFloat {
+        let lineCount = raw.reduce(1) { count, character in
+            count + (character == "\n" ? 1 : 0)
+        }
+        let preferred: CGFloat = raw.count >= 120 || lineCount >= 5 ? 3.2 : 2.4
+        let configured = max(2.2, min(3.2, L.msgLineSpacing))
+        return min(preferred, configured)
+    }
+
     private func pendingBubble(_ p: PendingMsg) -> some View {
         let showsAvatar = pendingIsRunStart(p)
         return HStack(alignment: .top, spacing: 0) {
@@ -3390,7 +3399,7 @@ struct ChatDetailView: View {
                         .font(pf(L.chatFontSize))
                         .foregroundColor(Color.white.opacity(0.98))
                         .lineLimit(6)
-                        .lineSpacing(textLineSpacing(p.preview))
+                        .lineSpacing(pendingTextLineSpacing(p.preview))
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal,
