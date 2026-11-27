@@ -3782,9 +3782,9 @@ struct LoginView: View {
             if !bgImage.isEmpty {
                 RemoteImage(path: bgImage, icon: "photo", mode: .fill)
                     .ignoresSafeArea()
-                Color(.systemBackground).opacity(0.30).ignoresSafeArea()
+                C.pageBg.opacity(0.30).ignoresSafeArea()
             } else {
-                Color(.systemBackground).ignoresSafeArea()
+                C.pageBg.ignoresSafeArea()
             }
         }
         .id(themeTick)
@@ -4024,7 +4024,7 @@ struct AccountLoginSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 24)
             }
-            .background(Color(.systemBackground).ignoresSafeArea())
+            .background(C.pageBg.ignoresSafeArea())
             .navigationTitle(mode == .phone ? "手机号登录" : "账号密码登录")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -4164,7 +4164,7 @@ struct UnbanSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
             }
-            .background(Color(.systemBackground).ignoresSafeArea())
+            .background(C.pageBg.ignoresSafeArea())
             .navigationTitle(Tr("身份证自助解封"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -4823,7 +4823,7 @@ struct PairSheet: View {
                 Spacer()
             }
             .frame(maxWidth: .infinity)
-            .background(Color(.systemBackground).ignoresSafeArea())
+            .background(C.pageBg.ignoresSafeArea())
             .navigationTitle(Tr("星言登录"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .navigationBarLeading) { Button(Tr("取消")) { stop(); dismiss() } } }
@@ -4882,7 +4882,7 @@ struct TermsSheet: View {
                 }
                 .padding(20)
             }
-            .background(Color(.systemBackground).ignoresSafeArea())
+            .background(C.pageBg.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(Tr("好")) { dismiss() } } }
         }

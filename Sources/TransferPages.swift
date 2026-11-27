@@ -101,7 +101,7 @@ struct TransferHomeView: View {
             }
             .padding(.horizontal, 20)
         }
-        .background(Color(.systemBackground).ignoresSafeArea())
+        .background(C.pageBg.ignoresSafeArea())
         .navigationTitle(Tr("转账"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -217,7 +217,7 @@ struct TransferConfirmView: View {
             }
             .padding(.horizontal, 20)
         }
-        .background(Color(.systemBackground).ignoresSafeArea())
+        .background(C.pageBg.ignoresSafeArea())
         .navigationTitle(Tr("确认转账"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -294,7 +294,7 @@ struct TransferPasswordView: View {
             }
         }
         .padding(.horizontal, 20)
-        .background(Color(.systemBackground).ignoresSafeArea())
+        .background(C.pageBg.ignoresSafeArea())
         .navigationTitle(Tr("验证支付密码"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -384,7 +384,7 @@ struct TransferSuccessView: View {
             }
         }
         .padding(.horizontal, 20)
-        .background(Color(.systemBackground).ignoresSafeArea())
+        .background(C.pageBg.ignoresSafeArea())
         .navigationTitle(Tr("转账结果"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden)

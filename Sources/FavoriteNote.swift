@@ -107,7 +107,7 @@ struct FavoriteNoteComposeSheet: View {
                     .padding(.bottom, 12)
                 }
             }
-            .background(Color(.systemBackground))
+            .background(C.pageBg)
             .navigationTitle(editingId.isEmpty ? Tr("新建备忘录") : Tr("编辑备忘录"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -375,7 +375,7 @@ struct FavoriteNoteDetailSheet: View {
                 .padding(.top, 12)
                 .padding(.bottom, 36)
             }
-            .background(Color(.systemBackground))
+            .background(C.pageBg)
             .navigationTitle(Tr("备忘录"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -925,7 +925,7 @@ struct BankCardsView: View {
                 }
                 .padding(.top, 10)
             }
-            .background(Color(.systemBackground).ignoresSafeArea())
+            .background(C.pageBg.ignoresSafeArea())
             .navigationTitle(Tr("绑定银行卡"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .navigationBarLeading) { Button(Tr("取消")) { showAdd = false } } }
@@ -1444,7 +1444,7 @@ struct ResetPasswordSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 24)
             }
-            .background(Color(.systemBackground).ignoresSafeArea())
+            .background(C.pageBg.ignoresSafeArea())
             .navigationTitle(Tr("密码找回"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .navigationBarLeading) { Button(Tr("取消")) { dismiss() } } }

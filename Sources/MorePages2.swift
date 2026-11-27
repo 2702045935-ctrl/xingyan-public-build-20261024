@@ -257,7 +257,7 @@ struct AvatarCropSheet: View {
                 .padding(.horizontal, 24)
                 Spacer()
             }
-            .background(Color(.systemBackground).ignoresSafeArea())
+            .background(C.pageBg.ignoresSafeArea())
             .navigationTitle(Tr("裁剪头像"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .navigationBarLeading) { Button(Tr("取消")) { dismiss() } } }

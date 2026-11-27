@@ -19,7 +19,7 @@ struct RealNameView: View {
 
     private enum Field: Hashable { case name, id }
 
-    private var sheetBg: Color { scheme == .dark ? Color(hex: 0x1C1C1E) : .white }
+    private var sheetBg: Color { C.cardBg }
 
     private var pageBg: Color { C.pageBg }
     private var ink: Color { scheme == .dark ? Color(hex: 0xEDEDED) : Color(hex: 0x1A1A1A) }
