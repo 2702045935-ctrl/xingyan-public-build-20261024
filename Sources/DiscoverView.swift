@@ -2072,6 +2072,7 @@ struct MomentsView: View {
         .frame(maxWidth: min(300, max(196, L.width - 72)), alignment: .trailing)
         .padding(.trailing, 16)
         .padding(.bottom, 8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         .allowsHitTesting(false)
     }
 

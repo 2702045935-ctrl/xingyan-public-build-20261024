@@ -30,6 +30,11 @@ require(
     "cover identity must stay in the original lower-right placement",
 )
 require(
+    ".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)"
+    in cover,
+    "cover identity must stay outside the top safe area and remain bottom-right",
+)
+require(
     ".frame(maxWidth: .infinity, alignment: .trailing)" in cover
     and ".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)"
     in cover
