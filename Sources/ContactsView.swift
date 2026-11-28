@@ -216,7 +216,7 @@ struct ContactsView: View {
         scheme == .dark ? C.subLabel : Color(hex: 0x667781)
     }
     private var contactsRowFill: Color {
-        scheme == .dark ? C.chatRowBg : contactsCanvas
+        contactsCanvas
     }
     private var contactsSearchFill: Color {
         scheme == .dark ? C.searchBg : Color(hex: 0xE9EDE8)

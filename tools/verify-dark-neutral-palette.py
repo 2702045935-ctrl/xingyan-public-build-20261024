@@ -81,7 +81,7 @@ require(
 require(
     ".background(C.pageBg.ignoresSafeArea())" in MAIN_TAB
     and ".background(contactsCanvas.ignoresSafeArea())" in CONTACTS
-    and "scheme == .dark ? C.chatRowBg : contactsCanvas" in CONTACTS
+    and "private var contactsRowFill: Color {\n        contactsCanvas\n    }" in CONTACTS
     and "scheme == .dark ? C.searchBg : Color(hex: 0xE9EDE8)" in CONTACTS
     and "chatsIsDark\n            ? C.pageBg" in CHATS
     and "chatsIsDark\n            ? C.searchBg" in CHATS
