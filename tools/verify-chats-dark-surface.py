@@ -16,13 +16,12 @@ def require(condition: bool, message: str) -> None:
 require(
     "chatsIsDark\n            ? C.pageBg\n            : UIConfig.fixedLight(\"chatsPageBg\", 0xF2F4F1)" in CHATS
     and "chatsIsDark\n            ? C.chatRowBg" in CHATS
-    and "let liftAirDark = isDark && AppInfo.needsLiftedDarkSurface" in CHATS
-    and "let rowBg = liftAirDark" in CHATS,
+    and "let rowBg = isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9)" in CHATS,
     "chat canvas must resolve explicit dark and light surfaces without environment delay",
 )
 require(
     "showsDivider: true" in CHATS
-    and "dividerColor: isDark\n                ? (liftAirDark ? UIColor(hex: 0x242426) : UIColor(C.hairline))" in CHATS
+    and "dividerColor: isDark\n                ? UIColor(C.hairline)" in CHATS
     and ".fill(ChatListVisual.rule)" in CHATS
     and ".fill(isDark ? Color.clear : ChatListVisual.rule)" not in CHATS
     and "dividerLeading: CGFloat = 77" in ROW,
@@ -43,10 +42,7 @@ require(
     "previewLabel.attributedText = nil" in ROW
     and "titleLabel.text = nil" in ROW
     and "foreground.layer.isOpaque = opaque" in ROW
-    and "contentView.isOpaque = true" in ROW
-    and "private let rowGradient = CAGradientLayer()" in ROW
-    and "rowGradient.frame = foreground.bounds" in ROW
-    and "rowGradient.colors = [top.cgColor, bottom.cgColor]" in ROW,
+    and "contentView.isOpaque = true" in ROW,
     "reused native rows must clear old text and render on an opaque surface",
 )
 require(

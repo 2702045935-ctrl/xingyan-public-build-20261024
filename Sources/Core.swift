@@ -117,12 +117,6 @@ enum AppInfo {
 
     static let deviceOs: String = "iOS " + UIDevice.current.systemVersion
 
-    /// iPhone Air 的面板会把极近黑压成同一级，聊天列表只在这台设备上
-    /// 使用更高的黑色台阶；其它 iPhone 保持原始纯黑层级。
-    static var needsLiftedDarkSurface: Bool {
-        deviceMachine == "iPhone18,4"
-    }
-
     static let deviceKind: String = {
         switch UIDevice.current.userInterfaceIdiom {
         case .pad: return "tablet"
