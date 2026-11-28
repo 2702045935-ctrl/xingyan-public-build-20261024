@@ -81,7 +81,7 @@ struct MainTabView: View {
 
                 Group {
                     if mountedTabs.contains(3) {
-                        StarWorldExperienceView(embedded: true)
+                        StarWorldSystemView(embedded: true)
                     } else {
                         Color.clear
                     }
