@@ -17,6 +17,9 @@ def require(condition: bool, message: str) -> None:
 start = DISCOVER.index("private func coverView(_ extra: CGFloat)")
 end = DISCOVER.index("private func dayLabel", start)
 cover = DISCOVER[start:end]
+adjust_start = DISCOVER.index("struct CoverAdjustSheet")
+adjust_end = DISCOVER.index("struct MomentGridDrop", adjust_start)
+adjust = DISCOVER[adjust_start:adjust_end]
 
 require(
     "size: L.coverAvatar" in cover
@@ -50,6 +53,23 @@ require(
 require(
     "python3 tools/verify-moment-cover-design.py" in WORKFLOW,
     "moment cover design regression must run in the iOS gate",
+)
+require(
+    "GeometryReader { proxy in" in adjust
+    and "private func cropCanvas" in adjust
+    and "private var cropGrid" in adjust
+    and "private func clampedOffset" in adjust
+    and ".frame(width: crop.width, height: crop.height)" in adjust
+    and "offset = clampedOffset(next, scale: scale, crop: crop)" in adjust
+    and "NavBar(title: Tr(\"拖动调整\")" not in adjust,
+    "cover adjustment must be rebuilt as a bounded immersive canvas",
+)
+require(
+    "NativeMediaGlassSurface(" in adjust
+    and "shape: AnyShape(Rectangle())" in adjust
+    and "interactive: true" in adjust
+    and "RoundedRectangle(cornerRadius: 24, style: .continuous)" in adjust,
+    "immersive cover controls and backdrop must use native system material",
 )
 
 print("moment-cover-design: passed")

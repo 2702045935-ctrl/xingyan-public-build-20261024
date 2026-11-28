@@ -3584,56 +3584,296 @@ struct CoverAdjustSheet: View {
     @State private var baseScale: CGFloat = 1
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("拖动调整"), back: { dismiss() }) {
+        GeometryReader { proxy in
+            let crop = cropSize(in: proxy.size)
+            ZStack {
+                coverBackdrop(size: proxy.size)
+
+                VStack(spacing: 0) {
+                    floatingHeader
+                        .padding(.horizontal, 16)
+                        .padding(.top, max(proxy.safeAreaInsets.top, 12))
+
+                    Spacer(minLength: 18)
+
+                    cropCanvas(crop)
+                        .padding(.horizontal, 12)
+
+                    Spacer(minLength: 14)
+
+                    adjustmentPanel(crop)
+                        .padding(.horizontal, 14)
+
+                    Text(Tr("拖动挪位置，双指缩放，点「完成」保存"))
+                        .font(pf(11.5, .medium))
+                        .foregroundColor(.white.opacity(0.72))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 10)
+                        .padding(.bottom, max(proxy.safeAreaInsets.bottom, 12))
+                }
+            }
+            .ignoresSafeArea()
+        }
+        .background(Color.black.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .hidesTabBar()
+    }
+
+    private var frameAspect: CGFloat {
+        max(0.35, frameSize.width / max(1, frameSize.height))
+    }
+
+    private func cropSize(in available: CGSize) -> CGSize {
+        let maxWidth = max(1, available.width - 24)
+        let maxHeight = max(220, available.height * 0.52)
+        let width = min(maxWidth, maxHeight * frameAspect)
+        return CGSize(width: width, height: width / frameAspect)
+    }
+
+    private func coverBackdrop(size: CGSize) -> some View {
+        ZStack {
+            Color.black
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(width: size.width, height: size.height)
+                .clipped()
+            NativeMediaGlassSurface(
+                shape: AnyShape(Rectangle()),
+                showsEdge: false
+            )
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(0.42),
+                    Color.black.opacity(0.16),
+                    Color.black.opacity(0.66)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+
+    private var floatingHeader: some View {
+        HStack(spacing: 12) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 42, height: 42)
+                    .background {
+                        NativeMediaGlassSurface(
+                            shape: AnyShape(Circle()),
+                            interactive: true
+                        )
+                    }
+                    .overlay {
+                        Circle().stroke(Color.white.opacity(0.16), lineWidth: 0.7)
+                    }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("取消"))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Tr("拖动调整"))
+                    .font(pf(17, .semibold))
+                    .foregroundColor(.white)
+                Text(Tr("封面"))
+                    .font(pf(11.5, .medium))
+                    .foregroundColor(.white.opacity(0.58))
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                render()
+            } label: {
+                Text(Tr("完成"))
+                    .font(pf(14, .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 17)
+                    .frame(height: 40)
+                    .background {
+                        ZStack {
+                            NativeMediaGlassSurface(
+                                shape: AnyShape(Capsule(style: .continuous)),
+                                interactive: true
+                            )
+                            Capsule().fill(C.green.opacity(0.72))
+                        }
+                    }
+                    .overlay {
+                        Capsule().stroke(Color.white.opacity(0.20), lineWidth: 0.7)
+                    }
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func cropCanvas(_ crop: CGSize) -> some View {
+        ZStack {
+            Color.black
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(width: crop.width, height: crop.height)
+                .scaleEffect(scale)
+                .offset(clampedOffset(offset, scale: scale, crop: crop))
+                .clipped()
+
+            cropGrid
+        }
+        .frame(width: crop.width, height: crop.height)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.34),
+                            Color.white.opacity(0.08),
+                            Color.black.opacity(0.24)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.9
+                )
+        }
+        .shadow(color: Color.black.opacity(0.42), radius: 24, y: 12)
+        .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    let next = CGSize(
+                        width: baseOffset.width + value.translation.width,
+                        height: baseOffset.height + value.translation.height
+                    )
+                    offset = clampedOffset(next, scale: scale, crop: crop)
+                }
+                .onEnded { _ in
+                    baseOffset = offset
+                }
+        )
+        .simultaneousGesture(
+            MagnificationGesture()
+                .onChanged { magnification in
+                    let next = max(1, min(3, baseScale * magnification))
+                    scale = next
+                    offset = clampedOffset(offset, scale: next, crop: crop)
+                }
+                .onEnded { _ in
+                    baseScale = scale
+                    baseOffset = offset
+                }
+        )
+    }
+
+    private var cropGrid: some View {
+        GeometryReader { proxy in
+            Path { path in
+                for fraction in [1.0 / 3.0, 2.0 / 3.0] {
+                    let x = proxy.size.width * fraction
+                    path.move(to: CGPoint(x: x, y: 0))
+                    path.addLine(to: CGPoint(x: x, y: proxy.size.height))
+                    let y = proxy.size.height * fraction
+                    path.move(to: CGPoint(x: 0, y: y))
+                    path.addLine(to: CGPoint(x: proxy.size.width, y: y))
+                }
+            }
+            .stroke(Color.white.opacity(0.17), lineWidth: 0.55)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func adjustmentPanel(_ crop: CGSize) -> some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 10) {
+                Label {
+                    Text("\(Int((scale * 100).rounded()))%")
+                        .monospacedDigit()
+                } icon: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                }
+                .font(pf(12.5, .medium))
+                .foregroundColor(.white.opacity(0.86))
+
+                Slider(
+                    value: Binding(
+                        get: { scale },
+                        set: { value in
+                            scale = value
+                            baseScale = value
+                            offset = clampedOffset(offset, scale: value, crop: crop)
+                        }
+                    ),
+                    in: 1...3
+                )
+                .tint(C.green)
+
                 Button {
-                    render()
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                        scale = 1
+                        baseScale = 1
+                        offset = .zero
+                        baseOffset = .zero
+                    }
                 } label: {
-                    Text(Tr("完成"))
-                        .font(pf(17, .semibold))
-                        .foregroundColor(C.green)
-                        .frame(height: L.navH)
-                        .padding(.trailing, 16)
+                    Text(Tr("复位"))
+                        .font(pf(12.5, .semibold))
+                        .foregroundColor(.white.opacity(0.82))
+                        .padding(.horizontal, 10)
+                        .frame(height: 30)
                 }
                 .buttonStyle(.plain)
             }
 
-            ZStack {
-                Color.black
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: frameSize.width, height: frameSize.height)
-                    .scaleEffect(scale)
-                    .offset(offset)
+            HStack(spacing: 7) {
+                Image(systemName: "hand.draw.fill")
+                Text(Tr("拖动挪位置，双指缩放，点「完成」保存"))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
             }
-            .frame(width: frameSize.width, height: frameSize.height)
-            .clipped()
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture()
-                    .onChanged { v in
-                        offset = CGSize(width: baseOffset.width + v.translation.width,
-                                        height: baseOffset.height + v.translation.height)
-                    }
-                    .onEnded { _ in baseOffset = offset }
-            )
-            .simultaneousGesture(
-                MagnificationGesture()
-                    .onChanged { m in scale = max(1, min(3, baseScale * m)) }
-                    .onEnded { _ in baseScale = scale }
-            )
-
-            Text(Tr("拖动挪位置，双指缩放，点「完成」保存"))
-                .font(pf(12.5))
-                .foregroundColor(C.subLabel)
-                .padding(.top, 14)
-            Spacer()
+            .font(pf(10.5, .medium))
+            .foregroundColor(.white.opacity(0.58))
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .bottom))
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
-        .toolbar(.hidden, for: .navigationBar)
-        .hidesTabBar()
+        .padding(.horizontal, 15)
+        .padding(.vertical, 13)
+        .background {
+            NativeMediaGlassSurface(
+                shape: AnyShape(RoundedRectangle(cornerRadius: 24, style: .continuous)),
+                showsEdge: false
+            )
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.white.opacity(0.14), lineWidth: 0.7)
+        }
+    }
+
+    private func clampedOffset(_ candidate: CGSize,
+                               scale: CGFloat,
+                               crop: CGSize) -> CGSize {
+        let imageAspect = image.size.width / max(1, image.size.height)
+        let cropAspect = crop.width / max(1, crop.height)
+        let baseSize: CGSize
+        if imageAspect > cropAspect {
+            baseSize = CGSize(width: crop.height * imageAspect, height: crop.height)
+        } else {
+            baseSize = CGSize(width: crop.width,
+                              height: crop.width / max(0.01, imageAspect))
+        }
+        let maxX = max(0, (baseSize.width * scale - crop.width) / 2)
+        let maxY = max(0, (baseSize.height * scale - crop.height) / 2)
+        return CGSize(
+            width: min(maxX, max(-maxX, candidate.width)),
+            height: min(maxY, max(-maxY, candidate.height))
+        )
     }
 
     @MainActor
