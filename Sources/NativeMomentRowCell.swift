@@ -441,6 +441,7 @@ final class NativeMomentRowCell: UITableViewCell {
         size: NativeMomentTimelineMetrics.avatar
     )
     private let detailStack = UIStackView()
+    private let nameLine = UIView()
     private let nameRow = UIStackView()
     private let nameLabel = UILabel()
     private let pinnedIcon = UIImageView(image: UIImage(systemName: "pin.fill"))
@@ -541,6 +542,7 @@ final class NativeMomentRowCell: UITableViewCell {
         configureMedia(item.moment, actions: actions)
         configureActions(item.moment, actions: actions)
         configureSocial(item.moment, actions: actions)
+        updateDetailRhythm()
         configureFooter(text: footerText,
                         waiting: footerWaiting,
                         isLast: item.isLast)
@@ -741,7 +743,6 @@ final class NativeMomentRowCell: UITableViewCell {
         moreButton.widthAnchor.constraint(equalToConstant: 34).isActive = true
         moreButton.heightAnchor.constraint(equalToConstant: 34).isActive = true
 
-        let nameLine = UIView()
         nameLine.addSubview(nameRow)
         nameLine.addSubview(moreButton)
         NSLayoutConstraint.activate([
@@ -784,6 +785,16 @@ final class NativeMomentRowCell: UITableViewCell {
             row.topAnchor.constraint(equalTo: headerView.topAnchor),
             row.bottomAnchor.constraint(equalTo: headerView.bottomAnchor)
         ])
+    }
+
+    private func updateDetailRhythm() {
+        let nameToBody: CGFloat = bodyView.isHidden ? 8 : 4
+        let bodyToNext: CGFloat = mediaCanvas.isHidden ? 10 : 8
+        detailStack.setCustomSpacing(nameToBody, after: nameLine)
+        detailStack.setCustomSpacing(bodyToNext, after: bodyView)
+        detailStack.setCustomSpacing(8, after: mediaCanvas)
+        detailStack.setCustomSpacing(10, after: timeLabel)
+        detailStack.setCustomSpacing(socialView.isHidden ? 0 : 10, after: actionHost)
     }
 
     private func configureBodyView() {

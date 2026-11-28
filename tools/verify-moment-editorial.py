@@ -54,6 +54,12 @@ require(
     "the avatar and all right-column content must share WeChat's measured hierarchy",
 )
 require(
+    "private func updateDetailRhythm()" in CARD
+    and "let nameToBody: CGFloat = bodyView.isHidden ? 8 : 4" in CARD
+    and "let bodyToNext: CGFloat = mediaCanvas.isHidden ? 10 : 8" in CARD,
+    "text, media and mixed posts must keep one vertical rhythm when modules are absent",
+)
+require(
     "momentProfileFooterHeight" in DISCOVER
     and "headerHeight: L.coverH + momentProfileFooterHeight" in DISCOVER
     and "RemoteImage(path: cover, icon: \"photo\", mode: .fill, maxSide: 2560)"
