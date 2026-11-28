@@ -52,6 +52,15 @@ require(
     "chat must keep lightweight row glass while native glass stays on global controls",
 )
 require(
+    "@State private var chromeVisible = false" in CORE
+    and "chromeVisible = false\n            onChromeVisibilityChange?(false)" in CORE
+    and ".tabViewStyle(.page(indexDisplayMode: .never))\n            .ignoresSafeArea()" in CORE
+    and "RemoteImage(path: path, mode: .fill)" in CORE
+    and "ZoomableRemoteImage(path: paths[i], onDoubleTap:" not in CORE
+    and "private func toggleChrome()" in CORE,
+    "the full-screen image viewer must start immersive, fill the screen, and reveal controls only on tap",
+)
+require(
     "GlassBackground(" not in COMPOSER
     and COMPOSER.count("NativeMediaGlassSurface(") >= 4,
     "full-screen composer controls must use native system glass",

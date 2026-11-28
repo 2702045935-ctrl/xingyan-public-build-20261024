@@ -2845,10 +2845,11 @@ struct ZoomableRemoteImage: View {
 
     var body: some View {
         GeometryReader { geo in
-            RemoteImage(path: path, mode: .fit)
+            RemoteImage(path: path, mode: .fill)
                 .frame(width: geo.size.width, height: geo.size.height)
                 .scaleEffect(scale)
                 .offset(offset)
+                .clipped()
         }
         .contentShape(Rectangle())
         .gesture(magnify)
@@ -2888,7 +2889,7 @@ struct PhotoPager: View {
     @State private var shareItems: [Any] = []
     @State private var showShare = false
 
-    @State private var chromeVisible = true
+    @State private var chromeVisible = false
     @State private var hideChromeTask: Task<Void, Never>? = nil
 
     private var currentPath: String? {
@@ -2906,15 +2907,14 @@ struct PhotoPager: View {
                     ZStack {
                         Color.black
                         if abs(i - index) <= 1 {
-                            ZoomableRemoteImage(path: paths[i], onDoubleTap: {
-                                revealChrome()
-                            })
+                            ZoomableRemoteImage(path: paths[i])
                         }
                     }
                     .tag(i)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            .ignoresSafeArea()
             .onTapGesture {
                 if showActions {
                     toggleChrome()
@@ -2950,10 +2950,10 @@ struct PhotoPager: View {
         }
         .onAppear {
             index = min(max(0, startIndex), max(0, paths.count - 1))
-            revealChrome()
+            chromeVisible = false
+            onChromeVisibilityChange?(false)
         }
         .onChange(of: index) { value in
-            revealChrome()
             onIndexChange?(value)
         }
         .onDisappear { hideChromeTask?.cancel() }
