@@ -78,6 +78,14 @@ require(
     "a video must be locally playable immediately after send and while its upload row is visible",
 )
 require(
+    "let stable = ImageCacheKey.stablePath(path)" in CHAT
+    and "ImageStore.shared.put(path, image)" in CHAT
+    and "ImageStore.shared.put(stable, image)" in CHAT
+    and "ImageStore.shared.diskWrite(stable, data)" in CHAT
+    and "LocalStore.keep(stable, data: data)" in CHAT,
+    "a sent image must be indexed under both its exact and stable cache keys for immediate viewing",
+)
+require(
     "DispatchQueue.main.asyncAfter(deadline: .now() + 0.24)" not in CHAT
     and "filePreview = FilePreviewData(" in CHAT
     and "local: urls[0]" in CHAT

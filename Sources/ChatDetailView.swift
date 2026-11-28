@@ -6116,12 +6116,23 @@ struct ChatDetailView: View {
 
     private func seedLocalImage(_ path: String, _ image: UIImage, data: Data) {
         guard !path.isEmpty else { return }
+        let stable = ImageCacheKey.stablePath(path)
         ImageStore.shared.put(path, image)
+        if stable != path {
+            ImageStore.shared.put(stable, image)
+        }
         ImageSizeCache.put(path, ImageBubble.thumb(image.size))
+        ImageSizeCache.put(stable, ImageBubble.thumb(image.size))
         guard !data.isEmpty else { return }
         Task.detached(priority: .utility) {
             ImageStore.shared.diskWrite(path, data)
+            if stable != path {
+                ImageStore.shared.diskWrite(stable, data)
+            }
             LocalStore.keep(path, data: data)
+            if stable != path {
+                LocalStore.keep(stable, data: data)
+            }
         }
     }
 
