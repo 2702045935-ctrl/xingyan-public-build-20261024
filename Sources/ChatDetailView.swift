@@ -2997,6 +2997,7 @@ struct ChatDetailView: View {
                 senderAvatarFor(message),
                 deliveryState(for: message).accessibilityText,
                 backgroundPath,
+                ChatTheme.preset.rawValue,
                 Lang.code,
                 usesPlainDefaultChatChrome ? "plain" : "styled"
             ].joined(separator: "|")
@@ -3010,7 +3011,8 @@ struct ChatDetailView: View {
                 pending.kind,
                 pending.content,
                 pending.failed ? "failed" : "ok",
-                pending.failureReason ?? ""
+                pending.failureReason ?? "",
+                ChatTheme.preset.rawValue
             ].joined(separator: "|")
         case .sendingVideo:
             return "sending-video:\(sendProgress):\(sendingPreviews.count):\(sendingPreview != nil)"
@@ -3824,6 +3826,7 @@ struct ChatDetailView: View {
                    reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
+                   themePreset: ChatTheme.preset,
                    showTail: isRunStart(message),
                    onTapTransfer: { info in billInfo = info },
                    onOpenImage: { path in openImage(path) },
@@ -7516,6 +7519,7 @@ struct MessageRow: View {
     var reservesAvatarSpace: Bool = true
     var currentNickname: String = ""
     var currentUsername: String = ""
+    var themePreset: ChatAppearancePreset = .whatsapp
 
     var showTail: Bool = true
 
@@ -9096,6 +9100,7 @@ extension MessageRow: Equatable {
             && lhs.reservesAvatarSpace == rhs.reservesAvatarSpace
             && lhs.currentNickname == rhs.currentNickname
             && lhs.currentUsername == rhs.currentUsername
+            && lhs.themePreset == rhs.themePreset
             && lhs.showTail == rhs.showTail
             && lhs.asrText == rhs.asrText
             && lhs.asrBusy == rhs.asrBusy

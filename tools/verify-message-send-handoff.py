@@ -73,6 +73,13 @@ require(
     "confirmed bubbles must replace the pending row in one non-animated transaction",
 )
 require(
+    'ChatTheme.preset.rawValue' in CHAT
+    and "case .outbox(let pending):" in CHAT
+    and "themePreset: ChatTheme.preset" in CHAT
+    and "lhs.themePreset == rhs.themePreset" in CHAT,
+    "visible native message rows must invalidate when the chat theme changes",
+)
+require(
     "let pendingText = p.kind == \"text\"" in CHAT
     and "? pendingDisplayText(p.preview)" in CHAT
     and "Text(pendingText)" in CHAT
