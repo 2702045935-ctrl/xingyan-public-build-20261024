@@ -415,6 +415,8 @@ private struct TypingPeer {
 
 #if canImport(UIKit)
 private struct NativeChatFrostedEdgeMaterial: UIViewRepresentable {
+    let edge: ChatWallpaperEdge
+
     @Environment(\.colorScheme) private var scheme
 
     func makeUIView(context: Context) -> UIVisualEffectView {
@@ -428,9 +430,14 @@ private struct NativeChatFrostedEdgeMaterial: UIViewRepresentable {
     }
 
     private var effect: UIVisualEffect {
-        UIBlurEffect(style: scheme == .dark
-                     ? .systemThinMaterialDark
-                     : .systemThinMaterialLight)
+        if edge == .top {
+            return UIBlurEffect(style: scheme == .dark
+                                ? .systemUltraThinMaterialDark
+                                : .systemUltraThinMaterialLight)
+        }
+        return UIBlurEffect(style: scheme == .dark
+                            ? .systemThinMaterialDark
+                            : .systemThinMaterialLight)
     }
 }
 #endif
@@ -449,7 +456,7 @@ private struct ChatFrostedEdgeMask: View {
                     base
                 } else {
                     ZStack {
-                        NativeChatFrostedEdgeMaterial()
+                        NativeChatFrostedEdgeMaterial(edge: edge)
                         base.opacity(edge == .top
                                      ? (scheme == .dark ? 0.78 : 0.86)
                                      : (scheme == .dark ? 0.72 : 0.82))
