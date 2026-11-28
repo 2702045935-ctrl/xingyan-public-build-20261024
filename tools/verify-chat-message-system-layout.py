@@ -56,11 +56,18 @@ require(
     "direct and group messages must share one stable avatar/name run hierarchy",
 )
 require(
-    CHAT.count("NativeMediaGlassSurface") <= 3
+    CHAT.count("NativeMediaGlassSurface") <= 4
     and "NativeGlassControlMaterial()" in CHAT
-    and "shape: RoundedRectangle(cornerRadius: 18, style: .continuous),\n                    shadow: true"
-    in CHAT,
+    and CHAT.count("GlassBackground(") >= 1,
     "per-row timestamps and media controls must use the 2611280617 lightweight glass",
+)
+require(
+    "private func stackedMultiImageGlass(cornerRadius: CGFloat) -> some View" in CHAT
+    and CHAT.count("stackedMultiImageGlass(cornerRadius: 18)") == 2
+    and ".rotationEffect(.degrees(-1.35), anchor: .bottomLeading)" in CHAT
+    and ".rotationEffect(.degrees(1.1), anchor: .bottomTrailing)" in CHAT
+    and "NativeMediaGlassSurface(" in CHAT,
+    "multi-image messages must use layered glass plates with one native glass base",
 )
 require(
     ".fill(ChatTheme.bubbleMine)" in CHAT

@@ -8709,10 +8709,7 @@ struct MessageRow: View {
             }
             .padding(4)
             .background {
-                GlassBackground(
-                    shape: RoundedRectangle(cornerRadius: 18, style: .continuous),
-                    shadow: true
-                )
+                stackedMultiImageGlass(cornerRadius: 18)
             }
         } else {
             let strip = Array(paths.dropFirst().prefix(3))
@@ -8775,12 +8772,67 @@ struct MessageRow: View {
             }
             .padding(4)
             .background {
-                GlassBackground(
-                    shape: RoundedRectangle(cornerRadius: 18, style: .continuous),
-                    shadow: true
-                )
+                stackedMultiImageGlass(cornerRadius: 18)
             }
         }
+    }
+
+    private func stackedMultiImageGlass(cornerRadius: CGFloat) -> some View {
+        GeometryReader { proxy in
+            let plateW = max(1, proxy.size.width - 16)
+            let plateH = max(1, proxy.size.height - 12)
+            ZStack {
+                RoundedRectangle(cornerRadius: cornerRadius + 1, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.dyn(0xFFFFFF, 0x242426).opacity(0.76),
+                                Color.dyn(0xE9EEF1, 0x111113).opacity(0.42)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius + 1,
+                                         style: .continuous)
+                            .stroke(Color.white.opacity(0.18), lineWidth: 0.6)
+                    }
+                    .frame(width: plateW, height: plateH)
+                    .rotationEffect(.degrees(-1.35), anchor: .bottomLeading)
+                    .offset(x: -4, y: 4)
+
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.dyn(0xFFFFFF, 0x1E1E20).opacity(0.68),
+                                Color.dyn(0xDFE6E9, 0x0E0E10).opacity(0.34)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius,
+                                         style: .continuous)
+                            .stroke(Color.white.opacity(0.15), lineWidth: 0.6)
+                    }
+                    .frame(width: plateW + 4, height: plateH + 2)
+                    .rotationEffect(.degrees(1.1), anchor: .bottomTrailing)
+                    .offset(x: 4, y: 2)
+
+                NativeMediaGlassSurface(
+                    shape: AnyShape(RoundedRectangle(cornerRadius: cornerRadius,
+                                                     style: .continuous)),
+                    showsEdge: false
+                )
+                .opacity(0.92)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .shadow(color: Color.black.opacity(0.14), radius: 10, x: 0, y: 5)
+        .allowsHitTesting(false)
     }
 
     private var giftBubble: some View {
