@@ -21,7 +21,7 @@ require(
 )
 require(
     "showsDivider: true" in CHATS
-    and "dividerColor: isDark\n                ? UIColor(C.hairline)" in CHATS
+    and "dividerColor: isDark\n                ? UIColor(hex: 0x242824)" in CHATS
     and ".fill(ChatListVisual.rule)" in CHATS
     and ".fill(isDark ? Color.clear : ChatListVisual.rule)" not in CHATS
     and "dividerLeading: CGFloat = 77" in ROW,
@@ -46,9 +46,16 @@ require(
     "reused native rows must clear old text and render on an opaque surface",
 )
 require(
+    "private let topSheen = UIView()" in ROW
+    and "topSheen.isHidden = configuration.isLight" in ROW
+    and "UIColor.white.withAlphaComponent(0.016)" in ROW
+    and "topSheen.heightAnchor.constraint(equalToConstant: 0.5)" in ROW,
+    "dark rows need a restrained top-light finish without changing row backgrounds",
+)
+require(
     "chatsIsDark\n            ? C.searchBg" in CHATS
-    and "Color.white.opacity(0.045)" in CHATS
-    and "Color(hex: 0x8E8E93)" in CHATS
+    and "Color.white.opacity(0.035)" in CHATS
+    and "Color(hex: 0x7F847F)" in CHATS
     and ".stroke(chatsSearchBorder, lineWidth: 0.5)" in CHATS,
     "dark search must sit quietly on the near-black canvas instead of using a raised light card",
 )
@@ -71,16 +78,16 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0xAEAEB2 : 0x626B66)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x8E8E93 : 0x858D88)" in CHATS
-    and "static let conversationPreviewInk = Color.dyn(0x626B66, 0xAEAEB2)" in CHATS
-    and "static let timeInk = Color.dyn(0x858D88, 0x8E8E93)" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0x9FA49F : 0x626B66)" in CHATS
+    and "let timeColor = UIColor(hex: isDark ? 0x737873 : 0x858D88)" in CHATS
+    and "static let conversationPreviewInk = Color.dyn(0x626B66, 0x9FA49F)" in CHATS
+    and "static let timeInk = Color.dyn(0x858D88, 0x737873)" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
-    and "UIColor(hex: isDark ? 0xFFFFFF : 0x171A18)" in CHATS,
-    "chat-list title, preview and time must use the Apple Messages hierarchy",
+    and "UIColor(hex: isDark ? 0xF1F3F0 : 0x171A18)" in CHATS,
+    "chat-list title, preview and time must use the softened dark hierarchy",
 )
 require(
-    0xFFFFFF > 0xAEAEB2 > 0x8E8E93,
+    0xF1F3F0 > 0x9FA49F > 0x737873,
     "dark title, preview and time must remain strictly ordered with time weakest",
 )
 require(

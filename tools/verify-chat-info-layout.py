@@ -21,10 +21,11 @@ require(
     "chat info must use stable native section grouping",
 )
 require(
-    "size: 68, radius: 16" in INFO
+    "size: 74" in INFO
+    and "radius: 20" in INFO
     and "Image(systemName: \"qrcode\")" in INFO
-    and "HStack(spacing: 14)" in INFO,
-    "group identity must use the compact information header",
+    and "HStack(alignment: .center, spacing: 15)" in INFO,
+    "group identity must use the immersive information header",
 )
 require(
     ".frame(minHeight: 54)" in INFO
@@ -39,9 +40,33 @@ require(
     "single-chat info must share the native list and pressed-row behavior",
 )
 require(
+    "private var memberHero" in INFO
+    and "private var heroMemberStack" in INFO
+    and "memberGridButton(u, size: 56)" in INFO
+    and "ForEach(visibleMembers)" in INFO
+    and "displayedMemberCount > 20" in INFO
+    and "private func memberGridButton" in INFO,
+    "group members must use the immersive stack and native member wall",
+)
+require(
+    "private var renameEditor" in INFO
+    and "Text(trimmed.isEmpty ? chat.name : trimmed)" in INFO
+    and "Text(\"\\(nameDraft.count)/30\")" in INFO
+    and "groupToolTile(title:" in INFO
+    and "GroupCard(bg: groupSurface)" in INFO,
+    "group identity, name editor and settings must share the redesigned hierarchy",
+)
+require(
+    "scheme == .dark ? Color(hex: 0x171A18) : C.cardBg" in INFO
+    and "scheme == .dark ? Color(hex: 0x202521)" in INFO
+    and "Color.primary.opacity(scheme == .dark ? 0.09 : 0.065)" in INFO,
+    "dark group info must use comfortable local surfaces without changing app chrome",
+)
+require(
     "private struct ChatInfoDangerRow" in INFO
-    and ".frame(maxWidth: .infinity)\n                .frame(height: 54)" in INFO,
-    "destructive chat actions must be isolated as centered red rows",
+    and "HStack(spacing: 9)" in INFO
+    and ".frame(maxWidth: .infinity)\n            .frame(height: 54)" in INFO,
+    "destructive chat actions must stay isolated as centered subdued rows",
 )
 require(
     "python3 tools/verify-chat-info-layout.py" in WORKFLOW,

@@ -159,6 +159,7 @@ final class NativeChatRowCell: UITableViewCell {
     private let unreadLabel = PaddingLabel(insets: .zero)
     private let unreadBell = UIImageView()
     private let divider = UIView()
+    private let topSheen = UIView()
     private let pressOverlay = UIView()
     private var configuration: NativeChatRowConfiguration?
     private var avatarSignature = ""
@@ -195,6 +196,7 @@ final class NativeChatRowCell: UITableViewCell {
         memberLabel.isHidden = true
         unreadLabel.isHidden = true
         divider.isHidden = true
+        topSheen.isHidden = true
         foreground.transform = .identity
         unreadBell.isHidden = true
         pressOverlay.backgroundColor = .clear
@@ -229,6 +231,8 @@ final class NativeChatRowCell: UITableViewCell {
         timeLabel.textColor = configuration.timeColor
         divider.backgroundColor = configuration.dividerColor
         divider.isHidden = !configuration.showsDivider
+        topSheen.backgroundColor = UIColor.white.withAlphaComponent(0.016)
+        topSheen.isHidden = configuration.isLight
         unreadBell.isHidden = !configuration.isManuallyUnread
         unreadBell.image = UIImage(systemName: "bell.fill")
         unreadBell.tintColor = Self.utilityInk
@@ -428,6 +432,7 @@ final class NativeChatRowCell: UITableViewCell {
         titleRow.addArrangedSubview(levelLabel)
         titleRow.addArrangedSubview(memberLabel)
 
+        foreground.addSubview(topSheen)
         foreground.addSubview(avatarView)
         foreground.addSubview(titleRow)
         foreground.addSubview(previewLabel)
@@ -441,6 +446,7 @@ final class NativeChatRowCell: UITableViewCell {
 
         [
             foreground,
+            topSheen,
             avatarView,
             titleRow,
             titleLabel,
@@ -475,6 +481,11 @@ final class NativeChatRowCell: UITableViewCell {
             avatarView.centerYAnchor.constraint(equalTo: foreground.centerYAnchor),
             avatarView.widthAnchor.constraint(equalToConstant: avatarSize),
             avatarView.heightAnchor.constraint(equalToConstant: avatarSize),
+
+            topSheen.leadingAnchor.constraint(equalTo: foreground.leadingAnchor),
+            topSheen.trailingAnchor.constraint(equalTo: foreground.trailingAnchor),
+            topSheen.topAnchor.constraint(equalTo: foreground.topAnchor),
+            topSheen.heightAnchor.constraint(equalToConstant: 0.5),
 
             titleRow.leadingAnchor.constraint(equalTo: avatarView.trailingAnchor,
                                               constant: avatarGap),

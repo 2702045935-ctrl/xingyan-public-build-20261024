@@ -40,9 +40,9 @@ require(
     "chatsIsDark\n            ? C.pageBg" in CHATS
     and "chatsIsDark\n            ? C.searchBg" in CHATS
     and "chatsIsDark\n            ? C.chatRowBg" in CHATS
-    and "UIColor(hex: isDark ? 0xAEAEB2 : 0x626B66)" in CHATS
-    and "UIColor(hex: isDark ? 0x8E8E93 : 0x858D88)" in CHATS,
-    "conversation surfaces must share the Apple Messages dark hierarchy",
+    and "UIColor(hex: isDark ? 0x9FA49F : 0x626B66)" in CHATS
+    and "UIColor(hex: isDark ? 0x737873 : 0x858D88)" in CHATS,
+    "conversation surfaces must share the softened Apple Messages dark hierarchy",
 )
 require(
     "weight: .semibold, textStyle: .headline" in ROW
