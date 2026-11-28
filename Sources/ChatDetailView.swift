@@ -2528,7 +2528,11 @@ struct ChatDetailView: View {
             Task { await load(initial: false); await app.loadChats() }
         }) {
 
-            TransferView(chat: chat, onPaid: {
+            TransferView(chat: chat, onPaid: { message in
+                if let message {
+                    appendVisibleMessage(message)
+                    app.ensureChatVisible(chat, latest: message)
+                }
                 Task { await load(initial: false); await app.loadChats() }
             })
         }

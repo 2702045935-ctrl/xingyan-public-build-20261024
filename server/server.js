@@ -20536,12 +20536,16 @@ async function handleApi(req, res, pathname, query) {
           messageId: transfer.messageId,
           recipientIds: [transfer.toId]
         });
+        const transferMessage = transfer.messageId
+          ? loadMessages(chat.id).find((message) => message.id === transfer.messageId) || null
+          : null;
         ok(res, {
           balance: Number(user.balance) || 0,
           amount,
           method: transfer.method,
           deducted: amount,
           transfer: JSON.parse(transferSnapshot(transfer)),
+          message: transferMessage,
           paymentIntent: paymentIntentView(captured.intent)
         });
         return;
@@ -20649,7 +20653,8 @@ async function handleApi(req, res, pathname, query) {
       balance, amount,
       method: useBalance ? 'balance' : 'card',
       deducted: amount,
-      transfer: JSON.parse(transferSnapshot(transfer))
+      transfer: JSON.parse(transferSnapshot(transfer)),
+      message: sent.message
     };
     idemFinish(idem.key, payload);
     ok(res, payload);

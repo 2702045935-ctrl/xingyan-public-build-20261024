@@ -4,8 +4,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TRANSFER = (ROOT / "Sources" / "TransferFlow.swift").read_text(encoding="utf-8")
+CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 PAY_CODE = (ROOT / "Sources" / "PayCode.swift").read_text(encoding="utf-8")
 PAYMENT = (ROOT / "Sources" / "PaymentUI.swift").read_text(encoding="utf-8")
+API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
+SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -53,8 +56,10 @@ require(
 require(
     "PayBusyOverlay(text: \"正在转账\")" in TRANSFER
     and TRANSFER.count("PayBusyOverlay(text: \"正在转账\")") == 1
+    and ".overlay {\n            if busy {\n                PayBusyOverlay(text: \"正在转账\")"
+    in TRANSFER
     and "ProgressView().padding(18)" not in TRANSFER,
-    "checkout must expose exactly one blocking progress state",
+    "checkout must expose one blocking progress state above the password sheet",
 )
 require(
     "PayDotField(count: password.count" in TRANSFER
@@ -81,6 +86,12 @@ require(
 require(
     "let result = try await API.shared.transfer(" in TRANSFER
     and "method: method, password: password, face: face)" in TRANSFER
+    and "onPaid(result.message)" in TRANSFER
+    and "var message: Message?" in API
+    and "message: sent.message" in SERVER
+    and "message: transferMessage" in SERVER
+    and "onPaid: { message in\n                if let message {\n                    appendVisibleMessage(message)"
+    in CHAT
     and "API.shared.receiveCode(amount: amount)" in PAY_CODE
     and "private var receiveBankCard" in PAY_CODE
     and '"STAR PAY RECEIVE"' in PAY_CODE

@@ -6174,6 +6174,7 @@ private struct StarredPayload: Decodable {
         var method: String?
         var deducted: Double?
         var transfer: TransferPayment?
+        var message: Message?
     }
 
     struct PaymentStatus: Decodable {

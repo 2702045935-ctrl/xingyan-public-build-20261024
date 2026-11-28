@@ -4,7 +4,7 @@ import UIKit
 struct TransferView: View {
     let chat: Chat
 
-    var onPaid: () -> Void = {}
+    var onPaid: (Message?) -> Void = { _ in }
 
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -92,9 +92,6 @@ struct TransferView: View {
                 mainPage
             }
 
-            if busy {
-                PayBusyOverlay(text: "正在转账").zIndex(30)
-            }
         }
 
         .alert(Tr("转账说明"), isPresented: $noteEditing) {
@@ -489,6 +486,12 @@ struct TransferView: View {
             }
         }
         .background(transferDeskBackdrop)
+        .overlay {
+            if busy {
+                PayBusyOverlay(text: "正在转账")
+                    .zIndex(30)
+            }
+        }
         .sheet(isPresented: $showMethod) {
             methodSheet
                 .environmentObject(app)
@@ -1164,7 +1167,7 @@ struct TransferView: View {
                     step = 1
                 }
 
-                onPaid()
+                onPaid(result.message)
                 await app.loadChats()
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             } catch {
