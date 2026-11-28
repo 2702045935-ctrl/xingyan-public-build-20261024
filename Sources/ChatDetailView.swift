@@ -387,7 +387,29 @@ private enum ChatWallpaperEdge: Equatable {
     case bottom
 }
 
-private struct ChatPlainEdgeMask: View {
+#if canImport(UIKit)
+private struct NativeChatFrostedEdgeMaterial: UIViewRepresentable {
+    @Environment(\.colorScheme) private var scheme
+
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        let view = UIVisualEffectView(effect: effect)
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ view: UIVisualEffectView, context: Context) {
+        view.effect = effect
+    }
+
+    private var effect: UIVisualEffect {
+        UIBlurEffect(style: scheme == .dark
+                     ? .systemUltraThinMaterialDark
+                     : .systemUltraThinMaterialLight)
+    }
+}
+#endif
+
+private struct ChatFrostedEdgeMask: View {
     let edge: ChatWallpaperEdge
 
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -395,34 +417,46 @@ private struct ChatPlainEdgeMask: View {
     var body: some View {
         GeometryReader { proxy in
             let base = C.pageBg
+            let direction: (UnitPoint, UnitPoint) = edge == .top
+                ? (.top, .bottom)
+                : (.bottom, .top)
 
-            if reduceTransparency {
-                Rectangle().fill(base)
-            } else if edge == .top {
+            ZStack {
+                if !reduceTransparency {
+                    NativeChatFrostedEdgeMaterial()
+                        .mask {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .black, location: 0),
+                                    .init(color: .black.opacity(0.88), location: 0.58),
+                                    .init(color: .black.opacity(0.42), location: 0.84),
+                                    .init(color: .clear, location: 1)
+                                ],
+                                startPoint: direction.0,
+                                endPoint: direction.1
+                            )
+                        }
+                }
+
                 LinearGradient(
-                    stops: [
-                        .init(color: base.opacity(0.995), location: 0),
-                        .init(color: base.opacity(0.96), location: 0.62),
-                        .init(color: base.opacity(0.80), location: 0.86),
-                        .init(color: .clear, location: 1)
-                    ],
+                    stops: edge == .top
+                        ? [
+                            .init(color: base.opacity(0.78), location: 0),
+                            .init(color: base.opacity(0.66), location: 0.62),
+                            .init(color: base.opacity(0.32), location: 0.86),
+                            .init(color: .clear, location: 1)
+                        ]
+                        : [
+                            .init(color: .clear, location: 0),
+                            .init(color: base.opacity(0.32), location: 0.14),
+                            .init(color: base.opacity(0.66), location: 0.38),
+                            .init(color: base.opacity(0.78), location: 1)
+                        ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(width: proxy.size.width, height: proxy.size.height)
-            } else {
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: base.opacity(0.80), location: 0.14),
-                        .init(color: base.opacity(0.96), location: 0.38),
-                        .init(color: base.opacity(0.995), location: 1)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(width: proxy.size.width, height: proxy.size.height)
             }
+            .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .allowsHitTesting(false)
     }
@@ -2089,7 +2123,7 @@ struct ChatDetailView: View {
                     if isStarWorld && newsMode {
                         newsMaskColor
                     } else {
-                        ChatPlainEdgeMask(edge: .top)
+                        ChatFrostedEdgeMask(edge: .top)
                     }
                 }
                 .ignoresSafeArea(edges: .top)
@@ -5021,7 +5055,7 @@ struct ChatDetailView: View {
                     if isStarWorld && newsMode {
                         newsMaskColor
                     } else {
-                        ChatPlainEdgeMask(edge: .bottom)
+                        ChatFrostedEdgeMask(edge: .bottom)
                     }
                 }
                 .ignoresSafeArea(edges: .bottom)

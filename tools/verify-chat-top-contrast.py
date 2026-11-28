@@ -17,19 +17,22 @@ require(
     "top-bar glyphs need an adaptive contrast edge",
 )
 require(
-    "private struct ChatPlainEdgeMask" in DETAIL
+    "private struct NativeChatFrostedEdgeMaterial" in DETAIL
+    and ".systemUltraThinMaterialDark" in DETAIL
+    and ".systemUltraThinMaterialLight" in DETAIL
+    and "private struct ChatFrostedEdgeMask" in DETAIL
     and "let base = C.pageBg" in DETAIL
-    and "ChatPlainEdgeMask(edge: .top)" in DETAIL
-    and "ChatPlainEdgeMask(edge: .bottom)" in DETAIL
+    and "ChatFrostedEdgeMask(edge: .top)" in DETAIL
+    and "ChatFrostedEdgeMask(edge: .bottom)" in DETAIL
     and "ChatTopGlassBackdrop" not in DETAIL
     and "ChatImmersiveEdgeMask" not in DETAIL,
-    "chat chrome must use the plain page-colour top and bottom masks",
+    "chat chrome must use the subtle native-frosted top and bottom masks",
 )
 require(
-    "base.opacity(0.96)" in DETAIL
-    and "base.opacity(0.80)" in DETAIL
+    "base.opacity(0.66)" in DETAIL
+    and "base.opacity(0.32)" in DETAIL
     and "ChatMaterialGrainOverlay" not in DETAIL,
-    "chat masks must use only the page-colour gradient without glass or grain",
+    "chat masks must keep the page-colour falloff without heavy glass or grain",
 )
 require(
     "titleOutline: adaptiveTopOutline.opacity(0.55)" in DETAIL,

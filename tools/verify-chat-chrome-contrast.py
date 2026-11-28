@@ -15,14 +15,18 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "private struct ChatPlainEdgeMask" in CHAT
+    "private struct NativeChatFrostedEdgeMaterial" in CHAT
+    and ".systemUltraThinMaterialDark" in CHAT
+    and ".systemUltraThinMaterialLight" in CHAT
+    and "private struct ChatFrostedEdgeMask" in CHAT
     and "let base = C.pageBg" in CHAT
-    and "base.opacity(0.995)" in CHAT
-    and "ChatPlainEdgeMask(edge: .top)" in CHAT
-    and "ChatPlainEdgeMask(edge: .bottom)" in CHAT
+    and "base.opacity(0.78)" in CHAT
+    and "ChatFrostedEdgeMask(edge: .top)" in CHAT
+    and "ChatFrostedEdgeMask(edge: .bottom)" in CHAT
     and "ChatTopGlassBackdrop" not in CHAT
-    and "ChatImmersiveEdgeMask" not in CHAT,
-    "chat top and bottom must use one plain page-colour falloff in both themes",
+    and "ChatImmersiveEdgeMask" not in CHAT
+    and "ChatMaterialGrainOverlay()" not in CHAT,
+    "chat top and bottom must share one subtle native-frosted page-colour falloff",
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT
@@ -33,9 +37,9 @@ require(
 require(
     "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT
     and "capsule.fill(lightInk" in CHAT
-    and "ChatPlainEdgeMask(edge: .top)" in CHAT
-    and "ChatPlainEdgeMask(edge: .bottom)" in CHAT,
-    "header controls may keep their adaptive surface while masks stay plain",
+    and "ChatFrostedEdgeMask(edge: .top)" in CHAT
+    and "ChatFrostedEdgeMask(edge: .bottom)" in CHAT,
+    "header controls may keep their adaptive surface while masks stay lightly frosted",
 )
 require(
     CHAT.count("if !path.isEmpty { return true }") >= 2,
