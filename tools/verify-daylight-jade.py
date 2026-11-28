@@ -27,22 +27,22 @@ def require(condition: bool, message: str) -> None:
 
 
 for token in (
-    'UIConfig.fixedDark("pageBg", 0xF2F4F1, 0x101412)',
-    'UIConfig.fixedDark("cardBg", 0xFAFBF9, 0x1D231F)',
-    'UIConfig.fixedDark("chatsRowBg", 0xFAFBF9, 0x171B18)',
-    'UIConfig.fixedDark("previewColor", 0x626B66, 0xA5ACA8)',
-    'UIConfig.fixedDark("timeColor", 0x858D88, 0x747C78)',
-    'UIConfig.fixedDark("lineColor", 0xDDE2DD, 0x2A302C)',
+    'UIConfig.fixedDark("pageBg", 0xF2F4F1, 0x000000)',
+    'UIConfig.fixedDark("cardBg", 0xFAFBF9, 0x1C1C1E)',
+    'UIConfig.fixedDark("chatsRowBg", 0xFAFBF9, 0x000000)',
+    'UIConfig.fixedDark("previewColor", 0x626B66, 0xAEAEB2)',
+    'UIConfig.fixedDark("timeColor", 0x858D88, 0x8E8E93)',
+    'UIConfig.fixedDark("lineColor", 0xDDE2DD, 0x38383A)',
 ):
-    require(token in CORE, "missing shared daylight-jade token: " + token)
+    require(token in CORE, "missing shared Apple Messages dark token: " + token)
 
 require(
     "chatsIsDark\n            ? C.pageBg" in CHATS
     and "chatsIsDark\n            ? C.searchBg" in CHATS
     and "chatsIsDark\n            ? C.chatRowBg" in CHATS
-    and "UIColor(hex: isDark ? 0xA5ACA8 : 0x626B66)" in CHATS
-    and "UIColor(hex: isDark ? 0x747C78 : 0x858D88)" in CHATS,
-    "conversation surfaces must share the four-level light/dark tokens",
+    and "UIColor(hex: isDark ? 0xAEAEB2 : 0x626B66)" in CHATS
+    and "UIColor(hex: isDark ? 0x8E8E93 : 0x858D88)" in CHATS,
+    "conversation surfaces must share the Apple Messages dark hierarchy",
 )
 require(
     "weight: .semibold, textStyle: .headline" in ROW
@@ -63,9 +63,9 @@ require(
     "chat masks must not restore a mirror highlight",
 )
 require(
-    "Color.dyn(0x757D78, 0x8B938E)" in TAB
+    "Color.dyn(0x757D78, 0x8E8E93)" in TAB
     and "Color.dyn(0x117A58, 0x42C693)" in TAB,
-    "tab icons must share the new neutral and jade hierarchy",
+    "tab icons must share the neutral Apple hierarchy and jade accent",
 )
 require(
     'UIConfig.colorIfSet("contactsBg") ?? C.contactsBg' in CONTACTS

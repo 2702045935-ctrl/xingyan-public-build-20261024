@@ -33,10 +33,9 @@ require(
     "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT
     and "capsule.fill(lightInk" in CHAT
     and "ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)" in CHAT
-    and "scheme == .light && !hasPickedChatWallpaper" in CHAT
-    and "scheme == .light && hasPickedChatWallpaper" in CHAT
-    and "private var hasPickedChatWallpaper: Bool" in CHAT,
-    "light wallpaper must stay out of top and bottom chat masks",
+    and "ChatWeChatLightEdgeMask(edge: .top)" in CHAT
+    and "ChatWeChatLightEdgeMask(edge: .bottom)" in CHAT,
+    "light chat masks must use the unified WeChat-style background falloff",
 )
 require(
     CHAT.count("if !path.isEmpty { return true }") >= 2,

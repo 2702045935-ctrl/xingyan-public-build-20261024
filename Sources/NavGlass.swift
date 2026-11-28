@@ -60,12 +60,12 @@ struct NativePremiumGlassMaterial: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
         view.isUserInteractionEnabled = false
-        view.backgroundColor = UIColor(hex: dark ? 0x171B18 : 0xF5F6F4)
+        view.backgroundColor = UIColor(hex: dark ? 0x1C1C1E : 0xF5F6F4)
         return view
     }
 
     func updateUIView(_ view: UIView, context: Context) {
-        view.backgroundColor = UIColor(hex: dark ? 0x171B18 : 0xF5F6F4)
+        view.backgroundColor = UIColor(hex: dark ? 0x000000 : 0xF5F6F4)
     }
 }
 

@@ -85,10 +85,10 @@ time_end = CHAT_DETAIL.index("private func recallLine", time_start)
 time_line = CHAT_DETAIL[time_start:time_end]
 require(
     ".fixedSize(horizontal: true, vertical: false)" in time_line
-    and "NativeMediaGlassSurface(" in time_line
+    and "NativeGlassControlMaterial()" in time_line
     and "adaptiveSystemSurface.opacity(" in time_line
     and ".fill(adaptiveSystemSurface)" not in time_line,
-    "chat timestamps must use intrinsic width and translucent system glass",
+    "chat timestamps must use intrinsic width and the lightweight 0617 row glass",
 )
 require(
     "NativeTopGlassMask(active: chatTopScrolled > 0," in CHATS

@@ -66,7 +66,7 @@ struct GlassBackground<S: Shape>: View {
 
     private var reducedTransparencySurface: some View {
         ZStack {
-            shape.fill(UIConfig.fixedDark("glassReducedSurface", 0xFAFBF9, 0x1D231F))
+            shape.fill(UIConfig.fixedDark("glassReducedSurface", 0xFAFBF9, 0x1C1C1E))
             if let tint {
                 shape.fill(tint.opacity(scheme == .dark ? 0.42 : 0.34))
             }

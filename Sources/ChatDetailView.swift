@@ -64,13 +64,13 @@ private enum ChatTheme {
     static var bubbleOther: Color { preset.other }
     static let ink = Color.dyn(0x171A18, 0xEDF1EE)
     static let mineInk = Color.dyn(0xF7F9F6, 0xEDF1EE)
-    static let secondary = Color.dyn(0x626B66, 0xA5ACA8)
+    static let secondary = Color.dyn(0x626B66, 0xAEAEB2)
     static let groupSenderNameOnLight = Color.dyn(0x171A18, 0x171A18)
     static let groupSenderNameOnDark = Color.dyn(0xEDF1EE, 0xEDF1EE)
     static let secondaryOnMine = Color.dyn(0xD8F5EC, 0xE3EAE6)
-    static let timeInk = Color.dyn(0x858D88, 0x747C78)
+    static let timeInk = Color.dyn(0x858D88, 0x8E8E93)
     static var composerBg: Color { preset.panel }
-    static let separator = Color.dyn(0xDDE2DD, 0x2A302C)
+    static let separator = Color.dyn(0xDDE2DD, 0x38383A)
     static let link = Color.dyn(0x0A60BE, 0x8FD3FF)
     static let linkOnMine = Color.dyn(0xEFFFFC, 0xD9FFF8)
     static let readReceipt = Color(hex: 0x53BDEB)
@@ -5175,11 +5175,6 @@ struct ChatDetailView: View {
                 .ignoresSafeArea(edges: .bottom)
             }
         }
-    }
-
-    private var hasPickedChatWallpaper: Bool {
-        let value = backgroundPath.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !value.isEmpty && value != "auto"
     }
 
     @ViewBuilder

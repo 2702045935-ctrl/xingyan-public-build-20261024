@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 private enum NativeTabBarVisual {
-    static var normalInk: Color { Color.dyn(0x757D78, 0x8B938E) }
+    static var normalInk: Color { Color.dyn(0x757D78, 0x8E8E93) }
     static var selectedInk: Color { Color.dyn(0x117A58, 0x42C693) }
     static let badge = UIColor.systemRed
 }

@@ -48,7 +48,7 @@ require(
 require(
     "chatsIsDark\n            ? C.searchBg" in CHATS
     and "Color.white.opacity(0.045)" in CHATS
-    and "Color(hex: 0x8B938E)" in CHATS
+    and "Color(hex: 0x8E8E93)" in CHATS
     and ".stroke(chatsSearchBorder, lineWidth: 0.5)" in CHATS,
     "dark search must sit quietly on the near-black canvas instead of using a raised light card",
 )
@@ -71,16 +71,16 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0xA5ACA8 : 0x626B66)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x747C78 : 0x858D88)" in CHATS
-    and "static let conversationPreviewInk = Color.dyn(0x626B66, 0xA5ACA8)" in CHATS
-    and "static let timeInk = Color.dyn(0x858D88, 0x747C78)" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0xAEAEB2 : 0x626B66)" in CHATS
+    and "let timeColor = UIColor(hex: isDark ? 0x8E8E93 : 0x858D88)" in CHATS
+    and "static let conversationPreviewInk = Color.dyn(0x626B66, 0xAEAEB2)" in CHATS
+    and "static let timeInk = Color.dyn(0x858D88, 0x8E8E93)" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
-    and "UIColor(hex: isDark ? 0xEDF1EE : 0x171A18)" in CHATS,
-    "chat-list title, preview and time must use the daylight-jade hierarchy",
+    and "UIColor(hex: isDark ? 0xFFFFFF : 0x171A18)" in CHATS,
+    "chat-list title, preview and time must use the Apple Messages hierarchy",
 )
 require(
-    0xEDF1EE > 0xA5ACA8 > 0x747C78,
+    0xFFFFFF > 0xAEAEB2 > 0x8E8E93,
     "dark title, preview and time must remain strictly ordered with time weakest",
 )
 require(

@@ -12,22 +12,22 @@ private enum ChatListVisual {
     static let avatarGap: CGFloat = 12
     static let dividerLeading: CGFloat = 77
 
-    static let ink = Color.dyn(0x171A18, 0xEDF1EE)
-    static let iconInk = Color.dyn(0x35403A, 0xB5BDB8)
+    static let ink = Color.dyn(0x171A18, 0xFFFFFF)
+    static let iconInk = Color.dyn(0x35403A, 0xBDBDC2)
     static let utilityIconInk = Color.dyn(0x7A837D, 0x8D9690)
-    static let previewInk = Color.dyn(0x626B66, 0xA5ACA8)
-    static let conversationPreviewInk = Color.dyn(0x626B66, 0xA5ACA8)
+    static let previewInk = Color.dyn(0x626B66, 0xAEAEB2)
+    static let conversationPreviewInk = Color.dyn(0x626B66, 0xAEAEB2)
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
-    static let timeInk = Color.dyn(0x858D88, 0x747C78)
+    static let timeInk = Color.dyn(0x858D88, 0x8E8E93)
     static let rule = Color(UIColor { trait in
         // WeChat measures 48,48,48 on its 25,25,25 canvas. Our canvas is
         // 10,10,10, so the same perceived weight needs a darker separator.
         trait.userInterfaceStyle == .dark
-            ? UIColor(hex: 0x2A302C)
+            ? UIColor(hex: 0x38383A)
             : UIColor(hex: 0xDDE2DD)
     })
-    static let badgeRing = Color.dyn(0xFAFBF9, 0x171B18)
-    static let chipInk = Color.dyn(0x5E6862, 0xA8B0AB)
+    static let badgeRing = Color.dyn(0xFAFBF9, 0x000000)
+    static let chipInk = Color.dyn(0x5E6862, 0xAEAEB2)
     static let selectedChipFill = Color.dyn(0x171A18, 0xE7ECE8)
     static let selectedChipInk = Color.dyn(0xF7F9F6, 0x101412)
 }
@@ -861,7 +861,7 @@ struct SwipeChatRow: View {
     }
     private var rowBg: Color {
         if cardStyle { return .clear }
-        if isDark { return Color(hex: 0x171B18) }
+        if isDark { return Color(hex: 0x000000) }
         return UIConfig.colorIfSet("chatsRowBg")
             ?? UIConfig.colorIfSet("chatRowBg")
             ?? Color(hex: 0xFAFBF9)
@@ -1302,7 +1302,7 @@ struct ChatsView: View {
         chatsIsDark ? Color.white.opacity(0.045) : Color.clear
     }
     private var chatsSearchInk: Color {
-        chatsIsDark ? Color(hex: 0x8B938E) : Color(hex: 0x6E7771)
+        chatsIsDark ? Color(hex: 0x8E8E93) : Color(hex: 0x6E7771)
     }
     private var chatsCardFill: Color {
         chatsIsDark
@@ -2876,11 +2876,11 @@ struct ChatsView: View {
         let isDark = chatsIsDark
         let titleColor: UIColor = chat.showsOfficialMark
             ? UIColor(hex: isDark ? 0x42C693 : 0x137D5B)
-            : UIColor(hex: isDark ? 0xEDF1EE : 0x171A18)
-        let previewColor = UIColor(hex: isDark ? 0xA5ACA8 : 0x626B66)
+            : UIColor(hex: isDark ? 0xFFFFFF : 0x171A18)
+        let previewColor = UIColor(hex: isDark ? 0xAEAEB2 : 0x626B66)
         let memberColor = nativePeerColor(chat.memberColor)
         let rowBg = isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9)
-        let timeColor = UIColor(hex: isDark ? 0x747C78 : 0x858D88)
+        let timeColor = UIColor(hex: isDark ? 0x8E8E93 : 0x858D88)
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
 
