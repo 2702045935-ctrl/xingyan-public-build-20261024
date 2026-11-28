@@ -40,8 +40,8 @@ require(
     "chatsIsDark\n            ? C.pageBg" in CHATS
     and "chatsIsDark\n            ? Color(hex: 0x2A2A2C)" in CHATS
     and "chatsIsDark\n            ? C.chatRowBg" in CHATS
-    and "UIColor(hex: isDark ? 0x8D8D93 : 0x626B66)" in CHATS
-    and "UIColor(hex: isDark ? 0x74767A : 0x858D88)" in CHATS,
+    and "isDark ? UIColor.secondaryLabel : UIColor(hex: 0x626B66)" in CHATS
+    and "isDark ? UIColor.tertiaryLabel : UIColor(hex: 0x858D88)" in CHATS,
     "conversation surfaces must share the softened Apple Messages dark hierarchy",
 )
 require(

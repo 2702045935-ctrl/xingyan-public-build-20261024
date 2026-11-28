@@ -231,8 +231,8 @@ final class NativeChatRowCell: UITableViewCell {
         timeLabel.textColor = configuration.timeColor
         divider.backgroundColor = configuration.dividerColor
         divider.isHidden = !configuration.showsDivider
-        topSheen.backgroundColor = UIColor.white.withAlphaComponent(0.022)
-        topSheen.isHidden = configuration.isLight
+        topSheen.backgroundColor = .clear
+        topSheen.isHidden = true
         unreadBell.isHidden = !configuration.isManuallyUnread
         unreadBell.image = UIImage(systemName: "bell.fill")
         unreadBell.tintColor = Self.utilityInk

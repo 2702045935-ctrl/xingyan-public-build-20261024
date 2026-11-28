@@ -12,13 +12,37 @@ private enum ChatListVisual {
     static let avatarGap: CGFloat = 12
     static let dividerLeading: CGFloat = 77
 
-    static let ink = Color.dyn(0x171A18, 0xF5F5F7)
-    static let iconInk = Color.dyn(0x35403A, 0xBDBEC2)
-    static let utilityIconInk = Color.dyn(0x7A837D, 0x8D8D93)
-    static let previewInk = Color.dyn(0x626B66, 0x8D8D93)
-    static let conversationPreviewInk = Color.dyn(0x626B66, 0x8D8D93)
+    static let ink = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? .label
+            : UIColor(hex: 0x171A18)
+    })
+    static let iconInk = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? .secondaryLabel
+            : UIColor(hex: 0x35403A)
+    })
+    static let utilityIconInk = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? .tertiaryLabel
+            : UIColor(hex: 0x7A837D)
+    })
+    static let previewInk = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? .secondaryLabel
+            : UIColor(hex: 0x626B66)
+    })
+    static let conversationPreviewInk = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? .secondaryLabel
+            : UIColor(hex: 0x626B66)
+    })
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
-    static let timeInk = Color.dyn(0x858D88, 0x74767A)
+    static let timeInk = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? .tertiaryLabel
+            : UIColor(hex: 0x858D88)
+    })
     static let rule = Color(UIColor { trait in
         // WeChat measures 48,48,48 on its 25,25,25 canvas. Our canvas is
         // 10,10,10, so the same perceived weight needs a darker separator.
@@ -27,9 +51,21 @@ private enum ChatListVisual {
             : UIColor(hex: 0xDDE2DD)
     })
     static let badgeRing = Color.dyn(0xFAFBF9, 0x000000)
-    static let chipInk = Color.dyn(0x5E6862, 0x8D8D93)
-    static let selectedChipFill = Color.dyn(0x171A18, 0x2A2A2C)
-    static let selectedChipInk = Color.dyn(0xF7F9F6, 0xF5F5F7)
+    static let chipInk = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? .secondaryLabel
+            : UIColor(hex: 0x5E6862)
+    })
+    static let selectedChipFill = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? .secondarySystemFill
+            : UIColor(hex: 0x171A18)
+    })
+    static let selectedChipInk = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? .label
+            : UIColor(hex: 0xF7F9F6)
+    })
 }
 
 private enum OfficialRowVisual {
@@ -1312,7 +1348,7 @@ struct ChatsView: View {
             : UIConfig.fixedLight("chatsPageBg", 0xF2F4F1)
     }
     private var chatsRule: Color {
-        chatsIsDark ? Color(hex: 0x242824) : Color(hex: 0xDDE2DD)
+        chatsIsDark ? Color(uiColor: .separator) : Color(hex: 0xDDE2DD)
     }
     private var chatsSearchFill: Color {
         chatsIsDark
@@ -1758,7 +1794,9 @@ struct ChatsView: View {
             HStack(spacing: 7) {
                 Text(navTitle)
                     .font(pf(17, .semibold))
-                    .foregroundStyle(ChatListVisual.ink)
+                    .foregroundStyle(chatsIsDark
+                        ? Color(uiColor: .label)
+                        : ChatListVisual.ink)
                     .accessibilityLabel(navTitle)
 
                 if chatFilter != .all {
@@ -2908,11 +2946,11 @@ struct ChatsView: View {
         let isDark = chatsIsDark
         let titleColor: UIColor = chat.showsOfficialMark
             ? UIColor(hex: isDark ? 0x42C693 : 0x137D5B)
-            : UIColor(hex: isDark ? 0xF5F5F7 : 0x171A18)
-        let previewColor = UIColor(hex: isDark ? 0x8D8D93 : 0x626B66)
+            : (isDark ? .label : UIColor(hex: 0x171A18))
+        let previewColor = isDark ? UIColor.secondaryLabel : UIColor(hex: 0x626B66)
         let memberColor = nativePeerColor(chat.memberColor)
-        let rowBg = isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9)
-        let timeColor = UIColor(hex: isDark ? 0x74767A : 0x858D88)
+        let rowBg = isDark ? UIColor.clear : UIColor(hex: 0xFAFBF9)
+        let timeColor = isDark ? UIColor.tertiaryLabel : UIColor(hex: 0x858D88)
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
 
@@ -2929,10 +2967,10 @@ struct ChatsView: View {
             timeColor: timeColor,
             rowBackground: rowBg,
             dividerColor: isDark
-                ? UIColor(hex: 0x242824)
+                ? .separator
                 : UIColor(hex: 0xDDE2DD),
             showsDivider: true,
-            badgeRing: isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9),
+            badgeRing: isDark ? .systemBackground : UIColor(hex: 0xFAFBF9),
             chatId: chat.id,
             avatarPaths: avatarPaths,
             groupMemberIds: chat.memberIds ?? [],

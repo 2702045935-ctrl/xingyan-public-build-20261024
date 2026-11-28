@@ -17,12 +17,12 @@ def require(condition: bool, message: str) -> None:
 require(
     "chatsIsDark\n            ? C.pageBg\n            : UIConfig.fixedLight(\"chatsPageBg\", 0xF2F4F1)" in CHATS
     and "chatsIsDark\n            ? C.chatRowBg" in CHATS
-    and "let rowBg = isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9)" in CHATS,
-    "chat canvas must resolve explicit dark and light surfaces without environment delay",
+    and "let rowBg = isDark ? UIColor.clear : UIColor(hex: 0xFAFBF9)" in CHATS,
+    "pure-native dark rows must be transparent over the system page canvas",
 )
 require(
     "showsDivider: true" in CHATS
-    and "dividerColor: isDark\n                ? UIColor(hex: 0x242824)" in CHATS
+    and "dividerColor: isDark\n                ? .separator" in CHATS
     and ".fill(ChatListVisual.rule)" in CHATS
     and ".fill(isDark ? Color.clear : ChatListVisual.rule)" not in CHATS
     and "dividerLeading: CGFloat = 77" in ROW,
@@ -61,10 +61,9 @@ require(
 )
 require(
     "private let topSheen = UIView()" in ROW
-    and "topSheen.isHidden = configuration.isLight" in ROW
-    and "UIColor.white.withAlphaComponent(0.022)" in ROW
-    and "topSheen.heightAnchor.constraint(equalToConstant: 0.5)" in ROW,
-    "dark rows need a restrained top-light finish without changing row backgrounds",
+    and "topSheen.backgroundColor = .clear" in ROW
+    and "topSheen.isHidden = true" in ROW,
+    "the pure-native preview must remove the custom row sheen",
 )
 require(
     "chatsIsDark\n            ? Color(hex: 0x2A2A2C)" in CHATS
@@ -100,17 +99,20 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x8D8D93 : 0x626B66)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x74767A : 0x858D88)" in CHATS
-    and "static let conversationPreviewInk = Color.dyn(0x626B66, 0x8D8D93)" in CHATS
-    and "static let timeInk = Color.dyn(0x858D88, 0x74767A)" in CHATS
+    "let previewColor = isDark ? UIColor.secondaryLabel : UIColor(hex: 0x626B66)" in CHATS
+    and "let timeColor = isDark ? UIColor.tertiaryLabel : UIColor(hex: 0x858D88)" in CHATS
+    and "? .secondaryLabel" in CHATS
+    and "? .tertiaryLabel" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
-    and "UIColor(hex: isDark ? 0xF5F5F7 : 0x171A18)" in CHATS,
-    "chat-list title, preview and time must use the softened dark hierarchy",
+    and "(isDark ? .label : UIColor(hex: 0x171A18))" in CHATS,
+    "pure-native dark rows must use UIKit semantic label colors",
 )
 require(
-    0xF5F5F7 > 0x8D8D93 > 0x74767A,
-    "dark title, preview and time must remain strictly ordered with time weakest",
+    "trait.userInterfaceStyle == .dark" in CHATS
+    and "? .label" in CHATS
+    and "? .secondaryLabel" in CHATS
+    and "? .tertiaryLabel" in CHATS,
+    "hosted rows must preserve the native label hierarchy",
 )
 require(
     "static let avatarSize: CGFloat = 48" in CHATS
