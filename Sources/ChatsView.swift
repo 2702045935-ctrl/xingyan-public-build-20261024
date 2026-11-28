@@ -2728,7 +2728,9 @@ struct ChatsView: View {
     }
 
     private func refreshCachedChatEntries(_ snapshot: ChatFilterSnapshot) {
-        cachedChatEntries = nativeChatEntries(snapshot)
+        let next = nativeChatEntries(snapshot)
+        guard next != cachedChatEntries else { return }
+        cachedChatEntries = next
         cachedChatEntriesRevision &+= 1
     }
 
@@ -3152,7 +3154,10 @@ struct ChatsView: View {
 
             .onAppear {
                 if !hasInitializedChatCache {
-                    refreshChatListCache(chatSnapshot())
+                    let first = chatSnapshot()
+                    cachedSnapshot = first
+                    rebuildStressChatEntries(first)
+                    cachedChatEntries = nativeChatEntries(first)
                     hasInitializedChatCache = true
                 }
                 if MessageStressFixture.autoOpen,

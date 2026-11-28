@@ -20,5 +20,7 @@ struct DeferredChatView: View {
                     .transition(.opacity)
             }
         }
+        .preferredColorScheme(app.preferredScheme)
+        .background(defaultChatCanvasColor().ignoresSafeArea())
     }
 }

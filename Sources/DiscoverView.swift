@@ -1620,6 +1620,10 @@ struct MomentsView: View {
         return s.isEmpty ? nil : s
     }
 
+    private var momentProfileFooterHeight: CGFloat {
+        max(38, L.coverAvatar * 0.56)
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
 
@@ -1628,9 +1632,11 @@ struct MomentsView: View {
             NativeMomentFeed(
                 moments: displayedMoments,
                 revision: momentFeedRevision,
+                dark: scheme == .dark,
                 mineOnly: mineOnly,
                 dayKey: "\(Lang.code)-\(scheme)-\(app.contacts.count)",
-                headerHeight: L.coverH + (coverLocked ? coverLockPull : 0),
+                headerHeight: L.coverH + momentProfileFooterHeight
+                    + (coverLocked ? coverLockPull : 0),
                 collapseOffset: L.coverH - 52,
                 onScrollActive: { active in
                     guard momentsScrollActive != active else { return }
@@ -1918,7 +1924,9 @@ struct MomentsView: View {
     }
 
     private func coverView(_ extra: CGFloat) -> some View {
-        ZStack(alignment: .bottom) {
+        ZStack(alignment: .top) {
+            C.pageBg
+
             if cover.isEmpty {
 
                 if UIImage(named: "moments-cover") != nil {
@@ -2018,6 +2026,7 @@ struct MomentsView: View {
             }
                 .frame(height: L.coverH * 0.62)
                 .frame(maxHeight: .infinity, alignment: .bottom)
+                .offset(y: -momentProfileFooterHeight)
                 .allowsHitTesting(false)
 
             if coverEditable {
@@ -2045,7 +2054,7 @@ struct MomentsView: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.leading, 12)
-                .padding(.bottom, 12)
+                .padding(.bottom, momentProfileFooterHeight + 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .zIndex(4)
             }
@@ -2079,10 +2088,10 @@ struct MomentsView: View {
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 16)
-            .offset(y: 21)
+            .padding(.bottom, 8)
             .allowsHitTesting(false)
         }
-        .frame(height: L.coverH + extra)
+        .frame(height: L.coverH + extra + momentProfileFooterHeight)
         .zIndex(1)
 
         .contentShape(Rectangle())

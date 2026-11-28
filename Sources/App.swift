@@ -364,8 +364,28 @@ final class AppState: ObservableObject {
     @Published var chatTransitionVeilOpacity: Double = 0
     private var appearanceTransitionTask: Task<Void, Never>?
 
+    var preferredInterfaceStyle: UIUserInterfaceStyle {
+        switch appearance {
+        case "light": return .light
+        case "dark": return .dark
+        default: return .unspecified
+        }
+    }
+
+    func syncWindowAppearance() {
+        let windowStyle = preferredInterfaceStyle
+        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+            for window in scene.windows where window.overrideUserInterfaceStyle != windowStyle {
+                window.overrideUserInterfaceStyle = windowStyle
+            }
+        }
+    }
+
     func setAppearance(_ v: String) {
-        guard v != appearance else { return }
+        guard v != appearance else {
+            syncWindowAppearance()
+            return
+        }
 
         appearanceTransitionTask?.cancel()
         appearanceTransitionTask = nil
@@ -373,24 +393,11 @@ final class AppState: ObservableObject {
         // transition. Every account, sheet and native surface must resolve the
         // new semantic colors in the same update instead of lagging behind a
         // timed veil animation.
-        let windowStyle: UIUserInterfaceStyle
-        switch v {
-        case "light":
-            windowStyle = .light
-        case "dark":
-            windowStyle = .dark
-        default:
-            windowStyle = .unspecified
-        }
-        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
-            for window in scene.windows where window.overrideUserInterfaceStyle != windowStyle {
-                // preferredColorScheme propagates through SwiftUI on the next
-                // transaction. Setting the owning window first makes dynamic
-                // UIKit colors and the native chats table change together.
-                window.overrideUserInterfaceStyle = windowStyle
-            }
-        }
         appearance = v
+        // preferredColorScheme propagates through SwiftUI on the next
+        // transaction. Setting the owning window first makes dynamic UIKit
+        // colors and every native list change together.
+        syncWindowAppearance()
         UserDefaults.standard.set(v, forKey: "chris.appearance")
         appearanceVeilOpacity = 0
     }
@@ -2982,13 +2989,20 @@ struct RootView: View {
                 .spring(response: 0.26, dampingFraction: 0.90),
                 value: app.toast?.id
             )
+            .background {
+                WindowAppearanceBridge(style: app.preferredInterfaceStyle)
+                    .frame(width: 0, height: 0)
+            }
             // UI 配置刷新只应重绘界面，不能重建主 Tab 容器；否则当前 Tab、
             // 导航栈和滚动位置都会被重置。账号登录完成仍可通过 authVersion
             // 重建一次根视图，确保新账号从干净的首页开始。
             .id(app.authVersion)
 
             .background(C.pageBg.ignoresSafeArea())
-            .onAppear { L.width = geo.size.width }
+            .onAppear {
+                L.width = geo.size.width
+                app.syncWindowAppearance()
+            }
             .onChange(of: geo.size.width) { w in L.width = w }
         }
         .font(pf(17))
@@ -3005,6 +3019,9 @@ struct RootView: View {
             }
         }
         .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                app.syncWindowAppearance()
+            }
             if phase == .active && app.me != nil {
                 KeepAlive.shared.stop()
                 Task {
@@ -3051,6 +3068,38 @@ struct RootView: View {
             }
             app.handle(ev)
         }
+    }
+}
+
+private final class WindowAppearanceUIView: UIView {
+    var style: UIUserInterfaceStyle = .unspecified {
+        didSet { applyStyle() }
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        applyStyle()
+    }
+
+    private func applyStyle() {
+        guard let window, window.overrideUserInterfaceStyle != style else { return }
+        window.overrideUserInterfaceStyle = style
+    }
+}
+
+private struct WindowAppearanceBridge: UIViewRepresentable {
+    let style: UIUserInterfaceStyle
+
+    func makeUIView(context: Context) -> WindowAppearanceUIView {
+        let view = WindowAppearanceUIView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        view.style = style
+        return view
+    }
+
+    func updateUIView(_ uiView: WindowAppearanceUIView, context: Context) {
+        uiView.style = style
     }
 }
 

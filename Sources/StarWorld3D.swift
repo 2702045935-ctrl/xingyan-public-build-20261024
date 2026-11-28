@@ -66,10 +66,13 @@ struct World3DEntryPressStyle: ButtonStyle {
 }
 
 struct StarWorldExperienceView: View {
+    var embedded = false
+
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
     @State private var avatarProfile = StarAvatarProfile.fallback
     @State private var showAvatarStudio = false
+    @State private var showWorldDirectory = false
     @State private var activeMap: StarWorldMap = .room
     @State private var loadingMap: StarWorldMap? = .room
 
@@ -107,8 +110,15 @@ struct StarWorldExperienceView: View {
 
             VStack(spacing: 0) {
                 HStack {
-                    worldGlassButton("chevron.left") { dismiss() }
-                        .accessibilityLabel(Tr("返回"))
+                    if embedded {
+                        worldGlassButton("square.grid.2x2") {
+                            showWorldDirectory = true
+                        }
+                        .accessibilityLabel(Tr("打开世界入口"))
+                    } else {
+                        worldGlassButton("chevron.left") { dismiss() }
+                            .accessibilityLabel(Tr("返回"))
+                    }
                     Spacer()
                     VStack(spacing: 1) {
                         Text(Tr(activeMap.title))
@@ -146,7 +156,9 @@ struct StarWorldExperienceView: View {
                         activeMap == .room ? Tr("房间") : Tr("广场")
                     ) { }
                     worldAction("tshirt.fill", Tr("换装")) { }
-                    worldAction("globe.asia.australia.fill", Tr("世界")) { }
+                    worldAction("globe.asia.australia.fill", Tr("世界")) {
+                        showWorldDirectory = true
+                    }
                 }
                 .padding(.horizontal, 22)
                 .frame(height: 70)
@@ -178,6 +190,11 @@ struct StarWorldExperienceView: View {
                 userID: app.me?.id ?? "local"
             )
                 .environmentObject(app)
+        }
+        .sheet(isPresented: $showWorldDirectory) {
+            DiscoverView()
+                .environmentObject(app)
+                .presentationDetents([.large])
         }
     }
 

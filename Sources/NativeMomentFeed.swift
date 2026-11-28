@@ -16,6 +16,7 @@ struct NativeMomentFeedItem {
 struct NativeMomentFeed<Header: View>: UIViewControllerRepresentable {
     let moments: [Moment]
     let revision: Int
+    let dark: Bool
     let mineOnly: Bool
     let dayKey: String
     let headerHeight: CGFloat
@@ -36,6 +37,7 @@ struct NativeMomentFeed<Header: View>: UIViewControllerRepresentable {
         Coordinator(
             moments: moments,
             revision: revision,
+            dark: dark,
             mineOnly: mineOnly,
             dayKey: dayKey,
             headerHeight: headerHeight,
@@ -57,8 +59,11 @@ struct NativeMomentFeed<Header: View>: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UITableViewController {
         let controller = UITableViewController(style: .plain)
         controller.view.backgroundColor = .clear
+        let interfaceStyle: UIUserInterfaceStyle = dark ? .dark : .light
+        controller.overrideUserInterfaceStyle = interfaceStyle
 
         let table = controller.tableView!
+        table.overrideUserInterfaceStyle = interfaceStyle
         table.backgroundColor = .clear
         table.separatorStyle = .none
         table.rowHeight = UITableView.automaticDimension
@@ -76,8 +81,9 @@ struct NativeMomentFeed<Header: View>: UIViewControllerRepresentable {
 
         let headerContainer = UIView()
         headerContainer.backgroundColor = .clear
-        headerContainer.clipsToBounds = true
+        headerContainer.clipsToBounds = false
         let headerHost = UIHostingController(rootView: header(0))
+        headerHost.overrideUserInterfaceStyle = interfaceStyle
         headerHost.view.backgroundColor = .clear
         headerHost.view.insetsLayoutMarginsFromSafeArea = false
         headerContainer.addSubview(headerHost.view)
@@ -105,6 +111,10 @@ struct NativeMomentFeed<Header: View>: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: UITableViewController,
                                 context: Context) {
         let coordinator = context.coordinator
+        let interfaceStyle: UIUserInterfaceStyle = dark ? .dark : .light
+        controller.overrideUserInterfaceStyle = interfaceStyle
+        controller.tableView.overrideUserInterfaceStyle = interfaceStyle
+        coordinator.headerHost?.overrideUserInterfaceStyle = interfaceStyle
         coordinator.header = header
         coordinator.dayLabel = dayLabel
         coordinator.onScrollActive = onScrollActive
@@ -173,6 +183,7 @@ struct NativeMomentFeed<Header: View>: UIViewControllerRepresentable {
 
         init(moments: [Moment],
              revision: Int,
+             dark: Bool,
              mineOnly: Bool,
              dayKey: String,
              headerHeight: CGFloat,
@@ -190,6 +201,7 @@ struct NativeMomentFeed<Header: View>: UIViewControllerRepresentable {
              header: @escaping (CGFloat) -> Header) {
             _ = moments
             _ = revision
+            _ = dark
             _ = mineOnly
             _ = dayKey
             self.headerHeight = max(1, headerHeight)

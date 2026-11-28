@@ -80,7 +80,11 @@ struct MainTabView: View {
                 .statusBarHidden(false)
 
                 Group {
-                    if mountedTabs.contains(3) { DiscoverView() } else { Color.clear }
+                    if mountedTabs.contains(3) {
+                        StarWorldExperienceView(embedded: true)
+                    } else {
+                        Color.clear
+                    }
                 }
                 .opacity(tab == 3 ? 1 : 0)
                 .allowsHitTesting(tab == 3)
@@ -274,6 +278,9 @@ struct MainTabView: View {
             NavigationStack {
                 DeferredChatView(chat: c).environmentObject(app)
             }
+            .environmentObject(app)
+            .preferredColorScheme(app.preferredScheme)
+            .modifier(ChatPresentationBackgroundModifier())
 
             .overlay(MiniPlayerBall())
 
@@ -338,6 +345,19 @@ struct MainTabView: View {
         }
 
         .onAppear { CrashCatcher.note("启动", "7 主界面出现") }
+    }
+}
+
+private struct ChatPresentationBackgroundModifier: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 16.4, *) {
+            content.presentationBackground(
+                defaultChatCanvasColor().ignoresSafeArea()
+            )
+        } else {
+            content
+        }
     }
 }
 

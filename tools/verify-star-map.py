@@ -32,13 +32,14 @@ require(
     "the world entry must use the immersive SceneKit experience",
 )
 require(
-    "if mountedTabs.contains(3) { DiscoverView() }" in MAIN_TAB
-    and "StarWorldExperienceView(embedded: true)" not in MAIN_TAB
+    "if mountedTabs.contains(3) {" in MAIN_TAB
+    and "StarWorldExperienceView(embedded: true)" in MAIN_TAB
+    and "if mountedTabs.contains(3) { DiscoverView() }" not in MAIN_TAB
     and "StarWorldDirectoryView" not in WORLD
     and ".statusBarHidden(true)" not in WORLD
     and MAIN_TAB.count(".statusBarHidden(false)") == 5
-    and "DiscoverView()" not in WORLD,
-    "all five app tabs must restore Discover and keep the shared status bar visible",
+    and "DiscoverView()" in WORLD,
+    "the world tab must mount the immersive world while keeping all status bars visible",
 )
 require(
     ".opacity(entered ? 1 : 0.01)" not in WORLD
@@ -59,7 +60,7 @@ require(
     and "StarWorldExperienceView()" not in DISCOVER
     and "'map'" in SERVER
     and "parts[0] === 'ui-manifest'" in SERVER,
-    "the 3D world must stay unreachable until its later release",
+    "the legacy world directory must not compete with the direct 3D world tab",
 )
 require(
     "UIBackgroundModes" in INFO,

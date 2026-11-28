@@ -22,7 +22,8 @@ start = APP.index("func setAppearance(_ v: String)")
 end = APP.index("func withSoftChatTransition", start)
 theme_switch = APP[start:end]
 require(
-    "appearance = v\n"
+    "appearance = v\n" in theme_switch
+    and "syncWindowAppearance()\n"
     "        UserDefaults.standard.set(v, forKey: \"chris.appearance\")\n"
     "        appearanceVeilOpacity = 0" in theme_switch
     and "Task.sleep(nanoseconds: 150_000_000)" not in theme_switch
@@ -30,10 +31,12 @@ require(
     "appearance state must commit immediately without a timed pre-switch delay",
 )
 require(
-    "window.overrideUserInterfaceStyle = windowStyle" in theme_switch
+    "func syncWindowAppearance()" in APP
+    and "window.overrideUserInterfaceStyle = windowStyle" in APP
     and "for case let scene as UIWindowScene in UIApplication.shared.connectedScenes"
-    in theme_switch,
-    "the owning windows must adopt an explicit appearance in the same update",
+    in APP
+    and "WindowAppearanceBridge(style: app.preferredInterfaceStyle)" in APP,
+    "the owning windows must adopt the explicit appearance before first paint",
 )
 require(
     ".systemAnimation(.easeInOut(duration: 0.38), value: app.appearance)" not in APP,

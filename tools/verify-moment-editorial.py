@@ -5,6 +5,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
 CARD = (ROOT / "Sources" / "NativeMomentRowCell.swift").read_text(encoding="utf-8")
+DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
+FEED = (ROOT / "Sources" / "NativeMomentFeed.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -42,6 +44,13 @@ require(
 require(
     "(window?.bounds.width ?? L.width) - 52" in CARD,
     "native media width must preserve the existing card insets",
+)
+require(
+    "momentProfileFooterHeight" in DISCOVER
+    and "headerHeight: L.coverH + momentProfileFooterHeight" in DISCOVER
+    and ".offset(y: 21)" not in DISCOVER
+    and "headerContainer.clipsToBounds = false" in FEED,
+    "cover and profile signature must stay inside a clipped-safe native header",
 )
 
 print("moment-editorial: passed")

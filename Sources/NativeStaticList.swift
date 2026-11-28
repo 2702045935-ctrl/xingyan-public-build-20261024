@@ -51,6 +51,7 @@ struct NativeStaticList<Item: Identifiable & Equatable, Row: View>: UIViewContro
 where Item.ID: Hashable {
     let items: [Item]
     let controller: NativeStaticListController?
+    let dark: Bool?
     let onScrollViewReady: ((UIScrollView) -> Void)?
     let onScrollStateChange: ((Bool) -> Void)?
     let onScrollOffset: ((CGFloat) -> Void)?
@@ -62,6 +63,7 @@ where Item.ID: Hashable {
 
     init(items: [Item],
          controller: NativeStaticListController? = nil,
+         dark: Bool? = nil,
          onScrollViewReady: ((UIScrollView) -> Void)? = nil,
          onScrollStateChange: ((Bool) -> Void)? = nil,
          onScrollOffset: ((CGFloat) -> Void)? = nil,
@@ -72,6 +74,7 @@ where Item.ID: Hashable {
          @ViewBuilder row: @escaping (Item) -> Row) {
         self.items = items
         self.controller = controller
+        self.dark = dark
         self.onScrollViewReady = onScrollViewReady
         self.onScrollStateChange = onScrollStateChange
         self.onScrollOffset = onScrollOffset
@@ -104,6 +107,9 @@ where Item.ID: Hashable {
         let controller = UICollectionViewController(collectionViewLayout: layout)
         controller.view.backgroundColor = .clear
         let collection = controller.collectionView!
+        let interfaceStyle = dark.map { $0 ? UIUserInterfaceStyle.dark : .light }
+        controller.overrideUserInterfaceStyle = interfaceStyle ?? .unspecified
+        collection.overrideUserInterfaceStyle = interfaceStyle ?? .unspecified
         collection.backgroundColor = .clear
         collection.alwaysBounceVertical = true
         collection.alwaysBounceHorizontal = false
@@ -149,6 +155,12 @@ where Item.ID: Hashable {
     func updateUIViewController(_ controller: UICollectionViewController,
                                 context: Context) {
         context.coordinator.row = row
+        if let dark {
+            let style: UIUserInterfaceStyle = dark ? .dark : .light
+            controller.overrideUserInterfaceStyle = style
+            controller.collectionView?.overrideUserInterfaceStyle = style
+            context.coordinator.measurementHost.overrideUserInterfaceStyle = style
+        }
         context.coordinator.signature = signature
         context.coordinator.onScrollViewReady = onScrollViewReady
         context.coordinator.onScrollStateChange = onScrollStateChange
@@ -185,7 +197,7 @@ where Item.ID: Hashable {
         private var pending: [Item]?
         private var applyGeneration = 0
         private var sizeChangeScheduled = false
-        private lazy var measurementHost: UIHostingController<AnyView> = {
+        fileprivate lazy var measurementHost: UIHostingController<AnyView> = {
             let host = UIHostingController(rootView: AnyView(Color.clear))
             host.view.backgroundColor = .clear
             return host

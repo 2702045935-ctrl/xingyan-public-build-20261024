@@ -2847,6 +2847,7 @@ struct ChatDetailView: View {
         NativeStaticList(
             items: nativeGroupItems,
             controller: nativeMessageController,
+            dark: scheme == .dark,
             onScrollViewReady: { scrollView in
                 ChatScrollHandle.shared.scroll = scrollView
             },
