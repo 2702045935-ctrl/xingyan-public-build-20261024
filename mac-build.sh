@@ -71,7 +71,7 @@ xcrun actool Assets.xcassets --compile "$APP" --platform iphoneos \
   --target-device iphone --minimum-deployment-target 16.0 \
   --app-icon AppIcon --include-all-app-icons \
   --output-partial-info-plist /tmp/XingyanAppIconInfo.plist \
-  --output-format human-readable-text >/dev/null
+  --output-format human-readable-text
 test -f "$APP/Assets.car"
 
 if [ -f Sources/VoiceOrb.metal ]; then

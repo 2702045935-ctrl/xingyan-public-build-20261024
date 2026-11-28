@@ -311,7 +311,7 @@ jobs:
             --target-device iphone --minimum-deployment-target 16.0 \
             --app-icon AppIcon --include-all-app-icons \
             --output-partial-info-plist /tmp/XingyanAppIconInfo.plist \
-            --output-format human-readable-text > /dev/null
+            --output-format human-readable-text
           test -f "$APP/Assets.car"
           ls -la "$APP" | head -20
           xcrun -sdk iphoneos metal -c Sources/VoiceOrb.metal -o /tmp/VoiceOrb.air
