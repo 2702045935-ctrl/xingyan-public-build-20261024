@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CARDS = (ROOT / "Sources" / "CardsView.swift").read_text(encoding="utf-8")
 PAY = (ROOT / "Sources" / "PaymentUI.swift").read_text(encoding="utf-8")
+CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 PAY_SHEET = (ROOT / "Sources" / "XingyanPay.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
@@ -44,12 +45,13 @@ require(
     "private var appleWalletHeader" in PAY
     and "Text(name)\n                .font(pf(34, .bold))" in PAY
     and 'Image(systemName: "plus")' in PAY
-    and "private func quickActionRow" in PAY
-    and 'quickActionRow(Tr("卡包")' in PAY
+    and "private struct PayWalletManagementView" in PAY
+    and "private func managementRow" in PAY
+    and 'managementRow(Tr("卡包")' in PAY
     and "CardsView()" in PAY
-    and 'quickActionRow(Tr("支付安全")' in PAY
-    and 'quickActionRow(Tr("虚拟卡")' in PAY,
-    "Star Pay must use a large Wallet title and grouped account rows",
+    and 'managementRow(Tr("支付安全")' in PAY
+    and 'managementRow(Tr("虚拟卡")' in PAY,
+    "Star Pay must use a large Wallet title and a separate wallet-management page",
 )
 require(
     "private struct StarPayGuideView" in PAY
@@ -73,10 +75,21 @@ require(
     "the payment sheet must follow Apple Pay amount, card, details and authorization order",
 )
 require(
-    "paymentHero\n                    paymentPrimaryActions\n                    transactionFeed" in PAY
-    and "transactionFeed\n\n                    if loading" in PAY
-    and "quickActions\n                    ledgerSummaryStrip" in PAY,
-    "Star Pay home must follow Wallet hierarchy: card, payment action, transactions, then utilities",
+    "paymentHero\n                    paymentPrimaryActions\n                    transactionFeed(limit: 3)\n                    walletManagementEntry" in PAY
+    and "private func transactionFeed(limit: Int? = nil)" in PAY
+    and "Array(allEntries.prefix($0))" in PAY
+    and "private var walletManagementEntry" in PAY
+    and "private struct PayGoldCardDetailView" in PAY,
+    "Star Pay home must keep only the wallet card, primary action, three transactions and a management entry",
+)
+require(
+    "private var payOfficialConversationPreview" in CHATS
+    and "Text(payOfficialConversationPreview)" in CHATS
+    and "entry.reason" in CHATS
+    and 'sign + "¥" + moneyFmt(abs(entry.delta))' in CHATS
+    and "API.shared.ledgerBills(limit: 1)" in CHATS
+    and 'event.type == "transfer" || event.type == "balance"' in CHATS,
+    "the Star Pay conversation preview must refresh with the latest transaction reason, time and amount",
 )
 require(
     "python3 tools/verify-wallet-layout.py" in WORKFLOW,

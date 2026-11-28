@@ -9,6 +9,10 @@ struct PayKeypadView: View {
     var secure: Bool = true
 
     var dot: Bool = false
+    var backgroundColor: Color = PayVisual.canvas
+    var keyBackground: Color = PayVisual.card
+    var pressedKeyBackground: Color = Color.dyn(0xE5E5EA, 0x3A3A3C)
+    var keyInk: Color = C.label
     var onKey: (String) -> Void
 
     @State private var digits: [String] = (0...9).map { String($0) }
@@ -39,7 +43,7 @@ struct PayKeypadView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
-        .background(PayVisual.canvas)
+        .background(backgroundColor)
         .onAppear {
             digits = secure ? Self.shuffledDigits() : (0...9).map { String($0) }
         }
@@ -66,7 +70,7 @@ struct PayKeypadView: View {
             .foregroundColor(C.subLabel.opacity(0.75))
             .frame(maxWidth: .infinity)
             .frame(height: keyHeight)
-            .background(PayVisual.card)
+            .background(keyBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .allowsHitTesting(false)
         } else {
@@ -84,12 +88,13 @@ struct PayKeypadView: View {
                         Text(key).font(pfStyled(size: 26, weight: .regular))
                     }
                 }
-                .foregroundColor(C.label)
+                .foregroundColor(keyInk)
                 .frame(maxWidth: .infinity)
                 .frame(height: keyHeight)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(BankKeyStyle())
+            .buttonStyle(BankKeyStyle(keyFill: keyBackground,
+                                      pressedFill: pressedKeyBackground))
             .disabled(busy)
         }
     }
@@ -150,9 +155,12 @@ struct KeyPressStyle: ButtonStyle {
 }
 
 struct BankKeyStyle: ButtonStyle {
+    var keyFill: Color = PayVisual.card
+    var pressedFill: Color = Color.dyn(0xE5E5EA, 0x3A3A3C)
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(configuration.isPressed ? Color.dyn(0xE5E5EA, 0x3A3A3C) : PayVisual.card)
+            .background(configuration.isPressed ? pressedFill : keyFill)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.easeOut(duration: 0.08), value: configuration.isPressed)

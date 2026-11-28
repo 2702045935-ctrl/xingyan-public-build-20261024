@@ -53,10 +53,38 @@ struct TransferView: View {
         (method == "xypay" ? XYPay.cardLine + " · " : "") + Tr("可用") + " ¥" + money(balance)
     }
 
+    private var transferBlue: Color {
+        PayBankVisual.blue
+    }
+
+    private var transferSurface: Color {
+        PayBankVisual.surface
+    }
+
+    private var transferPad: Color {
+        PayBankVisual.pad
+    }
+
+    private var transferKey: Color {
+        PayBankVisual.key
+    }
+
+    private var transferKeyPressed: Color {
+        PayBankVisual.keyPressed
+    }
+
+    private var transferBorder: Color {
+        PayBankVisual.border
+    }
+
+    private var transferDeskBackdrop: some View {
+        PayBankBackdrop()
+    }
+
     var body: some View {
         ZStack {
 
-            PayVisual.canvas.ignoresSafeArea()
+            transferDeskBackdrop
 
             if step == 1 {
                 resultPage
@@ -142,13 +170,23 @@ struct TransferView: View {
 
     private var amountPad: some View {
         VStack(spacing: 0) {
-            PayKeypadView(busy: false, keyHeight: L.payPadH, secure: false, dot: true) { k in
+            PayKeypadView(
+                busy: false,
+                keyHeight: L.payPadH,
+                secure: false,
+                dot: true,
+                backgroundColor: transferPad,
+                keyBackground: transferKey,
+                pressedKeyBackground: transferKeyPressed,
+                keyInk: C.label
+            ) { k in
                 tapAmount(k)
             }
             Rectangle()
-                .fill(C.cardBg)
+                .fill(transferPad)
                 .frame(height: max(0, L.safeBottom))
         }
+        .background(transferPad)
     }
 
     private func tapAmount(_ k: String) {
@@ -179,19 +217,19 @@ struct TransferView: View {
                 Image(systemName: "arrow.right")
                     .font(.system(size: 14, weight: .bold))
             }
-            .foregroundStyle(amount > 0 ? C.cardBg : PayVisual.secondaryInk)
+            .foregroundStyle(amount > 0 ? Color.white : PayVisual.secondaryInk)
             .frame(maxWidth: .infinity)
             .frame(height: 54)
             .background(
-                amount > 0 ? C.label : PayVisual.secondaryInk.opacity(0.12),
+                amount > 0 ? transferBlue : PayVisual.secondaryInk.opacity(0.12),
                 in: RoundedRectangle(cornerRadius: 17, style: .continuous)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 17, style: .continuous)
-                    .stroke(Color.white.opacity(scheme == .dark ? 0.17 : 0.06),
+                    .stroke(Color.white.opacity(amount > 0 ? 0.18 : 0.04),
                             lineWidth: 0.6)
             }
-            .shadow(color: .black.opacity(amount > 0 ? 0.16 : 0),
+            .shadow(color: transferBlue.opacity(amount > 0 ? 0.26 : 0),
                     radius: 12, y: 6)
         }
         .buttonStyle(AppleCheckoutButtonStyle())
@@ -202,116 +240,126 @@ struct TransferView: View {
     }
 
     private var head: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                Text("")
-                HStack {
-                    Button { dismiss() } label: {
-                        SVGIcon(markup: I.backCover, size: 20, color: C.label)
-                            .frame(width: 44, height: L.navH)
-                    }
-                    .buttonStyle(.plain)
-                    Spacer()
+        ZStack {
+            Text(Tr("转账"))
+                .font(pf(17, .semibold))
+                .foregroundStyle(C.label)
+            HStack {
+                Button { dismiss() } label: {
+                    SVGIcon(markup: I.backCover, size: 20, color: C.label)
+                        .frame(width: 44, height: L.navH)
                 }
+                .buttonStyle(.plain)
+                Spacer()
             }
-            .frame(height: L.navH)
-
-            HStack(spacing: L.v(10, 3.2, 13)) {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(Lang.isEnglish ? "Transfer to \(peerTitle)" : "转账给 \(peerTitle)")
-                        .font(pf(17.5, .semibold))
-                        .foregroundColor(C.label)
-                    Text(Lang.isEnglish ? "Account: \(chat.name)" : "账号：\(chat.name)")
-                        .font(pf(12))
-                        .foregroundColor(C.subLabel)
-                }
-                Spacer(minLength: 0)
-                Avatar(path: peerAvatar,
-                       size: L.tfAvatar,
-                       radius: L.tfAvatar / 2)
-                    .overlay {
-                        Circle().stroke(Color.white.opacity(scheme == .dark ? 0.20 : 0.72),
-                                        lineWidth: 0.8)
-                    }
-                    .shadow(color: .black.opacity(0.12), radius: 7, y: 3)
-            }
-            .padding(.top, L.v(10, 4.8, 20))
-            .padding(.horizontal, L.v(16, 5, 20))
-            .padding(.bottom, L.v(12, 4.4, 18))
         }
-        .background(PayVisual.canvas)
+        .frame(height: L.navH)
+        .background(Color.clear)
     }
 
     private var bodyArea: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(Tr("转账金额"))
-                .font(pf(14.5))
-                .foregroundColor(C.label)
-                .padding(.horizontal, L.v(16, 5, 20))
-                .padding(.top, L.v(10, 4, 16))
-                .padding(.bottom, L.v(4, 1.4, 6))
+        VStack(spacing: 0) {
+            PayBankCardHeader(
+                symbol: "building.columns.fill",
+                title: Tr("转账"),
+                subtitle: "STAR PAY BANKING"
+            )
+            .padding(18)
 
-            HStack(alignment: .center, spacing: 5) {
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
+            Rectangle()
+                .fill(transferBorder)
+                .frame(height: 0.7)
+
+            HStack(spacing: 12) {
+                Avatar(path: peerAvatar,
+                       size: 44,
+                       radius: 22)
+                    .overlay {
+                        Circle().stroke(transferBorder, lineWidth: 0.8)
+                    }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(Lang.isEnglish
+                         ? "Transfer to \(peerTitle)"
+                         : "转账给 \(peerTitle)")
+                        .font(pf(15.5, .semibold))
+                        .foregroundStyle(C.label)
+                        .lineLimit(1)
+                    Text(Lang.isEnglish
+                         ? "Account: \(chat.name)"
+                         : "账号：\(chat.name)")
+                        .font(pf(11.5))
+                        .foregroundStyle(PayVisual.secondaryInk)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+
+            Rectangle()
+                .fill(transferBorder)
+                .frame(height: 0.7)
+                .padding(.horizontal, 18)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text(Tr("转账金额"))
+                    .font(pf(12.5, .medium))
+                    .foregroundStyle(PayVisual.secondaryInk)
+
+                HStack(alignment: .center, spacing: 5) {
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        Text("¥")
+                            .font(pfMoney(L.tfCnySize))
+                            .foregroundColor(C.label)
+                        digitCells
+                    }
+                    if caretOn {
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(transferBlue)
+                            .frame(width: L.tfCaretW, height: L.tfCaretH)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.top, 7)
+
+                HStack(alignment: .top, spacing: 5) {
                     Text("¥")
                         .font(pfMoney(L.tfCnySize))
-                        .foregroundColor(C.label)
-                    digitCells
+                        .foregroundColor(.clear)
+                    unitCells
+                    Spacer(minLength: 0)
                 }
-                if caretOn {
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(C.green)
-                        .frame(width: L.tfCaretW, height: L.tfCaretH)
-                }
-                Spacer(minLength: 0)
+                .padding(.top, 2)
             }
-            .padding(.top, L.v(4, 1.4, 7))
-            .padding(.horizontal, L.v(16, 5, 20))
-            .padding(.bottom, L.v(10, 3.4, 15))
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(C.hairline).frame(height: 0.5)
-            }
-            .contentShape(Rectangle())
-
-            HStack(alignment: .top, spacing: 5) {
-                Text("¥")
-                    .font(pfMoney(L.tfCnySize))
-                    .foregroundColor(.clear)
-                unitCells
-                Spacer(minLength: 0)
-            }
-            .padding(.top, L.v(2, 1, 4))
-            .padding(.horizontal, L.v(16, 5, 20))
+            .padding(.horizontal, 18)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
 
             Button {
                 noteEditing = true
             } label: {
-                Text(note.isEmpty ? Tr("添加转账说明") : note)
-                    .font(pf(16.5))
-                    .foregroundColor(Color.dyn(0x1E4FA3, 0x6F9BE0))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, L.v(10, 3.4, 16))
-                    .padding(.horizontal, L.v(16, 5, 20))
-                .padding(.bottom, L.v(14, 4.4, 18))
-                   .contentShape(Rectangle())
+                HStack(spacing: 9) {
+                    Image(systemName: note.isEmpty ? "plus.circle.fill" : "text.bubble.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(transferBlue)
+                    Text(note.isEmpty ? Tr("添加转账说明") : note)
+                        .font(pf(14))
+                        .foregroundStyle(note.isEmpty ? transferBlue : C.label)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(PayVisual.secondaryInk.opacity(0.72))
+                }
+                .padding(.horizontal, 18)
+                .frame(height: 50)
+                .background(transferPad.opacity(scheme == .dark ? 0.54 : 0.62))
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
 
-        .background {
-            ZStack {
-                NativePremiumGlassMaterial(dark: scheme == .dark)
-                PayVisual.card.opacity(scheme == .dark ? 0.84 : 0.90)
-            }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.white.opacity(scheme == .dark ? 0.10 : 0.46),
-                        lineWidth: 0.65)
-        }
-        .shadow(color: .black.opacity(scheme == .dark ? 0.18 : 0.06),
-                radius: 18, y: 8)
+        .payBankCardSurface()
         .padding(.horizontal, 20)
         .padding(.top, 12)
     }
@@ -414,26 +462,33 @@ struct TransferView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
                 .padding(.bottom, max(18, L.safeBottom))
-                .background(C.cardBg)
+                .background(transferSurface)
                 .overlay(alignment: .top) {
                     HairLine(inset: 0)
                 }
             } else {
                 VStack(spacing: 8) {
-                    PayKeypadView(busy: busy, keyHeight: L.payPadH) { key in
+                    PayKeypadView(
+                        busy: busy,
+                        keyHeight: L.payPadH,
+                        backgroundColor: transferPad,
+                        keyBackground: transferKey,
+                        pressedKeyBackground: transferKeyPressed,
+                        keyInk: C.label
+                    ) { key in
                         tapPay(key)
                     }
                     paymentTrustLine
                         .padding(.horizontal, 20)
                         .padding(.bottom, max(12, L.safeBottom))
                 }
-                .background(PayVisual.canvas)
+                .background(transferPad)
                 .overlay(alignment: .top) {
                     HairLine(inset: 0)
                 }
             }
         }
-        .background(PayVisual.canvas.ignoresSafeArea())
+        .background(transferDeskBackdrop)
         .sheet(isPresented: $showMethod) {
             methodSheet
                 .environmentObject(app)
@@ -463,7 +518,7 @@ struct TransferView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 54)
-        .background(C.cardBg)
+        .background(transferSurface)
         .overlay(alignment: .bottom) {
             HairLine(inset: 0)
         }
@@ -493,8 +548,13 @@ struct TransferView: View {
     }
 
     private var checkoutSummaryCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            PaySectionLabel(text: Tr("付款方式"))
+        VStack(alignment: .leading, spacing: 9) {
+            PayBankCardHeader(
+                symbol: "building.columns.fill",
+                title: Tr("转账信息"),
+                subtitle: "STAR PAY BANKING"
+            )
+            .padding(.horizontal, 3)
 
             checkoutSurface {
                 VStack(spacing: 0) {
@@ -619,17 +679,18 @@ struct TransferView: View {
                     Text(Tr("使用面容 ID 确认"))
                         .font(pf(16.5, .semibold))
                 }
-                .foregroundStyle(C.cardBg)
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 54)
-                .background(C.label,
+                .background(transferBlue,
                             in: RoundedRectangle(cornerRadius: 14,
                                                  style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(.white.opacity(scheme == .dark ? 0.16 : 0.05),
+                        .stroke(.white.opacity(0.18),
                                 lineWidth: 0.6)
                 }
+                .shadow(color: transferBlue.opacity(0.22), radius: 10, y: 5)
             }
             .buttonStyle(AppleCheckoutButtonStyle())
             .disabled(busy)
@@ -747,11 +808,11 @@ struct TransferView: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(spacing: 0) { content() }
-            .background(PayVisual.card)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(transferSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(C.hairline.opacity(0.54), lineWidth: 0.55)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(transferBorder, lineWidth: 0.7)
             }
     }
 
@@ -820,7 +881,7 @@ struct TransferView: View {
                 .padding(.top, 14)
                 .padding(.bottom, max(24, L.safeBottom))
             }
-            .background(PayVisual.canvas.ignoresSafeArea())
+            .background(transferDeskBackdrop)
             .navigationTitle(Tr("付款方式"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -1023,17 +1084,17 @@ struct TransferView: View {
                 } label: {
                     Text(Tr("完成"))
                         .font(pf(17, .semibold))
-                        .foregroundStyle(C.cardBg)
+                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
-                        .background(C.label,
+                        .background(transferBlue,
                                     in: RoundedRectangle(cornerRadius: 17, style: .continuous))
                         .overlay {
                             RoundedRectangle(cornerRadius: 17, style: .continuous)
-                                .stroke(Color.white.opacity(scheme == .dark ? 0.18 : 0.06),
+                                .stroke(Color.white.opacity(0.18),
                                         lineWidth: 0.6)
                         }
-                        .shadow(color: .black.opacity(0.17), radius: 12, y: 6)
+                        .shadow(color: transferBlue.opacity(0.24), radius: 12, y: 6)
                 }
                 .buttonStyle(AppleCheckoutButtonStyle())
             }
@@ -1041,21 +1102,7 @@ struct TransferView: View {
             .padding(.bottom, max(26, L.safeBottom))
         }
         .frame(maxWidth: .infinity)
-        .background {
-            ZStack {
-                PayVisual.canvas
-                RadialGradient(
-                    colors: [
-                        PayVisual.success.opacity(scheme == .dark ? 0.08 : 0.06),
-                        Color.clear
-                    ],
-                    center: .top,
-                    startRadius: 30,
-                    endRadius: 420
-                )
-            }
-            .ignoresSafeArea()
-        }
+        .background(transferDeskBackdrop)
     }
 
     private func resultRow(_ k: String, _ v: String) -> some View {

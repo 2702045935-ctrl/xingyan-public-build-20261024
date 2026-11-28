@@ -1250,6 +1250,7 @@ struct ChatsView: View {
 
     @ObservedObject private var lang = LangStore.shared
     @ObservedObject private var musicPresence = MusicPresenceStore.shared
+    @ObservedObject private var realtime = Realtime.shared
 
     @ObservedObject private var eyes = EyesStore.shared
     @EnvironmentObject var app: AppState
@@ -1369,6 +1370,7 @@ struct ChatsView: View {
     @State private var showPayOfficialAdminEditor = false
     @State private var showPayOfficialIconPicker = false
     @State private var localPayOfficialAvatar = ""
+    @State private var payOfficialPreviewEntry: LedgerBillEntry?
     @State private var showWeatherConversation = false
     @State private var showWeatherAdminEditor = false
     @State private var showWeatherIconPicker = false
@@ -2440,6 +2442,35 @@ struct ChatsView: View {
         return UIConfig.text("payOfficialRowAvatar", "").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var payOfficialConversationPreview: String {
+        guard let entry = payOfficialPreviewEntry else {
+            return payOfficialRowSubtitle
+        }
+        let title = entry.reason.isEmpty
+            ? (entry.direction == "in" ? Tr("收款") : Tr("付款"))
+            : entry.reason
+        let sign = entry.direction == "in" ? "+" : "-"
+        return title + " · " + sign + "¥" + moneyFmt(abs(entry.delta))
+    }
+
+    private var payOfficialConversationTime: String {
+        guard let entry = payOfficialPreviewEntry else {
+            return officialRowTime("pay")
+        }
+        return TimeFmt.listConversation(entry.at)
+    }
+
+    private var payOfficialPreviewSignature: String {
+        guard let entry = payOfficialPreviewEntry else { return "fallback" }
+        return [
+            entry.id,
+            entry.reason,
+            entry.at,
+            entry.direction,
+            String(entry.delta)
+        ].joined(separator: "|")
+    }
+
     private var payOfficialConversationRow: some View {
         ZStack(alignment: .trailing) {
             Button {
@@ -2482,7 +2513,7 @@ struct ChatsView: View {
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(PayVisual.tint)
                         }
-                        Text(payOfficialRowSubtitle)
+                        Text(payOfficialConversationPreview)
                             .font(pfStyled(size: 14,
                                            weight: .regular))
                             .foregroundStyle(ChatListVisual.conversationPreviewInk)
@@ -2490,7 +2521,7 @@ struct ChatsView: View {
                     }
                     Spacer(minLength: 8)
                     chatListMetaSlot {
-                        Text(officialRowTime("pay"))
+                        Text(payOfficialConversationTime)
                     }
                 }
                 .padding(.leading, ChatListVisual.rowLeading)
@@ -2672,7 +2703,7 @@ struct ChatsView: View {
                 entries.append(NativeChatEntry(
                     id: "pay",
                     kind: .pay,
-                    signature: "\(appearance)-\(payOfficialRowName)-\(payOfficialRowSubtitle)-\(payOfficialRowAvatar)-\(officialRowTime("pay"))-\(app.me?.ops == true)"
+                    signature: "\(appearance)-\(payOfficialRowName)-\(payOfficialPreviewSignature)-\(payOfficialRowAvatar)-\(payOfficialConversationTime)-\(app.me?.ops == true)"
                 ))
             default:
                 entries.append(NativeChatEntry(
@@ -3170,6 +3201,10 @@ struct ChatsView: View {
                 localPayOfficialAvatar = UserDefaults.standard.string(forKey: "chris.accountIcon.payOfficialRowAvatar") ?? ""
                 localWeatherRowAvatar = UserDefaults.standard.string(forKey: "chris.accountIcon.weatherRowAvatar") ?? ""
             }
+            .onChange(of: realtime.event) { event in
+                guard event.type == "transfer" || event.type == "balance" else { return }
+                Task { await refreshPayOfficialPreview() }
+            }
             .onChange(of: app.chats) { _ in
                 guard !ChatStressFixture.isActive else { return }
                 let next = chatSnapshot()
@@ -3363,6 +3398,9 @@ struct ChatsView: View {
             }
         }
         .task {
+            await refreshPayOfficialPreview()
+        }
+        .task {
             try? await Task.sleep(nanoseconds: 900_000_000)
             guard !Task.isCancelled, !ChatStressFixture.isActive else { return }
 
@@ -3382,6 +3420,17 @@ struct ChatsView: View {
             MallWeather.shared.refresh()
         }
 
+    }
+
+    private func refreshPayOfficialPreview() async {
+        guard !ChatStressFixture.isActive else { return }
+        guard let payload = try? await API.shared.ledgerBills(limit: 1),
+              let latest = payload.entries.first else { return }
+        if let current = payOfficialPreviewEntry, current == latest { return }
+        payOfficialPreviewEntry = latest
+        if !latest.at.isEmpty {
+            UserDefaults.standard.set(latest.at, forKey: officialRowTimeKey("pay"))
+        }
     }
 
     private func saveAccountIcon(_ image: UIImage, key: String, success: String) async {

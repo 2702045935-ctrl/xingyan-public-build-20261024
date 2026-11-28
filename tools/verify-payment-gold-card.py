@@ -23,9 +23,11 @@ require(
 )
 require(
     "StarPayPhysicalCardSurface(radius: 28)" in PAYMENT
-    and "if goldUnlocked {" in PAYMENT
-    and "goldCardSection" in PAYMENT,
-    "normal users must keep the black card while eligible users receive the gold card",
+    and "showGoldCard: goldUnlocked" in PAYMENT
+    and "if showGoldCard {" in PAYMENT
+    and "private struct PayGoldCardDetailView" in PAYMENT
+    and "private var goldCardSection" in PAYMENT,
+    "normal users must keep the black card while eligible users can open a separate gold-card page",
 )
 require(
     "private static let goldThreshold = 50_000.0" in PAYMENT

@@ -22,6 +22,120 @@ enum PayVisual {
     static var secondaryInk: Color { Color.dyn(0x6C6C70, 0x98989F) }
 }
 
+enum PayBankVisual {
+    static var blue: Color { Color.dyn(0x1677FF, 0x4C9AFF) }
+    static var blueDeep: Color { Color.dyn(0x0B63E5, 0x2E7DE8) }
+    static var surface: Color { Color.dyn(0xFFFFFF, 0x15243A) }
+    static var pad: Color { Color.dyn(0xEDF3FC, 0x0E1C2F) }
+    static var key: Color { Color.dyn(0xFFFFFF, 0x1A2C45) }
+    static var keyPressed: Color { Color.dyn(0xE6F0FF, 0x29415F) }
+    static var border: Color { Color.dyn(0xE0E9F5, 0x2A405A) }
+    static let cardRadius: CGFloat = 22
+    static let cardShadowRadius: CGFloat = 20
+}
+
+struct PayBankBackdrop: View {
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: scheme == .dark
+                    ? [Color(hex: 0x0B1627),
+                       Color(hex: 0x102641),
+                       Color(hex: 0x0C1728)]
+                    : [Color(hex: 0xEAF3FF),
+                       Color(hex: 0xF5F8FD),
+                       Color(hex: 0xFFFFFF)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            Circle()
+                .fill(PayBankVisual.blue.opacity(scheme == .dark ? 0.13 : 0.10))
+                .frame(width: 310, height: 310)
+                .blur(radius: 58)
+                .offset(x: 145, y: -330)
+
+            Circle()
+                .fill(Color(hex: 0x49C6FF).opacity(scheme == .dark ? 0.07 : 0.055))
+                .frame(width: 250, height: 250)
+                .blur(radius: 58)
+                .offset(x: -170, y: 360)
+        }
+        .ignoresSafeArea()
+    }
+}
+
+struct PayBankCardHeader: View {
+    let symbol: String
+    let title: String
+    let subtitle: String
+    var status: String? = nil
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [PayBankVisual.blue, PayBankVisual.blueDeep],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                Image(systemName: symbol)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 42, height: 42)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(pf(16.5, .semibold))
+                    .foregroundStyle(C.label)
+                Text(subtitle)
+                    .font(pfExact(8.5, .bold))
+                    .tracking(1.35)
+                    .foregroundStyle(PayVisual.secondaryInk)
+            }
+
+            Spacer(minLength: 8)
+
+            Label(status ?? Tr("安全"), systemImage: "checkmark.shield.fill")
+                .font(pf(10.5, .semibold))
+                .foregroundStyle(PayBankVisual.blue)
+                .padding(.horizontal, 9)
+                .frame(height: 27)
+                .background(PayBankVisual.blue.opacity(0.10), in: Capsule())
+        }
+    }
+}
+
+private struct PayBankCardSurfaceModifier: ViewModifier {
+    let radius: CGFloat
+    @Environment(\.colorScheme) private var scheme
+
+    func body(content: Content) -> some View {
+        content
+            .background(PayBankVisual.surface)
+            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .stroke(PayBankVisual.border, lineWidth: 0.8)
+            }
+            .shadow(color: .black.opacity(scheme == .dark ? 0.24 : 0.07),
+                    radius: PayBankVisual.cardShadowRadius,
+                    y: 9)
+    }
+}
+
+extension View {
+    func payBankCardSurface(radius: CGFloat = PayBankVisual.cardRadius) -> some View {
+        modifier(PayBankCardSurfaceModifier(radius: radius))
+    }
+}
+
 struct StarPayAvatar: View {
     let size: CGFloat
 
@@ -1029,20 +1143,11 @@ struct PayOfficialView: View {
             appleWalletHeader
 
             ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: 16) {
+                LazyVStack(alignment: .leading, spacing: 28) {
                     paymentHero
                     paymentPrimaryActions
-                    transactionFeed
-
-                    if loading {
-                        ProgressView().padding(.vertical, 20)
-                    }
-
-                    quickActions
-                    ledgerSummaryStrip
-                    if goldUnlocked {
-                        goldCardSection
-                    }
+                    transactionFeed(limit: 3)
+                    walletManagementEntry
 
                     Color.clear.frame(height: max(20, L.safeBottom + 12))
                 }
@@ -1292,63 +1397,6 @@ struct PayOfficialView: View {
         .padding(.horizontal, 16)
     }
 
-    private var goldCardSection: some View {
-        VStack(alignment: .leading, spacing: 11) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Tr("星言消费金卡"))
-                        .font(pf(18, .bold))
-                        .foregroundStyle(C.label)
-                    Text("STAR PAY GOLD")
-                        .font(pfExact(8.5, .bold))
-                        .tracking(1.55)
-                        .foregroundStyle(PayVisual.secondaryInk)
-                }
-                Spacer()
-                if adminGoldPreview {
-                    Text(Tr("管理灰度"))
-                        .font(pf(10, .semibold))
-                        .foregroundStyle(PayVisual.secondaryInk)
-                        .padding(.horizontal, 9)
-                        .frame(height: 25)
-                        .background(PayVisual.inset, in: Capsule())
-                }
-            }
-            .padding(.horizontal, 3)
-
-            StarPayGoldCardFace(
-                cardholder: (app.me?.name ?? app.me?.username ?? "STAR PAY")
-                    .uppercased(),
-                last4: XYPay.tail(app.me?.id ?? app.me?.username ?? "xingyan"),
-                cumulativeSpend: cumulativeSpend,
-                adminPreview: adminGoldPreview
-            )
-
-            if adminGoldPreview && cumulativeSpend < Self.goldThreshold {
-                HStack(alignment: .top, spacing: 9) {
-                    Image(systemName: "lock.open.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(PayVisual.gold)
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(Tr("管理灰度预览"))
-                            .font(pf(13, .semibold))
-                            .foregroundStyle(C.label)
-                        Text(Tr("普通用户累计消费满 ¥50,000 后自动解锁。"))
-                            .font(pf(12.5))
-                            .foregroundStyle(PayVisual.secondaryInk)
-                        ProgressView(value: min(1, cumulativeSpend / Self.goldThreshold))
-                            .tint(PayVisual.gold)
-                    }
-                }
-                .padding(14)
-                .background(PayVisual.card,
-                            in: RoundedRectangle(cornerRadius: 14,
-                                                 style: .continuous))
-            }
-        }
-        .padding(.horizontal, 16)
-    }
-
     private func toggleBalancePrivacy() {
         if balanceVisible {
             balanceVisible = false
@@ -1380,120 +1428,79 @@ struct PayOfficialView: View {
         }
     }
 
-    private var quickActions: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            PaySectionLabel(text: Tr("钱包"))
+    private var walletManagementEntry: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            PaySectionLabel(text: Tr("管理"))
 
-            PayGroupCard {
-                VStack(spacing: 0) {
-                    NavigationLink {
-                        BillsView()
-                    } label: {
-                        quickActionRow(Tr("账单"),
-                                       symbol: "list.bullet.rectangle.portrait.fill",
-                                       tint: PayVisual.success)
+            NavigationLink {
+                PayWalletManagementView(
+                    showGoldCard: goldUnlocked,
+                    cardholder: (app.me?.name ?? app.me?.username ?? "STAR PAY")
+                        .uppercased(),
+                    last4: XYPay.tail(app.me?.id ?? app.me?.username ?? "xingyan"),
+                    cumulativeSpend: cumulativeSpend,
+                    adminGoldPreview: adminGoldPreview
+                )
+            } label: {
+                HStack(spacing: 13) {
+                    Image(systemName: "wallet.pass.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(PayVisual.tint)
+                        .frame(width: 34, height: 34)
+                        .background(PayVisual.tint.opacity(0.10),
+                                    in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(Tr("钱包"))
+                            .font(pf(16, .semibold))
+                            .foregroundStyle(C.label)
+                        Text([Tr("卡包"), Tr("支付安全"), Tr("虚拟卡")]
+                            .joined(separator: " · "))
+                            .font(pf(12.5))
+                            .foregroundStyle(PayVisual.secondaryInk)
+                            .lineLimit(1)
                     }
-                    .buttonStyle(MenuPressStyle())
-                    HairLine(inset: 58)
-                    NavigationLink {
-                        CardsView()
-                    } label: {
-                        quickActionRow(Tr("卡包"),
-                                       symbol: "rectangle.stack.fill",
-                                       tint: PayVisual.gold)
-                    }
-                    .buttonStyle(MenuPressStyle())
-                    HairLine(inset: 58)
-                    NavigationLink {
-                        AccountSecurityView()
-                    } label: {
-                        quickActionRow(Tr("支付安全"),
-                                       symbol: "lock.shield.fill",
-                                       tint: PayVisual.warning)
-                    }
-                    .buttonStyle(MenuPressStyle())
-                    HairLine(inset: 58)
-                    NavigationLink {
-                        VirtualCardView()
-                    } label: {
-                        quickActionRow(Tr("虚拟卡"),
-                                       symbol: "creditcard.fill",
-                                       tint: PayVisual.tint)
-                    }
-                    .buttonStyle(MenuPressStyle())
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(PayVisual.secondaryInk.opacity(0.72))
                 }
+                .padding(.horizontal, 16)
+                .frame(height: 68)
+                .background(PayVisual.card,
+                            in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .contentShape(Rectangle())
             }
+            .buttonStyle(MenuPressStyle())
         }
         .padding(.horizontal, 16)
     }
 
     @ViewBuilder
-    private var ledgerSummaryStrip: some View {
-        if let ledger {
-            HStack(spacing: 18) {
-                summaryMetric(Tr("收入"), ledger.income, PayVisual.success)
-                Rectangle()
-                    .fill(PayVisual.separator)
-                    .frame(width: 0.5, height: 28)
-                summaryMetric(Tr("支出"), ledger.expense, C.label)
-            }
-            .padding(.horizontal, 22)
-        }
-    }
-
-    private func summaryMetric(_ title: String, _ value: Double, _ color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(pf(10.5, .medium))
-                .foregroundStyle(PayVisual.secondaryInk)
-            if balanceVisible {
-                StarPayAmount(value: value, role: .metric, color: color)
-            } else {
-                Text("¥ ***")
-                    .font(pfMoney(13.5, .semibold))
-                    .foregroundStyle(PayVisual.secondaryInk)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func quickActionRow(_ title: String,
-                                symbol: String,
-                                tint: Color) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(tint)
-                .frame(width: 30, height: 30)
-                .background(tint.opacity(0.12),
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            Text(title)
-                .font(pf(16))
-                .foregroundStyle(C.label)
-                .lineLimit(1)
-            Spacer(minLength: 8)
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(PayVisual.secondaryInk.opacity(0.72))
-        }
-        .padding(.horizontal, 16)
-        .frame(height: 52)
-        .contentShape(Rectangle())
-    }
-
-    @ViewBuilder
-    private var transactionFeed: some View {
-        if let entries = ledger?.entries, !entries.isEmpty {
+    private func transactionFeed(limit: Int? = nil) -> some View {
+        let allEntries = ledger?.entries ?? []
+        let entries = limit.map { Array(allEntries.prefix($0)) } ?? allEntries
+        if !entries.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(Tr("最近交易"))
                         .font(pf(20, .semibold))
                         .foregroundStyle(C.label)
                     Spacer()
-                    Text("\(entries.count)")
-                        .font(pfMoney(12.5, .medium))
-                        .foregroundStyle(PayVisual.secondaryInk)
-                        .monospacedDigit()
+                    NavigationLink {
+                        BillsView()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(Tr("账单"))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .bold))
+                        }
+                        .font(pf(13.5, .medium))
+                        .foregroundStyle(PayVisual.tint)
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 4)
 
@@ -1519,6 +1526,20 @@ struct PayOfficialView: View {
                 }
             }
             .padding(.horizontal, 16)
+        } else if loading {
+            PayGroupCard {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text(Tr("正在加载…"))
+                        .font(pf(13.5))
+                        .foregroundStyle(PayVisual.secondaryInk)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 17)
+                .frame(height: 70)
+            }
+            .padding(.horizontal, 16)
         } else if !loading {
             VStack(spacing: 10) {
                 Image(systemName: "list.bullet.rectangle.portrait")
@@ -1533,6 +1554,7 @@ struct PayOfficialView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 36)
+            .padding(.horizontal, 16)
         }
     }
 
@@ -1663,5 +1685,235 @@ struct PayOfficialView: View {
         formatter.locale = Locale(identifier: "zh_CN")
         formatter.dateFormat = "HH:mm"
         return formatter.string(from: date)
+    }
+}
+
+private struct PayWalletManagementView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let showGoldCard: Bool
+    let cardholder: String
+    let last4: String
+    let cumulativeSpend: Double
+    let adminGoldPreview: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            NavBar(title: Tr("钱包"), back: { dismiss() })
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 26) {
+                    managementSection(Tr("卡包")) {
+                        NavigationLink {
+                            CardsView()
+                        } label: {
+                            managementRow(Tr("卡包"),
+                                          symbol: "rectangle.stack.fill",
+                                          tint: PayVisual.gold)
+                        }
+                        .buttonStyle(MenuPressStyle())
+
+                        if showGoldCard {
+                            HairLine(inset: 58)
+                            NavigationLink {
+                                PayGoldCardDetailView(
+                                    cardholder: cardholder,
+                                    last4: last4,
+                                    cumulativeSpend: cumulativeSpend,
+                                    adminPreview: adminGoldPreview
+                                )
+                            } label: {
+                                managementRow(Tr("星言消费金卡"),
+                                              symbol: "crown.fill",
+                                              tint: PayVisual.gold)
+                            }
+                            .buttonStyle(MenuPressStyle())
+                        }
+                    }
+
+                    managementSection(Tr("账单")) {
+                        NavigationLink {
+                            BillsView()
+                        } label: {
+                            managementRow(Tr("账单"),
+                                          symbol: "list.bullet.rectangle.portrait.fill",
+                                          tint: PayVisual.success)
+                        }
+                        .buttonStyle(MenuPressStyle())
+                    }
+
+                    managementSection(Tr("服务")) {
+                        NavigationLink {
+                            AccountSecurityView()
+                        } label: {
+                            managementRow(Tr("支付安全"),
+                                          symbol: "lock.shield.fill",
+                                          tint: PayVisual.warning)
+                        }
+                        .buttonStyle(MenuPressStyle())
+
+                        HairLine(inset: 58)
+
+                        NavigationLink {
+                            VirtualCardView()
+                        } label: {
+                            managementRow(Tr("虚拟卡"),
+                                          symbol: "creditcard.fill",
+                                          tint: PayVisual.tint)
+                        }
+                        .buttonStyle(MenuPressStyle())
+                    }
+
+                    Color.clear.frame(height: max(24, L.safeBottom + 12))
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+            }
+        }
+        .background(PayVisual.canvas.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .swipeBack { dismiss() }
+        .hidesTabBar()
+    }
+
+    private func managementSection<Content: View>(
+        _ title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            PaySectionLabel(text: title)
+            PayGroupCard {
+                VStack(spacing: 0) {
+                    content()
+                }
+            }
+        }
+    }
+
+    private func managementRow(_ title: String,
+                               symbol: String,
+                               tint: Color) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 30, height: 30)
+                .background(tint.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+            Text(title)
+                .font(pf(16))
+                .foregroundStyle(C.label)
+                .lineLimit(1)
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(PayVisual.secondaryInk.opacity(0.72))
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 52)
+        .contentShape(Rectangle())
+    }
+}
+
+private struct PayGoldCardDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let cardholder: String
+    let last4: String
+    let cumulativeSpend: Double
+    let adminPreview: Bool
+
+    private static let goldThreshold = 50_000.0
+
+    var body: some View {
+        VStack(spacing: 0) {
+            NavBar(title: Tr("星言消费金卡"), back: { dismiss() })
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    goldCardSection
+
+                    PayGroupCard {
+                        VStack(spacing: 0) {
+                            PayDetailRow(title: Tr("累计消费"),
+                                         value: "¥" + moneyFmt(cumulativeSpend))
+                            if adminPreview && cumulativeSpend < Self.goldThreshold {
+                                HairLine(inset: 18)
+                                PayDetailRow(title: Tr("解锁条件"),
+                                             value: "¥" + moneyFmt(Self.goldThreshold),
+                                             valueColor: PayVisual.gold)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+
+                    Color.clear.frame(height: max(24, L.safeBottom + 12))
+                }
+                .padding(.top, 14)
+            }
+        }
+        .background(PayVisual.canvas.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .swipeBack { dismiss() }
+        .hidesTabBar()
+    }
+
+    private var goldCardSection: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Tr("星言消费金卡"))
+                        .font(pf(18, .bold))
+                        .foregroundStyle(C.label)
+                    Text("STAR PAY GOLD")
+                        .font(pfExact(8.5, .bold))
+                        .tracking(1.55)
+                        .foregroundStyle(PayVisual.secondaryInk)
+                }
+                Spacer()
+                if adminPreview {
+                    Text(Tr("管理灰度"))
+                        .font(pf(10, .semibold))
+                        .foregroundStyle(PayVisual.secondaryInk)
+                        .padding(.horizontal, 9)
+                        .frame(height: 25)
+                        .background(PayVisual.inset, in: Capsule())
+                }
+            }
+            .padding(.horizontal, 3)
+
+            StarPayGoldCardFace(
+                cardholder: cardholder,
+                last4: last4,
+                cumulativeSpend: cumulativeSpend,
+                adminPreview: adminPreview
+            )
+
+            if adminPreview && cumulativeSpend < Self.goldThreshold {
+                HStack(alignment: .top, spacing: 9) {
+                    Image(systemName: "lock.open.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(PayVisual.gold)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(Tr("管理灰度预览"))
+                            .font(pf(13, .semibold))
+                            .foregroundStyle(C.label)
+                        Text(Tr("普通用户累计消费满 ¥50,000 后自动解锁。"))
+                            .font(pf(12.5))
+                            .foregroundStyle(PayVisual.secondaryInk)
+                        ProgressView(value: min(1, cumulativeSpend / Self.goldThreshold))
+                            .tint(PayVisual.gold)
+                    }
+                }
+                .padding(14)
+                .background(PayVisual.card,
+                            in: RoundedRectangle(cornerRadius: 14,
+                                                 style: .continuous))
+            }
+        }
+        .padding(.horizontal, 16)
     }
 }

@@ -217,6 +217,7 @@ struct PayCodePage: View {
 struct ReceiveCodePage: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
 
     @State private var info: PayCodeInfo?
     @State private var amountText = ""
@@ -224,6 +225,18 @@ struct ReceiveCodePage: View {
     @State private var busy = false
 
     private var amt: Double { max(0, info?.amount ?? 0) }
+    private var receiveBlue: Color {
+        PayBankVisual.blue
+    }
+    private var receiveSurface: Color {
+        PayBankVisual.surface
+    }
+    private var receiveBorder: Color {
+        PayBankVisual.border
+    }
+    private var receiveBackdrop: some View {
+        PayBankBackdrop()
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -231,43 +244,7 @@ struct ReceiveCodePage: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 18) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color.white)
-                        if let info = info, let rows = info.rows, !rows.isEmpty {
-
-                            QRCanvas(rows: rows).frame(width: 226, height: 226)
-                        } else {
-                            ProgressView()
-                        }
-                    }
-                    .frame(width: 272, height: 272)
-                    .shadow(color: Color.black.opacity(0.08), radius: 18, y: 8)
-
-                    if let a = info?.amount, a > 0 {
-                        VStack(spacing: 2) {
-                            Text(money(a))
-                                .font(pfMoney(26))
-                                .foregroundColor(C.label)
-                            Text(Tr("对方扫码后按这个金额付给你，改不了"))
-                                .font(pf(12.5))
-                                .foregroundColor(PayVisual.secondaryInk)
-                        }
-                    }
-
-                    HStack(spacing: 12) {
-                        Avatar(path: info?.user?.avatar ?? app.me?.avatar ?? "", size: 46, radius: 6)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(info?.user?.nickname ?? app.me?.nickname ?? "")
-                                .font(pf(16, .medium)).foregroundColor(C.label).lineLimit(1)
-                            Text(Tr("扫这张码就能给我付钱"))
-                                .font(pf(12.5)).foregroundColor(PayVisual.secondaryInk)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 16)
-                    .frame(height: 70)
-                    .background(PayVisual.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    receiveBankCard
 
                     VStack(spacing: 0) {
                         row(Tr("设置金额"), amt > 0 ? Tr("改一下") : Tr("填一个数，扫码的人直接按这个付")) {
@@ -281,8 +258,12 @@ struct ReceiveCodePage: View {
                             }
                         }
                     }
-                    .background(PayVisual.card)
+                    .background(receiveSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(receiveBorder, lineWidth: 0.7)
+                    }
 
                     Text(Tr("收款码长期有效；带金额的那种 24 小时后失效，重新设置一次就行。"))
                         .font(pf(12.5))
@@ -294,9 +275,9 @@ struct ReceiveCodePage: View {
                 .padding(.top, 18)
                 .padding(.bottom, max(28, L.safeBottom))
             }
-            .background(PayVisual.canvas)
+            .background(Color.clear)
         }
-        .background(PayVisual.canvas.ignoresSafeArea())
+        .background(receiveBackdrop)
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
 
@@ -312,6 +293,91 @@ struct ReceiveCodePage: View {
         } message: {
             Text(Tr("填了金额以后，对方扫这张码就直接按这个数付给你（24 小时内有效）"))
         }
+    }
+
+    private var receiveBankCard: some View {
+        VStack(spacing: 0) {
+            PayBankCardHeader(
+                symbol: "qrcode",
+                title: Tr("星言收款"),
+                subtitle: "STAR PAY RECEIVE"
+            )
+            .padding(18)
+
+            Rectangle()
+                .fill(receiveBorder)
+                .frame(height: 0.7)
+
+            VStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(Color.white)
+                    if let info = info, let rows = info.rows, !rows.isEmpty {
+                        QRCanvas(rows: rows)
+                            .frame(width: 226, height: 226)
+                    } else {
+                        ProgressView()
+                    }
+                }
+                .frame(width: 268, height: 268)
+                .shadow(color: Color.black.opacity(scheme == .dark ? 0.24 : 0.06),
+                        radius: 14, y: 6)
+
+                Text(Tr("扫这张码就能给我付钱"))
+                    .font(pf(12.5, .medium))
+                    .foregroundStyle(PayVisual.secondaryInk)
+
+                if amt > 0 {
+                    VStack(spacing: 3) {
+                        Text(money(amt))
+                            .font(pfMoney(29, .semibold))
+                            .foregroundStyle(C.label)
+                        Text(Tr("对方扫码后按这个金额付给你，改不了"))
+                            .font(pf(12))
+                            .foregroundStyle(PayVisual.secondaryInk)
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 10)
+                    .background(receiveBlue.opacity(scheme == .dark ? 0.12 : 0.07),
+                                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+
+            Rectangle()
+                .fill(receiveBorder)
+                .frame(height: 0.7)
+                .padding(.horizontal, 18)
+
+            HStack(spacing: 12) {
+                Avatar(path: info?.user?.avatar ?? app.me?.avatar ?? "",
+                       size: 42,
+                       radius: 21)
+                    .overlay {
+                        Circle().stroke(receiveBorder, lineWidth: 0.8)
+                    }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(info?.user?.nickname ?? app.me?.nickname ?? "")
+                        .font(pf(15, .semibold))
+                        .foregroundStyle(C.label)
+                        .lineLimit(1)
+                    Text(Tr("收款到星言零钱")
+                         + " · ••"
+                         + XYPay.tail(app.me?.id ?? app.me?.username ?? "xingyan"))
+                        .font(pf(11.5))
+                        .foregroundStyle(PayVisual.secondaryInk)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(receiveBlue)
+            }
+            .padding(.horizontal, 18)
+            .frame(height: 68)
+            .background(receiveBlue.opacity(scheme == .dark ? 0.055 : 0.035))
+        }
+        .payBankCardSurface(radius: 26)
     }
 
     private func row(_ title: String, _ sub: String, _ run: @escaping () -> Void) -> some View {
