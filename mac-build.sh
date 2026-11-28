@@ -66,10 +66,13 @@ cat > Assets.xcassets/LaunchBg.colorset/Contents.json <<'JSON'
   "info": { "version": 1, "author": "xcode" }
 }
 JSON
+bash tools/prepare-liquid-icon.sh Assets.xcassets
 xcrun actool Assets.xcassets --compile "$APP" --platform iphoneos \
   --target-device iphone --minimum-deployment-target 16.0 \
-  --output-format human-readable-text >/dev/null 2>&1 \
-  || echo "actool 跳过：启动屏用系统默认底色"
+  --app-icon AppIcon --include-all-app-icons \
+  --output-partial-info-plist /tmp/XingyanAppIconInfo.plist \
+  --output-format human-readable-text >/dev/null
+test -f "$APP/Assets.car"
 
 if [ -f Sources/VoiceOrb.metal ]; then
   if xcrun -sdk iphoneos metal -c Sources/VoiceOrb.metal -o /tmp/VoiceOrb.air 2>/dev/null; then

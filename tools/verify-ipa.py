@@ -17,6 +17,7 @@ REQUIRED = {
     APP + "Info.plist",
     APP + "AppIcon60x60@2x.png",
     APP + "AppIcon60x60@3x.png",
+    APP + "Assets.car",
     APP + "PrivacyInfo.xcprivacy",
     APP + "default.metallib",
     APP + "emoji/nova-courier/pack.json",
@@ -40,6 +41,8 @@ def main() -> None:
             raise SystemExit("missing entries: " + ", ".join(missing))
 
         info = plistlib.loads(archive.read(APP + "Info.plist"))
+        if info.get("CFBundleIconName") != "AppIcon":
+            raise SystemExit("Info.plist does not select the AppIcon asset catalog")
         binary = archive.read(APP + "CHRIS")
         for value in (
             "Xiaoxing",

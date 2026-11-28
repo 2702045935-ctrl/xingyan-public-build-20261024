@@ -95,6 +95,8 @@
       <array><string>AppIcon60x60</string></array>
     </dict>
   </dict>
+  <key>CFBundleIconName</key>
+  <string>AppIcon</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
