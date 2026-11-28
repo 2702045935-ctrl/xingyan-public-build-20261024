@@ -56,7 +56,7 @@ require(
 )
 require(
     "Color.white.opacity(0.90)" in CHAT
-    and "Color(hex: 0x3E4A52)" in CHAT
+    and "Color(hex: 0x111111)" in CHAT
     and "composerUtilityInk.opacity(0.82)" in CHAT,
     "composer utility icons and placeholder must retain readable contrast",
 )

@@ -82,7 +82,7 @@ private enum ChatTheme {
     static let groupSenderNameOnLight = Color.dyn(0x171A18, 0x171A18)
     static let groupSenderNameOnDark = Color.dyn(0xEDF1EE, 0xEDF1EE)
     static let secondaryOnMine = Color.dyn(0xD8F5EC, 0xE3EAE6)
-    static let timeInk = Color.dyn(0x5F5E5F, 0x909396)
+    static let timeInk = Color.dyn(0x808080, 0x8E8E93)
     static let timeCapsule = Color.dyn(0xD2D1D3, 0x20272A)
     static var composerBg: Color { preset.panel }
     static let separator = Color.dyn(0xDDE2DD, 0x38383A)
@@ -1783,6 +1783,7 @@ struct ChatDetailView: View {
     }
 
     private var composerUsesLightInk: Bool {
+        if scheme == .light { return false }
         switch resolvedBackgroundEffect {
         case .blackBlur: return true
         case .whiteBlur: return false
@@ -1904,9 +1905,8 @@ struct ChatDetailView: View {
     }
 
     private var composerUtilityInk: Color {
-        composerUsesLightInk
-            ? Color.white.opacity(0.90)
-            : Color(hex: 0x3E4A52)
+        if scheme == .light { return Color(hex: 0x111111) }
+        return composerUsesLightInk ? Color.white.opacity(0.90) : Color(hex: 0x3E4A52)
     }
 
     private var adaptiveComposerSurface: Color {
@@ -1916,7 +1916,8 @@ struct ChatDetailView: View {
     }
 
     private var composerTextInk: Color {
-        composerUsesLightInk ? .white : Color(hex: 0x111B21)
+        if scheme == .light { return .black }
+        return composerUsesLightInk ? .white : Color(hex: 0x111B21)
     }
 
     private var adaptiveComposerStroke: Color {
@@ -3735,23 +3736,29 @@ struct ChatDetailView: View {
     @ViewBuilder
     private func timeLine(_ message: Message) -> some View {
         Text(TimeFmt.bubble(message.createdAt))
-            .font(pf(12, .medium))
+            .font(pf(12, .regular))
             .foregroundColor(ChatTheme.timeInk)
             .fixedSize(horizontal: true, vertical: false)
-            .padding(.horizontal, L.o("chatTimePadX", 9))
-            .padding(.vertical, L.o("chatTimePadY", 4))
+            .padding(.horizontal, showsTimeCapsule ? 7 : 0)
+            .padding(.vertical, showsTimeCapsule ? 3.5 : 0)
             .background {
-                ZStack {
-                    NativeGlassControlMaterial()
-                    Capsule(style: .continuous)
-                        .fill(ChatTheme.timeCapsule.opacity(
-                            scheme == .dark ? 0.90 : 0.76
-                        ))
+                if showsTimeCapsule {
+                    ZStack {
+                        NativeGlassControlMaterial()
+                        Capsule(style: .continuous)
+                            .fill(ChatTheme.timeCapsule.opacity(
+                                scheme == .dark ? 0.90 : 0.76
+                            ))
+                    }
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.top, ChatFeedMetrics.timeGapTop)
             .padding(.bottom, ChatFeedMetrics.timeGapBottom)
+    }
+
+    private var showsTimeCapsule: Bool {
+        !usesPlainDefaultChatChrome
     }
 
     @ViewBuilder
@@ -4852,10 +4859,10 @@ struct ChatDetailView: View {
                                 HStack(spacing: 8) {
                                     ZStack {
                                         Circle()
-                                            .fill(OrbitTheme.jadeDeep.opacity(0.11))
+                                            .fill(composerUtilityInk.opacity(0.08))
                                         Image(systemName: voiceStarting ? "waveform" : "mic.fill")
                                             .font(.system(size: 12.5, weight: .semibold))
-                                            .foregroundStyle(OrbitTheme.jadeDeep)
+                                            .foregroundStyle(composerTextInk)
                                     }
                                     .frame(width: 28, height: 28)
 

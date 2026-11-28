@@ -85,11 +85,13 @@ time_end = CHAT_DETAIL.index("private func recallLine", time_start)
 time_line = CHAT_DETAIL[time_start:time_end]
 require(
     ".fixedSize(horizontal: true, vertical: false)" in time_line
-    and "NativeGlassControlMaterial()" in time_line
+    and "ChatTheme.timeInk" in time_line
+    and "if showsTimeCapsule" in time_line
     and "ChatTheme.timeCapsule.opacity(" in time_line
+    and "NativeGlassControlMaterial()" in time_line
     and ".fill(adaptiveSystemSurface)" not in time_line,
-    "chat timestamps must use intrinsic width and the lightweight 0617 row glass",
-)
+    "chat timestamps must adapt between plain text and a light material capsule",
+  )
 require(
     "NativeTopGlassMask(active: chatTopScrolled > 0," in CHATS
     and "NativeChatListScrollRegistry.shared.chats" in CHATS
