@@ -21,9 +21,12 @@ struct FeedPlayerView: View {
     @State private var shareItems: [Any] = []
     @State private var showShare = false
 
-    init(items: [FeedItem], start: Int = 0) {
+    init(items: [FeedItem],
+         start: Int = 0,
+         onIndexChange: ((Int) -> Void)? = nil) {
         self.items = items
         self.start = start
+        self.onIndexChange = onIndexChange
         _index = State(initialValue: max(0, min(start, max(0, items.count - 1))))
     }
 
