@@ -2129,70 +2129,87 @@ struct MomentsView: View {
                 .zIndex(4)
             }
 
-            HStack(alignment: .bottom, spacing: 12) {
+            HStack(alignment: .center, spacing: 11) {
                 VStack(alignment: .trailing, spacing: 3) {
                     Text(owner?.name ?? "")
                         .font(pf(17, .semibold))
                         .foregroundColor(.white)
                         .shadow(color: Color.black.opacity(0.62), radius: 5, x: 0, y: 2)
                         .lineLimit(1)
-                }
-                .padding(.bottom, 24)
-
-                VStack(spacing: 5) {
-                    Avatar(
-                        path: owner?.avatarPath ?? "",
-                        size: L.coverAvatar,
-                        radius: 16
-                    )
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.52),
-                                        Color.white.opacity(0.10)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 0.9
-                            )
-                    }
-                    .shadow(color: Color.black.opacity(0.38), radius: 9, x: 0, y: 4)
 
                     if let sign = signature {
                         Text(sign)
-                            .font(pf(12.5, .medium))
-                            .foregroundColor(.white.opacity(0.90))
+                            .font(pf(12.2, .medium))
+                            .foregroundColor(.white.opacity(0.82))
                             .lineLimit(2)
-                            .multilineTextAlignment(.center)
+                            .multilineTextAlignment(.trailing)
                             .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .frame(width: L.coverAvatar + 56, alignment: .center)
-                            .background {
-                                ZStack {
-                                    NativeMediaGlassSurface(
-                                        shape: AnyShape(RoundedRectangle(
-                                            cornerRadius: 10,
-                                            style: .continuous
-                                        )),
-                                        showsEdge: false
-                                    )
-                                    RoundedRectangle(cornerRadius: 10,
-                                                     style: .continuous)
-                                        .fill(Color.black.opacity(0.24))
-                                }
-                            }
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .stroke(Color.white.opacity(0.14), lineWidth: 0.6)
-                            }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+
+                Avatar(
+                    path: owner?.avatarPath ?? "",
+                    size: L.coverAvatar,
+                    radius: 18
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.58),
+                                    Color.white.opacity(0.10)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 0.9
+                        )
+                }
+                .shadow(color: Color.black.opacity(0.38), radius: 8, x: 0, y: 3)
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.leading, 14)
+            .padding(.trailing, 9)
+            .padding(.vertical, 6)
+            .frame(maxWidth: min(336, max(1, L.width - 32)),
+                   minHeight: 64,
+                   alignment: .trailing)
+            .background {
+                ZStack {
+                    NativeMediaGlassSurface(
+                        shape: AnyShape(RoundedRectangle(cornerRadius: 22,
+                                                         style: .continuous)),
+                        showsEdge: false
+                    )
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.black.opacity(0.42),
+                                    Color.black.opacity(0.20)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.28),
+                                Color.white.opacity(0.08)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.7
+                    )
+            }
+            .shadow(color: Color.black.opacity(0.24), radius: 14, x: 0, y: 6)
             .padding(.trailing, 16)
             .padding(.bottom, 8)
             .allowsHitTesting(false)

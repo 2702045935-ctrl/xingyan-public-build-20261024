@@ -23,11 +23,12 @@ adjust = DISCOVER[adjust_start:adjust_end]
 
 require(
     "size: L.coverAvatar" in cover
-    and "radius: 16" in cover
+    and "radius: 18" in cover
     and ".padding(.trailing, 16)" in cover
     and ".padding(.bottom, 8)" in cover
-    and ".padding(.bottom, 24)" in cover,
-    "cover identity must remain in the original lower-right placement",
+    and "minHeight: 64" in cover
+    and "min(336, max(1, L.width - 32))" in cover,
+    "cover identity must stay compact in the original lower-right placement",
 )
 require(
     ".frame(maxWidth: .infinity, alignment: .trailing)" in cover
@@ -38,11 +39,12 @@ require(
 )
 require(
     ".fill(Color.dyn(0xFFFFFF, 0x000000).opacity(0.62))" not in cover
-    and ".white.opacity(0.90)" in cover
+    and ".white.opacity(0.82)" in cover
     and "NativeMediaGlassSurface(" in cover
-    and "Color.black.opacity(0.24)" in cover
-    and "Color.white.opacity(0.14)" in cover,
-    "cover identity and edit controls must use restrained native material",
+    and "RoundedRectangle(cornerRadius: 22, style: .continuous)" in cover
+    and "Color.black.opacity(0.42)" in cover
+    and "Color.white.opacity(0.28)" in cover,
+    "cover identity must use one restrained native glass rail",
 )
 require(
     "let topOverdraw = max(0, L.safeTop)" in cover
