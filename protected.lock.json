@@ -48,8 +48,8 @@
     },
     {
       "path": "Sources/ChatsView.swift",
-      "size": 155896,
-      "sha256": "d6bf0f4ff8c38c788871a732f5a0c38e8f57d80e5ac13606aea0d47fb7a7a874"
+      "size": 156170,
+      "sha256": "5028f01e83bc907f16905c26180628a2c1e32927b736a9f5cceb3579e2dc935d"
     },
     {
       "path": "Sources/NativeChatList.swift",
