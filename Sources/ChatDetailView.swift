@@ -8391,21 +8391,40 @@ struct MessageRow: View {
         let secs = max(1, (o["seconds"] as? Int) ?? 1)
         let playing = voicePlayer.playingID == message.id
         let total = playing && voicePlayer.total > 0 ? voicePlayer.total : Double(secs)
+        let progress = playing ? voicePlayer.progress : 0
+        let elapsed = playing
+            ? max(0, min(total, voicePlayer.elapsed))
+            : total
+        let levels = voiceLevels(o, count: 28)
         let width = min(maxBubbleWidth,
                         min(220, 82 + min(CGFloat(secs), 60) * 2.1))
 
         return HStack(spacing: 10) {
             Spacer(minLength: 0)
 
-            HStack(spacing: 8) {
-                Text(weChatVoiceClock(total))
-                    .foregroundStyle(bubblePrimaryInk)
-                Spacer(minLength: 6)
+            HStack(spacing: 9) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(weChatVoiceClock(elapsed))
+                        .font(pfStyled(size: 10.5,
+                                       weight: .medium,
+                                       design: .monospaced))
+                        .foregroundStyle(bubblePrimaryInk.opacity(
+                            playing ? 1 : 0.82
+                        ))
+
+                    voiceProgressTrack(
+                        levels: levels,
+                        progress: progress,
+                        live: playing
+                    )
+                    .frame(height: 23)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
                 voiceSpeakerGlyph(playing: playing)
             }
-            .font(pfStyled(size: 15, weight: .medium, design: .rounded))
             .padding(.horizontal, 13)
-            .frame(width: width, height: 42, alignment: .leading)
+            .frame(width: width, height: 56, alignment: .leading)
             .background(BubbleFill(mine: true,
                                    tail: showTail,
                                    seed: bubbleSeed(message.id)))
@@ -8498,7 +8517,7 @@ struct MessageRow: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     voiceProgressTrack(levels: levels, progress: dot, live: live)
-                        .frame(height: 25)
+                        .frame(height: 30)
 
                     HStack(spacing: 5) {
                         Text(live ? voiceClock(elapsed) : voiceClock(total))
@@ -8517,7 +8536,7 @@ struct MessageRow: View {
                 .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 12)
-            .frame(width: width, height: 64, alignment: .leading)
+            .frame(width: width, height: 70, alignment: .leading)
             .background(BubbleFill(mine: mine,
                                    tail: showTail,
                                    seed: bubbleSeed(message.id)))
@@ -8566,38 +8585,65 @@ struct MessageRow: View {
             let width = max(24, geo.size.width)
             let height = max(12, geo.size.height)
             let count = max(4, levels.count)
-            let gap: CGFloat = count > 28 ? 1.1 : 1.7
-            let barWidth = max(1.2, (width - gap * CGFloat(count - 1)) / CGFloat(count))
+            let inset: CGFloat = 3
+            let trackWidth = max(18, width - inset * 2)
+            let gap: CGFloat = count > 28 ? 1.25 : 1.8
+            let barWidth = max(1.3,
+                               (trackWidth - gap * CGFloat(count - 1))
+                                   / CGFloat(count))
             let clamped = min(1, max(0, progress))
 
             ZStack(alignment: .leading) {
+                Capsule(style: .continuous)
+                    .fill(bubblePrimaryInk.opacity(live ? 0.07 : 0.10))
+                    .overlay {
+                        Capsule(style: .continuous)
+                            .stroke(
+                                bubblePrimaryInk.opacity(0.075),
+                                lineWidth: 0.5
+                            )
+                    }
+
                 Canvas { context, size in
                     for i in 0..<count {
                         let at = (Double(i) + 0.5) / Double(count)
                         let level = levels[min(i, levels.count - 1)]
-                        let barHeight = max(4, level * (size.height - 3))
+                        let barHeight = max(4, level * (size.height - 5))
                         let rect = CGRect(
-                            x: CGFloat(i) * (barWidth + gap),
+                            x: inset + CGFloat(i) * (barWidth + gap),
                             y: (size.height - barHeight) / 2,
                             width: barWidth,
                             height: barHeight
                         )
                         let path = Path(roundedRect: rect, cornerRadius: barWidth / 2)
                         let color = at <= clamped && live
-                            ? C.green
+                            ? (mine ? Color.white : C.green)
                             : bubblePrimaryInk.opacity(live ? 0.16 : 0.24)
                         context.fill(path, with: .color(color))
                     }
                 }
 
                 if live {
-                    Capsule(style: .continuous)
-                        .fill(Color.white.opacity(0.96))
-                        .frame(width: 2, height: max(12, height - 2))
-                        .shadow(color: C.green.opacity(0.48),
-                                radius: 3, y: 0)
-                        .position(x: min(width - 2, max(2, width * clamped)),
-                                  y: height / 2)
+                    ZStack {
+                        Circle()
+                            .fill((mine ? Color.white : C.green).opacity(0.20))
+                            .frame(width: 13, height: 13)
+                        Circle()
+                            .fill(mine ? Color.white : C.green)
+                            .frame(width: 7, height: 7)
+                            .overlay {
+                                Circle().stroke(
+                                    Color.white.opacity(mine ? 0.18 : 0.48),
+                                    lineWidth: 0.6
+                                )
+                            }
+                            .shadow(color: C.green.opacity(mine ? 0.16 : 0.42),
+                                    radius: 4, y: 0)
+                    }
+                    .position(x: min(width - inset - 4,
+                                     max(inset + 4,
+                                         inset + trackWidth * clamped)),
+                              y: height / 2)
                 }
             }
             .contentShape(Rectangle())
@@ -8798,9 +8844,11 @@ struct MessageRow: View {
                                          style: .continuous)
                             .stroke(Color.white.opacity(0.13), lineWidth: 0.5)
                     }
-                    .frame(width: plateW - 8, height: plateH - 6)
-                    .rotationEffect(.degrees(-2.6), anchor: .bottomLeading)
-                    .offset(x: -7, y: 6)
+                    .frame(width: plateW - 12, height: plateH - 8)
+                    .rotationEffect(.degrees(-1.9), anchor: .bottomLeading)
+                    .offset(x: -6, y: 5)
+                    .shadow(color: Color.black.opacity(0.075),
+                            radius: 5, x: 0, y: 3)
 
                 RoundedRectangle(cornerRadius: cornerRadius + 1, style: .continuous)
                     .fill(
@@ -8818,9 +8866,11 @@ struct MessageRow: View {
                                          style: .continuous)
                             .stroke(Color.white.opacity(0.18), lineWidth: 0.6)
                     }
-                    .frame(width: plateW, height: plateH)
-                    .rotationEffect(.degrees(-1.35), anchor: .bottomLeading)
-                    .offset(x: -4, y: 4)
+                    .frame(width: plateW - 4, height: plateH - 2)
+                    .rotationEffect(.degrees(-0.85), anchor: .bottomLeading)
+                    .offset(x: -3, y: 3)
+                    .shadow(color: Color.black.opacity(0.09),
+                            radius: 6, x: 0, y: 3)
 
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(
@@ -8838,9 +8888,11 @@ struct MessageRow: View {
                                          style: .continuous)
                             .stroke(Color.white.opacity(0.15), lineWidth: 0.6)
                     }
-                    .frame(width: plateW + 4, height: plateH + 2)
-                    .rotationEffect(.degrees(1.1), anchor: .bottomTrailing)
-                    .offset(x: 4, y: 2)
+                    .frame(width: plateW + 2, height: plateH + 1)
+                    .rotationEffect(.degrees(0.75), anchor: .bottomTrailing)
+                    .offset(x: 3, y: 2)
+                    .shadow(color: Color.black.opacity(0.10),
+                            radius: 7, x: 0, y: 3)
 
                 NativeMediaGlassSurface(
                     shape: AnyShape(RoundedRectangle(cornerRadius: cornerRadius,
@@ -8848,10 +8900,39 @@ struct MessageRow: View {
                     showsEdge: false
                 )
                 .opacity(0.92)
+
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.13),
+                                Color.clear,
+                                Color.black.opacity(0.035)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.34),
+                                Color.white.opacity(0.07),
+                                Color.black.opacity(0.08)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.75
+                    )
+                    .padding(0.5)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .shadow(color: Color.black.opacity(0.14), radius: 10, x: 0, y: 5)
+        .shadow(color: Color.black.opacity(0.13), radius: 9, x: 0, y: 4)
+        .compositingGroup()
         .allowsHitTesting(false)
     }
 

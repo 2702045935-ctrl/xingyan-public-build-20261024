@@ -20,13 +20,15 @@ enum NativeSpeech {
 
     static func configure(_ request: SFSpeechRecognitionRequest,
                           recognizer: SFSpeechRecognizer,
-                          partial: Bool) {
+                          partial: Bool,
+                          preferOnDevice: Bool = false) {
         request.shouldReportPartialResults = partial
         if #available(iOS 16.0, *) {
             request.addsPunctuation = true
         }
-        // 原生设备端识别优先；只有当前语言没有离线模型时才让系统选择在线识别。
-        if recognizer.supportsOnDeviceRecognition {
+        // 文件转写默认交给系统选择设备端或 Apple 在线识别，
+        // 避免没有下载离线模型时直接返回空结果。
+        if preferOnDevice && recognizer.supportsOnDeviceRecognition {
             request.requiresOnDeviceRecognition = true
         }
     }
@@ -46,11 +48,16 @@ enum FileSpeech {
         }
     }
 
-    static func recognize(url: URL, timeout: TimeInterval = 12) async -> String {
+    static func recognize(url: URL, timeout: TimeInterval = 30) async -> String {
         guard let rec = NativeSpeech.recognizer(),
               rec.isAvailable else { return "" }
         let req = SFSpeechURLRecognitionRequest(url: url)
-        NativeSpeech.configure(req, recognizer: rec, partial: false)
+        NativeSpeech.configure(
+            req,
+            recognizer: rec,
+            partial: false,
+            preferOnDevice: false
+        )
         return await withCheckedContinuation { (cont: CheckedContinuation<String, Never>) in
             var finished = false
             let done: (String) -> Void = { text in
