@@ -135,7 +135,8 @@ require(
 )
 require(
     "ContactAvatarPressStyle" in VIEW
-    and "ContactTopIconPressStyle" in VIEW
+    and "NativeNavMenuButton(" in VIEW
+    and "navPlusOverlay" not in VIEW
     and "ContactSearchPressStyle" in VIEW
     and "buttonStyle(ContactSearchPressStyle())" in VIEW
     and "buttonStyle(MenuPressStyle())" in VIEW,

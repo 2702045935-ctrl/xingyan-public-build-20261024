@@ -142,20 +142,6 @@ private struct ContactAvatarPressStyle: ButtonStyle {
     }
 }
 
-private struct ContactTopIconPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background {
-                Circle()
-                    .fill(Color.primary.opacity(configuration.isPressed ? 0.065 : 0))
-            }
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
-                       value: configuration.isPressed)
-    }
-}
-
 private struct ContactSearchPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -179,7 +165,6 @@ struct ContactsView: View {
     @State private var path = NavigationPath()
     @State private var bubble: String?
     @State private var bubbleTask: Task<Void, Never>?
-    @State private var plusMenu = false
     @State private var showScan = false
     @State private var showPhoneContacts = false
     @State private var phoneSelectedUser: User?
@@ -320,18 +305,50 @@ private var funcs: [(String, String, Color, String)] {
     }
 
     private var plusButton: some View {
-        Button {
-            plusMenu = true
-        } label: {
-            Image(systemName: "plus")
-                .font(.system(size: 21, weight: .medium))
-                .foregroundStyle(contactsLabel)
-                .frame(width: 42, height: 42)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(ContactTopIconPressStyle())
+        NativeNavMenuButton(
+            title: Tr("添加"),
+            symbol: "plus",
+            tint: UIColor(contactsLabel),
+            items: [
+                NativeNavMenuAction(
+                    id: "new-group",
+                    title: Tr("发起群聊"),
+                    symbol: "person.2.fill"
+                ) {
+                    path.append("newGroup")
+                },
+                NativeNavMenuAction(
+                    id: "face-group",
+                    title: Tr("面对面建群"),
+                    symbol: "person.3.sequence.fill"
+                ) {
+                    path.append("faceGroup")
+                },
+                NativeNavMenuAction(
+                    id: "add-friend",
+                    title: Tr("添加朋友"),
+                    symbol: "person.badge.plus"
+                ) {
+                    path.append("addFriend")
+                },
+                NativeNavMenuAction(
+                    id: "phone-contacts",
+                    title: Tr("手机联系人"),
+                    symbol: "person.text.rectangle"
+                ) {
+                    showPhoneContacts = true
+                },
+                NativeNavMenuAction(
+                    id: "scan",
+                    title: Tr("扫一扫"),
+                    symbol: "qrcode.viewfinder"
+                ) {
+                    showScan = true
+                }
+            ]
+        )
+        .frame(width: 44, height: 44)
         .zIndex(20)
-        .accessibilityLabel(Tr("添加"))
     }
 
     var body: some View {
@@ -530,28 +547,6 @@ private var funcs: [(String, String, Color, String)] {
             }
         }
 
-        .navPlusOverlay($plusMenu, items: [
-            NavPlusItem(title: Tr("发起群聊"), symbol: "person.2.fill",
-                        colors: [Color(hex: 0x34C98F), Color(hex: 0x0E8065)]) {
-                path.append("newGroup")
-            },
-            NavPlusItem(title: Tr("面对面建群"), symbol: "person.3.sequence.fill",
-                        colors: [Color(hex: 0x35CFB5), Color(hex: 0x0E8E84)]) {
-                path.append("faceGroup")
-            },
-            NavPlusItem(title: Tr("添加朋友"), symbol: "person.badge.plus",
-                        colors: [Color(hex: 0xFFB340), Color(hex: 0xE88214)]) {
-                path.append("addFriend")
-            },
-            NavPlusItem(title: Tr("手机联系人"), symbol: "person.text.rectangle",
-                        colors: [Color(hex: 0x8B7CFF), Color(hex: 0x5A4FD1)]) {
-                showPhoneContacts = true
-            },
-            NavPlusItem(title: Tr("扫一扫"), symbol: "qrcode.viewfinder",
-                        colors: [Color(hex: 0x58A6FF), Color(hex: 0x156FD1)]) {
-                showScan = true
-            }
-        ])
         .fullScreenCover(isPresented: $showScan) {
             ScannerView { text in handleScanned(text, app: app) }
         }
@@ -612,7 +607,6 @@ private var funcs: [(String, String, Color, String)] {
 
     private var contactsSearchBar: some View {
         Button {
-            plusMenu = false
             showSearch = true
         } label: {
             HStack(spacing: 6) {
