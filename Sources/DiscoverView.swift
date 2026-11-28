@@ -1956,6 +1956,125 @@ struct MomentsView: View {
         }
     }
 
+    @ViewBuilder
+    private var momentCoverEditControl: some View {
+        if coverEditable && !cover.isEmpty {
+            Button {
+                coverMenu = true
+            } label: {
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 42, height: 42)
+                    .background {
+                        ZStack {
+                            NativeMediaGlassSurface(
+                                shape: AnyShape(Circle()),
+                                interactive: true,
+                                showsEdge: false
+                            )
+                            Circle().fill(Color.black.opacity(0.28))
+                        }
+                    }
+                    .overlay {
+                        Circle().stroke(Color.white.opacity(0.24), lineWidth: 0.7)
+                    }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("换封面"))
+            .padding(.leading, 16)
+            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            .zIndex(4)
+        }
+    }
+
+    private var momentCoverScrim: some View {
+        let topMask: Double = scheme == .dark
+            ? 0.54
+            : Double(max(0, UIConfig.num("momentTopMask", 0.20)))
+        return ZStack {
+            LinearGradient(
+                stops: [
+                    .init(color: .black.opacity(topMask), location: 0),
+                    .init(color: .clear, location: 0.30),
+                    .init(color: .black.opacity(scheme == .dark ? 0.12 : 0.06),
+                          location: 0.58),
+                    .init(color: .black.opacity(scheme == .dark ? 0.92 : 0.78),
+                          location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            RadialGradient(
+                colors: [Color.black.opacity(0.22), .clear],
+                center: .top,
+                startRadius: 0,
+                endRadius: max(180, L.width)
+            )
+        }
+        .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private var momentCoverIdentity: some View {
+        HStack(alignment: .center, spacing: 14) {
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(Tr("生活圈"))
+                    .font(pf(9.5, .semibold))
+                    .tracking(1.6)
+                    .foregroundColor(.white.opacity(0.66))
+
+                Text(owner?.name ?? "")
+                    .font(pf(24, .semibold))
+                    .foregroundColor(.white)
+                    .shadow(color: Color.black.opacity(0.66), radius: 6, x: 0, y: 2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+
+                if let sign = signature {
+                    Text(sign)
+                        .font(pf(12.8, .medium))
+                        .foregroundColor(.white.opacity(0.84))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.trailing)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .shadow(color: Color.black.opacity(0.52), radius: 4, x: 0, y: 1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+
+            LinearGradient(
+                colors: [Color.white.opacity(0.58), Color.white.opacity(0.04)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(width: 1, height: max(44, L.coverAvatar * 0.8))
+
+            Avatar(
+                path: owner?.avatarPath ?? "",
+                size: max(58, L.coverAvatar),
+                radius: 20
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.62), Color.white.opacity(0.08)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            }
+            .shadow(color: Color.black.opacity(0.44), radius: 10, x: 0, y: 4)
+        }
+        .frame(maxWidth: min(300, max(196, L.width - 72)), alignment: .trailing)
+        .padding(.trailing, 16)
+        .padding(.bottom, 8)
+        .allowsHitTesting(false)
+    }
+
     private func coverView(_ extra: CGFloat) -> some View {
         let topOverdraw = max(0, L.safeTop)
         let visualHeight = L.coverH + extra + topOverdraw
@@ -2051,42 +2170,7 @@ struct MomentsView: View {
                 .zIndex(4)
             }
 
-            Group {
-                if scheme == .dark {
-                    HarmonyDarkMask(strength: 0.94)
-                        .mask(
-                            LinearGradient(
-                                colors: [Color.black, Color.black.opacity(0.70), Color.clear],
-                                startPoint: .top, endPoint: .bottom)
-                        )
-                } else {
-                    LinearGradient(colors: [Color.black.opacity(max(0, UIConfig.num("momentTopMask", 0.20))),
-                                            Color.black.opacity(0)],
-                                   startPoint: .top, endPoint: .bottom)
-                }
-            }
-                .frame(height: max(L.safeTop + 56, UIConfig.num("momentTopMaskH", 150)))
-                .frame(maxHeight: .infinity, alignment: .top)
-                .allowsHitTesting(false)
-
-            Group {
-                if scheme == .dark {
-                    HarmonyDarkMask(strength: 0.96)
-                        .mask(
-                            LinearGradient(
-                                colors: [Color.clear, Color.black.opacity(0.78), Color.black],
-                                startPoint: .top, endPoint: .bottom)
-                        )
-                } else {
-                    LinearGradient(colors: [Color.black.opacity(0), Color.black.opacity(0.28),
-                                            Color.black.opacity(0.58)],
-                                   startPoint: .top, endPoint: .bottom)
-                }
-            }
-                .frame(height: L.coverH * 0.62)
-                .frame(maxHeight: .infinity, alignment: .bottom)
-                .offset(y: -momentProfileFooterHeight)
-                .allowsHitTesting(false)
+            momentCoverScrim
 
             if coverEditable {
                 Color.clear
@@ -2096,90 +2180,8 @@ struct MomentsView: View {
                     .zIndex(2)
             }
 
-            if coverEditable && !cover.isEmpty {
-                Button {
-                    coverMenu = true
-                } label: {
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(width: 40, height: 40)
-                        .background {
-                            ZStack {
-                                NativeMediaGlassSurface(
-                                    shape: AnyShape(Circle()),
-                                    interactive: true,
-                                    showsEdge: false
-                                )
-                                Circle().fill(Color.black.opacity(0.28))
-                            }
-                        }
-                        .overlay(
-                            Circle().stroke(
-                                Color.white.opacity(0.24),
-                                lineWidth: 0.7
-                            )
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Tr("换封面"))
-                .padding(.leading, 16)
-                .padding(.bottom, momentProfileFooterHeight + 12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .zIndex(4)
-            }
-
-            HStack(alignment: .center, spacing: 14) {
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(Tr("生活圈"))
-                        .font(pf(9.5, .semibold))
-                        .tracking(1.6)
-                        .foregroundColor(.white.opacity(0.66))
-
-                    Text(owner?.name ?? "")
-                        .font(pf(24, .semibold))
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.66), radius: 6, x: 0, y: 2)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.82)
-
-                    if let sign = signature {
-                        Text(sign)
-                            .font(pf(12.8, .medium))
-                            .foregroundColor(.white.opacity(0.84))
-                            .lineLimit(2)
-                            .multilineTextAlignment(.trailing)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .shadow(color: Color.black.opacity(0.52), radius: 4, x: 0, y: 1)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .trailing)
-
-                Avatar(
-                    path: owner?.avatarPath ?? "",
-                    size: max(58, L.coverAvatar),
-                    radius: 20
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.62),
-                                    Color.white.opacity(0.08)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                }
-                .shadow(color: Color.black.opacity(0.44), radius: 10, x: 0, y: 4)
-            }
-            .frame(maxWidth: min(328, max(1, L.width - 32)), alignment: .trailing)
-            .padding(.trailing, 16)
-            .padding(.bottom, 8)
-            .allowsHitTesting(false)
+            momentCoverEditControl
+            momentCoverIdentity
         }
         .frame(height: L.coverH + extra + momentProfileFooterHeight)
         .zIndex(1)

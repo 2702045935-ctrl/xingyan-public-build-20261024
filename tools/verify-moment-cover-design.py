@@ -14,7 +14,7 @@ def require(condition: bool, message: str) -> None:
         raise SystemExit("moment cover design verification failed: " + message)
 
 
-start = DISCOVER.index("private func coverView(_ extra: CGFloat)")
+start = DISCOVER.index("@ViewBuilder\n    private var momentCoverEditControl")
 end = DISCOVER.index("private func dayLabel", start)
 cover = DISCOVER[start:end]
 adjust_start = DISCOVER.index("struct CoverAdjustSheet")
@@ -26,7 +26,7 @@ require(
     and "radius: 20" in cover
     and ".padding(.trailing, 16)" in cover
     and ".padding(.bottom, 8)" in cover
-    and "min(328, max(1, L.width - 32))" in cover,
+    and "min(300, max(196, L.width - 72))" in cover,
     "cover identity must stay in the original lower-right placement",
 )
 require(
@@ -46,6 +46,22 @@ require(
     and "Circle().fill(Color.black.opacity(0.28))" in cover
     and "Color.white.opacity(0.62)" in cover,
     "the cover must use editorial type hierarchy and one native edit control",
+)
+require(
+    "private var momentCoverScrim: some View" in cover
+    and "LinearGradient(" in cover
+    and "RadialGradient(" in cover
+    and "location: 1" in cover
+    and "HarmonyDarkMask(strength: 0.94)" not in cover
+    and "HarmonyDarkMask(strength: 0.96)" not in cover,
+    "the cover must use one unified cinematic scrim instead of stacked legacy masks",
+)
+require(
+    "frame(width: 1, height: max(44, L.coverAvatar * 0.8))" in cover
+    and "frame(width: 42, height: 42)" in cover
+    and ".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)"
+    in cover,
+    "cover controls and identity must share one intentional bottom composition",
 )
 require(
     "let topOverdraw = max(0, L.safeTop)" in cover
