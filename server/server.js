@@ -22443,11 +22443,11 @@ async function handleApi(req, res, pathname, query) {
         let addReason = '';
         if (u.id === user.id) { addState = 'self'; addReason = '这是你自己'; }
         else if (u.banned) { addState = 'banned'; addReason = '该账号当前不可添加'; }
+        else if (blocked) { addState = 'blocked'; addReason = '已加入黑名单，请先移出'; }
+        else if (blockedMe) { addState = 'blocked_by_peer'; addReason = '暂时无法添加'; }
         else if (relation === 'friend') { addState = 'friend'; addReason = '你们已经是朋友'; }
         else if (relation === 'requested') { addState = 'requested'; addReason = '朋友验证申请已发送'; }
         else if (relation === 'incoming') { addState = 'incoming'; addReason = '对方已申请添加你'; }
-        else if (blocked) { addState = 'blocked'; addReason = '请先将对方移出黑名单'; }
-        else if (blockedMe) { addState = 'blocked_by_peer'; addReason = '暂时无法添加'; }
         return Object.assign(publicUserBrief(u, user.id, myFriends), {
           relation,
           online: online.includes(u.id),

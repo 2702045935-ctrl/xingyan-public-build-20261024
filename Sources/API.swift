@@ -65,6 +65,9 @@ struct User: Codable, Identifiable, Hashable {
     var balance: Double?
 
     var relation: String?
+    var addState: String?
+    var addReason: String?
+    var blockedMe: Bool?
     var ipProvince: String?
     var deviceModel: String?
 

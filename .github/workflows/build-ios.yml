@@ -125,6 +125,7 @@ jobs:
           python3 tools/verify-contact-flow-layout.py
           python3 tools/verify-contacts-derived-cache.py
           python3 tools/verify-contacts-5000.py
+          python3 tools/verify-friend-block-semantics.py
           python3 tools/verify-account-switch-readiness.py
           python3 tools/verify-chat-menu-icon.py
           python3 tools/verify-no-top-green-glow.py

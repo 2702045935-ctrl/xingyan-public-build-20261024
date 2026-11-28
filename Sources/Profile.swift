@@ -1194,16 +1194,26 @@ struct AddFriendView: View {
         .padding(.horizontal, 16)
         .frame(height: 72)
         .contentShape(Rectangle())
+        .onTapGesture {
+            target = u
+        }
     }
 
     @ViewBuilder
     private func resultAction(_ u: User) -> some View {
         let rel = u.relation ?? "none"
-        if sentTo.contains(u.id) || rel == "requested" {
+        let state = sentTo.contains(u.id) ? "requested" : (u.addState ?? rel)
+        if state == "self" {
+            Text(Tr("这是你自己")).font(pf(14)).foregroundColor(C.subLabel)
+        } else if state == "blocked" {
+            disabledResultChip(Tr("已加入黑名单"))
+        } else if state == "blocked_by_peer" || state == "banned" {
+            disabledResultChip(Tr("暂时无法添加"))
+        } else if state == "requested" {
             Text(Tr("等待验证")).font(pf(14)).foregroundColor(C.subLabel)
-        } else if rel == "friend" || rel == "self" {
+        } else if state == "friend" {
             Text(Tr("已添加")).font(pf(14)).foregroundColor(C.subLabel)
-        } else if rel == "incoming" {
+        } else if state == "incoming" {
             Button { accept(u) } label: {
                 greenChip(Tr("接受"))
             }
@@ -1214,6 +1224,17 @@ struct AddFriendView: View {
             }
             .buttonStyle(MenuPressStyle())
         }
+    }
+
+    private func disabledResultChip(_ title: String) -> some View {
+        Text(title)
+            .font(pf(13, .medium))
+            .foregroundColor(C.subLabel)
+            .padding(.horizontal, 11)
+            .frame(height: 30)
+            .background(C.fieldBg,
+                        in: RoundedRectangle(cornerRadius: 9,
+                                             style: .continuous))
     }
 
     private func greenChip(_ t: String) -> some View {
