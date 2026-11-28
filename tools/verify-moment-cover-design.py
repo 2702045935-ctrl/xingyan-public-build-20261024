@@ -58,6 +58,11 @@ require(
     "cover source selection and crop confirmation must rise from the bottom like WeChat",
 )
 require(
+    DISCOVER.count(".highPriorityGesture(\n") >= 2
+    and DISCOVER.count("TapGesture().onEnded { coverMenu = true }") >= 2,
+    "the empty and existing cover edit buttons must win hit testing over the cover gesture layer",
+)
+require(
     "python3 tools/verify-moment-cover-design.py" in WORKFLOW,
     "moment cover design regression must run in the iOS gate",
 )

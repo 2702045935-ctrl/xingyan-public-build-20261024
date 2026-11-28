@@ -2060,6 +2060,10 @@ struct MomentsView: View {
                             }
                     }
                     .buttonStyle(.plain)
+                    .contentShape(Capsule(style: .continuous))
+                    .highPriorityGesture(
+                        TapGesture().onEnded { coverMenu = true }
+                    )
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 18)
@@ -2138,6 +2142,10 @@ struct MomentsView: View {
                         )
                 }
                 .buttonStyle(.plain)
+                .contentShape(Capsule(style: .continuous))
+                .highPriorityGesture(
+                    TapGesture().onEnded { coverMenu = true }
+                )
                 .padding(.leading, 12)
                 .padding(.bottom, 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
