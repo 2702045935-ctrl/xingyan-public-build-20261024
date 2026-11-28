@@ -54,6 +54,17 @@ require(
     "live location must use an immersive map, avatar annotations and a floating control panel",
 )
 require(
+    "struct ChatLocationChoiceSheet" in LOCATION
+    and "ChatLocationChoiceSheet(" in CHAT
+    and ".presentationDetents([.height(316)])" in CHAT
+    and ".presentationDetents([.fraction(0.72), .large])" in CHAT
+    and ".presentationDetents([.fraction(0.78), .large])" in CHAT
+    and ".presentationDetents([.fraction(0.86), .large])" in CHAT
+    and ".animation(.spring(response: 0.28, dampingFraction: 0.90),\n                                   value: voiceMode)"
+    in CHAT,
+    "location choices and secondary location sheets must rise from the bottom like WeChat, with the voice composer using the same motion",
+)
+require(
     "MapSnapshotView(point: pt, width: 238, height: 144)" in CHAT
     and "mappin.and.ellipse" in CHAT
     and ".background(bubbleFill)" in CHAT

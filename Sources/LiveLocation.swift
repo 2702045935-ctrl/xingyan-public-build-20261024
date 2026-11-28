@@ -48,6 +48,108 @@ final class LiveLocationStore: ObservableObject {
     }
 }
 
+struct ChatLocationChoiceSheet: View {
+    let onSendLocation: () -> Void
+    let onLiveLocation: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Capsule()
+                .fill(C.subLabel.opacity(0.24))
+                .frame(width: 36, height: 4)
+                .padding(.top, 10)
+
+            HStack(spacing: 10) {
+                Image(systemName: "location.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 38, height: 38)
+                    .background(C.green, in: RoundedRectangle(cornerRadius: 11,
+                                                               style: .continuous))
+                Text(Tr("位置"))
+                    .font(pf(18, .semibold))
+                    .foregroundColor(C.label)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 2)
+
+            choiceRow(title: Tr("发送位置"),
+                      detail: Tr("选择地图上的地点"),
+                      symbol: "mappin.and.ellipse") {
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.22,
+                                              execute: onSendLocation)
+            }
+
+            choiceRow(title: Tr("共享实时位置"),
+                      detail: Tr("和聊天成员一起看位置"),
+                      symbol: "location.circle.fill") {
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.22,
+                                              execute: onLiveLocation)
+            }
+
+            Button {
+                dismiss()
+            } label: {
+                Text(Tr("取消"))
+                    .font(pf(16, .medium))
+                    .foregroundColor(C.label)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(C.controlSurface,
+                                in: RoundedRectangle(cornerRadius: 15,
+                                                     style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 18)
+
+            Spacer(minLength: 8)
+        }
+        .background(C.pageBg.ignoresSafeArea())
+    }
+
+    private func choiceRow(title: String,
+                           detail: String,
+                           symbol: String,
+                           action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: symbol)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(C.green)
+                    .frame(width: 36, height: 36)
+                    .background(C.green.opacity(0.11),
+                                in: RoundedRectangle(cornerRadius: 10,
+                                                     style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(pf(15.5, .medium))
+                        .foregroundColor(C.label)
+                    Text(detail)
+                        .font(pf(11.5))
+                        .foregroundColor(C.subLabel)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(C.subLabel.opacity(0.7))
+            }
+            .padding(.horizontal, 13)
+            .frame(height: 58)
+            .background(C.cardBg,
+                        in: RoundedRectangle(cornerRadius: 15,
+                                             style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 18)
+    }
+}
+
 struct SendLocationView: View {
     var onSend: (String) -> Void
 

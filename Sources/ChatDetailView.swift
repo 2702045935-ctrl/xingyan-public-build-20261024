@@ -2413,21 +2413,30 @@ struct ChatDetailView: View {
         }
         .sheet(isPresented: $showLocation) {
             LocationSheet { payload in send(kind: "location", content: payload) }
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
         }
 
-        .confirmationDialog(Tr("位置"), isPresented: $showLocationMenu, titleVisibility: .visible) {
-            Button(Tr("发送位置")) { showSendLocation = true }
-            Button(Tr("共享实时位置")) { showLiveLocation = true }
-            Button(Tr("取消"), role: .cancel) { }
+        .sheet(isPresented: $showLocationMenu) {
+            ChatLocationChoiceSheet(
+                onSendLocation: { showSendLocation = true },
+                onLiveLocation: { showLiveLocation = true }
+            )
+            .presentationDetents([.height(316)])
+            .presentationDragIndicator(.hidden)
         }
         .sheet(isPresented: $showSendLocation) {
             SendLocationView { payload in send(kind: "location", content: payload) }
+                .presentationDetents([.fraction(0.72), .large])
+                .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showLiveLocation) {
             LiveLocationView(chat: chat) {
                 send(kind: "text", content: "📍 我发起了共享实时位置，点＋→位置→共享实时位置就能加入")
             }
             .environmentObject(app)
+            .presentationDetents([.fraction(0.78), .large])
+            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showTransfer, onDismiss: {
 
@@ -2506,7 +2515,10 @@ struct ChatDetailView: View {
         })
 
         .sheet(item: $openLocation) { p in
-            LocationDetailView(point: p).environmentObject(app)
+            LocationDetailView(point: p)
+                .environmentObject(app)
+                .presentationDetents([.fraction(0.86), .large])
+                .presentationDragIndicator(.visible)
         }
         .onChange(of: messages.count) { _ in autoOpenShopCard() }
 
@@ -4754,12 +4766,18 @@ struct ChatDetailView: View {
                     UISelectionFeedbackGenerator().selectionChanged()
                     if voiceMode {
                         if pendingVoiceURL != nil { discardPendingVoice() }
-                        voiceMode = false
-                        focused = true
+                        withAnimation(.spring(response: 0.28,
+                                              dampingFraction: 0.90)) {
+                            voiceMode = false
+                            focused = true
+                        }
                     } else {
-                        focused = false
-                        panel = .none
-                        voiceMode = true
+                        withAnimation(.spring(response: 0.30,
+                                              dampingFraction: 0.90)) {
+                            focused = false
+                            panel = .none
+                            voiceMode = true
+                        }
                     }
                 } label: {
                     Group {
@@ -4915,6 +4933,8 @@ struct ChatDetailView: View {
                                : Color.clear),
                             in: Capsule()
                         )
+                        .animation(.spring(response: 0.28, dampingFraction: 0.90),
+                                   value: voiceMode)
                         .contentShape(Rectangle())
 
                         .scaleEffect(pressStart != nil ? 0.965 : 1)
@@ -6221,8 +6241,10 @@ struct ChatDetailView: View {
             if text.isEmpty {
                 app.show(Tr("没听清，再说一次或者直接发语音"))
             } else {
-                input = text
-                voiceMode = false
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.90)) {
+                    input = text
+                    voiceMode = false
+                }
             }
         }
     }

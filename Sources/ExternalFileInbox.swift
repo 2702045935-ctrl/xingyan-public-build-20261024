@@ -561,6 +561,7 @@ struct ExternalFileSendView: View {
 
     private func send() {
         guard !selectedId.isEmpty, !inbox.files.isEmpty else { return }
+        operationError = ""
         sending = true
         transferFraction = 0.01
         Task {
@@ -624,6 +625,7 @@ struct ExternalFileSendView: View {
 
     private func favorite() {
         guard !inbox.files.isEmpty else { return }
+        operationError = ""
         favoriteBusy = true
         transferFraction = 0.01
         Task {
