@@ -539,19 +539,6 @@ private struct ChatHeaderGlassGroup<Content: View>: View {
     }
 }
 
-struct KeyboardLiftDisable: ViewModifier {
-    let enabled: Bool
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if enabled {
-            content.ignoresSafeArea(.keyboard, edges: .bottom)
-        } else {
-            content
-        }
-    }
-}
-
 private struct QuickIconButtonStyle: ButtonStyle {
     let ink: Color
 
@@ -808,8 +795,6 @@ struct ChatDetailView: View {
 
     @State private var showSendLocation = false
     @State private var showTransfer = false
-
-    @State private var kbHeight: CGFloat = 0
 
     @State private var showSendRedPacket = false
 
@@ -2171,7 +2156,9 @@ struct ChatDetailView: View {
             Text(Tr("你需要发送朋友验证申请，对方通过后才能聊天。"))
         }
 
-        .onChange(of: focused) { pinAfterFocusChange($0) }
+        .onChange(of: focused) { value in
+            if !value { pinToBottomSoon() }
+        }
         .onChange(of: panel) { _ in pinToBottomSoon() }
 
         .safeAreaInset(edge: .top, spacing: 0) {
@@ -2267,36 +2254,11 @@ struct ChatDetailView: View {
                             AnyView(sysTeamToolsBar)
                         }
                         AnyView(composer)
-
-                            .padding(.bottom, UIConfig.num("chatKeyboardManual", 1) > 0
-                                     ? max(0, kbHeight - (UIConfig.num("chatKbFlush", 1) > 0 ? L.safeBottom : 0))
-                                     : 0)
                     }
                 }
             })
         }
-
-        .modifier(KeyboardLiftDisable(enabled: UIConfig.num("chatKeyboardManual", 1) > 0))
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { n in
-            guard UIConfig.num("chatKeyboardManual", 1) > 0 else { return }
-            actionMessage = nil
-            guard let f = n.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
-            let screenH = (UIApplication.shared.connectedScenes
-                .compactMap { ($0 as? UIWindowScene)?.screen.bounds.height }.first) ?? UIScreen.main.bounds.height
-            let h = max(0, screenH - f.origin.y)
-            guard abs(kbHeight - h) > 0.5 else { return }
-            let duration = n.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
-                as? Double ?? 0.25
-            withAnimation(.easeOut(duration: duration)) { kbHeight = h }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { n in
-            guard kbHeight != 0 else { return }
-            let duration = n.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
-                as? Double ?? 0.22
-            withAnimation(.easeOut(duration: duration)) { kbHeight = 0 }
-        }
         .onChange(of: panel) { next in
-            if next != .none { kbHeight = 0 }
             if next != .emoji { emojiPanelExpanded = false }
         }
 
@@ -2955,10 +2917,7 @@ struct ChatDetailView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notice in
             ChatScrollDiag.shared.note("键盘位置变了")
-            pinThroughKeyboardTransition(notice)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
-            pinToBottomImmediately()
+            followKeyboardBottom(notice)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             if atBottomNow { nativeMessageController.scrollToBottom(animated: false) }
@@ -3324,14 +3283,6 @@ struct ChatDetailView: View {
         }
     }
 
-    private func pinAfterFocusChange(_ focused: Bool) {
-        if focused {
-            pinToBottomImmediately()
-        } else {
-            pinToBottomSoon()
-        }
-    }
-
     private func pinToBottomImmediately(force: Bool = false) {
         guard force || atBottomNow else { return }
         pinTask?.cancel()
@@ -3342,16 +3293,28 @@ struct ChatDetailView: View {
         pinTick += 1
     }
 
-    private func pinThroughKeyboardTransition(_ notice: Notification) {
+    private func followKeyboardBottom(_ notice: Notification) {
         guard atBottomNow else { return }
-        let value = notice.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
+        let duration = notice.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
             as? Double ?? 0.25
-        pinToBottomImmediately()
-        DispatchQueue.main.async {
-            pinToBottomImmediately()
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + value + 0.02) {
-            pinToBottomImmediately()
+        pinTask?.cancel()
+        pinTask = Task { @MainActor in
+            // Let SwiftUI finish the safe-area transaction, then move the
+            // native collection on the same curve as the keyboard. This avoids
+            // a late snap and avoids repinning several times during one lift.
+            await Task.yield()
+            if Task.isCancelled { return }
+            guard atBottomNow, !holdScroll else { return }
+            ChatScrollHandle.shared.allowAutomaticPinning()
+            atBottom = true
+            wasAtBottom = true
+            UIView.animate(
+                withDuration: duration,
+                delay: 0,
+                options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseOut]
+            ) {
+                nativeMessageController.scrollToBottom(animated: false)
+            }
         }
     }
 
@@ -4488,8 +4451,6 @@ struct ChatDetailView: View {
             }
         }
     }
-
-    private var kbUp: Bool { kbHeight > 1 }
 
     private var mutedForMe: Bool {
         let c = liveChat
