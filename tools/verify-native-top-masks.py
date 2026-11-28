@@ -89,11 +89,12 @@ require("NativeTopGlassMask(active: navScrolled > 0," in DISCOVER
         and "TopGlassLine(" not in DISCOVER,
         "world top bar must observe the native scroll view and use the shared material")
 require(
-    "struct ChatWeChatLightEdgeMask" in CHAT
-    and "ChatWeChatLightEdgeMask(edge: .top)" in CHAT
-    and "ChatWeChatLightEdgeMask(edge: .bottom)" in CHAT
-    and "else if scheme == .light && !hasPickedChatWallpaper" not in CHAT,
-    "light chat chrome must use the unified WeChat-style background-matched masks",
+    "struct ChatPlainEdgeMask" in CHAT
+    and "ChatPlainEdgeMask(edge: .top)" in CHAT
+    and "ChatPlainEdgeMask(edge: .bottom)" in CHAT
+    and "ChatImmersiveEdgeMask" not in CHAT
+    and "ChatTopGlassBackdrop" not in CHAT,
+    "chat chrome must use the same plain background-matched masks in both themes",
 )
 
 print("native-top-masks: passed")

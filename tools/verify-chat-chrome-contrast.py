@@ -15,13 +15,14 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "let contrastScrim = effectiveDark ? Color.black : Color.white" in CHAT,
-    "wallpaper edge masks must choose a scrim opposite to the selected ink",
-)
-require(
-    "contrastScrim.opacity(effectiveDark ? 0.25 : 0.22)" in CHAT
-    and "contrastScrim.opacity(effectiveDark ? 0.14 : 0.12)" in CHAT,
-    "top and bottom chrome need a strong-to-transparent contrast falloff",
+    "private struct ChatPlainEdgeMask" in CHAT
+    and "let base = C.pageBg" in CHAT
+    and "base.opacity(0.995)" in CHAT
+    and "ChatPlainEdgeMask(edge: .top)" in CHAT
+    and "ChatPlainEdgeMask(edge: .bottom)" in CHAT
+    and "ChatTopGlassBackdrop" not in CHAT
+    and "ChatImmersiveEdgeMask" not in CHAT,
+    "chat top and bottom must use one plain page-colour falloff in both themes",
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT
@@ -32,10 +33,9 @@ require(
 require(
     "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT
     and "capsule.fill(lightInk" in CHAT
-    and "ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)" in CHAT
-    and "ChatWeChatLightEdgeMask(edge: .top)" in CHAT
-    and "ChatWeChatLightEdgeMask(edge: .bottom)" in CHAT,
-    "light chat masks must use the unified WeChat-style background falloff",
+    and "ChatPlainEdgeMask(edge: .top)" in CHAT
+    and "ChatPlainEdgeMask(edge: .bottom)" in CHAT,
+    "header controls may keep their adaptive surface while masks stay plain",
 )
 require(
     CHAT.count("if !path.isEmpty { return true }") >= 2,

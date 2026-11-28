@@ -13,9 +13,10 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "private struct ChatTopGlassBackdrop" in CHAT
-    and "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT,
-    "chat top chrome must use the opaque adaptive surface",
+    "private struct ChatPlainEdgeMask" in CHAT
+    and "let base = C.pageBg" in CHAT
+    and "ChatPlainEdgeMask(edge: .top)" in CHAT,
+    "chat top chrome must use the plain page-colour falloff",
 )
 require(
     "sv.topEdgeEffect.style = .automatic" in (
@@ -31,8 +32,10 @@ require(
     "the circled chat header layout must use an opaque adaptive surface",
 )
 require(
-    "chatBackdrop" in CHAT and "ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)" in CHAT,
-    "the continuous chat wallpaper must stay beneath the native material",
+    "chatBackdrop" in CHAT
+    and "ChatPlainEdgeMask(edge: .top)" in CHAT
+    and "ChatTopGlassBackdrop" not in CHAT,
+    "the top edge must no longer place a glass layer over the wallpaper",
 )
 
 print("group-top-frost: passed")

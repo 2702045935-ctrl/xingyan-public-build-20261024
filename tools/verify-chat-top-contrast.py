@@ -17,20 +17,19 @@ require(
     "top-bar glyphs need an adaptive contrast edge",
 )
 require(
-    "private struct ChatTopGlassBackdrop" in DETAIL
-    and "NativeGlassHeaderMaterial(forcedDark: lightInk)" in DETAIL
-    and "scheme == .light" in DETAIL
-    and "ChatImmersiveEdgeMask(path: backgroundPath" in DETAIL
-    and "edge: .top" in DETAIL
-    and "topBarContrastScrim" not in DETAIL,
-    "chat chrome must keep the wallpaper extension and native top material",
+    "private struct ChatPlainEdgeMask" in DETAIL
+    and "let base = C.pageBg" in DETAIL
+    and "ChatPlainEdgeMask(edge: .top)" in DETAIL
+    and "ChatPlainEdgeMask(edge: .bottom)" in DETAIL
+    and "ChatTopGlassBackdrop" not in DETAIL
+    and "ChatImmersiveEdgeMask" not in DETAIL,
+    "chat chrome must use the plain page-colour top and bottom masks",
 )
 require(
-    "} else if scheme == .light {\n"
-    "                        ChatImmersiveEdgeMask(path: backgroundPath" in DETAIL
-    and "themeVersion: chatTheme.version)\n"
-        "                            ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)" not in DETAIL,
-    "light chat chrome must keep the wallpaper extension without the dark blur layer",
+    "base.opacity(0.96)" in DETAIL
+    and "base.opacity(0.80)" in DETAIL
+    and "ChatMaterialGrainOverlay" not in DETAIL,
+    "chat masks must use only the page-colour gradient without glass or grain",
 )
 require(
     "titleOutline: adaptiveTopOutline.opacity(0.55)" in DETAIL,

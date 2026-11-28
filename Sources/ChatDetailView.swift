@@ -387,113 +387,7 @@ private enum ChatWallpaperEdge: Equatable {
     case bottom
 }
 
-private struct ChatImmersiveEdgeMask: View {
-    let path: String
-    let edge: ChatWallpaperEdge
-    let tint: Color?
-    let dark: Bool
-    let effect: ChatBackgroundEffect
-    let preset: ChatAppearancePreset
-    let themeVersion: Int
-    @Environment(\.colorScheme) private var scheme
-
-    var body: some View {
-        GeometryReader { proxy in
-            if path.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                ChatDefaultWallpaper(preset: preset)
-                    .frame(width: max(1, proxy.size.width),
-                           height: max(1, proxy.size.height),
-                           alignment: edge == .top ? .top : .bottom)
-                    .id("edge-theme-\(preset.rawValue)-\(themeVersion)-\(edge == .top ? "top" : "bottom")")
-            } else if normalizedChatBackground(path) == "solid:black" {
-                Rectangle()
-                    .fill(Color.black)
-                    .frame(width: max(1, proxy.size.width),
-                           height: max(1, proxy.size.height),
-                           alignment: edge == .top ? .top : .bottom)
-            } else {
-            let width = max(1, proxy.size.width)
-            let height = max(1, proxy.size.height)
-            let alignment: Alignment = edge == .top ? .top : .bottom
-            let resolved = effect.resolved(for: scheme)
-            let blurred = resolved != .original
-            let effectiveDark = resolved == .blackBlur
-                || (resolved != .whiteBlur && dark)
-            let base = tint ?? (effectiveDark ? Color(hex: 0x101412)
-                                              : Color(hex: 0xF2F4F1))
-            let direction: (UnitPoint, UnitPoint) = edge == .top
-                ? (.top, .bottom)
-                : (.bottom, .top)
-            let contrastScrim = effectiveDark ? Color.black : Color.white
-
-            ZStack(alignment: alignment) {
-                Rectangle()
-                    .fill(base)
-
-                if !path.isEmpty {
-                    if let solid = renderedChatBackgroundSolidColor(
-                        path,
-                        dark: effectiveDark
-                    ) {
-                        solid
-                    } else if blurred {
-                        ChatWallpaperEffectImage(
-                            path: path,
-                            effect: resolved,
-                            renderSize: CGSize(width: width, height: L.height),
-                            displayAlignment: alignment
-                        )
-                        .id(path + (edge == .top
-                                    ? ":mask-top-blur"
-                                    : ":mask-bottom-blur"))
-                    } else {
-                        RemoteImage(path: path,
-                                    mode: .fill,
-                                    maxSide: chatWallpaperDecodeSide())
-                            .id(path + (edge == .top ? ":mask-top" : ":mask-bottom"))
-                            .frame(width: width, height: L.height)
-                    }
-                }
-
-                Rectangle()
-                    .fill(base.opacity(blurred
-                                       ? (effectiveDark ? 0.065 : 0.045)
-                                       : (effectiveDark ? 0.045 : 0.025)))
-
-                LinearGradient(
-                    stops: [
-                        .init(color: contrastScrim.opacity(effectiveDark ? 0.25 : 0.22),
-                              location: 0),
-                        .init(color: contrastScrim.opacity(effectiveDark ? 0.14 : 0.12),
-                              location: 0.58),
-                        .init(color: .clear, location: 1)
-                    ],
-                    startPoint: direction.0,
-                    endPoint: direction.1
-                )
-
-                LinearGradient(
-                    colors: [
-                        Color.clear,
-                        base.opacity(blurred
-                                     ? (effectiveDark ? 0.075 : 0.035)
-                                     : (effectiveDark ? 0.055 : 0.025))
-                    ],
-                    startPoint: direction.0,
-                    endPoint: direction.1
-                )
-
-                ChatMaterialGrainOverlay()
-            }
-            .frame(width: width, height: height, alignment: alignment)
-            .clipped()
-            }
-        }
-        .allowsHitTesting(false)
-    }
-}
-
-private struct ChatWeChatLightEdgeMask: View {
+private struct ChatPlainEdgeMask: View {
     let edge: ChatWallpaperEdge
 
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -530,38 +424,6 @@ private struct ChatWeChatLightEdgeMask: View {
                 .frame(width: proxy.size.width, height: proxy.size.height)
             }
         }
-        .allowsHitTesting(false)
-    }
-}
-
-private struct ChatTopGlassBackdrop: View {
-    let lightInk: Bool
-
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    var body: some View {
-        Group {
-            if reduceTransparency {
-                Rectangle()
-                    .fill(lightInk
-                          ? Color.black.opacity(0.94)
-                          : Color(uiColor: .systemBackground).opacity(0.97))
-            } else {
-                NativeGlassHeaderMaterial(forcedDark: lightInk)
-                    .mask {
-                        LinearGradient(
-                            stops: [
-                                .init(color: .black, location: 0),
-                                .init(color: .black.opacity(0.96), location: 0.84),
-                                .init(color: .clear, location: 1)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    }
-            }
-        }
-        .ignoresSafeArea(edges: .top)
         .allowsHitTesting(false)
     }
 }
@@ -2226,10 +2088,8 @@ struct ChatDetailView: View {
                 Group {
                     if isStarWorld && newsMode {
                         newsMaskColor
-                    } else if scheme == .light {
-                        ChatWeChatLightEdgeMask(edge: .top)
                     } else {
-                        ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)
+                        ChatPlainEdgeMask(edge: .top)
                     }
                 }
                 .ignoresSafeArea(edges: .top)
@@ -5160,16 +5020,8 @@ struct ChatDetailView: View {
                 Group {
                     if isStarWorld && newsMode {
                         newsMaskColor
-                    } else if scheme == .light {
-                        ChatWeChatLightEdgeMask(edge: .bottom)
                     } else {
-                        ChatImmersiveEdgeMask(path: backgroundPath,
-                                              edge: .bottom,
-                                              tint: wallpaperBottomTint,
-                                              dark: composerUsesLightInk,
-                                              effect: backgroundEffect,
-                                              preset: ChatTheme.preset,
-                                              themeVersion: chatTheme.version)
+                        ChatPlainEdgeMask(edge: .bottom)
                     }
                 }
                 .ignoresSafeArea(edges: .bottom)
