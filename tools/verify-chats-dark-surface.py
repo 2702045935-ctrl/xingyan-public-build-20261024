@@ -74,6 +74,14 @@ require(
     "dark search must use the restrained SMS-like raised control tone",
 )
 require(
+    "private struct NativeConversationSearchSurface: UIViewRepresentable" in CHATS
+    and "if chatsIsDark {\n                    NativeConversationSearchSurface(" in CHATS
+    and "field.isUserInteractionEnabled = false" in CHATS
+    and "field.isAccessibilityElement = false" in CHATS
+    and "if !chatsIsDark {\n                    RoundedRectangle(cornerRadius: 9" in CHATS,
+    "dark chat search must render the native search field while light keeps its prior chrome",
+)
+require(
     '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS
     and "if context.coordinator.dark != dark" in NATIVE_LIST
     and "context.coordinator.refreshVisibleRowsAfterThemeChange()" in NATIVE_LIST

@@ -1194,6 +1194,27 @@ private struct ChatSearchPressStyle: ButtonStyle {
     }
 }
 
+private struct NativeConversationSearchSurface: UIViewRepresentable {
+    let placeholder: String
+    let dark: Bool
+
+    func makeUIView(context: Context) -> UISearchTextField {
+        let field = UISearchTextField()
+        field.isUserInteractionEnabled = false
+        field.isAccessibilityElement = false
+        field.accessibilityElementsHidden = true
+        field.borderStyle = .none
+        field.clipsToBounds = true
+        field.font = .systemFont(ofSize: 15, weight: .regular)
+        return field
+    }
+
+    func updateUIView(_ field: UISearchTextField, context: Context) {
+        field.overrideUserInterfaceStyle = dark ? .dark : .light
+        field.placeholder = placeholder
+    }
+}
+
 private struct NativeChatEntry: Identifiable, Equatable {
     enum Kind: Equatable {
         case top
@@ -1840,23 +1861,34 @@ struct ChatsView: View {
         Button {
             showSearch = true
         } label: {
-            HStack(spacing: 7) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(ChatListVisual.utilityIconInk)
-                Text(Tr("搜索"))
-                    .font(pfStyled(size: 15, weight: .regular))
-                    .foregroundStyle(chatsSearchInk)
+            Group {
+                if chatsIsDark {
+                    NativeConversationSearchSurface(
+                        placeholder: Tr("搜索"),
+                        dark: true
+                    )
+                } else {
+                    HStack(spacing: 7) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(ChatListVisual.utilityIconInk)
+                        Text(Tr("搜索"))
+                            .font(pfStyled(size: 15, weight: .regular))
+                            .foregroundStyle(chatsSearchInk)
+                    }
+                }
             }
             .frame(maxWidth: .infinity)
             .frame(height: 36)
             .background {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(chatsSearchFill)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 9, style: .continuous)
-                            .stroke(chatsSearchBorder, lineWidth: 0.5)
-                    }
+                if !chatsIsDark {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(chatsSearchFill)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .stroke(chatsSearchBorder, lineWidth: 0.5)
+                        }
+                }
             }
             .contentShape(Rectangle())
         }

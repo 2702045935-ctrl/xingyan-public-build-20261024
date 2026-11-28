@@ -21,7 +21,8 @@ require(
 require(
     "static let iconInk = Color.dyn(0x35403A, 0xBDBEC2)" in VIEW
     and "static let utilityIconInk = Color.dyn(0x7A837D, 0x8D8D93)" in VIEW
-    and "Image(systemName: \"magnifyingglass\")\n                    .font(.system(size: 15, weight: .medium))" in VIEW,
+    and 'Image(systemName: "magnifyingglass")' in VIEW
+    and ".font(.system(size: 15, weight: .medium))" in VIEW,
     "chat chrome icons must use the restrained system-gray icon hierarchy",
 )
 require(
