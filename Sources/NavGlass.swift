@@ -310,12 +310,26 @@ struct NativeTopScrollObserver: UIViewRepresentable {
         }
 
         private static func findScroll(_ view: UIView) -> UIScrollView? {
-            var current: UIView? = view
-            while let candidate = current {
-                if let scroll = candidate as? UIScrollView { return scroll }
-                current = candidate.superview
+            var root = view
+            while let parent = root.superview {
+                root = parent
             }
-            return nil
+            var best: UIScrollView?
+            var bestArea: CGFloat = 0
+            func inspect(_ candidate: UIView) {
+                if let scroll = candidate as? UIScrollView {
+                    let area = scroll.bounds.width * scroll.bounds.height
+                    if area > bestArea {
+                        best = scroll
+                        bestArea = area
+                    }
+                }
+                for child in candidate.subviews {
+                    inspect(child)
+                }
+            }
+            inspect(root)
+            return best
         }
     }
 
