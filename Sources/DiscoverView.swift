@@ -3785,4 +3785,4 @@ struct PickedGrid: View {
             }
         }
     }
-}\n
+}

@@ -42,16 +42,23 @@ require(
 require(
     "NativeStaticList(" in LIKES
     and "MomentLikeNativeItem" in LIKES
+    and ".frame(width: 43, height: 43)" in LIKES
+    and ".padding(.leading, 22)" in LIKES
+    and ".padding(.trailing, 20)" in LIKES
     and "ScrollView {" not in LIKES
     and "LazyVStack" not in LIKES,
-    "moment likes must use a native reusable list",
+    "moment likes must use the measured 43pt avatar and 22/20pt native row hierarchy",
 )
 require(
     "NativeStaticList(" in NOTICES
     and "MomentNoticeNativeItem" in NOTICES
+    and ".frame(width: 43, height: 43)" in NOTICES
+    and ".padding(.leading, 22)" in NOTICES
+    and ".padding(.trailing, 20)" in NOTICES
+    and ".padding(.leading, 76)" in NOTICES
     and "ScrollView {" not in NOTICES
     and "LazyVStack" not in NOTICES,
-    "moment notices must use a native reusable list",
+    "moment notices must use the measured avatar, content column and native list",
 )
 require(
     "python3 tools/verify-moment-native-pages.py" in WORKFLOW,

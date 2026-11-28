@@ -112,7 +112,7 @@ struct MomentLikesSheet: View {
                 case .person(let like, let relationship):
                     likeRow(like, relationship: relationship)
                         .overlay(alignment: .bottom) {
-                            HairLine(inset: 67)
+                            HairLine(inset: 76)
                         }
                 case .empty:
                     VStack(spacing: 8) {
@@ -204,7 +204,8 @@ struct MomentLikesSheet: View {
         }
         .font(systemTextFont(13, .semibold, relativeTo: .caption1))
         .foregroundColor(C.label)
-        .padding(.horizontal, 18)
+        .padding(.leading, 22)
+        .padding(.trailing, 20)
         .padding(.top, 15)
         .padding(.bottom, 6)
     }
@@ -214,15 +215,15 @@ struct MomentLikesSheet: View {
         let name = contact?.name ?? like.nickname ?? Tr("星友")
         let avatar = contact?.avatarPath ?? ""
 
-        return HStack(spacing: 12) {
+        return HStack(spacing: 11) {
             if avatar.isEmpty {
                 Text(String(name.prefix(1)))
                     .font(systemTextFont(16, .semibold, relativeTo: .body))
                     .foregroundColor(C.subLabel)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 43, height: 43)
                     .background(Circle().fill(Color.dyn(0xECECF0, 0x242426)))
             } else {
-                Avatar(path: avatar, size: 44, radius: 22, circle: true)
+                Avatar(path: avatar, size: 43, radius: 21.5, circle: true)
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -237,8 +238,9 @@ struct MomentLikesSheet: View {
 
             Spacer(minLength: 8)
         }
-        .padding(.horizontal, 18)
-        .frame(height: 60)
+        .padding(.leading, 22)
+        .padding(.trailing, 20)
+        .frame(height: 64)
     }
 }
 

@@ -107,8 +107,8 @@ struct MomentNoticesView: View {
         } label: {
             HStack(alignment: .top, spacing: 11) {
                 RemoteImage(path: n.avatar ?? "", mode: .fill, maxSide: 200)
-                    .frame(width: 40, height: 40)
-                    .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    .frame(width: 43, height: 43)
+                    .clipShape(RoundedRectangle(cornerRadius: 21.5, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 5) {
@@ -150,14 +150,18 @@ struct MomentNoticesView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.leading, 22)
+            .padding(.trailing, 20)
+            .padding(.vertical, 14)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background(C.cardBg)
+        .background(C.pageBg)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(C.hairline).frame(height: 0.5).padding(.leading, 67)
+            Rectangle()
+                .fill(C.hairline)
+                .frame(height: 0.5)
+                .padding(.leading, 76)
         }
     }
 
