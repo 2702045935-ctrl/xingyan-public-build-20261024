@@ -43,11 +43,11 @@ require(
 )
 CHAT_SHAPE = CHAT[CHAT.index("struct BubbleShape: Shape"):CHAT.index("private struct BubbleUsesLightInkKey")]
 require(
-    "let x0 = rect.minX + (mine ? 0 : out)" in CHAT_SHAPE
-    and "let x1 = rect.maxX - (mine ? out : 0)" in CHAT_SHAPE
-    and "let tipX = mine ? rect.maxX : rect.minX" in CHAT_SHAPE
-    and "x1 + out" not in CHAT_SHAPE
-    and "x0 - out" not in CHAT_SHAPE
+    "let x0 = rect.minX" in CHAT_SHAPE
+    and "let x1 = rect.maxX" in CHAT_SHAPE
+    and "tipX" not in CHAT_SHAPE
+    and "if out > 0" not in CHAT_SHAPE
+    and "y0 + h / 2" not in CHAT_SHAPE
     and "clipsToBounds = false" in NATIVE
     and "contentView.clipsToBounds = false" in NATIVE
     and "private let nativeStaticRowDrawingBleed: CGFloat = 0.75" in NATIVE

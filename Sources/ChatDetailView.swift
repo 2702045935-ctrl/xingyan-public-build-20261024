@@ -308,15 +308,8 @@ struct BubbleShape: Shape {
     func path(in rect: CGRect) -> Path {
         let r = min(pill ? min(rect.height / 2, 18) : radius, rect.height / 2, rect.width / 2)
 
-        let out: CGFloat = tail ? 5 : 0
-        let h: CGFloat = 9
-        let y0 = rect.minY + 6
-        // Keep the tail inside the layout bounds. SwiftUI backgrounds are
-        // allowed to draw past their frame, but native collection cells clip
-        // that overflow, which made run-start bubbles look cut on their edge.
-        let x0 = rect.minX + (mine ? 0 : out)
-        let x1 = rect.maxX - (mine ? out : 0)
-        let tipX = mine ? rect.maxX : rect.minX
+        let x0 = rect.minX
+        let x1 = rect.maxX
         let yA = rect.minY, yB = rect.maxY
         var p = Path()
 
@@ -324,11 +317,6 @@ struct BubbleShape: Shape {
             p.move(to: CGPoint(x: x0 + r, y: yA))
             p.addLine(to: CGPoint(x: x1 - r, y: yA))
             p.addQuadCurve(to: CGPoint(x: x1, y: yA + r), control: CGPoint(x: x1, y: yA))
-            if out > 0 {
-                p.addLine(to: CGPoint(x: x1, y: y0))
-                p.addLine(to: CGPoint(x: tipX, y: y0 + h / 2))
-                p.addLine(to: CGPoint(x: x1, y: y0 + h))
-            }
             p.addLine(to: CGPoint(x: x1, y: yB - r))
             p.addQuadCurve(to: CGPoint(x: x1 - r, y: yB), control: CGPoint(x: x1, y: yB))
             p.addLine(to: CGPoint(x: x0 + r, y: yB))
@@ -339,11 +327,6 @@ struct BubbleShape: Shape {
             p.move(to: CGPoint(x: x1 - r, y: yA))
             p.addLine(to: CGPoint(x: x0 + r, y: yA))
             p.addQuadCurve(to: CGPoint(x: x0, y: yA + r), control: CGPoint(x: x0, y: yA))
-            if out > 0 {
-                p.addLine(to: CGPoint(x: x0, y: y0))
-                p.addLine(to: CGPoint(x: tipX, y: y0 + h / 2))
-                p.addLine(to: CGPoint(x: x0, y: y0 + h))
-            }
             p.addLine(to: CGPoint(x: x0, y: yB - r))
             p.addQuadCurve(to: CGPoint(x: x0 + r, y: yB), control: CGPoint(x: x0, y: yB))
             p.addLine(to: CGPoint(x: x1 - r, y: yB))
