@@ -1,5 +1,11 @@
 import SwiftUI
 
+private struct MomentNoticeNativeItem: Identifiable, Equatable {
+    let id: String
+    let notice: MomentNotice
+    let signature: String
+}
+
 struct MomentNoticesView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -43,12 +49,14 @@ struct MomentNoticesView: View {
                     }
                     Spacer(minLength: 0)
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(items) { n in row(n) }
-                        }
-                        .padding(.bottom, 24)
+                    NativeStaticList(
+                        items: nativeItems,
+                        dark: nil,
+                        signature: \.signature
+                    ) { item in
+                        row(item.notice)
                     }
+                    .background(C.pageBg)
                 }
             }
         }
@@ -65,6 +73,26 @@ struct MomentNoticesView: View {
             }
         } message: {
             Text(Tr("清空后这一页不再显示之前那些赞和评论；新的消息还会照常进来。"))
+        }
+    }
+
+    private var nativeItems: [MomentNoticeNativeItem] {
+        items.map { notice in
+            MomentNoticeNativeItem(
+                id: notice.id,
+                notice: notice,
+                signature: [
+                    notice.id,
+                    notice.kind ?? "",
+                    notice.name ?? "",
+                    notice.avatar ?? "",
+                    notice.text ?? "",
+                    notice.preview ?? "",
+                    notice.thumb ?? "",
+                    notice.at ?? "",
+                    notice.deleted == true ? "deleted" : "live"
+                ].joined(separator: "|")
+            )
         }
     }
 

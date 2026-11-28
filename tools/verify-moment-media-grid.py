@@ -43,9 +43,11 @@ require(
     "single photos must preserve small source dimensions and only cap oversized media",
 )
 require(
-    "MomentMediaLayout.singleImageSize(" in DISCOVER
-    and DISCOVER.count("MomentMediaLayout.gridCellSize(") >= 1,
-    "moment detail grids must use the same media geometry as feed cards",
+    "MomentGroupPage: View" in DISCOVER
+    and "NativeMomentFeed(" in DISCOVER
+    and "struct MomentImageGrid" not in DISCOVER
+    and "struct MomentSingleImage" not in DISCOVER,
+    "all remaining moment feeds must use the native grid instead of a second SwiftUI geometry",
 )
 require(
     "python3 tools/verify-moment-media-grid.py" in WORKFLOW,

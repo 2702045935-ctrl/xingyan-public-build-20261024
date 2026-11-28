@@ -3,6 +3,19 @@ import AVKit
 import Photos
 import UIKit
 
+private struct MomentCommentNativeItem: Identifiable, Equatable {
+    enum Kind: Equatable {
+        case context
+        case empty
+        case comment(MomentComment, Int)
+        case bottom
+    }
+
+    let id: String
+    let kind: Kind
+    let signature: String
+}
+
 struct MomentCommentsSheet: View {
     let initial: Moment
     let onChanged: () -> Void
@@ -27,6 +40,7 @@ struct MomentCommentsSheet: View {
     @State private var actionPath = ""
     @State private var fullImageActions = false
     @State private var fullActionPath = ""
+    @State private var commentListController = NativeStaticListController()
     @FocusState private var commentFocused: Bool
 
     init(moment: Moment, onChanged: @escaping () -> Void) {
@@ -49,55 +63,56 @@ struct MomentCommentsSheet: View {
             VStack(spacing: 0) {
                 commentSheetHeader
 
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            commentContextStrip
-
-                            if comments.isEmpty {
-                                VStack(spacing: 8) {
-                                    Image(systemName: "bubble.left")
-                                        .font(.title2)
-                                        .foregroundStyle(.secondary)
-                                    Text(Tr("还没有评论"))
-                                        .font(pfStyled(size: 17, weight: .semibold))
-                                    Text(Tr("说点什么，成为第一个评论的人"))
-                                        .font(pfStyled(size: 13))
-                                        .foregroundStyle(.secondary)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 54)
-                                .id("moment-comment-empty")
-                            } else {
-                                ForEach(Array(comments.enumerated()), id: \.offset) { index, item in
-                                    let key = commentKey(item, index)
-                                    if item.userId == app.me?.id {
-                                        SwipeDeleteCommentRow(
-                                            rowID: key,
-                                            openID: $openCommentSwipeId,
-                                            onDelete: { deleting = item }
-                                        ) {
-                                            commentRow(item, index: index)
-                                        }
-                                        .id(key)
-                                    } else {
-                                        commentRow(item, index: index)
-                                            .id(key)
-                                    }
-                                }
-                            }
+                NativeStaticList(
+                    items: commentNativeItems,
+                    controller: commentListController,
+                    dark: nil,
+                    signature: \.signature
+                ) { item in
+                    switch item.kind {
+                    case .context:
+                        commentContextStrip
+                    case .empty:
+                        VStack(spacing: 8) {
+                            Image(systemName: "bubble.left")
+                                .font(.title2)
+                                .foregroundStyle(.secondary)
+                            Text(Tr("还没有评论"))
+                                .font(pfStyled(size: 17, weight: .semibold))
+                            Text(Tr("说点什么，成为第一个评论的人"))
+                                .font(pfStyled(size: 13))
+                                .foregroundStyle(.secondary)
                         }
-                        .padding(.bottom, 14)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 54)
+                    case .comment(let comment, let index):
+                        let key = commentKey(comment, index)
+                        if comment.userId == app.me?.id {
+                            SwipeDeleteCommentRow(
+                                rowID: key,
+                                openID: $openCommentSwipeId,
+                                onDelete: { deleting = comment }
+                            ) {
+                                commentRow(comment, index: index)
+                            }
+                        } else {
+                            commentRow(comment, index: index)
+                        }
+                    case .bottom:
+                        Color.clear
+                            .frame(height: max(20, L.safeBottom + 10))
                     }
-                    .scrollDismissesKeyboard(.interactively)
-                    .contentShape(Rectangle())
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .onChange(of: comments.count) { _ in
-                        if let last = comments.last {
-                            withAnimation(.easeOut(duration: 0.22)) {
-                                proxy.scrollTo(commentKey(last, comments.count - 1), anchor: .bottom)
-                            }
-                        }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onChange(of: comments.count) { _ in
+                    guard let last = comments.last else { return }
+                    let key = commentKey(last, comments.count - 1)
+                    DispatchQueue.main.async {
+                        _ = commentListController.scrollToID(
+                            key,
+                            at: .bottom,
+                            animated: false
+                        )
                     }
                 }
 
@@ -163,6 +178,55 @@ struct MomentCommentsSheet: View {
             }
         }
         .onDisappear { onChanged() }
+    }
+
+    private var commentNativeItems: [MomentCommentNativeItem] {
+        var items = [
+            MomentCommentNativeItem(
+                id: "comment-context",
+                kind: .context,
+                signature: [
+                    live.id,
+                    live.content ?? "",
+                    live.videoCover ?? "",
+                    live.createdAt ?? "",
+                    "\(likes.count)",
+                    live.likedByMe == true ? "liked" : "unliked",
+                    images.joined(separator: ",")
+                ].joined(separator: "|")
+            )
+        ]
+        if comments.isEmpty {
+            items.append(MomentCommentNativeItem(
+                id: "comment-empty",
+                kind: .empty,
+                signature: "empty"
+            ))
+        } else {
+            for (index, comment) in comments.enumerated() {
+                let key = commentKey(comment, index)
+                items.append(MomentCommentNativeItem(
+                    id: key,
+                    kind: .comment(comment, index),
+                    signature: [
+                        key,
+                        comment.content ?? "",
+                        comment.nickname ?? "",
+                        comment.userId ?? "",
+                        comment.replyToName ?? "",
+                        comment.at ?? "",
+                        "\(comment.likes?.count ?? 0)",
+                        comment.likedByMe == true ? "liked" : "unliked"
+                    ].joined(separator: "|")
+                ))
+            }
+        }
+        items.append(MomentCommentNativeItem(
+            id: "comment-bottom",
+            kind: .bottom,
+            signature: "bottom-\(L.safeBottom)"
+        ))
+        return items
     }
 
     private var commentSheetHeader: some View {

@@ -1,5 +1,18 @@
 import SwiftUI
 
+private struct MomentLikeNativeItem: Identifiable, Equatable {
+    enum Kind: Equatable {
+        case header(String, Int)
+        case person(MomentLike, String)
+        case empty
+        case bottom
+    }
+
+    let id: String
+    let kind: Kind
+    let signature: String
+}
+
 struct MomentLikesSheet: View {
     let likes: [MomentLike]
 
@@ -88,49 +101,98 @@ struct MomentLikesSheet: View {
                 .padding(.bottom, 8)
             }
 
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    if !friends.isEmpty {
-                        sectionHeader(Lang.isEnglish ? "Friends" : "好友",
-                                      count: friends.count)
-                        ForEach(Array(friends.enumerated()), id: \.offset) { index, like in
-                            likeRow(like, relationship: Lang.isEnglish ? "Friend" : "好友")
-                            if index < friends.count - 1 {
-                                HairLine(inset: 67)
-                            }
+            NativeStaticList(
+                items: nativeItems,
+                dark: nil,
+                signature: \.signature
+            ) { item in
+                switch item.kind {
+                case .header(let title, let count):
+                    sectionHeader(title, count: count)
+                case .person(let like, let relationship):
+                    likeRow(like, relationship: relationship)
+                        .overlay(alignment: .bottom) {
+                            HairLine(inset: 67)
                         }
+                case .empty:
+                    VStack(spacing: 8) {
+                        Image(systemName: "person.crop.circle.badge.questionmark")
+                            .font(.system(size: 28, weight: .light))
+                            .foregroundColor(C.subLabel)
+                        Text(Lang.isEnglish ? "No matching people" : "没有找到这个人")
+                            .font(systemTextFont(14, .regular, relativeTo: .body))
+                            .foregroundColor(C.subLabel)
                     }
-
-                    if !others.isEmpty {
-                        sectionHeader(Lang.isEnglish ? "Star friends" : "星友",
-                                      count: others.count)
-                        ForEach(Array(others.enumerated()), id: \.offset) { index, like in
-                            likeRow(like,
-                                    relationship: Lang.isEnglish ? "Star friend" : "星友")
-                            if index < others.count - 1 {
-                                HairLine(inset: 67)
-                            }
-                        }
-                    }
-
-                    if filteredLikes.isEmpty {
-                        VStack(spacing: 8) {
-                            Image(systemName: "person.crop.circle.badge.questionmark")
-                                .font(.system(size: 28, weight: .light))
-                                .foregroundColor(C.subLabel)
-                            Text(Lang.isEnglish ? "No matching people" : "没有找到这个人")
-                                .font(systemTextFont(14, .regular, relativeTo: .body))
-                                .foregroundColor(C.subLabel)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 54)
-                    }
-
-                    Color.clear.frame(height: max(24, L.safeBottom + 12))
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 54)
+                case .bottom:
+                    Color.clear
+                        .frame(height: max(24, L.safeBottom + 12))
                 }
             }
+            .background(C.pageBg)
         }
         .background(C.pageBg.ignoresSafeArea())
+    }
+
+    private var nativeItems: [MomentLikeNativeItem] {
+        var rows: [MomentLikeNativeItem] = []
+        if !friends.isEmpty {
+            rows.append(MomentLikeNativeItem(
+                id: "friends-header",
+                kind: .header(Lang.isEnglish ? "Friends" : "好友", friends.count),
+                signature: "friends-header-\(friends.count)"
+            ))
+            for like in friends {
+                rows.append(personItem(
+                    like,
+                    relationship: Lang.isEnglish ? "Friend" : "好友"
+                ))
+            }
+        }
+        if !others.isEmpty {
+            rows.append(MomentLikeNativeItem(
+                id: "others-header",
+                kind: .header(Lang.isEnglish ? "Star friends" : "星友", others.count),
+                signature: "others-header-\(others.count)"
+            ))
+            for like in others {
+                rows.append(personItem(
+                    like,
+                    relationship: Lang.isEnglish ? "Star friend" : "星友"
+                ))
+            }
+        }
+        if filteredLikes.isEmpty {
+            rows.append(MomentLikeNativeItem(
+                id: "empty",
+                kind: .empty,
+                signature: "empty-\(query)"
+            ))
+        }
+        rows.append(MomentLikeNativeItem(
+            id: "bottom",
+            kind: .bottom,
+            signature: "bottom-\(L.safeBottom)"
+        ))
+        return rows
+    }
+
+    private func personItem(_ like: MomentLike,
+                            relationship: String) -> MomentLikeNativeItem {
+        let userID = like.userId ?? ""
+        let contact = app.contact(for: userID)
+        return MomentLikeNativeItem(
+            id: "person-\(userID)-\(like.nickname ?? "")",
+            kind: .person(like, relationship),
+            signature: [
+                userID,
+                like.nickname ?? "",
+                relationship,
+                contact?.name ?? "",
+                contact?.avatarPath ?? ""
+            ].joined(separator: "|")
+        )
     }
 
     private func sectionHeader(_ title: String, count: Int) -> some View {

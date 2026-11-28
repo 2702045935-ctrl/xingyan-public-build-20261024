@@ -3360,43 +3360,41 @@ struct MomentGroupPage: View {
     let moments: [Moment]
     var onDeleted: (() -> Void)? = nil
     @EnvironmentObject private var app: AppState
+    @Environment(\.colorScheme) private var scheme
     @Environment(\.dismiss) private var dismiss
-    @State private var visibleMoments: [Moment] = []
     @State private var viewerPaths: [String] = []
     @State private var viewerIndex: Int?
+    @State private var commentsMoment: Moment?
+    @State private var likesSnapshot: [MomentLike] = []
+    @State private var showLikes = false
+    @State private var videoURL: URL?
+    @State private var cardUser: User?
+    @State private var actionMoment: Moment?
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             VStack(spacing: 0) {
                 NavBar(title: title, back: { dismiss() })
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(Array(visibleMoments.enumerated()), id: \.element.id) { i, m in
-                            let day = fullDateLabel(m.createdAt)
-                            let previous = i > 0 ? fullDateLabel(visibleMoments[i - 1].createdAt) : ""
-                            if i == 0 || day != previous {
-                                HStack {
-                                    Text(day)
-                                        .font(.footnote.weight(.medium))
-                                        .foregroundStyle(.secondary)
-                                    Spacer()
-                                }
-                                .padding(.horizontal, L.momentPadH)
-                                .padding(.top, 14)
-                                .padding(.bottom, 2)
-                            }
-                            MomentRow(moment: m,
-                                      onOpenImage: { p in open(p, in: m) },
-                                      myId: app.me?.id ?? "",
-                                      onDeleteMoment: nil)
-                                .padding(.horizontal, L.momentPadH)
-                            if i < visibleMoments.count - 1 {
-                                HairLine(inset: L.momentPadH + L.momentAvatar + 9)
-                            }
-                        }
-                        Spacer().frame(height: 30)
-                    }
-                }
+                NativeMomentFeed(
+                    moments: moments,
+                    revision: moments.count,
+                    dark: scheme == .dark,
+                    mineOnly: false,
+                    dayKey: "\(Lang.code)-\(scheme)-group-\(title)",
+                    headerHeight: 0,
+                    collapseOffset: 0,
+                    onScrollActive: { _ in },
+                    onCollapseChange: { _ in },
+                    onPullChange: { _ in },
+                    onPullEnd: { _ in },
+                    onApproachingEnd: {},
+                    actions: nativeMomentActions,
+                    stressText: nil,
+                    footerText: nil,
+                    footerWaiting: false,
+                    dayLabel: { fullDateLabel($0.createdAt) },
+                    header: { _ in EmptyView() }
+                )
                 .background(C.pageBg)
             }
 
@@ -3411,16 +3409,80 @@ struct MomentGroupPage: View {
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
-        .onAppear {
-            if visibleMoments.isEmpty { visibleMoments = moments }
+        .sheet(item: $commentsMoment) { moment in
+            MomentCommentsSheet(moment: moment) {
+                onDeleted?()
+            }
+            .environmentObject(app)
         }
+        .sheet(isPresented: $showLikes) {
+            MomentLikesSheet(likes: likesSnapshot)
+                .environmentObject(app)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.hidden)
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { videoURL != nil },
+            set: { if !$0 { videoURL = nil } }
+        )) {
+            if let videoURL {
+                VideoPlayerSheet(url: videoURL)
+                    .environmentObject(app)
+            }
+        }
+        .confirmationDialog(
+            Tr("朋友圈操作"),
+            isPresented: Binding(
+                get: { actionMoment != nil },
+                set: { if !$0 { actionMoment = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(Tr("删除"), role: .destructive) {
+                guard let moment = actionMoment else { return }
+                actionMoment = nil
+                Task {
+                    if let error = await API.shared.deleteMoment(id: moment.id) {
+                        app.show(error)
+                    } else {
+                        onDeleted?()
+                    }
+                }
+            }
+            Button(Tr("取消"), role: .cancel) { actionMoment = nil }
+        }
+        .modifier(TapAvatarCard(cardUser: $cardUser))
     }
 
-    private func open(_ path: String, in m: Moment) {
-        let all = m.images ?? []
-        guard !all.isEmpty else { return }
-        viewerPaths = all
-        viewerIndex = all.firstIndex(of: path) ?? 0
+    private var nativeMomentActions: NativeMomentActions {
+        NativeMomentActions(
+            openComments: { commentsMoment = $0 },
+            openImage: { moment, index in
+                viewerPaths = moment.images ?? []
+                viewerIndex = min(max(0, index), max(0, viewerPaths.count - 1))
+            },
+            openVideo: { videoURL = $0 },
+            openAvatar: { cardUser = $0 },
+            openLikes: {
+                likesSnapshot = $0
+                showLikes = true
+            },
+            avatarPathFor: { id in
+                app.contact(for: id)?.avatarPath ?? ""
+            },
+            isFriend: { id in
+                app.contact(for: id) != nil
+            },
+            like: { moment in
+                Task {
+                    if let error = await API.shared.likeMoment(id: moment.id) {
+                        app.show(error)
+                    }
+                    await app.loadMoments()
+                }
+            },
+            more: { actionMoment = $0 }
+        )
     }
 
     private func fullDateLabel(_ s: String?) -> String {
@@ -3431,444 +3493,6 @@ struct MomentGroupPage: View {
         return formatter.string(from: d)
     }
 
-    private func delete(_ moment: Moment) {
-        Task {
-            if let error = await API.shared.deleteMoment(id: moment.id) {
-                app.show(error)
-            } else {
-                visibleMoments.removeAll { $0.id == moment.id }
-                onDeleted?()
-            }
-        }
-    }
-}
-
-struct MomentRow: View {
-    let moment: Moment
-    var onMore: (() -> Void)? = nil
-
-    var onOpenImage: ((String) -> Void)? = nil
-
-    var onOpenVideo: ((URL) -> Void)? = nil
-
-    var onOpenAvatar: ((User) -> Void)? = nil
-
-    var onDeleteComment: ((String) -> Void)? = nil
-
-    var myId: String = ""
-
-    var onLike: (() -> Void)? = nil
-    var onComment: (() -> Void)? = nil
-    var onDeleteMoment: (() -> Void)? = nil
-
-    var onReplyComment: ((String, String) -> Void)? = nil
-
-    var onTogglePin: (() -> Void)? = nil
-
-    @State private var deletingComment: String?
-
-    @State private var heartBurst = false
-
-    @State private var showActions = false
-    @State private var deleteMoment = false
-
-    private var images: [String] { moment.images ?? [] }
-    var body: some View {
-        HStack(alignment: .top, spacing: 9) {
-            Avatar(path: moment.author?.avatarPath ?? "", size: L.momentAvatar, radius: 5)
-                .contentShape(Rectangle())
-                .onTapGesture { if let u = moment.author { onOpenAvatar?(u) } }
-
-            VStack(alignment: .leading, spacing: 0) {
-                postHeader
-                if !images.isEmpty || !(moment.video ?? "").isEmpty {
-                    grid
-                        .padding(.top, 13)
-                }
-                metaRow
-                    .padding(.top, 10)
-                socialPanel
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(.top, 15)
-        .padding(.bottom, 12)
-
-        .onChange(of: (moment.likes ?? []).count) { n in
-            if n > 0 { burstHeart() }
-        }
-
-        .overlay(alignment: .bottomTrailing) {
-            if showActions {
-                actionBar
-                    .offset(x: -34, y: -6)
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
-            }
-        }
-
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 10)
-                .onChanged { _ in
-                    if showActions {
-                        withSystemAnimation(.easeOut(duration: 0.12)) { showActions = false }
-                    }
-                }
-        )
-
-        .confirmationDialog(Tr("删除这条评论？"), isPresented: Binding(
-            get: { deletingComment != nil },
-            set: { if !$0 { deletingComment = nil } }
-        ), titleVisibility: .visible) {
-            Button(Tr("删除"), role: .destructive) {
-                if let id = deletingComment { onDeleteComment?(id) }
-                deletingComment = nil
-            }
-            Button(Tr("取消"), role: .cancel) { deletingComment = nil }
-        }
-        .alert(Tr("删除这条朋友圈？"), isPresented: $deleteMoment) {
-            Button(Tr("取消"), role: .cancel) { }
-            Button(Tr("删除"), role: .destructive) { onDeleteMoment?() }
-        } message: {
-            Text(Tr("删除后无法恢复。"))
-        }
-    }
-
-    private var likes: [MomentLike] { moment.likes ?? [] }
-    private var comments: [MomentComment] { moment.comments ?? [] }
-
-    private var postHeader: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(moment.author?.name ?? "")
-                .font(pf(17.3, .medium))
-                .foregroundColor(C.link)
-
-            if let content = moment.content, !content.isEmpty {
-                Text(RichText.linkified(content))
-                    .font(systemTextFont(16.5, .regular, relativeTo: .body))
-                    .foregroundColor(C.label)
-                    .lineSpacing(6)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 6)
-            }
-
-            if moment.pinned == true {
-                HStack(spacing: 3) {
-                    Image(systemName: "pin.fill").font(.system(size: 10))
-                    Text(Tr("置顶")).font(pf(12.5))
-                }
-                .foregroundColor(C.subLabel)
-                .padding(.top, 6)
-            }
-        }
-    }
-
-    private var metaRow: some View {
-        HStack(spacing: 14) {
-            Text(TimeFmt.ago(moment.createdAt))
-                .font(pf(14.5))
-                .foregroundColor(Color.dyn(0xB2B2B2, 0x8A8A8E))
-
-            Spacer()
-
-            Button {
-                if onDeleteMoment != nil {
-                    deleteMoment = true
-                } else if let onMore {
-                    onMore()
-                } else {
-                    withSystemAnimation(.easeOut(duration: 0.14)) { showActions.toggle() }
-                }
-            } label: {
-                HStack(spacing: 2.6) {
-                    ForEach(0..<3, id: \.self) { _ in
-                        Circle()
-                            .fill(moment.likedByMe == true
-                                  ? Color(hex: 0xFF6B6B)
-                                  : Color.dyn(0x7F7F7F, 0xD8D8D8))
-                            .frame(width: 3.4, height: 3.4)
-                    }
-                }
-                .frame(width: 28, height: 19)
-                .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(Color.dyn(0xF2F2F7, 0x1C1C1E)))
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Tr("更多"))
-        }
-    }
-
-    @ViewBuilder
-    private var socialPanel: some View {
-        if !likes.isEmpty || !comments.isEmpty {
-            VStack(alignment: .leading, spacing: 0) {
-                if !likes.isEmpty {
-                    likesRow
-                }
-                if !likes.isEmpty && !comments.isEmpty {
-                    HairLine(inset: 0)
-                }
-                ForEach(comments.indices, id: \.self) { index in
-                    if index > 0 { HairLine(inset: 0) }
-                    commentRow(comments[index])
-                }
-            }
-            .padding(.horizontal, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(Color.dyn(0xF7F7F7, 0x2A2A2C))
-            )
-            .padding(.top, 8)
-        }
-    }
-
-    private var likesRow: some View {
-        HStack(alignment: .top, spacing: 4) {
-            Image(systemName: "heart.fill")
-                .font(.system(size: 11.5))
-                .foregroundColor(Color(hex: 0x9A9A9A))
-                .padding(.top, 3)
-                .overlay {
-                    if heartBurst { HeartBurst() }
-                }
-            Text(likes.compactMap { $0.nickname }.joined(separator: "，"))
-                .font(pf(16))
-                .foregroundColor(C.link)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 5)
-    }
-
-    private func commentRow(_ comment: MomentComment) -> some View {
-        let replyName = comment.replyToName ?? ""
-        let content = comment.content ?? ""
-        let line = replyName.isEmpty
-            ? Text("：" + content).foregroundColor(C.label)
-            : Text(" 回复 " + replyName + "：" + content).foregroundColor(C.label)
-        return (Text(comment.nickname ?? "").foregroundColor(C.link) + line)
-            .font(pf(16))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.vertical, 5)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                if !myId.isEmpty, comment.userId == myId {
-                    if onDeleteComment != nil { deletingComment = comment.id }
-                } else if let reply = onReplyComment {
-                    reply(comment.userId ?? "", comment.nickname ?? "")
-                }
-            }
-    }
-
-    private var grid: some View {
-        Group {
-
-            if let v = moment.video, !v.isEmpty {
-                videoTile(v)
-            } else {
-                MomentImageGrid(images: images,
-                                avail: L.width - L.momentPadH * 2 - L.momentAvatar - 9,
-                                sizes: moment.imageSizes ?? [:],
-                                onTap: { i in if i < images.count { onOpenImage?(images[i]) } })
-            }
-        }
-    }
-
-    private func videoTile(_ path: String) -> some View {
-        let size = videoBubbleSize(w: moment.videoW ?? 0, h: moment.videoH ?? 0)
-        let cover = moment.videoCover ?? ""
-        let secs = moment.videoSeconds ?? 0
-        return Button {
-            let full = path.hasPrefix("http") ? path : API.shared.base + path
-            if let u = URL(string: full) { onOpenVideo?(u) }
-        } label: {
-            ZStack {
-                if !cover.isEmpty {
-                    RemoteImage(path: cover, mode: .fill, maxSide: 1280)
-                } else {
-                    C.searchBg
-                }
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 42))
-                    .foregroundColor(.white.opacity(0.92))
-                    .shadow(color: .black.opacity(0.32), radius: 6)
-                if secs > 0 {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            Text(String(format: "%02d:%02d", secs / 60, secs % 60))
-                                .font(pfStyled(size: 11.5, weight: .medium))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(Capsule().fill(Color.black.opacity(0.45)))
-                        }
-                    }
-                    .padding(7)
-                }
-            }
-            .frame(width: size.width, height: size.height)
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func burstHeart() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        heartBurst = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { heartBurst = false }
-    }
-
-    private var actionBar: some View {
-        HStack(spacing: 0) {
-            Button {
-                withSystemAnimation(.easeOut(duration: 0.12)) { showActions = false }
-                if moment.likedByMe != true { burstHeart() }
-                onLike?()
-            } label: {
-                HStack(spacing: 5) {
-                    ZStack {
-                        Image(systemName: moment.likedByMe == true ? "heart.fill" : "heart")
-                            .font(.system(size: 13))
-                        if heartBurst { HeartBurst() }
-                    }
-                    Text(moment.likedByMe == true ? Tr("取消赞") : Tr("赞"))
-                        .font(pf(14.5))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 13)
-                .frame(height: 32)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            Rectangle().fill(Color.white.opacity(0.22)).frame(width: 0.5, height: 18)
-
-            Button {
-                withSystemAnimation(.easeOut(duration: 0.12)) { showActions = false }
-                onComment?()
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "bubble.right")
-                        .font(.system(size: 12.5))
-                    Text(Tr("评论")).font(pf(14.5))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 13)
-                .frame(height: 32)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if moment.mine == true, onDeleteMoment != nil {
-                Rectangle().fill(Color.white.opacity(0.22)).frame(width: 0.5, height: 18)
-                Button {
-                    withSystemAnimation(.easeOut(duration: 0.12)) { showActions = false }
-                    onTogglePin?()
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: moment.pinned == true ? "pin.slash" : "pin")
-                            .font(.system(size: 12.5))
-                        Text(moment.pinned == true ? Tr("取消置顶") : Tr("置顶")).font(pf(14.5))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 13)
-                    .frame(height: 32)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                Rectangle().fill(Color.white.opacity(0.22)).frame(width: 0.5, height: 18)
-                Button {
-                    withSystemAnimation(.easeOut(duration: 0.12)) { showActions = false }
-                    onDeleteMoment?()
-                } label: {
-                    Image(systemName: "trash")
-                        .font(.system(size: 13))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 13)
-                        .frame(height: 32)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(Color.dyn(0x1C1C1E, 0x2C2C2E)))
-    }
-}
-
-struct ColorBall: View {
-    var size: CGFloat = 34
-    var spin: Double = 0
-
-    var body: some View {
-        ZStack {
-            Circle().fill(AngularGradient(
-                gradient: Gradient(colors: [
-                    Color(hex: 0xFF6B6B), Color(hex: 0xFFD166), Color(hex: 0x5FD07A),
-                    Color(hex: 0x4AB6FF), Color(hex: 0xA06DE0), Color(hex: 0xFF6BD6),
-                    Color(hex: 0xFF6B6B)
-                ]),
-                center: .center))
-            Circle().fill(RadialGradient(
-                gradient: Gradient(colors: [.white.opacity(0.95), .white.opacity(0)]),
-                center: UnitPoint(x: 0.37, y: 0.3), startRadius: 0.5, endRadius: size * 0.36))
-                .padding(size * 0.14)
-        }
-        .frame(width: size, height: size)
-        .rotationEffect(.degrees(spin))
-        .shadow(color: Color.black.opacity(0.28), radius: 7, y: 4)
-    }
-}
-
-struct MomentImageGrid: View {
-    let images: [String]
-    var avail: CGFloat
-
-    var sizes: [String: [Int]] = [:]
-    var onTap: (Int) -> Void
-
-    var body: some View {
-        if images.count == 1 {
-            let sz = sizes[images[0]]
-            MomentSingleImage(path: images[0], avail: avail,
-                              radius: MomentMediaLayout.singleRadius,
-                              knownSize: (sz != nil && sz!.count == 2 && sz![1] > 0)
-                                  ? CGSize(width: CGFloat(sz![0]), height: CGFloat(sz![1])) : nil) { onTap(0) }
-        } else {
-            let cols = MomentMediaLayout.columns(for: images.count)
-            let cell = MomentMediaLayout.gridCellSize(count: images.count, width: avail)
-            let gap = MomentMediaLayout.gap
-            let rows = stride(from: 0, to: images.count, by: cols).map { start in
-                Array(start..<min(start + cols, images.count))
-            }
-            VStack(alignment: .leading, spacing: gap) {
-                ForEach(rows.indices, id: \.self) { r in
-                    HStack(spacing: gap) {
-                        ForEach(rows[r], id: \.self) { i in
-                            Button { onTap(i) } label: {
-
-                                RemoteImage(path: images[i], icon: "photo", maxSide: 720)
-                                    .frame(width: cell.width, height: cell.height)
-                                    .clipShape(RoundedRectangle(
-                                        cornerRadius: MomentMediaLayout.gridRadius,
-                                        style: .continuous
-                                    ))
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        if rows[r].count < cols { Spacer(minLength: 0) }
-                    }
-                }
-            }
-        }
-    }
 }
 
 struct CoverAdjustSheet: View {
@@ -4161,47 +3785,4 @@ struct PickedGrid: View {
             }
         }
     }
-}
-
-struct MomentSingleImage: View {
-    let path: String
-    var avail: CGFloat
-    var radius: CGFloat = 4
-
-    var knownSize: CGSize? = nil
-    var onTap: () -> Void
-
-    @State private var aspect: CGFloat = 4.0 / 3.0
-    @State private var started = false
-
-    var body: some View {
-
-        let fitted = MomentMediaLayout.singleImageSize(
-            knownSize: knownSize,
-            width: avail,
-            fallbackRatio: aspect
-        )
-
-        Button { onTap() } label: {
-
-            RemoteImage(path: path, icon: "photo", maxSide: 1080)
-                .frame(width: fitted.width, height: fitted.height)
-                .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onAppear { if !started { started = true; Task { await measure() } } }
-    }
-
-    private func measure() async {
-        if let hit = ImageStore.shared.get(path), hit.size.height > 0 {
-            aspect = hit.size.width / hit.size.height
-            return
-        }
-        guard let url = API.shared.assetURL(path) else { return }
-        guard let data = try? await API.shared.imageData(url),
-              let img = RemoteImage.downsampled(data, maxSide: 2048), img.size.height > 0 else { return }
-        ImageStore.shared.put(path, img)
-        aspect = img.size.width / img.size.height
-    }
-}
+}\n
