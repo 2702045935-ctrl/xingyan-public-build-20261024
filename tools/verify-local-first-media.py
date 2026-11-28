@@ -20,10 +20,9 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "var result = API.directUploadBases" in API
-    and "if !result.contains(base)" in API
-    and "result.append(base)" in API,
-    "uploads must try the direct origin before the slower public ingress",
+    "guard let base = API.directUploadBases.first" in API
+    and "for base in uploadBases {" not in API,
+    "uploads must stay on the direct origin used by build 2611261139",
 )
 require(
     "sendingPreview = img\n            sendingPreviews = [img]" in CHAT

@@ -16,30 +16,24 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "private var uploadBases: [String]" in API
-    and "var result = API.directUploadBases" in API
-    and "if !result.contains(base)" in API
-    and "result.append(base)" in API,
-    "media uploads must use the 11/20 direct origin first and keep public ingress as fallback",
-)
-require(
     "private let uploadSession: URLSession" in API
-    and "uploadConfig.httpShouldUsePipelining = true" in API
-    and "uploadConfig.timeoutIntervalForResource = 900" in API
+    and "uploadConfig.timeoutIntervalForRequest = 12" in API
+    and "httpShouldUsePipelining" not in API
     and API.count("uploadSession.") >= 5,
-    "media bytes must use the dedicated upload session instead of the short API session",
+    "media bytes must use the dedicated 11/26 upload session",
 )
 require(
-    API.count("for base in uploadBases {") == 2
+    API.count("guard let base = API.directUploadBases.first") >= 4
     and "req.httpBody = data" in API
-    and "fromFile: file" in API,
-    "raw image/file uploads must retry through both upload origins",
+    and "fromFile: file" in API
+    and "for base in uploadBases {" not in API,
+    "raw image/file uploads must use one direct origin without retry delay",
 )
 require(
-    API.count("var candidates = uploadBases") == 2
+    "var candidates = uploadBases" not in API
     and "private func postDirectUpload" in API
     and "private func uploadRawJPEG" in API,
-    "base64 voice/file and JPEG uploads must support both upload origins",
+    "base64 voice/file and JPEG uploads must stay on the direct origin",
 )
 require(
     "private func uploadFailureMessage(_ data: Data, status: Int)" in API

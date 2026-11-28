@@ -36,11 +36,9 @@ check(
 check(
     "static let directUploadBases = [" in API
     and '"https://43.242.194.89:8443"' in API
-    and "var result = API.directUploadBases" in API
-    and "if !result.contains(base)" in API
-    and "result.append(base)" in API
-    and "for base in uploadBases {" in API,
-    "uploads must keep the faster direct origin primary with the ingress fallback",
+    and "guard let base = API.directUploadBases.first" in API
+    and "for base in uploadBases {" not in API,
+    "uploads must stay on the faster direct origin without a serial ingress wait",
 )
 check(
     "let up = try? await API.shared.uploadImageForSend(" not in
