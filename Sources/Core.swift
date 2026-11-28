@@ -934,20 +934,6 @@ final class ImageStore {
     private let avatarMemoryCap: Int
     private let lock = NSLock()
 
-    private init() {
-        switch DevicePerformanceProfile.shared.tier {
-        case .high:
-            memoryCap = 128 * 1024 * 1024
-            avatarMemoryCap = 64 * 1024 * 1024
-        case .balanced:
-            memoryCap = 96 * 1024 * 1024
-            avatarMemoryCap = 48 * 1024 * 1024
-        case .legacy:
-            memoryCap = 56 * 1024 * 1024
-            avatarMemoryCap = 28 * 1024 * 1024
-        }
-    }
-
     func get(_ key: String) -> UIImage? {
         lock.lock(); defer { lock.unlock() }
         return avatarCache[key] ?? cache[key]
@@ -1083,6 +1069,17 @@ final class ImageStore {
 
     private let diskDir: URL?
     private init() {
+        switch DevicePerformanceProfile.shared.tier {
+        case .high:
+            memoryCap = 128 * 1024 * 1024
+            avatarMemoryCap = 64 * 1024 * 1024
+        case .balanced:
+            memoryCap = 96 * 1024 * 1024
+            avatarMemoryCap = 48 * 1024 * 1024
+        case .legacy:
+            memoryCap = 56 * 1024 * 1024
+            avatarMemoryCap = 28 * 1024 * 1024
+        }
         let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
         let d = base?.appendingPathComponent("imgcache", isDirectory: true)
         if let d = d { try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true) }
