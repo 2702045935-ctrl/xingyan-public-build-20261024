@@ -86,7 +86,7 @@ time_line = CHAT_DETAIL[time_start:time_end]
 require(
     ".fixedSize(horizontal: true, vertical: false)" in time_line
     and "NativeGlassControlMaterial()" in time_line
-    and "adaptiveSystemSurface.opacity(" in time_line
+    and "ChatTheme.timeCapsule.opacity(" in time_line
     and ".fill(adaptiveSystemSurface)" not in time_line,
     "chat timestamps must use intrinsic width and the lightweight 0617 row glass",
 )

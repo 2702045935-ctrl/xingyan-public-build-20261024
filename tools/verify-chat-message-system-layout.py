@@ -63,6 +63,15 @@ require(
     "per-row timestamps and media controls must use the 2611280617 lightweight glass",
 )
 require(
+    "static let timeCapsule = Color.dyn(0xD2D1D3, 0x20272A)" in CHAT
+    and "static let timeInk = Color.dyn(0x5F5E5F, 0x909396)" in CHAT
+    and "NativeGlassControlMaterial()" in CHAT
+    and "ChatTheme.timeCapsule.opacity(" in CHAT
+    and ".fill(ChatTheme.bubbleMine)" in CHAT
+    and ".fill(ChatTheme.bubbleOther)" in CHAT,
+    "timestamp capsules must stay lightly translucent while bubbles remain flat",
+)
+require(
     ".fill(ChatTheme.bubbleMine)" in CHAT
     and ".fill(ChatTheme.bubbleOther)" in CHAT
     and "bubbleGloss" not in CHAT

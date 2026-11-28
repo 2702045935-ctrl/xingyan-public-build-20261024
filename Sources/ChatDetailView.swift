@@ -82,7 +82,8 @@ private enum ChatTheme {
     static let groupSenderNameOnLight = Color.dyn(0x171A18, 0x171A18)
     static let groupSenderNameOnDark = Color.dyn(0xEDF1EE, 0xEDF1EE)
     static let secondaryOnMine = Color.dyn(0xD8F5EC, 0xE3EAE6)
-    static let timeInk = Color.dyn(0x858D88, 0x8E8E93)
+    static let timeInk = Color.dyn(0x5F5E5F, 0x909396)
+    static let timeCapsule = Color.dyn(0xD2D1D3, 0x20272A)
     static var composerBg: Color { preset.panel }
     static let separator = Color.dyn(0xDDE2DD, 0x38383A)
     static let link = Color.dyn(0x0A60BE, 0x8FD3FF)
@@ -3735,7 +3736,7 @@ struct ChatDetailView: View {
     private func timeLine(_ message: Message) -> some View {
         Text(TimeFmt.bubble(message.createdAt))
             .font(pf(12, .medium))
-            .foregroundColor(adaptiveSystemSecondaryInk)
+            .foregroundColor(ChatTheme.timeInk)
             .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, L.o("chatTimePadX", 9))
             .padding(.vertical, L.o("chatTimePadY", 4))
@@ -3743,8 +3744,8 @@ struct ChatDetailView: View {
                 ZStack {
                     NativeGlassControlMaterial()
                     Capsule(style: .continuous)
-                        .fill(adaptiveSystemSurface.opacity(
-                            scheme == .dark ? 0.08 : 0.12
+                        .fill(ChatTheme.timeCapsule.opacity(
+                            scheme == .dark ? 0.90 : 0.76
                         ))
                 }
             }
