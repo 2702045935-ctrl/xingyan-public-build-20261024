@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-
-from PIL import Image
+import struct
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,7 +40,9 @@ for name in (
     "app-icon-starorbit-glass-dark-1024.png",
     "app-icon-starorbit-glass-tinted-1024.png",
 ):
-    image = Image.open(ROOT / name)
-    require(image.size == (1024, 1024), f"{name} must be 1024x1024")
+    data = (ROOT / name).read_bytes()
+    require(data.startswith(b"\x89PNG\r\n\x1a\n"), f"{name} must be PNG")
+    width, height = struct.unpack(">II", data[16:24])
+    require((width, height) == (1024, 1024), f"{name} must be 1024x1024")
 
 print("liquid-app-icon: passed")
