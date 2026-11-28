@@ -89,6 +89,16 @@ require(
     "visible native message rows must invalidate when the chat theme changes",
 )
 require(
+    "private var quotePrimaryInk: Color" in CHAT
+    and "private var quoteSecondaryInk: Color" in CHAT
+    and ".foregroundColor(quotePrimaryInk)" in CHAT
+    and ".foregroundColor(quoteSecondaryInk)" in CHAT
+    and "Color.dyn(0xE8EBED, 0x34383E).opacity(0.96)" in CHAT
+    and "Color.dyn(0x343A37, 0xD7DADD)" in CHAT
+    and "Color.dyn(0x525A56, 0xBDC1C5)" in CHAT,
+    "light quote cards must keep readable sender and summary contrast",
+)
+require(
     "let pendingText = p.kind == \"text\"" in CHAT
     and "? pendingDisplayText(p.preview)" in CHAT
     and "Text(pendingText)" in CHAT

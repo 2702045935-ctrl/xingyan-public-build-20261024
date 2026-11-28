@@ -7790,13 +7790,25 @@ struct MessageRow: View {
     private var quoteSurface: Color {
         mine
             ? Color.white.opacity(0.14)
-            : Color.dyn(0xF0F1F3, 0x34383E).opacity(0.88)
+            : Color.dyn(0xE8EBED, 0x34383E).opacity(0.96)
     }
 
     private var quoteBorder: Color {
         mine
             ? Color.white.opacity(0.18)
-            : Color.black.opacity(0.075)
+            : Color.dyn(0xCDD3D6, 0x4A5055)
+    }
+
+    private var quotePrimaryInk: Color {
+        mine
+            ? Color.white.opacity(0.96)
+            : Color.dyn(0x343A37, 0xD7DADD)
+    }
+
+    private var quoteSecondaryInk: Color {
+        mine
+            ? Color.white.opacity(0.82)
+            : Color.dyn(0x525A56, 0xBDC1C5)
     }
 
     @ViewBuilder
@@ -8010,12 +8022,12 @@ struct MessageRow: View {
                         if !q.sender.isEmpty {
                             Text(q.sender)
                                 .font(pf(12.5, .medium))
-                                .foregroundColor(bubbleSecondaryInk)
+                                .foregroundColor(quotePrimaryInk)
                                 .lineLimit(1)
                         }
                         Text(q.summary.isEmpty ? Tr("[引用]") : q.summary)
                             .font(pf(13, .regular))
-                            .foregroundColor(bubbleSecondaryInk)
+                            .foregroundColor(quoteSecondaryInk)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
                     }
