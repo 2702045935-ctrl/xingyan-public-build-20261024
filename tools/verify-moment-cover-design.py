@@ -43,9 +43,9 @@ require(
 )
 require(
     "let topOverdraw = max(0, L.safeTop)" in cover
-    and "let visualHeight = L.coverH + extra + topOverdraw" in cover
+    and "let visualHeight = L.coverH + extra + momentProfileFooterHeight + topOverdraw" in cover
     and ".offset(y: -topOverdraw)" in cover,
-    "cover artwork must overdraw the top safe area so no page-colour strip remains",
+    "cover artwork must fill the complete moments header without page-colour strips",
 )
 require(
     "python3 tools/verify-moment-cover-design.py" in WORKFLOW,
