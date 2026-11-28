@@ -1,6 +1,10 @@
 import SwiftUI
 import UIKit
 
+func ctIdxWeight() -> Font.Weight {
+    UIConfig.num("ctIdxBold", 1) > 0 ? .heavy : .regular
+}
+
 struct ContactIndexBar: View {
     static let letters: [String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#".map { String($0) }
 
