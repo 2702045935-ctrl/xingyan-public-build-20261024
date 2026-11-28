@@ -5,6 +5,7 @@ import UIKit
 struct FeedPlayerView: View {
     let items: [FeedItem]
     var start: Int = 0
+    var onIndexChange: ((Int) -> Void)? = nil
 
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -70,6 +71,15 @@ struct FeedPlayerView: View {
                     }
                     .buttonStyle(.plain)
                     Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "arrow.down.right.and.arrow.up.left")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Tr("退出全屏"))
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 8)
@@ -94,6 +104,9 @@ struct FeedPlayerView: View {
         .task(id: index) {
             PlayerPool.shared.focus(items: items, index: index)
             await trackProgress()
+        }
+        .onChange(of: index) { next in
+            onIndexChange?(next)
         }
     }
 

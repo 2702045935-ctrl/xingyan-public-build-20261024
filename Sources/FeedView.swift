@@ -200,7 +200,12 @@ struct ChannelsView: View {
         }
 
         .fullScreenCover(isPresented: $showBigPlayer) {
-            FeedPlayerView(items: items, start: 0).environmentObject(app)
+            FeedPlayerView(
+                items: items,
+                start: index,
+                onIndexChange: { index = $0 }
+            )
+            .environmentObject(app)
         }
         .overlay(alignment: .bottom) {
             if let item = commentFor {
@@ -338,6 +343,18 @@ struct ChannelsView: View {
                 }
 
                 Spacer(minLength: 2)
+
+                Button {
+                    showBigPlayer = true
+                } label: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 42, height: L.navH)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Tr("全屏播放"))
 
                 Menu {
                     Button {

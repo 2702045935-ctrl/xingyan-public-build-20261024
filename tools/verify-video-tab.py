@@ -26,5 +26,20 @@ require(
     ).read_text(encoding="utf-8"),
     "video chrome must use plain system controls without decorative black circles",
 )
+require(
+    "arrow.up.left.and.arrow.down.right" in (
+        ROOT / "Sources" / "FeedView.swift"
+    ).read_text(encoding="utf-8")
+    and "onIndexChange: { index = $0 }" in (
+        ROOT / "Sources" / "FeedView.swift"
+    ).read_text(encoding="utf-8")
+    and "arrow.down.right.and.arrow.up.left" in (
+        ROOT / "Sources" / "FeedPlayerView.swift"
+    ).read_text(encoding="utf-8")
+    and "onIndexChange?(next)" in (
+        ROOT / "Sources" / "FeedPlayerView.swift"
+    ).read_text(encoding="utf-8"),
+    "video must support reversible large/small playback while preserving the current item",
+)
 
 print("video-tab: passed")
