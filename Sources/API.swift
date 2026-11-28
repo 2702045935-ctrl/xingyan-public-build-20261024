@@ -1788,6 +1788,7 @@ final class API {
     static let shared = API()
 
     let session: URLSession
+    private let uploadSession: URLSession
     private let trustDelegate = SecureURLSessionDelegate()
 
     static let publicIngressServer = "mail.xingyanmail.site:443"
@@ -1877,6 +1878,23 @@ final class API {
         cfg.allowsExpensiveNetworkAccess = true
         cfg.allowsConstrainedNetworkAccess = true
         session = URLSession(configuration: cfg, delegate: trustDelegate, delegateQueue: nil)
+        let uploadConfig = URLSessionConfiguration.default
+        uploadConfig.timeoutIntervalForRequest = 180
+        uploadConfig.timeoutIntervalForResource = 900
+        uploadConfig.requestCachePolicy = .reloadIgnoringLocalCacheData
+        uploadConfig.urlCache = nil
+        uploadConfig.httpShouldSetCookies = false
+        uploadConfig.httpCookieAcceptPolicy = .never
+        uploadConfig.httpShouldUsePipelining = true
+        uploadConfig.httpMaximumConnectionsPerHost = 6
+        uploadConfig.networkServiceType = .responsiveData
+        uploadConfig.allowsExpensiveNetworkAccess = true
+        uploadConfig.allowsConstrainedNetworkAccess = true
+        uploadSession = URLSession(
+            configuration: uploadConfig,
+            delegate: trustDelegate,
+            delegateQueue: nil
+        )
 
         let legacyServers: Set<String> = [
 
@@ -5753,7 +5771,7 @@ private struct StarredPayload: Decodable {
             req.setValue(mime, forHTTPHeaderField: "Content-Type")
             req.httpBody = data
             do {
-                let (d, resp) = try await session.data(for: req)
+                let (d, resp) = try await uploadSession.data(for: req)
                 guard let http = resp as? HTTPURLResponse,
                       (200...299).contains(http.statusCode) else {
                     let http = resp as? HTTPURLResponse
@@ -5786,7 +5804,7 @@ private struct StarredPayload: Decodable {
             }
             let delegate = UploadProgressDelegate(onProgress)
             do {
-                let (d, resp) = try await session.upload(
+                let (d, resp) = try await uploadSession.upload(
                     for: req,
                     fromFile: file,
                     delegate: delegate
@@ -5872,7 +5890,7 @@ private struct StarredPayload: Decodable {
             }
             req.httpBody = encoded
             do {
-                let (responseData, response) = try await session.data(for: req)
+                let (responseData, response) = try await uploadSession.data(for: req)
                 guard let http = response as? HTTPURLResponse,
                       (200...299).contains(http.statusCode) else {
                     let http = response as? HTTPURLResponse
@@ -5925,13 +5943,13 @@ private struct StarredPayload: Decodable {
             do {
                 let (d, resp): (Data, URLResponse)
                 if let delegate {
-                    (d, resp) = try await session.upload(
+                    (d, resp) = try await uploadSession.upload(
                         for: req,
                         from: data,
                         delegate: delegate
                     )
                 } else {
-                    (d, resp) = try await session.upload(for: req, from: data)
+                    (d, resp) = try await uploadSession.upload(for: req, from: data)
                 }
                 guard let http = resp as? HTTPURLResponse,
                       (200...299).contains(http.statusCode) else {

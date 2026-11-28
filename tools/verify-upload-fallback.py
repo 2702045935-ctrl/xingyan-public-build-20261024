@@ -23,6 +23,13 @@ require(
     "media uploads must use the 11/20 direct origin first and keep public ingress as fallback",
 )
 require(
+    "private let uploadSession: URLSession" in API
+    and "uploadConfig.httpShouldUsePipelining = true" in API
+    and "uploadConfig.timeoutIntervalForResource = 900" in API
+    and API.count("uploadSession.") >= 5,
+    "media bytes must use the dedicated upload session instead of the short API session",
+)
+require(
     API.count("for base in uploadBases {") == 2
     and "req.httpBody = data" in API
     and "fromFile: file" in API,
