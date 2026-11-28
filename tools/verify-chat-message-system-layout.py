@@ -64,6 +64,7 @@ require(
 require(
     "private func stackedMultiImageGlass(cornerRadius: CGFloat) -> some View" in CHAT
     and CHAT.count("stackedMultiImageGlass(cornerRadius: 18)") == 2
+    and ".rotationEffect(.degrees(-2.6), anchor: .bottomLeading)" in CHAT
     and ".rotationEffect(.degrees(-1.35), anchor: .bottomLeading)" in CHAT
     and ".rotationEffect(.degrees(1.1), anchor: .bottomTrailing)" in CHAT
     and "NativeMediaGlassSurface(" in CHAT,

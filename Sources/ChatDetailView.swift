@@ -8782,6 +8782,26 @@ struct MessageRow: View {
             let plateW = max(1, proxy.size.width - 16)
             let plateH = max(1, proxy.size.height - 12)
             ZStack {
+                RoundedRectangle(cornerRadius: cornerRadius + 2, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.dyn(0xFFFFFF, 0x2A2A2D).opacity(0.58),
+                                Color.dyn(0xD9E1E5, 0x0C0C0E).opacity(0.28)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius + 2,
+                                         style: .continuous)
+                            .stroke(Color.white.opacity(0.13), lineWidth: 0.5)
+                    }
+                    .frame(width: plateW - 8, height: plateH - 6)
+                    .rotationEffect(.degrees(-2.6), anchor: .bottomLeading)
+                    .offset(x: -7, y: 6)
+
                 RoundedRectangle(cornerRadius: cornerRadius + 1, style: .continuous)
                     .fill(
                         LinearGradient(
