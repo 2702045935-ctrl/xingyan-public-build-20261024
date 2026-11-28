@@ -439,64 +439,31 @@ private struct ChatFrostedEdgeMask: View {
     let edge: ChatWallpaperEdge
     let base: Color
 
+    @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         GeometryReader { proxy in
-            let direction: (UnitPoint, UnitPoint) = edge == .top
-                ? (.top, .bottom)
-                : (.bottom, .top)
-            let materialMask = LinearGradient(
-                stops: edge == .top
-                    ? [
-                        .init(color: .black, location: 0),
-                        .init(color: .black.opacity(0.94), location: 0.56),
-                        .init(color: .black.opacity(0.62), location: 0.78),
-                        .init(color: .black.opacity(0.20), location: 0.92),
-                        .init(color: .clear, location: 1)
-                    ]
-                    : [
-                        .init(color: .clear, location: 0),
-                        .init(color: .black.opacity(0.18), location: 0.10),
-                        .init(color: .black.opacity(0.60), location: 0.30),
-                        .init(color: .black.opacity(0.94), location: 0.58),
-                        .init(color: .black, location: 1)
-                    ],
-                startPoint: direction.0,
-                endPoint: direction.1
-            )
-
-            Group {
+            ZStack {
                 if reduceTransparency {
                     base
                 } else {
                     ZStack {
-                    NativeChatFrostedEdgeMaterial()
-
-                        LinearGradient(
-                            stops: edge == .top
-                                ? [
-                                    .init(color: base.opacity(0.90), location: 0),
-                                    .init(color: base.opacity(0.84), location: 0.56),
-                                    .init(color: base.opacity(0.56), location: 0.79),
-                                    .init(color: base.opacity(0.18), location: 0.93),
-                                    .init(color: .clear, location: 1)
-                                ]
-                                : [
-                                    .init(color: .clear, location: 0),
-                                    .init(color: base.opacity(0.14), location: 0.10),
-                                    .init(color: base.opacity(0.50), location: 0.32),
-                                    .init(color: base.opacity(0.82), location: 0.62),
-                                    .init(color: base.opacity(0.94), location: 1)
-                                ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
+                        NativeChatFrostedEdgeMaterial()
+                        base.opacity(edge == .top
+                                     ? (scheme == .dark ? 0.78 : 0.86)
+                                     : (scheme == .dark ? 0.72 : 0.82))
                     }
-                    .mask { materialMask }
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
+            .overlay(alignment: edge == .top ? .bottom : .top) {
+                Rectangle()
+                    .fill(scheme == .dark
+                          ? Color.white.opacity(0.055)
+                          : Color.black.opacity(0.065))
+                    .frame(height: 0.5)
+            }
         }
         .allowsHitTesting(false)
     }

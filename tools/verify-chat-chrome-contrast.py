@@ -20,8 +20,8 @@ require(
     and ".systemThinMaterialLight" in CHAT
     and "private struct ChatFrostedEdgeMask" in CHAT
     and "let base: Color" in CHAT
-    and "base.opacity(0.90)" in CHAT
-    and "base.opacity(0.94)" in CHAT
+    and "if reduceTransparency" in CHAT
+    and "base.opacity(edge == .top" in CHAT
     and "ChatFrostedEdgeMask(edge: .top, base: chatTopMaskBase)" in CHAT
     and "ChatFrostedEdgeMask(edge: .bottom, base: chatBottomMaskBase)" in CHAT
     and "ChatTopGlassBackdrop" not in CHAT

@@ -21,8 +21,11 @@ require(
     and "private struct ChatFrostedEdgeMask" in CHAT
     and "let edge: ChatWallpaperEdge" in CHAT
     and "let base: Color" in CHAT
-    and "if reduceTransparency {\n                    base" in CHAT,
-    "both chat edges must use the shared system thin material with an opaque accessibility fallback",
+    and "if reduceTransparency {\n                    base" in CHAT
+    and "base.opacity(edge == .top" in CHAT
+    and "(scheme == .dark ? 0.78 : 0.86)" in CHAT
+    and "(scheme == .dark ? 0.72 : 0.82)" in CHAT,
+    "both edges must use restrained native material rather than a solid cover",
 )
 require(
     "private var chatTopMaskBase: Color" in CHAT
@@ -35,10 +38,10 @@ require(
 require(
     CHAT.count("ChatFrostedEdgeMask(edge: .top, base: chatTopMaskBase)") == 1
     and CHAT.count("ChatFrostedEdgeMask(edge: .bottom, base: chatBottomMaskBase)") == 1
-    and "edge == .top\n                    ? [" in CHAT
-    and ".init(color: base.opacity(0.90), location: 0)" in CHAT
-    and ".init(color: base.opacity(0.94), location: 1)" in CHAT,
-    "top and bottom masks must use separate falloff curves for header and composer surfaces",
+    and ".frame(height: 0.5)" in CHAT
+    and "Color.white.opacity(0.055)" in CHAT
+    and "Color.black.opacity(0.065)" in CHAT,
+    "top and composer surfaces must use matching solid edges and one hairline",
 )
 require(
     "python3 tools/verify-chat-edge-masks.py" in WORKFLOW,
