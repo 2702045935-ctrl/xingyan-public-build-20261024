@@ -150,6 +150,14 @@ private enum NativeMomentTextLayout {
     }
 }
 
+private enum NativeMomentTimelineMetrics {
+    static let horizontalInset: CGFloat = 22
+    static let trailingInset: CGFloat = 20
+    static let avatar: CGFloat = 43
+    static let avatarGap: CGFloat = 11
+    static let contentInset = horizontalInset + avatar + avatarGap
+}
+
 private final class NativeMomentLikeParticleBurst: UIView {
     func burst() {
         layer.removeAllAnimations()
@@ -429,7 +437,11 @@ final class NativeMomentRowCell: UITableViewCell {
     private let adLabel = UILabel()
 
     private let headerView = UIView()
-    private let avatar = NativeMomentAvatarView(size: 46)
+    private let avatar = NativeMomentAvatarView(
+        size: NativeMomentTimelineMetrics.avatar
+    )
+    private let detailStack = UIStackView()
+    private let nameRow = UIStackView()
     private let nameLabel = UILabel()
     private let pinnedIcon = UIImageView(image: UIImage(systemName: "pin.fill"))
     private let timeLabel = UILabel()
@@ -596,24 +608,29 @@ final class NativeMomentRowCell: UITableViewCell {
     private func configureCard() {
         cardHost.backgroundColor = UIColor(C.pageBg)
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.backgroundColor = UIColor(C.cardBg)
-        card.layer.cornerRadius = 22
+        card.backgroundColor = UIColor(C.pageBg)
+        card.layer.cornerRadius = 0
         card.layer.cornerCurve = .continuous
-        card.layer.borderWidth = 0.7
-        card.layer.borderColor = UIColor(C.label).withAlphaComponent(0.065).cgColor
+        card.layer.borderWidth = 0
+        card.layer.borderColor = UIColor.clear.cgColor
         cardHost.addSubview(card)
         NSLayoutConstraint.activate([
-            card.leadingAnchor.constraint(equalTo: cardHost.leadingAnchor, constant: 10),
-            card.trailingAnchor.constraint(equalTo: cardHost.trailingAnchor, constant: -10),
-            card.topAnchor.constraint(equalTo: cardHost.topAnchor, constant: 6),
-            card.bottomAnchor.constraint(equalTo: cardHost.bottomAnchor, constant: -6)
+            card.leadingAnchor.constraint(equalTo: cardHost.leadingAnchor),
+            card.trailingAnchor.constraint(equalTo: cardHost.trailingAnchor),
+            card.topAnchor.constraint(equalTo: cardHost.topAnchor),
+            card.bottomAnchor.constraint(equalTo: cardHost.bottomAnchor)
         ])
 
         cardStack.axis = .vertical
         cardStack.alignment = .fill
         cardStack.spacing = 0
         cardStack.isLayoutMarginsRelativeArrangement = true
-        cardStack.layoutMargins = UIEdgeInsets(top: 16, left: 16, bottom: 14, right: 16)
+        cardStack.layoutMargins = UIEdgeInsets(
+            top: 14,
+            left: NativeMomentTimelineMetrics.horizontalInset,
+            bottom: 14,
+            right: NativeMomentTimelineMetrics.trailingInset
+        )
         cardStack.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(cardStack)
         likeBurst.translatesAutoresizingMaskIntoConstraints = false
@@ -638,15 +655,7 @@ final class NativeMomentRowCell: UITableViewCell {
         configureSocialView()
         cardStack.addArrangedSubview(promotionView)
         cardStack.addArrangedSubview(headerView)
-        cardStack.addArrangedSubview(bodyView)
-        cardStack.addArrangedSubview(mediaCanvas)
-        cardStack.addArrangedSubview(actionHost)
-        cardStack.addArrangedSubview(socialView)
         cardStack.setCustomSpacing(12, after: promotionView)
-        cardStack.setCustomSpacing(15, after: headerView)
-        cardStack.setCustomSpacing(16, after: bodyView)
-        cardStack.setCustomSpacing(14, after: mediaCanvas)
-        cardStack.setCustomSpacing(12, after: actionHost)
     }
 
     private func configurePromotionView() {
@@ -695,7 +704,7 @@ final class NativeMomentRowCell: UITableViewCell {
                                                            action: #selector(openAuthor)))
 
         nameLabel.font = momentUIFont(16.5, .semibold, relativeTo: .headline)
-        nameLabel.textColor = UIColor(C.label)
+        nameLabel.textColor = UIColor(C.link)
         nameLabel.lineBreakMode = .byTruncatingTail
         pinnedIcon.tintColor = UIColor(C.subLabel)
         pinnedIcon.contentMode = .scaleAspectFit
@@ -703,20 +712,23 @@ final class NativeMomentRowCell: UITableViewCell {
         pinnedIcon.widthAnchor.constraint(equalToConstant: 10).isActive = true
         pinnedIcon.heightAnchor.constraint(equalToConstant: 10).isActive = true
 
-        let nameRow = UIStackView(arrangedSubviews: [nameLabel, pinnedIcon, UIView()])
+        nameRow.arrangedSubviews.forEach {
+            nameRow.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        nameRow.addArrangedSubview(nameLabel)
+        nameRow.addArrangedSubview(pinnedIcon)
+        nameRow.addArrangedSubview(UIView())
         nameRow.axis = .horizontal
         nameRow.alignment = .center
         nameRow.spacing = 5
+        nameRow.translatesAutoresizingMaskIntoConstraints = false
+        nameRow.isUserInteractionEnabled = true
+        nameRow.addGestureRecognizer(UITapGestureRecognizer(target: self,
+                                                            action: #selector(openAuthor)))
         timeLabel.font = momentUIFont(12.5, .regular, relativeTo: .caption1)
         timeLabel.textColor = UIColor(C.subLabel)
         timeLabel.lineBreakMode = .byTruncatingTail
-        let textStack = UIStackView(arrangedSubviews: [nameRow, timeLabel])
-        textStack.axis = .vertical
-        textStack.alignment = .fill
-        textStack.spacing = 4
-        textStack.isUserInteractionEnabled = true
-        textStack.addGestureRecognizer(UITapGestureRecognizer(target: self,
-                                                               action: #selector(openAuthor)))
 
         moreButton.tintColor = UIColor(C.subLabel)
         moreButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
@@ -726,17 +738,47 @@ final class NativeMomentRowCell: UITableViewCell {
         )
         moreButton.addTarget(self, action: #selector(showMore), for: .touchUpInside)
         moreButton.translatesAutoresizingMaskIntoConstraints = false
-        moreButton.widthAnchor.constraint(equalToConstant: 40).isActive = true
-        moreButton.heightAnchor.constraint(equalToConstant: 40).isActive = true
+        moreButton.widthAnchor.constraint(equalToConstant: 34).isActive = true
+        moreButton.heightAnchor.constraint(equalToConstant: 34).isActive = true
 
-        let row = UIStackView(arrangedSubviews: [avatar, textStack, UIView(), moreButton])
+        let nameLine = UIView()
+        nameLine.addSubview(nameRow)
+        nameLine.addSubview(moreButton)
+        NSLayoutConstraint.activate([
+            nameLine.heightAnchor.constraint(equalToConstant: 24),
+            nameRow.leadingAnchor.constraint(equalTo: nameLine.leadingAnchor),
+            nameRow.trailingAnchor.constraint(
+                lessThanOrEqualTo: moreButton.leadingAnchor,
+                constant: -4
+            ),
+            nameRow.topAnchor.constraint(equalTo: nameLine.topAnchor),
+            nameRow.bottomAnchor.constraint(equalTo: nameLine.bottomAnchor),
+            moreButton.trailingAnchor.constraint(equalTo: nameLine.trailingAnchor),
+            moreButton.centerYAnchor.constraint(equalTo: nameLine.centerYAnchor)
+        ])
+
+        detailStack.axis = .vertical
+        detailStack.alignment = .fill
+        detailStack.spacing = 0
+        detailStack.addArrangedSubview(nameLine)
+        detailStack.addArrangedSubview(bodyView)
+        detailStack.addArrangedSubview(mediaCanvas)
+        detailStack.addArrangedSubview(timeLabel)
+        detailStack.addArrangedSubview(actionHost)
+        detailStack.addArrangedSubview(socialView)
+        detailStack.setCustomSpacing(4, after: nameLine)
+        detailStack.setCustomSpacing(8, after: bodyView)
+        detailStack.setCustomSpacing(8, after: mediaCanvas)
+        detailStack.setCustomSpacing(10, after: timeLabel)
+        detailStack.setCustomSpacing(10, after: actionHost)
+
+        let row = UIStackView(arrangedSubviews: [avatar, detailStack])
         row.axis = .horizontal
-        row.alignment = .center
-        row.spacing = 11
+        row.alignment = .top
+        row.spacing = NativeMomentTimelineMetrics.avatarGap
         row.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(row)
         NSLayoutConstraint.activate([
-            headerView.heightAnchor.constraint(greaterThanOrEqualToConstant: 46),
             row.leadingAnchor.constraint(equalTo: headerView.leadingAnchor),
             row.trailingAnchor.constraint(equalTo: headerView.trailingAnchor),
             row.topAnchor.constraint(equalTo: headerView.topAnchor),
@@ -881,7 +923,7 @@ final class NativeMomentRowCell: UITableViewCell {
         if avatarPath.isEmpty {
             avatar.setPlaceholder(moment.author?.name ?? Tr("星"))
         } else {
-            avatar.set(path: avatarPath, size: 46)
+            avatar.set(path: avatarPath, size: NativeMomentTimelineMetrics.avatar)
         }
         nameLabel.text = moment.author?.name ?? ""
         pinnedIcon.isHidden = moment.pinned != true
@@ -934,7 +976,11 @@ final class NativeMomentRowCell: UITableViewCell {
         mediaCanvas.isHidden = images.isEmpty && video.isEmpty
         guard !mediaCanvas.isHidden else { return }
 
-        let cardWidth = max(280, (window?.bounds.width ?? L.width) - 52)
+        let cardWidth = max(
+            220,
+            (window?.bounds.width ?? L.width) - NativeMomentTimelineMetrics.contentInset
+                - NativeMomentTimelineMetrics.trailingInset
+        )
         if !video.isEmpty {
             let ratio = CGFloat(max(1, moment.videoH ?? 4))
                 / CGFloat(max(1, moment.videoW ?? 5))
@@ -968,10 +1014,10 @@ final class NativeMomentRowCell: UITableViewCell {
         if images.count == 1 {
             let path = images[0]
             let size = moment.imageSizes?[path]
-            let ratio = (size?.count ?? 0) >= 2 && (size?[1] ?? 0) > 0
-                ? CGFloat(size![0]) / CGFloat(size![1])
-                : 4.0 / 3.0
-            let fitted = MomentMediaLayout.singleImageSize(knownRatio: ratio,
+            let knownSize = (size?.count ?? 0) >= 2 && (size?[1] ?? 0) > 0
+                ? CGSize(width: CGFloat(size![0]), height: CGFloat(size![1]))
+                : nil
+            let fitted = MomentMediaLayout.singleImageSize(knownSize: knownSize,
                                                             width: cardWidth)
             let control = NativeMomentMediaControl()
             control.translatesAutoresizingMaskIntoConstraints = false

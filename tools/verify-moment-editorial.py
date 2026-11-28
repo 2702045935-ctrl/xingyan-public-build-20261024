@@ -28,9 +28,11 @@ require(
     "ads must share the native card skeleton instead of creating a second feed layout",
 )
 require(
-    "card.layer.cornerRadius = 22" in CARD
-    and "card.layer.cornerCurve = .continuous" in CARD,
-    "the native editorial feed must use the refined card surface",
+    "card.layer.cornerRadius = 0" in CARD
+    and "card.backgroundColor = UIColor(C.pageBg)" in CARD
+    and "static let horizontalInset: CGFloat = 22" in CARD
+    and "static let trailingInset: CGFloat = 20" in CARD,
+    "the native timeline must use the measured open WeChat surface and breathing",
 )
 require(
     "radius: MomentMediaLayout.singleRadius" in CARD
@@ -42,8 +44,14 @@ require(
     "moment copy must use the refined editorial type scale",
 )
 require(
-    "(window?.bounds.width ?? L.width) - 52" in CARD,
-    "native media width must preserve the existing card insets",
+    "static let avatar: CGFloat = 43" in CARD
+    and "NativeMomentAvatarView(" in CARD
+    and "nameLabel.textColor = UIColor(C.link)" in CARD
+    and "UIStackView(arrangedSubviews: [avatar, detailStack])" in CARD
+    and "detailStack.addArrangedSubview(bodyView)" in CARD
+    and "detailStack.addArrangedSubview(mediaCanvas)" in CARD
+    and "detailStack.addArrangedSubview(timeLabel)" in CARD,
+    "the avatar and all right-column content must share WeChat's measured hierarchy",
 )
 require(
     "momentProfileFooterHeight" in DISCOVER

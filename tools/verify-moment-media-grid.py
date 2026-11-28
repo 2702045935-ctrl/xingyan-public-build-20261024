@@ -28,6 +28,21 @@ require(
     "feed cards must share the canonical single-image and grid sizes",
 )
 require(
+    "static let gap: CGFloat = 5" in LAYOUT
+    and "static let gridRadius: CGFloat = 5" in LAYOUT
+    and "static let singleRadius: CGFloat = 5" in LAYOUT
+    and "gridWidth = min(width, 177)" in LAYOUT
+    and "gridWidth = min(width, 269)" in LAYOUT,
+    "the 2/3-column grid must match WeChat's 86pt cells and 5pt gaps",
+)
+require(
+    "singleMaxWidth: CGFloat = 220" in LAYOUT
+    and "singleMaxHeight: CGFloat = 300" in LAYOUT
+    and "maxWidth / knownSize.width" in LAYOUT
+    and "singleImageSize(knownSize: knownSize" in FEED,
+    "single photos must preserve small source dimensions and only cap oversized media",
+)
+require(
     "MomentMediaLayout.singleImageSize(" in DISCOVER
     and DISCOVER.count("MomentMediaLayout.gridCellSize(") >= 1,
     "moment detail grids must use the same media geometry as feed cards",

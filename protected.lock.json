@@ -68,13 +68,13 @@
     },
     {
       "path": "Sources/DiscoverView.swift",
-      "size": 165013,
-      "sha256": "c1342f157fbe3c3b4b1956858aebafa37ca9c0e0894e66098f047f6b0f5b3809"
+      "size": 164978,
+      "sha256": "a0d6d2f7080091609ce75d181150540f486d77628d9d919860e7fa036f889463"
     },
     {
       "path": "Sources/MomentMediaLayout.swift",
-      "size": 1210,
-      "sha256": "1ea4789d82e075e583fba4c774b3af424f0bfbacfe823700d6c4fdcca67d31ae"
+      "size": 1858,
+      "sha256": "e458e6f685b118e66e07bee82ce0ad9b10f69912f4b12fb68c3b01f6fe43b33e"
     },
     {
       "path": "Sources/MomentStressFixture.swift",
@@ -105,6 +105,11 @@
       "path": "Sources/NativeMomentFeed.swift",
       "size": 20190,
       "sha256": "aba471036f21352c4c3e9775e0fe0643b75e8f9c4364884cd3c73f8f5a4946f0"
+    },
+    {
+      "path": "Sources/NativeMomentRowCell.swift",
+      "size": 60893,
+      "sha256": "0915c658894359db320be35fb51a259e7dbcb536c694f2cfca71efaa3362b3ab"
     }
   ]
 }

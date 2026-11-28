@@ -4165,8 +4165,11 @@ struct MomentSingleImage: View {
 
     var body: some View {
 
-        let rawAspect = (knownSize?.height ?? 0) > 0 ? (knownSize!.width / knownSize!.height) : aspect
-        let fitted = MomentMediaLayout.singleImageSize(knownRatio: rawAspect, width: avail)
+        let fitted = MomentMediaLayout.singleImageSize(
+            knownSize: knownSize,
+            width: avail,
+            fallbackRatio: aspect
+        )
 
         Button { onTap() } label: {
 
