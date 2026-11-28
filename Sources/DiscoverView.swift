@@ -1498,6 +1498,22 @@ struct ColorBall: View {
     }
 }
 
+private enum MomentCoverSheet: Identifiable {
+    case source
+    case photo
+    case camera
+    case crop(UIImage)
+
+    var id: String {
+        switch self {
+        case .source: return "source"
+        case .photo: return "photo"
+        case .camera: return "camera"
+        case .crop: return "crop"
+        }
+    }
+}
+
 struct MomentsView: View {
     private static let momentPageSize = 70
     private static let stressMomentWindow = 120
@@ -1549,11 +1565,7 @@ struct MomentsView: View {
     @State private var showCamera = false
 
     @State private var showVideoShoot = false
-    @State private var showCoverPhoto = false
-
-    @State private var coverMenu = false
-    @State private var showCoverCamera = false
-    @State private var coverDraft: UIImage?
+    @State private var coverSheet: MomentCoverSheet?
 
     @State private var coverLocked = false
     @State private var coverLockPull: CGFloat = 0
@@ -1866,51 +1878,55 @@ struct MomentsView: View {
             }
         }
 
-        .sheet(isPresented: $coverMenu) {
-            BottomChoiceSheet(
-                title: Tr("更换相册封面"),
-                headerSymbol: "photo.on.rectangle.angled",
-                items: [
-                    BottomChoiceItem(
-                        id: "photo",
-                        title: Tr("从手机相册选择"),
-                        detail: Tr("选一张照片作为生活圈封面"),
-                        symbol: "photo.on.rectangle",
-                        tint: C.green
-                    ),
-                    BottomChoiceItem(
-                        id: "camera",
-                        title: Tr("拍一张"),
-                        detail: Tr("打开相机拍摄封面"),
-                        symbol: "camera.fill",
-                        tint: C.link
-                    )
-                ]
-            ) { selected in
-                if selected == "photo" {
-                    showCoverPhoto = true
-                } else {
-                    showCoverCamera = true
+        .sheet(item: $coverSheet) { sheet in
+            switch sheet {
+            case .source:
+                BottomChoiceSheet(
+                    title: Tr("更换相册封面"),
+                    headerSymbol: "photo.on.rectangle.angled",
+                    items: [
+                        BottomChoiceItem(
+                            id: "photo",
+                            title: Tr("从手机相册选择"),
+                            detail: Tr("选一张照片作为生活圈封面"),
+                            symbol: "photo.on.rectangle",
+                            tint: C.green
+                        ),
+                        BottomChoiceItem(
+                            id: "camera",
+                            title: Tr("拍一张"),
+                            detail: Tr("打开相机拍摄封面"),
+                            symbol: "camera.fill",
+                            tint: C.link
+                        )
+                    ]
+                ) { selected in
+                    queueCoverSheet(selected == "photo" ? .photo : .camera)
                 }
-            }
-            .presentationDetents([
-                .height(BottomChoiceSheet.preferredHeight(itemCount: 2))
-            ])
-            .presentationDragIndicator(.hidden)
-        }
-        .sheet(isPresented: $showCoverCamera) {
-            CameraPicker { image in coverDraft = image }
+                .presentationDetents([
+                    .height(BottomChoiceSheet.preferredHeight(itemCount: 2))
+                ])
+                .presentationDragIndicator(.hidden)
+
+            case .photo:
+                PhotoPicker { image in
+                    queueCoverSheet(.crop(image))
+                }
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
-        }
 
-        .sheet(isPresented: Binding(get: { coverDraft != nil },
-                                    set: { if !$0 { coverDraft = nil } })) {
-            if let img = coverDraft {
+            case .camera:
+                CameraPicker { image in
+                    queueCoverSheet(.crop(image))
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+
+            case .crop(let img):
                 CoverAdjustSheet(image: img,
                                  frameSize: CGSize(width: L.width, height: L.coverH)) { out in
                     changeCover(out)
-                    coverDraft = nil
+                    coverSheet = nil
                 }
                 .presentationDetents([.fraction(0.78), .large])
                 .presentationDragIndicator(.visible)
@@ -1925,11 +1941,6 @@ struct MomentsView: View {
                     posting = true
                 }
             }
-        }
-        .sheet(isPresented: $showCoverPhoto) {
-            PhotoPicker { image in coverDraft = image }
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
         }
         .fullScreenCover(isPresented: $posting) { publishSheet }
 
@@ -1973,6 +1984,13 @@ struct MomentsView: View {
                     onCancel: { pendingDeleteMoment = nil }
                 )
             }
+        }
+    }
+
+    private func queueCoverSheet(_ next: MomentCoverSheet) {
+        coverSheet = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+            coverSheet = next
         }
     }
 
@@ -2048,7 +2066,7 @@ struct MomentsView: View {
                         .multilineTextAlignment(.center)
 
                     Button {
-                        coverMenu = true
+                        coverSheet = .source
                     } label: {
                         Text(Tr("立即设置"))
                             .font(pf(14.5, .semibold))
@@ -2064,7 +2082,7 @@ struct MomentsView: View {
                     .buttonStyle(.plain)
                     .contentShape(Capsule(style: .continuous))
                     .highPriorityGesture(
-                        TapGesture().onEnded { coverMenu = true }
+                        TapGesture().onEnded { coverSheet = .source }
                     )
                 }
                 .padding(.horizontal, 20)
@@ -2128,7 +2146,7 @@ struct MomentsView: View {
 
             if coverEditable && !cover.isEmpty {
                 Button {
-                    coverMenu = true
+                    coverSheet = .source
                 } label: {
                     Label(Tr("换封面"), systemImage: "camera.fill")
                         .font(pf(12.5, .medium))
@@ -2142,16 +2160,15 @@ struct MomentsView: View {
                                 lineWidth: 0.7
                             )
                         )
+                        .frame(width: 112, height: 56)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .contentShape(Capsule(style: .continuous))
                 .highPriorityGesture(
-                    TapGesture().onEnded { coverMenu = true }
+                    TapGesture().onEnded { coverSheet = .source }
                 )
-                .padding(.leading, 12)
-                .padding(.bottom, 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .zIndex(4)
+                .zIndex(20)
             }
 
             HStack(alignment: .bottom, spacing: 12) {

@@ -30,8 +30,8 @@ require(
 require(
     ".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)"
     in cover
-    and ".padding(.leading, 12)" in cover
     and ".frame(width: 88, height: 32)" in cover
+    and ".frame(width: 112, height: 56)" in cover
     and ".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)"
     in cover,
     "profile identity and cover edit control must match their 11/21 edges",
@@ -51,7 +51,9 @@ require(
 )
 require(
     "struct BottomChoiceSheet: View" in BOTTOM
-    and "sheet(isPresented: $coverMenu)" in DISCOVER
+    and "sheet(item: $coverSheet)" in DISCOVER
+    and "private func queueCoverSheet" in DISCOVER
+    and "case .crop(let img):" in DISCOVER
     and "BottomChoiceSheet(" in DISCOVER
     and ".height(BottomChoiceSheet.preferredHeight(itemCount: 2))" in DISCOVER
     and ".presentationDetents([.fraction(0.78), .large])" in DISCOVER
@@ -60,7 +62,8 @@ require(
 )
 require(
     DISCOVER.count(".highPriorityGesture(\n") >= 2
-    and DISCOVER.count("TapGesture().onEnded { coverMenu = true }") >= 2,
+    and DISCOVER.count("TapGesture().onEnded { coverSheet = .source }") >= 2
+    and ".zIndex(20)" in cover,
     "the empty and existing cover edit buttons must win hit testing over the cover gesture layer",
 )
 require(
