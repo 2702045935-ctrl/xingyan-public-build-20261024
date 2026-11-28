@@ -1220,6 +1220,7 @@ struct ChatDetailView: View {
 
     @State private var sendingPreview: UIImage?
     @State private var sendingPreviews: [UIImage] = []
+    @State private var sendingVideoURL: URL?
     @State private var sendProgress: Double = 0
     @State private var sendingFileName = ""
     @State private var sendingFileBytes = 0
@@ -3059,7 +3060,7 @@ struct ChatDetailView: View {
                 ChatTheme.preset.rawValue
             ].joined(separator: "|")
         case .sendingVideo:
-            return "sending-video:\(sendProgress):\(sendingPreviews.count):\(sendingPreview != nil)"
+            return "sending-video:\(sendProgress):\(sendingPreviews.count):\(sendingPreview != nil):\(sendingVideoURL?.lastPathComponent ?? "")"
         case .sendingFile:
             return "sending-file:\(sendingFileName):\(sendingFileBytes):\(sendingFileProgress ?? 0)"
         case .bottom:
@@ -3102,7 +3103,11 @@ struct ChatDetailView: View {
                 Spacer(minLength: 0)
                 SendingVideoBubble(cover: sendingPreview,
                                    previews: sendingPreviews,
-                                   progress: sendProgress)
+                                   progress: sendProgress,
+                                   localURL: sendingVideoURL) { url in
+                    videoToPlay = url
+                    videoPayload = ""
+                }
             }
             .padding(.horizontal, L.msgPad)
             .padding(.bottom, 12)
@@ -5984,6 +5989,7 @@ struct ChatDetailView: View {
             sendProgress = 0.02
             sendingPreview = preview
             sendingPreviews = [preview].compactMap { $0 }
+            sendingVideoURL = url
             sendingMedia = Tr("视频发送中…")
             scrollTick += 1
             Task {
@@ -6025,6 +6031,7 @@ struct ChatDetailView: View {
                     sendingMedia = ""
                     sendingPreview = nil
                     sendingPreviews = []
+                    sendingVideoURL = nil
                     app.show(Tr("视频上传失败"))
                     return
                 }
@@ -6051,6 +6058,7 @@ struct ChatDetailView: View {
                 sendingMedia = ""
                 sendingPreview = nil
                 sendingPreviews = []
+                sendingVideoURL = nil
                 await app.loadChats()
             }
 

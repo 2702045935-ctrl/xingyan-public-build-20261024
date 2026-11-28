@@ -182,11 +182,19 @@ struct VideoBubble: View {
 
     private var size: CGSize { videoBubbleSize(w: info.w, h: info.h) }
 
+    private var playableURL: URL? {
+        let path = URL(string: info.url)?.path ?? info.url
+        if let local = LocalStore.localURL(path),
+           FileManager.default.fileExists(atPath: local.path) {
+            return local
+        }
+        let full = info.url.hasPrefix("http") ? info.url : API.shared.base + info.url
+        return URL(string: full)
+    }
+
     var body: some View {
         Button {
-            let u = info.url
-            let full = u.hasPrefix("http") ? u : API.shared.base + u
-            if let url = URL(string: full) { onOpen(url, nil) }
+            if let url = playableURL { onOpen(url, nil) }
         } label: {
             ZStack {
                 coverLayer
@@ -713,6 +721,8 @@ struct SendingVideoBubble: View {
     var cover: UIImage?
     var previews: [UIImage] = []
     var progress: Double
+    var localURL: URL? = nil
+    var onOpen: ((URL) -> Void)? = nil
 
     private var images: [UIImage] {
         previews.isEmpty ? [cover].compactMap { $0 } : previews
@@ -774,6 +784,10 @@ struct SendingVideoBubble: View {
         }
         .frame(width: size.width, height: size.height)
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let localURL { onOpen?(localURL) }
+        }
         .accessibilityLabel(Tr("正在发送媒体"))
     }
 }

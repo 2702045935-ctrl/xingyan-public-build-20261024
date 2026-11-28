@@ -12,6 +12,9 @@ WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
 VIDEO_BUBBLE = MEDIA.split("struct SendingVideoBubble: View", 1)[1].split(
     "struct SendingFileBubble: View", 1
 )[0]
+VIDEO_SEND = CHAT.split("case .video(let url, let preview):", 1)[1].split(
+    "case .live(", 1
+)[0]
 
 
 def require(condition: bool, message: str) -> None:
@@ -60,6 +63,19 @@ require(
     and ".frame(width: 24, height: 24)" in VIDEO_BUBBLE
     and ".frame(width: 17, height: 17)" in VIDEO_BUBBLE,
     "upload state must be a small corner ring instead of a blocking dark overlay",
+)
+require(
+    "private var playableURL: URL?" in MEDIA
+    and "LocalStore.localURL(path)" in MEDIA
+    and "return local" in MEDIA
+    and "localURL: sendingVideoURL" in CHAT
+    and "sendingVideoURL = url" in VIDEO_SEND
+    and "sendingVideoURL = nil" in VIDEO_SEND
+    and "var localURL: URL? = nil" in VIDEO_BUBBLE
+    and "if let localURL { onOpen?(localURL) }" in VIDEO_BUBBLE
+    and VIDEO_SEND.index("LocalStore.keepOriginal(up, from: file)")
+    < VIDEO_SEND.index("API.shared.send("),
+    "a video must be locally playable immediately after send and while its upload row is visible",
 )
 require(
     "DispatchQueue.main.asyncAfter(deadline: .now() + 0.24)" not in CHAT
