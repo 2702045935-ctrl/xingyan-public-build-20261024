@@ -4,7 +4,7 @@ import UIKit
 struct TransferView: View {
     let chat: Chat
 
-    var onPaid: (Message?) -> Void = { _ in }
+    var onPaid: (Message?, API.TransferPayment?) -> Void = { _, _ in }
 
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -1167,7 +1167,7 @@ struct TransferView: View {
                     step = 1
                 }
 
-                onPaid(result.message)
+                onPaid(result.message, result.transfer)
                 await app.loadChats()
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             } catch {

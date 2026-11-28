@@ -86,12 +86,13 @@ require(
 require(
     "let result = try await API.shared.transfer(" in TRANSFER
     and "method: method, password: password, face: face)" in TRANSFER
-    and "onPaid(result.message)" in TRANSFER
+    and "onPaid(result.message, result.transfer)" in TRANSFER
     and "var message: Message?" in API
     and "message: sent.message" in SERVER
     and "message: transferMessage" in SERVER
-    and "onPaid: { message in\n                if let message {\n                    appendVisibleMessage(message)"
-    in CHAT
+    and "onPaid: { message, transfer in" in CHAT
+    and "transfer.flatMap(makeTransferMessage)" in CHAT
+    and "private func makeTransferMessage(_ transfer: API.TransferPayment)" in CHAT
     and "API.shared.receiveCode(amount: amount)" in PAY_CODE
     and "private var receiveBankCard" in PAY_CODE
     and '"STAR PAY RECEIVE"' in PAY_CODE

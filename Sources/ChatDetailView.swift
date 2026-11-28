@@ -2528,12 +2528,26 @@ struct ChatDetailView: View {
             Task { await load(initial: false); await app.loadChats() }
         }) {
 
-            TransferView(chat: chat, onPaid: { message in
-                if let message {
-                    appendVisibleMessage(message)
-                    app.ensureChatVisible(chat, latest: message)
+            TransferView(chat: chat, onPaid: { message, transfer in
+                let fallback = message ?? transfer.flatMap(makeTransferMessage)
+                if let fallback {
+                    appendVisibleMessage(fallback)
+                    app.ensureChatVisible(chat, latest: fallback)
                 }
-                Task { await load(initial: false); await app.loadChats() }
+                Task {
+                    await load(initial: false)
+                    if let transfer,
+                       !messages.contains(where: {
+                           $0.kindName == "transfer"
+                               && TransferInfo(json: $0.body)?.id == transfer.id
+                       }),
+                       let fallback {
+                        upsertVisibleMessage(fallback)
+                        app.ensureChatVisible(chat, latest: fallback)
+                        pinToBottomSoon(force: true)
+                    }
+                    await app.loadChats()
+                }
             })
         }
 
@@ -5780,6 +5794,34 @@ struct ChatDetailView: View {
             throw APIError.message(Tr("服务器没有确认这条") + kind + Tr("消息，请重试"))
         }
         return message
+    }
+
+    private func makeTransferMessage(_ transfer: API.TransferPayment) -> Message {
+        let object: [String: Any] = [
+            "id": transfer.id,
+            "chatId": transfer.chatId ?? chat.id,
+            "fromId": transfer.fromId ?? myId,
+            "toId": transfer.toId ?? "",
+            "amount": transfer.amount ?? 0,
+            "note": transfer.note ?? "",
+            "method": transfer.method ?? "balance",
+            "status": transfer.status ?? "pending",
+            "createdAt": transfer.createdAt ?? TimeFmt.isoFrac.string(from: Date()),
+            "expiresAt": transfer.expiresAt ?? 0,
+            "receivedAt": transfer.receivedAt ?? "",
+            "refundedAt": transfer.refundedAt ?? ""
+        ]
+        let body = (try? JSONSerialization.data(withJSONObject: object))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+        return Message(
+            id: transfer.messageId ?? ("local-transfer-" + transfer.id),
+            chatId: chat.id,
+            senderId: myId,
+            kind: "transfer",
+            content: body,
+            createdAt: transfer.createdAt ?? TimeFmt.isoFrac.string(from: Date()),
+            senderName: app.me?.name
+        )
     }
 
     private func send(kind: String, content: String, mentions: [String] = [],
