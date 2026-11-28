@@ -51,7 +51,7 @@ require(
 )
 require(
     "glassEffect(" not in NAV
-    and NAV.count("UIBlurEffect(") == 3
+    and NAV.count("UIBlurEffect(") == 4
     and NAV.count("UIGlassEffect(") == 1
     and "NativeMediaGlassSurface(shape: shape, interactive: interactive)" in NAV,
     "custom glass must be removed while native masks and media glass remain",

@@ -447,13 +447,14 @@ private struct ChatFrostedEdgeMask: View {
     let edge: ChatWallpaperEdge
     let base: Color
 
+    @ObservedObject private var performance = DevicePerformanceProfile.shared
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                if reduceTransparency {
+                if reduceTransparency || !performance.allowsBackdropBlur {
                     base
                 } else {
                     ZStack {

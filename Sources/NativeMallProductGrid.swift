@@ -33,8 +33,9 @@ private final class NativeMallImageLoader {
 
     func image(path: String, side: CGFloat) async -> UIImage? {
         guard !path.isEmpty else { return nil }
+        let limitedSide = DevicePerformanceProfile.shared.limitedImageSide(side)
         let stable = ImageCacheKey.stablePath(path)
-        let key = stable + "#mall-native-" + String(Int(max(160, side)))
+        let key = stable + "#mall-native-" + String(Int(max(160, limitedSide)))
         if let hit = cache.object(forKey: key as NSString) { return hit }
 
         lock.lock()
@@ -51,7 +52,7 @@ private final class NativeMallImageLoader {
             }
             guard let data else { return nil }
             return await Task.detached(priority: .userInitiated) {
-                RemoteImage.downsampled(data, maxSide: side)
+                RemoteImage.downsampled(data, maxSide: limitedSide)
             }.value
         }
         inFlight[key] = task
@@ -70,17 +71,19 @@ private final class NativeMallImageLoader {
     }
 
     func prefetch(_ paths: [String], side: CGFloat) {
+        let limitedSide = DevicePerformanceProfile.shared.limitedImageSide(side)
         for path in paths where !path.isEmpty {
             Task(priority: .utility) {
-                _ = await image(path: path, side: side)
+                _ = await image(path: path, side: limitedSide)
             }
         }
     }
 
     func cancelPrefetch(_ paths: [String], side: CGFloat) {
+        let limitedSide = DevicePerformanceProfile.shared.limitedImageSide(side)
         for path in paths where !path.isEmpty {
             let stable = ImageCacheKey.stablePath(path)
-            let key = stable + "#mall-native-" + String(Int(max(160, side)))
+            let key = stable + "#mall-native-" + String(Int(max(160, limitedSide)))
             lock.lock()
             inFlight.removeValue(forKey: key)?.cancel()
             lock.unlock()
@@ -395,9 +398,18 @@ final class NativeMallGridCoordinator: NSObject,
 
     func collectionView(_ collectionView: UICollectionView,
                         prefetchItemsAt indexPaths: [IndexPath]) {
-        let paths = indexPaths.compactMap { index -> String? in
+        let candidates = indexPaths.compactMap { index -> String? in
             guard index.item < products.count else { return nil }
             return products[index.item].img
+        }
+        let stride: Int
+        switch DevicePerformanceProfile.shared.tier {
+        case .high: stride = 1
+        case .balanced: stride = 2
+        case .legacy: stride = 3
+        }
+        let paths = candidates.enumerated().compactMap { entry in
+            entry.offset.isMultiple(of: stride) ? entry.element : nil
         }
         NativeMallImageLoader.shared.prefetch(paths, side: 360)
     }

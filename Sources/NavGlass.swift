@@ -123,6 +123,7 @@ struct NativeFrostedHeaderMaterial: UIViewRepresentable {
 struct NativeMediaGlassMaterial: UIViewRepresentable {
     var interactive = false
 
+    @ObservedObject private var performance = DevicePerformanceProfile.shared
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
@@ -137,8 +138,13 @@ struct NativeMediaGlassMaterial: UIViewRepresentable {
     }
 
     private var effect: UIVisualEffect? {
-        guard !reduceTransparency else { return nil }
+        guard !reduceTransparency, performance.allowsBackdropBlur else { return nil }
         if #available(iOS 26.0, *) {
+            guard performance.allowsLiquidGlass else {
+                return UIBlurEffect(style: scheme == .dark
+                                    ? .systemThinMaterialDark
+                                    : .systemThinMaterialLight)
+            }
             let glass = UIGlassEffect(style: .regular)
             glass.isInteractive = interactive
             return glass
@@ -154,16 +160,20 @@ struct NativeMediaGlassSurface: View {
     var shape: AnyShape = AnyShape(Capsule(style: .continuous))
     var interactive = false
     var showsEdge = true
+    var opaqueFallback = true
 
+    @ObservedObject private var performance = DevicePerformanceProfile.shared
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         Group {
-            if reduceTransparency {
+            if opaqueFallback && (reduceTransparency || !performance.allowsBackdropBlur) {
                 shape.fill(C.controlSurface)
-            } else {
+            } else if !reduceTransparency && performance.allowsBackdropBlur {
                 NativeMediaGlassMaterial(interactive: interactive)
                     .clipShape(shape)
+            } else {
+                Color.clear
             }
         }
         .overlay {
@@ -189,6 +199,7 @@ struct NativeTopGlassMask: View {
     var base: Color = C.pageBg
     var edgeBlend = false
 
+    @ObservedObject private var performance = DevicePerformanceProfile.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorScheme) private var scheme
@@ -199,10 +210,10 @@ struct NativeTopGlassMask: View {
                 Color.clear
             } else {
                 ZStack {
-                    if !reduceTransparency {
+                    if !reduceTransparency && performance.allowsBackdropBlur {
                         NativeFrostedHeaderMaterial(chrome: edgeBlend)
                     }
-                    if edgeBlend {
+                    if edgeBlend && performance.allowsBackdropBlur {
                         LinearGradient(
                             stops: [
                                 .init(color: base.opacity(0.28), location: 0),
@@ -224,8 +235,10 @@ struct NativeTopGlassMask: View {
                                 endPoint: .bottom
                             )
                         }
+                    } else if reduceTransparency || !performance.allowsBackdropBlur {
+                        base
                     } else {
-                        base.opacity(reduceTransparency ? 1 : 0.90)
+                        base.opacity(0.90)
                     }
                 }
             }

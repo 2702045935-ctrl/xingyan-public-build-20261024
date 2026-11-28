@@ -16,7 +16,9 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "NativeMomentLikeParticleBurst: UIView" in CARD
-    and "let count = reduceMotion ? 6 : 14" in CARD
+    and "let tier = DevicePerformanceProfile.shared.tier" in CARD
+    and "tier == .high ? 14" in CARD
+    and "tier == .balanced ? 10 : 7" in CARD
     and "withDuration: reduceMotion ? 0.22 : 0.52" in CARD
     and "likeBurst.isUserInteractionEnabled = false" in CARD,
     "likes must use a native bounded particle burst that cannot intercept touches",

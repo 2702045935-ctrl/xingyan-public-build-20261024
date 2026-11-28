@@ -9,13 +9,19 @@ struct VideoPlaybackProfile {
     var lowPowerMode = false
     var thermalLevel = 0
     var memoryPressure = false
+    var hardwarePlayerLimit = 4
+    var hardwareLookAhead = 2
 
     var reducesWork: Bool {
         lowPowerMode || memoryPressure || thermalLevel >= 2
     }
 
-    var playerLimit: Int { reducesWork ? 2 : 4 }
-    var lookAhead: Int { reducesWork ? 1 : 2 }
+    var playerLimit: Int {
+        min(reducesWork ? 2 : 4, hardwarePlayerLimit)
+    }
+    var lookAhead: Int {
+        min(reducesWork ? 1 : 2, hardwareLookAhead)
+    }
     var activeBufferSeconds: Double {
         if constrainedNetwork { return 3.0 }
         if expensiveNetwork { return 2.2 }
@@ -110,12 +116,15 @@ final class VideoPlaybackPolicy {
         case .critical: thermal = 3
         @unknown default: thermal = 1
         }
+        let hardware = DevicePerformanceProfile.shared
         return VideoPlaybackProfile(
             expensiveNetwork: expensive,
             constrainedNetwork: constrained,
             lowPowerMode: ProcessInfo.processInfo.isLowPowerModeEnabled,
             thermalLevel: thermal,
-            memoryPressure: false
+            memoryPressure: false,
+            hardwarePlayerLimit: hardware.videoPlayerLimit,
+            hardwareLookAhead: hardware.videoLookAhead
         )
     }
 }

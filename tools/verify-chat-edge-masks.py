@@ -24,7 +24,7 @@ require(
     and "private struct ChatFrostedEdgeMask" in CHAT
     and "let edge: ChatWallpaperEdge" in CHAT
     and "let base: Color" in CHAT
-    and "if reduceTransparency {\n                    base" in CHAT
+    and "if reduceTransparency || !performance.allowsBackdropBlur {\n                    base" in CHAT
     and "base.opacity(edge == .top" in CHAT
     and "(scheme == .dark ? 0.78 : 0.86)" in CHAT
     and "(scheme == .dark ? 0.72 : 0.82)" in CHAT,

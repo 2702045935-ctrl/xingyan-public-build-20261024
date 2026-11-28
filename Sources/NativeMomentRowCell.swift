@@ -18,7 +18,8 @@ private final class NativeMomentImageStore {
     static let shared = NativeMomentImageStore()
 
     func cached(path: String, maxSide: CGFloat) -> UIImage? {
-        let key = cacheKey(path, maxSide: maxSide)
+        let side = DevicePerformanceProfile.shared.limitedImageSide(maxSide)
+        let key = cacheKey(path, maxSide: side)
         if let memory = ImageStore.shared.get(key) ?? ImageStore.shared.getBestAvailable(path) {
             return memory
         }
@@ -31,11 +32,12 @@ private final class NativeMomentImageStore {
     func load(path: String, maxSide: CGFloat,
               completion: @escaping (UIImage?) -> Void) {
         let normalized = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        let side = DevicePerformanceProfile.shared.limitedImageSide(maxSide)
         guard !normalized.isEmpty else {
             completion(nil)
             return
         }
-        if let image = cached(path: normalized, maxSide: maxSide) {
+        if let image = cached(path: normalized, maxSide: side) {
             completion(image)
             return
         }
@@ -43,14 +45,14 @@ private final class NativeMomentImageStore {
             completion(nil)
             return
         }
-        let key = cacheKey(normalized, maxSide: maxSide)
+        let key = cacheKey(normalized, maxSide: side)
         Task.detached(priority: .utility) {
             guard let data = try? await API.shared.assetData(url),
                   let full = UIImage(data: data) else {
                 await MainActor.run { completion(nil) }
                 return
             }
-            let image = full.momentResized(maxSide: maxSide)
+            let image = full.momentResized(maxSide: side)
             ImageStore.shared.diskWrite(key, data)
             if let image {
                 ImageStore.shared.put(key, image)
@@ -163,7 +165,10 @@ private final class NativeMomentLikeParticleBurst: UIView {
         layer.removeAllAnimations()
         subviews.forEach { $0.removeFromSuperview() }
         let reduceMotion = UIAccessibility.isReduceMotionEnabled
-        let count = reduceMotion ? 6 : 14
+        let tier = DevicePerformanceProfile.shared.tier
+        let count = reduceMotion
+            ? 6
+            : (tier == .high ? 14 : (tier == .balanced ? 10 : 7))
         let origin = CGPoint(x: bounds.maxX - 92, y: bounds.midY + 2)
         for index in 0..<count {
             let particle = UIView(frame: CGRect(

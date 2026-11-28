@@ -53,8 +53,11 @@ require(
 )
 require(
     "final class VideoPlaybackPolicy" in KERNEL_IOS
-    and "var playerLimit: Int { reducesWork ? 2 : 4 }" in KERNEL_IOS
-    and "var lookAhead: Int { reducesWork ? 1 : 2 }" in KERNEL_IOS,
+    and "var playerLimit: Int {" in KERNEL_IOS
+    and "min(reducesWork ? 2 : 4, hardwarePlayerLimit)" in KERNEL_IOS
+    and "var lookAhead: Int {" in KERNEL_IOS
+    and "min(reducesWork ? 1 : 2, hardwareLookAhead)" in KERNEL_IOS
+    and "hardwarePlayerLimit" in KERNEL_IOS,
     "the playback kernel needs bounded adaptive hot-player and look-ahead limits",
 )
 require(

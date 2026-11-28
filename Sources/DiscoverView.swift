@@ -3659,7 +3659,8 @@ struct CoverAdjustSheet: View {
                 .clipped()
             NativeMediaGlassSurface(
                 shape: AnyShape(Rectangle()),
-                showsEdge: false
+                showsEdge: false,
+                opaqueFallback: false
             )
             LinearGradient(
                 colors: [

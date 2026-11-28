@@ -930,8 +930,24 @@ final class ImageStore {
     private var bytes = 0
     private var avatarBytes = 0
 
-    private let memoryCap = 96 * 1024 * 1024
+    private let memoryCap: Int
+    private let avatarMemoryCap: Int
     private let lock = NSLock()
+
+    private init() {
+        switch DevicePerformanceProfile.shared.tier {
+        case .high:
+            memoryCap = 128 * 1024 * 1024
+            avatarMemoryCap = 64 * 1024 * 1024
+        case .balanced:
+            memoryCap = 96 * 1024 * 1024
+            avatarMemoryCap = 48 * 1024 * 1024
+        case .legacy:
+            memoryCap = 56 * 1024 * 1024
+            avatarMemoryCap = 28 * 1024 * 1024
+        }
+    }
+
     func get(_ key: String) -> UIImage? {
         lock.lock(); defer { lock.unlock() }
         return avatarCache[key] ?? cache[key]
@@ -998,7 +1014,7 @@ final class ImageStore {
         if avatarCache[key] != nil { return }
         avatarCache[key] = img
         avatarBytes += Int(img.size.width * img.size.height * 4)
-        while avatarBytes > 48 * 1024 * 1024, avatarCache.count > 24 {
+        while avatarBytes > avatarMemoryCap, avatarCache.count > 16 {
             let first = avatarCache.keys.first!
             if let old = avatarCache.removeValue(forKey: first) {
                 avatarBytes -= Int(old.size.width * old.size.height * 4)
@@ -1012,13 +1028,20 @@ final class ImageStore {
     func prefetchAvatars(_ paths: [String],
                          maxSide: CGFloat = 120,
                          limit: Int = 64) {
-        guard limit > 0 else { return }
+        let tierLimit: Int
+        switch DevicePerformanceProfile.shared.tier {
+        case .high: tierLimit = 64
+        case .balanced: tierLimit = 40
+        case .legacy: tierLimit = 24
+        }
+        let effectiveLimit = min(limit, tierLimit)
+        guard effectiveLimit > 0 else { return }
         var seen = Set<String>()
         let keys = paths.compactMap { path -> String? in
             let stable = ImageCacheKey.stablePath(path)
             guard !stable.isEmpty, seen.insert(stable).inserted else { return nil }
             return stable
-        }.prefix(limit)
+        }.prefix(effectiveLimit)
         guard !keys.isEmpty else { return }
 
         Task.detached(priority: .utility) { [keys = Array(keys)] in
@@ -1180,7 +1203,10 @@ struct RemoteImage: View {
         self.placeholder = placeholder
         self.onLoaded = onLoaded
         let identity = Self.cacheIdentity(path: path, cacheKey: cacheKey)
-        let exact = Self.cachedImage(path: identity, maxSide: maxSide)
+        let exact = Self.cachedImage(
+            path: identity,
+            maxSide: DevicePerformanceProfile.shared.limitedImageSide(maxSide)
+        )
         let fallback = exact ?? ImageStore.shared.getBestAvailable(identity)
         _image = State(initialValue: fallback)
         _loadedPath = State(initialValue: exact == nil ? "" : identity)
@@ -1230,7 +1256,7 @@ struct RemoteImage: View {
 
     private static func cachedImage(path: String, maxSide: CGFloat) -> UIImage? {
         guard !path.isEmpty else { return nil }
-        let side = max(64, maxSide)
+        let side = DevicePerformanceProfile.shared.limitedImageSide(maxSide)
         let key = path + "#" + String(Int(side))
         return ImageStore.shared.get(key) ?? ImageStore.shared.get(path)
     }
@@ -1244,7 +1270,7 @@ struct RemoteImage: View {
         if path.isEmpty { return }
         let requestedPath = path
         let requestedKey = Self.cacheIdentity(path: path, cacheKey: cacheKey)
-        let side = max(64, maxSide)
+        let side = DevicePerformanceProfile.shared.limitedImageSide(maxSide)
         let memoryKey = requestedKey + "#" + String(Int(side))
 
         if let hit = ImageStore.shared.get(memoryKey) {

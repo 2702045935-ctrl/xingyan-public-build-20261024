@@ -20,7 +20,7 @@ require("struct NativeTopGlassMask" in NAV
         and "struct NativeFrostedHeaderMaterial" in NAV
         and "UIBlurEffect(style: scheme == .dark" in NAV
         and "if !active {\n                Color.clear" in NAV
-        and "if !reduceTransparency {\n                        NativeFrostedHeaderMaterial(chrome: edgeBlend)" in NAV
+        and "if !reduceTransparency && performance.allowsBackdropBlur {\n                        NativeFrostedHeaderMaterial(chrome: edgeBlend)" in NAV
         and "UIScrollEdgeElementContainerInteraction" in NAV
         and "table.topEdgeEffect.style = .automatic" in NATIVE_LIST
         and ".systemChromeMaterialDark" in NAV
@@ -33,8 +33,10 @@ require("NativeGlassControlMaterial" in NAV
         "controls must use the single native system glass source")
 require(
     "var base: Color = C.pageBg" in NAV
-    and "base.opacity(reduceTransparency ? 1 : 0.90)" in NAV,
-    "scroll masks must tint to the exact page background before blur",
+    and "@ObservedObject private var performance = DevicePerformanceProfile.shared" in NAV
+    and "base.opacity(0.90)" in NAV
+    and "performance.allowsBackdropBlur" in NAV,
+    "scroll masks must tint to the page background and honor device budgets",
 )
 require(
     "table.topEdgeEffect.style = .automatic" in NATIVE_LIST
