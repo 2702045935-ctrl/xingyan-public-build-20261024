@@ -44,7 +44,8 @@ require(
 )
 require(
     "let topOverdraw = max(0, L.safeTop)" in cover
-    and "let visualHeight = L.coverH + extra + momentProfileFooterHeight + topOverdraw" in cover
+    and "let bottomOverdraw: CGFloat = 2" in cover
+    and "let visualHeight = L.coverH + extra + momentProfileFooterHeight\n            + topOverdraw + bottomOverdraw" in cover
     and ".offset(y: -topOverdraw)" in cover,
     "cover artwork must fill the complete moments header without page-colour strips",
 )
