@@ -90,6 +90,7 @@ jobs:
           python3 tools/verify-transfer-checkout.py
           python3 tools/verify-payment-gold-card.py
           python3 tools/verify-wallet-layout.py
+          python3 tools/verify-visual-settings-toasts.py
           python3 tools/verify-native-chat-swipe.py
           python3 tools/verify-chat-stress-scroll.py
           python3 tools/verify-stress-eager-100k.py

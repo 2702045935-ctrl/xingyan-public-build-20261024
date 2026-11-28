@@ -570,12 +570,8 @@ struct ProfileEditView: View {
                         app.applyMyProfileFields(fields)
                     }
                 } catch {
-                    app.show(Tr("已在本机生效，联网后自动同步"))
                     return
                 }
-                app.show(Tr("头像已更新"))
-            } else {
-                app.show(Tr("已在本机生效，联网后自动同步"))
             }
         }
     }

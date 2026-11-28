@@ -18,8 +18,8 @@
     },
     {
       "path": "Sources/ChatBackgroundSheet.swift",
-      "size": 36099,
-      "sha256": "d7b7dd0512dadf20f34b279cc4f79f9ac6ef83d1fdcc7edfd5371836fed8af2c"
+      "size": 35278,
+      "sha256": "3c6b95b8ab4f572c277fbc1a6a795ffa5a2d01765b276f8cefac783f03421e4b"
     },
     {
       "path": "Sources/ChatComposerField.swift",
@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/DiscoverView.swift",
-      "size": 152118,
-      "sha256": "81d527623ee617ebbc329e229ea004214d52cf3d46a816895d60d99aa7321adb"
+      "size": 151911,
+      "sha256": "60958ec22fd9ac176e323ba3557f779b695b32de89b05a948c71e4c91e7ff105"
     },
     {
       "path": "Sources/MomentMediaLayout.swift",

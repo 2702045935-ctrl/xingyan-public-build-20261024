@@ -274,7 +274,6 @@ struct GeneralView: View {
             if let url = try? await API.shared.uploadOriginal(image: image) {
                 await API.shared.changeBackground(url)
                 app.me = try? await API.shared.me()
-                app.show(Tr("聊天背景已更新"))
             }
         }
     }

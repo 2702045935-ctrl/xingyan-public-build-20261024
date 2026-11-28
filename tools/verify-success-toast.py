@@ -42,12 +42,12 @@ require(
     "the toast must enter immediately with a short, restrained spring",
 )
 require(
-    "Tr(\"聊天背景已更新\")" in BACKGROUND
-    and "Tr(\"已在本机生效，联网后自动同步\")" in BACKGROUND
-    and "Tr(\"生活圈封面已更新\")" in COVER
-    and "Tr(\"头像已更新\")" in PROFILE
-    and "Tr(\"头像已更新\")" in PROFILE_NEW,
-    "cover, avatar and wallpaper confirmations must use the unified production copy",
+    "Tr(\"聊天背景已更新\")" not in BACKGROUND
+    and "Tr(\"已在本机生效，联网后自动同步\")" not in BACKGROUND
+    and "Tr(\"生活圈封面已更新\")" not in COVER
+    and "Tr(\"头像已更新\")" not in PROFILE
+    and "Tr(\"头像已更新\")" not in PROFILE_NEW,
+    "cover, avatar and wallpaper changes must rely on immediate visual feedback without success toasts",
 )
 for old in [
     "app.show(Tr(\"头像换好了\"))",

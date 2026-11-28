@@ -804,9 +804,6 @@ struct ChatBackgroundSheet: View {
                 if let saved = await API.shared.changeChatBackground(chatId: chatId, path: storedPath) {
                     ChatBgStore.shared.set(chatId, storedPath)
                     applySyncedChatBackgrounds(saved)
-                    app.show(path == "auto" ? Tr("已改用全局背景") : Tr("聊天背景已更新"))
-                } else {
-                    app.show(Tr("已在本机生效，联网后自动同步"))
                 }
                 busy = false
             }
@@ -836,19 +833,15 @@ struct ChatBackgroundSheet: View {
                         app.me = me
                         app.rememberLastUser()
                     }
-                    app.show(Tr("已恢复默认背景"))
                 } else {
                     store.setGlobal("auto")
-                    app.show(Tr("已在当前设备恢复默认背景"))
                 }
             } else {
                 if let user = await API.shared.changeBackgroundSaved(storedPath) {
                     store.setGlobal(user.chatBackground ?? storedPath)
                     app.applyMyProfileUser(user)
-                    app.show(Tr("聊天背景已更新"))
                 } else {
                     store.setGlobal(storedPath)
-                    app.show(Tr("聊天背景已更新"))
                 }
             }
             busy = false
@@ -878,10 +871,8 @@ struct ChatBackgroundSheet: View {
                     if let saved = await API.shared.changeChatBackground(chatId: chatId, path: url) {
                         applyChatBackground(url)
                         applySyncedChatBackgrounds(saved)
-                        app.show(Tr("聊天背景已更新"))
                     } else {
                         applyChatBackground(localPath)
-                        app.show(Tr("已在本机生效，联网后自动同步"))
                     }
                 } else {
                     ChatBgStore.shared.setGlobal(url)
@@ -893,14 +884,10 @@ struct ChatBackgroundSheet: View {
                     if let user = await API.shared.changeBackgroundSaved(url) {
                         ChatBgStore.shared.setGlobal(user.chatBackground ?? url)
                         app.applyMyProfileUser(user)
-                        app.show(Tr("聊天背景已更新"))
                     } else {
                         ChatBgStore.shared.setGlobal(url)
-                        app.show(Tr("聊天背景已更新"))
                     }
                 }
-            } else {
-                app.show(Tr("已在本机生效，联网后自动同步"))
             }
             busy = false
         }

@@ -3328,7 +3328,6 @@ struct MomentsView: View {
             uploading = true
             guard let url = try? await API.shared.uploadCover(image: image) else {
                 uploading = false
-                app.show(Tr("已在本机生效，联网后自动同步"))
                 return
             }
 
@@ -3344,14 +3343,12 @@ struct MomentsView: View {
                 } else {
                     app.applyMyProfileFields(["momentCover": url])
                 }
-                app.show(Tr("生活圈封面已更新"))
             } catch {
                 setCoverOverride(localPath)
                 if var me = app.me {
                     me.momentCover = localPath
                     app.me = me
                 }
-                app.show(Tr("已在本机生效，联网后自动同步"))
             }
             uploading = false
         }

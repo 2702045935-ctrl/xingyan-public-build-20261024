@@ -1161,7 +1161,6 @@ struct SettingsView: View {
                     app.show(Tr("聊天背景设置失败"))
                     return
                 }
-                app.show(Tr("聊天背景已更新"))
             }
             busy = false
         }
