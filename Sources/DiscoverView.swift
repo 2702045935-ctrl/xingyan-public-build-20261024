@@ -1957,6 +1957,8 @@ struct MomentsView: View {
     }
 
     private func coverView(_ extra: CGFloat) -> some View {
+        let topOverdraw = max(0, L.safeTop)
+        let visualHeight = L.coverH + extra + topOverdraw
         ZStack(alignment: .top) {
             C.pageBg
 
@@ -1965,8 +1967,9 @@ struct MomentsView: View {
                     .resizable()
                     .scaledToFill()
                     .frame(width: max(1, L.width),
-                           height: L.coverH + extra)
+                           height: visualHeight)
                     .clipped()
+                    .offset(y: -topOverdraw)
             } else if cover.isEmpty {
 
                 if UIImage(named: "moments-cover") != nil {
@@ -1974,17 +1977,21 @@ struct MomentsView: View {
                     Image("moments-cover")
                         .resizable()
                         .scaledToFill()
-                        .frame(width: L.width, height: L.coverH + extra)
+                        .frame(width: L.width, height: visualHeight)
                         .clipped()
+                        .offset(y: -topOverdraw)
                 } else {
                     LinearGradient(colors: [Color(hex: 0x0D3B66), Color(hex: 0x1D6FB8), Color(hex: 0x0099FF)],
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
+                        .frame(width: L.width, height: visualHeight)
+                        .offset(y: -topOverdraw)
                 }
             } else {
                 RemoteImage(path: cover, icon: "photo", mode: .fill, maxSide: 2560)
                     .frame(width: max(1, L.width),
-                           height: L.coverH + extra)
+                           height: visualHeight)
                     .clipped()
+                    .offset(y: -topOverdraw)
                     .id(cover)
             }
 
@@ -2105,40 +2112,71 @@ struct MomentsView: View {
                 .zIndex(4)
             }
 
-            HStack(alignment: .center, spacing: 14) {
-                Avatar(
-                    path: owner?.avatarPath ?? "",
-                    size: max(58, L.coverAvatar),
-                    radius: 16
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.white.opacity(0.24), lineWidth: 0.8)
-                }
-                .shadow(color: Color.black.opacity(0.34), radius: 8, x: 0, y: 3)
-
-                VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .bottom, spacing: 12) {
+                VStack(alignment: .trailing, spacing: 3) {
                     Text(owner?.name ?? "")
-                        .font(pf(21, .semibold))
+                        .font(pf(17, .semibold))
                         .foregroundColor(.white)
                         .shadow(color: Color.black.opacity(0.62), radius: 5, x: 0, y: 2)
                         .lineLimit(1)
+                }
+                .padding(.bottom, 24)
+
+                VStack(spacing: 5) {
+                    Avatar(
+                        path: owner?.avatarPath ?? "",
+                        size: L.coverAvatar,
+                        radius: 16
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.52),
+                                        Color.white.opacity(0.10)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 0.9
+                            )
+                    }
+                    .shadow(color: Color.black.opacity(0.38), radius: 9, x: 0, y: 4)
+
                     if let sign = signature {
                         Text(sign)
-                            .font(pf(13.5, .medium))
-                            .foregroundColor(.white.opacity(0.86))
+                            .font(pf(12.5, .medium))
+                            .foregroundColor(.white.opacity(0.90))
                             .lineLimit(2)
-                            .multilineTextAlignment(.leading)
+                            .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
-                            .shadow(color: Color.black.opacity(0.52), radius: 4, x: 0, y: 1)
-                            .frame(maxWidth: 268, alignment: .leading)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .frame(width: L.coverAvatar + 56, alignment: .center)
+                            .background {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.black.opacity(0.44),
+                                                Color.black.opacity(0.26)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                            }
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .stroke(Color.white.opacity(0.14), lineWidth: 0.6)
+                            }
                     }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, 22)
-            .padding(.trailing, 92)
-            .padding(.bottom, 12)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.trailing, 16)
+            .padding(.bottom, 8)
             .allowsHitTesting(false)
         }
         .frame(height: L.coverH + extra + momentProfileFooterHeight)
