@@ -22,7 +22,7 @@ require("UINotification.lightTap()" in CHAT, "send action must keep native tacti
 require(
     "transaction.disablesAnimations = true" in CHAT
     and "withTransaction(transaction) {\n            outbox.append(pending)" in CHAT
-    and "prepareForOutgoingTailAppend(\n            following: \"native-outbox:\\(pending.id)\"\n        )" in CHAT
+    and "prepareForOutgoingTailAppend(\n            following: nativePendingItemID(pending.id)\n        )" in CHAT
     and "app.previewOutgoingMessage(" in CHAT
     and "pendingOutgoingTailID = tailID" in NATIVE
     and "completeOutgoingTailFollowIfNeeded(collection)" in NATIVE
@@ -71,6 +71,15 @@ require(
     "var commit = Transaction(animation: nil)" in CHAT
     and "withTransaction(commit)" in block,
     "confirmed bubbles must replace the pending row in one non-animated transaction",
+)
+require(
+    "private func nativePendingItemID(_ clientId: String) -> String" in CHAT
+    and "private func nativeMessageItemID(_ message: Message) -> String" in CHAT
+    and "return clientId.isEmpty ? message.id : nativePendingItemID(clientId)" in CHAT
+    and "NativeGroupItem(id: nativeMessageItemID(message)" in CHAT
+    and "NativeGroupItem(id: nativePendingItemID(pending.id)" in CHAT
+    and "following: nativePendingItemID(pending.id)" in CHAT,
+    "pending and confirmed bubbles must share one stable native row identity",
 )
 require(
     'ChatTheme.preset.rawValue' in CHAT

@@ -2959,11 +2959,11 @@ struct ChatDetailView: View {
             items.append(NativeGroupItem(id: "native-older", kind: .older))
         }
         for message in messages {
-            items.append(NativeGroupItem(id: message.id,
+            items.append(NativeGroupItem(id: nativeMessageItemID(message),
                                          kind: .message(message)))
         }
         for pending in outbox {
-            items.append(NativeGroupItem(id: "native-outbox:\(pending.id)",
+            items.append(NativeGroupItem(id: nativePendingItemID(pending.id),
                                          kind: .outbox(pending)))
         }
         if !sendingMedia.isEmpty {
@@ -2975,6 +2975,16 @@ struct ChatDetailView: View {
         items.append(NativeGroupItem(id: "__bottom", kind: .bottom))
         items.append(NativeGroupItem(id: "native-spacer", kind: .spacer))
         return items
+    }
+
+    private func nativePendingItemID(_ clientId: String) -> String {
+        "native-outgoing:" + clientId
+    }
+
+    private func nativeMessageItemID(_ message: Message) -> String {
+        let clientId = message.clientId?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return clientId.isEmpty ? message.id : nativePendingItemID(clientId)
     }
 
     private var olderPrefetchWaitingVisible: Bool {
@@ -5607,7 +5617,7 @@ struct ChatDetailView: View {
         let pending = PendingMsg(id: UUID().uuidString, kind: kind, content: content,
                                  mentions: mentions, quoteJSON: qJSON)
         nativeMessageController.prepareForOutgoingTailAppend(
-            following: "native-outbox:\(pending.id)"
+            following: nativePendingItemID(pending.id)
         )
         var transaction = Transaction(animation: nil)
         transaction.disablesAnimations = true
