@@ -49,7 +49,10 @@ require(
     and "let edgeShape = UIView()" in NAV
     and "if #available(iOS 26.0, *), !isDark" not in NAV
     and ".ignoresSafeArea(edges: .top)" in NAV
-    and "NativeTopGlassMask(active: chatTopScrolled > 0," in CHATS
+    and "NativeTopGlassMask(" in CHATS
+    and "active: chatTopScrolled > 0" in CHATS
+    and "if #available(iOS 26.0, *) {" in CHATS
+    and "NativeScrollEdgeElementBridge(" in CHATS
     and "edgeBlend: true" in CHATS
     and "NativeChatListScrollRegistry.shared.chats" in CHATS
     and "onOffsetChange:" in CHATS
@@ -67,7 +70,8 @@ require(
     in CHATS
     and "id: \"search\",\n                kind: .search" in CHATS
     and ".frame(height: chatsSearchH)\n        .offset(y: -6)" in CHATS
-    and "NativeTopGlassMask(active: chatTopScrolled > 0," in CHATS
+    and "NativeTopGlassMask(" in CHATS
+    and "active: chatTopScrolled > 0" in CHATS
     and "edgeBlend: true" in CHATS
     and "NativeChatListScrollRegistry.shared.chats" in CHATS
     and "chatTopHeader\n                        .background" in CHATS,

@@ -40,8 +40,11 @@ require(
     "the chat surface must expose the native edge effect only after scrolling",
 )
 require(
-    "NativeTopGlassMask(active: chatTopScrolled > 0" in CHATS
+    "NativeTopGlassMask(" in CHATS
+    and "active: chatTopScrolled > 0" in CHATS
     and "edgeBlend: true" in CHATS
+    and "if #available(iOS 26.0, *) {" in CHATS
+    and "NativeScrollEdgeElementBridge(" in CHATS
     and "NativeFrostedHeaderMaterial(chrome: edgeBlend)" in NAV
     and ".systemChromeMaterialDark" in NAV
     and ".systemChromeMaterialLight" in NAV
