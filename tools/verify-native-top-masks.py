@@ -82,10 +82,12 @@ require("NativeTopGlassMask(active: navScrolled > 0," in CONTACTS
         and "TopGlassLine(" not in CONTACTS,
         "contacts must observe the native scroll view and remove its custom top material")
 require(
-    "while let parent = root.superview" in NAV
-    and "let area = scroll.bounds.width * scroll.bounds.height" in NAV
-    and "inspect(root)" in NAV,
-    "native background observers must find the largest sibling scroll view instead of failing outside the ancestor chain",
+    "guard let window = view.window else { return nil }" in NAV
+    and "let reference = view.convert(view.bounds, to: window)" in NAV
+    and "func isEffectivelyVisible(_ candidate: UIView) -> Bool" in NAV
+    and "let overlap = frame.intersection(reference)" in NAV
+    and "inspect(window)" in NAV,
+    "native background observers must bind the visible scroll view spatially aligned with the observer",
 )
 require("NativeTopGlassMask(active: navScrolled > 0," in DISCOVER
         and "base: worldCanvas" in DISCOVER

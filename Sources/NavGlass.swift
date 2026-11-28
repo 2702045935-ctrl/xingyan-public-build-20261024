@@ -310,25 +310,44 @@ struct NativeTopScrollObserver: UIViewRepresentable {
         }
 
         private static func findScroll(_ view: UIView) -> UIScrollView? {
-            var root = view
-            while let parent = root.superview {
-                root = parent
-            }
+            guard let window = view.window else { return nil }
+            let reference = view.convert(view.bounds, to: window)
             var best: UIScrollView?
-            var bestArea: CGFloat = 0
+            var bestScore: CGFloat = 0
+            var bestContentHeight: CGFloat = 0
+
+            func isEffectivelyVisible(_ candidate: UIView) -> Bool {
+                var current: UIView? = candidate
+                while let node = current {
+                    if node.isHidden || node.alpha <= 0.01 { return false }
+                    current = node.superview
+                }
+                return true
+            }
+
             func inspect(_ candidate: UIView) {
-                if let scroll = candidate as? UIScrollView {
+                if let scroll = candidate as? UIScrollView,
+                   scroll.window === window,
+                   isEffectivelyVisible(scroll) {
+                    let frame = scroll.convert(scroll.bounds, to: window)
                     let area = scroll.bounds.width * scroll.bounds.height
-                    if area > bestArea {
+                    let overlap = frame.intersection(reference)
+                    let score = overlap.isNull
+                        ? 0
+                        : overlap.width * overlap.height
+                    if score > bestScore ||
+                        (score == bestScore && area > 0 &&
+                         scroll.contentSize.height > bestContentHeight) {
                         best = scroll
-                        bestArea = area
+                        bestScore = score
+                        bestContentHeight = scroll.contentSize.height
                     }
                 }
                 for child in candidate.subviews {
                     inspect(child)
                 }
             }
-            inspect(root)
+            inspect(window)
             return best
         }
     }
