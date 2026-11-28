@@ -392,7 +392,7 @@ struct NativeChromeMaterial: View {
 
     private var reducedSurface: some View {
         Rectangle()
-            .fill(UIConfig.fixedDark("glassReducedSurface", 0xFAFBF9, 0x1D231F))
+            .fill(UIConfig.fixedDark("glassReducedSurface", 0xFAFBF9, 0x1C1C1E))
             .overlay {
                 Rectangle()
                     .stroke(C.hairline.opacity(scheme == .dark ? 0.72 : 0.55),

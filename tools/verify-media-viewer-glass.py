@@ -45,11 +45,11 @@ require(
     "video viewer scrubber, speed and message controls must use native system glass",
 )
 require(
-    "GlassBackground(" not in CHAT
-    and "NativeMediaGlassSurface(" in CHAT
+    "NativeGlassControlMaterial()" in CHAT
+    and CHAT.count("NativeMediaGlassSurface(") >= 3
     and "interactive: true" in CHAT
     and "showsEdge: false" in CHAT,
-    "chat timestamps, composer controls and media containers must use native system glass",
+    "chat must keep lightweight row glass while native glass stays on global controls",
 )
 require(
     "GlassBackground(" not in COMPOSER

@@ -14,7 +14,7 @@ private enum ChatListVisual {
 
     static let ink = Color.dyn(0x171A18, 0xFFFFFF)
     static let iconInk = Color.dyn(0x35403A, 0xBDBDC2)
-    static let utilityIconInk = Color.dyn(0x7A837D, 0x8D9690)
+    static let utilityIconInk = Color.dyn(0x7A837D, 0x8E8E93)
     static let previewInk = Color.dyn(0x626B66, 0xAEAEB2)
     static let conversationPreviewInk = Color.dyn(0x626B66, 0xAEAEB2)
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)

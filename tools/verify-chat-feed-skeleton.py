@@ -24,11 +24,11 @@ require(
     "chat feed must expose one spacing scale",
 )
 require(
-    "showsAvatar: isRunStart(message)" in CHAT
+    "showsAvatar: mineFor(message) || isRunStart(message)" in CHAT
     and "if mine {\n                Spacer().frame(width: ChatFeedMetrics.avatarGap)"
     in CHAT
     and "else if reservesAvatarSpace" in CHAT,
-    "both sides must preserve the avatar anchor across a sender run",
+    "both sides must preserve the visible avatar anchor across a sender run",
 )
 require(
     "return same ? ChatFeedMetrics.runGap : ChatFeedMetrics.senderChangeGap"
@@ -44,7 +44,7 @@ require(
     in CHAT
     and ".padding(.vertical,\n                                 ChatFeedMetrics.textVerticalPadding)"
     in CHAT
-    and "Avatar(path: app.me?.avatarPath ?? \"\"" in CHAT
+    and "Avatar(path: myAvatarPath," in CHAT
     and "private func pendingGapAfter" in CHAT
     and "private func pendingTextLineSpacing" in CHAT
     and "WhatsAppMessageTicks(count: 1," not in CHAT,

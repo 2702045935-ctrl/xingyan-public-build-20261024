@@ -169,11 +169,11 @@ private final class NativeMallProductCell: UICollectionViewCell {
 
     private func applyTheme() {
         let dark = traitCollection.userInterfaceStyle == .dark
-        contentView.backgroundColor = UIColor(hex: dark ? 0x1D231F : 0xFAFBF9)
+        contentView.backgroundColor = UIColor(hex: dark ? 0x1C1C1E : 0xFAFBF9)
         contentView.layer.borderColor = (dark
-            ? UIColor(hex: 0x2A302C)
+            ? UIColor(hex: 0x38383A)
             : UIColor(hex: 0xDDE2DD)).cgColor
-        imageView.backgroundColor = UIColor(hex: dark ? 0x232A26 : 0xF2F4F1)
+        imageView.backgroundColor = UIColor(hex: dark ? 0x2C2C2E : 0xF2F4F1)
         titleLabel.textColor = UIColor(hex: dark ? 0xEDF1EE : 0x171A18)
     }
 

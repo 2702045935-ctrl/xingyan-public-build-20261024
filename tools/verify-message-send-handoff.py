@@ -19,16 +19,16 @@ remove = block.index("outbox.removeAll { $0.id == p.id }")
 append = block.index("appendVisibleMessage(message)")
 require(remove < append, "local send placeholder must be removed before confirmed bubble insertion")
 require("UINotification.lightTap()" in CHAT, "send action must keep native tactile feedback")
-require("pinToBottomSoon(force: true)" in CHAT, "send action must keep bottom pinning")
 require(
     "transaction.disablesAnimations = true" in CHAT
     and "withTransaction(transaction) {\n            outbox.append(pending)" in CHAT
     and "app.previewOutgoingMessage(" in CHAT
     and "nativeMessageController.prepareForOutgoingTailAppend()" in CHAT
-    and "pinToBottomImmediately(force: true)\n        pinToBottomSoon(force: true)" in CHAT
+    and "if Date() < followOwnSendUntil { return }" in CHAT
+    and "pinToBottomImmediately(force: true)\n        pinToBottomSoon(force: true)" not in CHAT
     and "ChatScrollHandle.shared.allowAutomaticPinning()\n                nativeMessageController.scrollToBottom(animated: false)"
     in CHAT,
-    "the pending bubble and list preview must appear and pin without an insertion animation delay",
+    "the pending bubble must settle through the native append without stacked bottom pins",
 )
 require(
     "func prepareForOutgoingTailAppend()" in NATIVE
