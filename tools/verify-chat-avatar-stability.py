@@ -46,9 +46,9 @@ require(
     and "return current.isEmpty ? app.lastAvatar : current" in CHAT
     and "Avatar(path: myAvatarPath," in CHAT
     and "let mine = myAvatarPath" in CHAT
-    and "showsAvatar: mineFor(message) || isRunStart(message)" in CHAT
+    and "showsAvatar: true" in CHAT
     and "let isRunStart = pendingIsRunStart(p)\n        let showsAvatar = true" in CHAT,
-    "pending and confirmed own-message bubbles must keep a stable visible avatar",
+    "every confirmed and pending bubble must keep a stable visible avatar",
 )
 
 print("chat-avatar-stability: passed")

@@ -22,23 +22,35 @@ require("UINotification.lightTap()" in CHAT, "send action must keep native tacti
 require(
     "transaction.disablesAnimations = true" in CHAT
     and "withTransaction(transaction) {\n            outbox.append(pending)" in CHAT
-    and "outbox.append(pending)\n            // WeChat pins on the local outgoing row itself." in CHAT
-    and "pinTick &+= 1" in CHAT
+    and "prepareForOutgoingTailAppend(\n            following: \"native-outbox:\\(pending.id)\"\n        )" in CHAT
     and "app.previewOutgoingMessage(" in CHAT
-    and "nativeMessageController.prepareForOutgoingTailAppend()" in CHAT
+    and "pendingOutgoingTailID = tailID" in NATIVE
+    and "completeOutgoingTailFollowIfNeeded(collection)" in NATIVE
+    and "order.contains(where: { String(describing: $0) == tailID })" in NATIVE
     and "if Date() < followOwnSendUntil { return }" in CHAT
     and "pinToBottomImmediately(force: true)\n        pinToBottomSoon(force: true)" not in CHAT
     and "ChatScrollHandle.shared.allowAutomaticPinning()\n                nativeMessageController.scrollToBottom(animated: false)"
     in CHAT,
-    "the pending bubble must settle through the native append without stacked bottom pins",
+    "the pending bubble must settle after its native tail row has been laid out",
 )
 require(
-    "func prepareForOutgoingTailAppend()" in NATIVE
+    "func prepareForOutgoingTailAppend(following id: String)" in NATIVE
     and "prepareForOutgoingTailAppendHandler" in NATIVE
     and "collection.isDecelerating" in NATIVE
     and "collection.setContentOffset(collection.contentOffset, animated: false)"
     in NATIVE,
     "outgoing sends must stop inertia through a send-only hook without changing scroll policy",
+)
+CHAT_SHAPE = CHAT[CHAT.index("struct BubbleShape: Shape"):CHAT.index("private struct BubbleUsesLightInkKey")]
+require(
+    "let x0 = rect.minX + (mine ? 0 : out)" in CHAT_SHAPE
+    and "let x1 = rect.maxX - (mine ? out : 0)" in CHAT_SHAPE
+    and "let tipX = mine ? rect.maxX : rect.minX" in CHAT_SHAPE
+    and "x1 + out" not in CHAT_SHAPE
+    and "x0 - out" not in CHAT_SHAPE
+    and "clipsToBounds = false" in NATIVE
+    and "contentView.clipsToBounds = false" in NATIVE,
+    "bubble tails and native cell drawing bounds must stay inside the visible cell",
 )
 require(
     "let prependDetector: (([Item], [Item]) -> Bool)?" in NATIVE

@@ -24,11 +24,11 @@ require(
     "chat feed must expose one spacing scale",
 )
 require(
-    "showsAvatar: mineFor(message) || isRunStart(message)" in CHAT
+    "showsAvatar: true" in CHAT
     and "if mine {\n                Spacer().frame(width: ChatFeedMetrics.avatarGap)"
     in CHAT
     and "else if reservesAvatarSpace" in CHAT,
-    "both sides must preserve the visible avatar anchor across a sender run",
+    "both sides must preserve a visible avatar on every message",
 )
 require(
     "return same ? ChatFeedMetrics.runGap : ChatFeedMetrics.senderChangeGap"

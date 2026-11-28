@@ -13,6 +13,10 @@ private final class NativeStaticHostCell: UICollectionViewCell {
     }
 
     func setRootView(_ rootView: AnyView) {
+        clipsToBounds = false
+        contentView.clipsToBounds = false
+        layer.masksToBounds = false
+        contentView.layer.masksToBounds = false
         contentConfiguration = UIHostingConfiguration { rootView }
             .margins(.all, 0)
             .background(.clear)
@@ -22,7 +26,7 @@ private final class NativeStaticHostCell: UICollectionViewCell {
 final class NativeStaticListController {
     fileprivate var scrollToIDHandler: ((String, UICollectionView.ScrollPosition, Bool) -> Bool)?
     fileprivate var scrollToBottomHandler: ((Bool) -> Bool)?
-    fileprivate var prepareForOutgoingTailAppendHandler: (() -> Void)?
+    fileprivate var prepareForOutgoingTailAppendHandler: ((String) -> Void)?
 
     @discardableResult
     func scrollToID(_ id: String,
@@ -36,8 +40,8 @@ final class NativeStaticListController {
         scrollToBottomHandler?(animated) ?? false
     }
 
-    func prepareForOutgoingTailAppend() {
-        prepareForOutgoingTailAppendHandler?()
+    func prepareForOutgoingTailAppend(following id: String) {
+        prepareForOutgoingTailAppendHandler?(id)
     }
 
     fileprivate func clear() {
@@ -132,7 +136,8 @@ where Item.ID: Hashable {
             cell.setRootView(rootView)
             cell.backgroundConfiguration = .clear()
             cell.backgroundColor = .clear
-            cell.clipsToBounds = true
+            cell.clipsToBounds = false
+            cell.contentView.clipsToBounds = false
         }
 
         let dataSource = UICollectionViewDiffableDataSource<Int, Item.ID>(
@@ -195,6 +200,7 @@ where Item.ID: Hashable {
         private var heights: [Item.ID: CGFloat] = [:]
         private var width: CGFloat = 0
         private var pending: [Item]?
+        private var pendingOutgoingTailID: String?
         private var applyGeneration = 0
         private var sizeChangeScheduled = false
         fileprivate lazy var measurementHost: UIHostingController<AnyView> = {
@@ -281,11 +287,12 @@ where Item.ID: Hashable {
                 self.setBottom(collection, animated: animated)
                 return true
             }
-            controller.prepareForOutgoingTailAppendHandler = { [weak self] in
+            controller.prepareForOutgoingTailAppendHandler = { [weak self] tailID in
                 guard let self, let collection = self.collection else { return }
                 if collection.isDecelerating {
                     collection.setContentOffset(collection.contentOffset, animated: false)
                 }
+                self.pendingOutgoingTailID = tailID
                 self.flush()
                 collection.layoutIfNeeded()
             }
@@ -429,6 +436,9 @@ where Item.ID: Hashable {
                     guard generation == self.applyGeneration,
                           self.collection === collection else { return }
                     collection.layoutIfNeeded()
+                    if self.completeOutgoingTailFollowIfNeeded(collection) {
+                        return
+                    }
                     if let anchor = prependAnchor,
                        let indexPath = dataSource.indexPath(for: anchor.id),
                        let attributes = collection.collectionViewLayout
@@ -458,6 +468,9 @@ where Item.ID: Hashable {
                 guard generation == self.applyGeneration,
                       self.collection === collection else { return }
                 collection.layoutIfNeeded()
+                if self.completeOutgoingTailFollowIfNeeded(collection) {
+                    return
+                }
                 if isPrepending {
                     if let anchor = prependAnchor,
                        let indexPath = dataSource.indexPath(for: anchor.id),
@@ -503,6 +516,19 @@ where Item.ID: Hashable {
             UIView.performWithoutAnimation {
                 collection.alpha = 1
             }
+        }
+
+        @discardableResult
+        private func completeOutgoingTailFollowIfNeeded(
+            _ collection: UICollectionView
+        ) -> Bool {
+            guard let tailID = pendingOutgoingTailID,
+                  order.contains(where: { String(describing: $0) == tailID }) else {
+                return false
+            }
+            pendingOutgoingTailID = nil
+            setBottom(collection, animated: false)
+            return true
         }
 
         func collectionView(_ collectionView: UICollectionView,

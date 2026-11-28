@@ -311,7 +311,13 @@ struct BubbleShape: Shape {
         let out: CGFloat = tail ? 5 : 0
         let h: CGFloat = 9
         let y0 = rect.minY + 6
-        let x0 = rect.minX, x1 = rect.maxX, yA = rect.minY, yB = rect.maxY
+        // Keep the tail inside the layout bounds. SwiftUI backgrounds are
+        // allowed to draw past their frame, but native collection cells clip
+        // that overflow, which made run-start bubbles look cut on their edge.
+        let x0 = rect.minX + (mine ? 0 : out)
+        let x1 = rect.maxX - (mine ? out : 0)
+        let tipX = mine ? rect.maxX : rect.minX
+        let yA = rect.minY, yB = rect.maxY
         var p = Path()
 
         if mine {
@@ -320,7 +326,7 @@ struct BubbleShape: Shape {
             p.addQuadCurve(to: CGPoint(x: x1, y: yA + r), control: CGPoint(x: x1, y: yA))
             if out > 0 {
                 p.addLine(to: CGPoint(x: x1, y: y0))
-                p.addLine(to: CGPoint(x: x1 + out, y: y0 + h / 2))
+                p.addLine(to: CGPoint(x: tipX, y: y0 + h / 2))
                 p.addLine(to: CGPoint(x: x1, y: y0 + h))
             }
             p.addLine(to: CGPoint(x: x1, y: yB - r))
@@ -335,7 +341,7 @@ struct BubbleShape: Shape {
             p.addQuadCurve(to: CGPoint(x: x0, y: yA + r), control: CGPoint(x: x0, y: yA))
             if out > 0 {
                 p.addLine(to: CGPoint(x: x0, y: y0))
-                p.addLine(to: CGPoint(x: x0 - out, y: y0 + h / 2))
+                p.addLine(to: CGPoint(x: tipX, y: y0 + h / 2))
                 p.addLine(to: CGPoint(x: x0, y: y0 + h))
             }
             p.addLine(to: CGPoint(x: x0, y: yB - r))
@@ -3792,7 +3798,7 @@ struct ChatDetailView: View {
                    senderOnline: senderIsOnline(message),
                    avatarSize: L.chatAvatar,
                    maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
-                   showsAvatar: mineFor(message) || isRunStart(message),
+                   showsAvatar: true,
                    reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
@@ -5562,7 +5568,6 @@ struct ChatDetailView: View {
         }
 
         if isStarWorld, newsMode { withAnimation(.easeInOut(duration: 0.18)) { newsMode = false } }
-        nativeMessageController.prepareForOutgoingTailAppend()
 
         var qJSON: String?
         if let q = quote, !q.isEmpty,
@@ -5571,13 +5576,13 @@ struct ChatDetailView: View {
         }
         let pending = PendingMsg(id: UUID().uuidString, kind: kind, content: content,
                                  mentions: mentions, quoteJSON: qJSON)
+        nativeMessageController.prepareForOutgoingTailAppend(
+            following: "native-outbox:\(pending.id)"
+        )
         var transaction = Transaction(animation: nil)
         transaction.disablesAnimations = true
         withTransaction(transaction) {
             outbox.append(pending)
-            // WeChat pins on the local outgoing row itself. The server echo
-            // replaces the pending row in place, so no second scroll is allowed.
-            pinTick &+= 1
             app.previewOutgoingMessage(
                 chat,
                 clientId: pending.id,

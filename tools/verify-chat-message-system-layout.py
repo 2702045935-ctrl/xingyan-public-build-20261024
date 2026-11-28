@@ -47,7 +47,7 @@ require(
     "image, multi-image and video message rendering must remain unchanged",
 )
 require(
-    "showsAvatar: mineFor(message) || isRunStart(message)" in CHAT
+    "showsAvatar: true" in CHAT
     and "let isRunStart = pendingIsRunStart(p)\n        let showsAvatar = true" in CHAT
     and "return same ? ChatFeedMetrics.runGap : ChatFeedMetrics.senderChangeGap"
     in CHAT
