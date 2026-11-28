@@ -3,13 +3,13 @@
   "files": [
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 379131,
-      "sha256": "9cb83a3f6446f4cc92096ed4b0608175153d0d0e78f8c630a295c7eaf51d11c7"
+      "size": 380059,
+      "sha256": "b06e5ea91cda7886f0e14c7dc18305c95b6d1aefdcf2e875f40c279551b07b8c"
     },
     {
       "path": "Sources/ChatDeferred.swift",
-      "size": 585,
-      "sha256": "706cad4ee60e3d2bd29f16db76f9a1a76789ad912aa77fff0387df9a532d180c"
+      "size": 700,
+      "sha256": "c1e0cec2b9487954400fa6084839388907c9a209af3f687c28eba5404f73d2af"
     },
     {
       "path": "Sources/ScrollProbe.swift",
@@ -48,8 +48,8 @@
     },
     {
       "path": "Sources/ChatsView.swift",
-      "size": 153819,
-      "sha256": "a743938ce1a98d913740de7f6c773e24d164d3010fb632e5a6c2d6cc02724918"
+      "size": 154049,
+      "sha256": "08b8f54abf61f67d430a4217e9b4881e8bd018713eafd7bf53cad29750b0b368"
     },
     {
       "path": "Sources/NativeChatList.swift",
@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/DiscoverView.swift",
-      "size": 164544,
-      "sha256": "1e92a9095cde44a9cf8628bc262dfc3a655eede80a3d9f4ad54cfb93f03d2b5f"
+      "size": 164865,
+      "sha256": "85de69d2fd5ab29ba372eb48c21e89c22c09697e5671a2dbcba5c3c39d325a11"
     },
     {
       "path": "Sources/MomentMediaLayout.swift",
@@ -98,13 +98,13 @@
     },
     {
       "path": "Sources/NativeStaticList.swift",
-      "size": 24706,
-      "sha256": "79a2192d9955d9801e078a5a8590098ac4e1c6c9cd140ac2e6bc05f152fb70da"
+      "size": 25338,
+      "sha256": "d5a78865e93e2c2c3b70299cda72a8bf0228b8579f9eae9b4d5916d6a3d40c90"
     },
     {
       "path": "Sources/NativeMomentFeed.swift",
-      "size": 19558,
-      "sha256": "d7f77677d70ed5f14c1a6b9664f08e72c2c0666ae9f2042e3ac08322e364f579"
+      "size": 20190,
+      "sha256": "aba471036f21352c4c3e9775e0fe0643b75e8f9c4364884cd3c73f8f5a4946f0"
     }
   ]
 }
