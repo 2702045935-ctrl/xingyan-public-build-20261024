@@ -21,10 +21,17 @@ require(
     "release must terminate a late-starting recording and send immediately",
 )
 require(
-    'mime: "audio/mp4"' in CHAT
+    "private func pendingAudioBubble" in CHAT
+    and "pendingAudioBubble(p, tail: isRunStart)" in CHAT
+    and 'let stagedPath = "local-voice-\\(UUID().uuidString).\\(ext)"' in CHAT
+    and "LocalStore.keepOriginal(stagedPath, from: file)" in CHAT
+    and 'send(kind: "audio", content: body)' in CHAT
+    and "prepareAudioContentForSend(p.content)" in CHAT
+    and 'mime: "audio/mp4"' in CHAT
     and "skipTranscode: true" in CHAT
-    and "uploadBinaryFile(" in CHAT,
-    "voice must use the direct binary upload chain before base64 fallback",
+    and "uploadBinaryFile(" in CHAT
+    and "LocalStore.keepOriginal(remote, from: local)" in CHAT,
+    "voice must insert a playable local row before a direct binary upload completes",
 )
 require(
     "recorder.willCancel ? C.red : OrbitTheme.jadeDeep" in CHAT

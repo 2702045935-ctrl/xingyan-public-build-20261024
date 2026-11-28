@@ -36,8 +36,10 @@ require(
     and 'sectionHeader(Tr("工具"))' in WORLD
     and ".listStyle(.insetGrouped)" in WORLD
     and ".environment(\\.defaultMinListRowHeight, 52)" in WORLD
+    and ".navigationDestination(isPresented: Binding(" in WORLD
+    and ".navigationDestination(item: $route)" not in WORLD
     and "NavigationStack {" in WORLD,
-    "the world tab must be a unified inset-grouped system hub",
+    "the world tab must be an iOS 16 compatible inset-grouped system hub",
 )
 require(
     all(marker not in WORLD for marker in (

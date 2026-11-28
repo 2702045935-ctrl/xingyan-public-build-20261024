@@ -138,9 +138,14 @@ struct StarWorldSystemView: View {
                 .background(C.pageBg)
             }
             .background(C.pageBg.ignoresSafeArea())
-            .navigationDestination(item: $route) { route in
-                destination(route)
-                    .environmentObject(app)
+            .navigationDestination(isPresented: Binding(
+                get: { route != nil },
+                set: { if !$0 { route = nil } }
+            )) {
+                if let route {
+                    destination(route)
+                        .environmentObject(app)
+                }
             }
             .fullScreenCover(isPresented: $scanPresented) {
                 ScannerView { text in handleScanned(text, app: app) }

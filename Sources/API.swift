@@ -1871,6 +1871,11 @@ final class API {
         cfg.requestCachePolicy = .reloadIgnoringLocalCacheData
         cfg.httpShouldSetCookies = false
         cfg.httpCookieAcceptPolicy = .never
+        cfg.waitsForConnectivity = true
+        cfg.httpMaximumConnectionsPerHost = 8
+        cfg.networkServiceType = .responsiveData
+        cfg.allowsExpensiveNetworkAccess = true
+        cfg.allowsConstrainedNetworkAccess = true
         session = URLSession(configuration: cfg, delegate: trustDelegate, delegateQueue: nil)
 
         let legacyServers: Set<String> = [

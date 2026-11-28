@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+CHAT_FLAT = " ".join(CHAT.split())
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -40,10 +41,8 @@ require(
 )
 require(
     "private func pendingIsRunStart" in CHAT
-    and ".padding(.horizontal,\n                                 ChatFeedMetrics.textHorizontalPadding)"
-    in CHAT
-    and ".padding(.vertical,\n                                 ChatFeedMetrics.textVerticalPadding)"
-    in CHAT
+    and ".padding(.horizontal, ChatFeedMetrics.textHorizontalPadding)" in CHAT_FLAT
+    and ".padding(.vertical, ChatFeedMetrics.textVerticalPadding)" in CHAT_FLAT
     and "Avatar(path: myAvatarPath," in CHAT
     and "private func pendingGapAfter" in CHAT
     and "private func pendingTextLineSpacing" in CHAT

@@ -26,13 +26,21 @@ require(
     "uploads must try the direct origin before the slower public ingress",
 )
 require(
-    "private func stageLocalOutgoingImage(" in CHAT
-    and "LocalStore.keep(path, data: data)" in CHAT
-    and "private func stageLocalOutgoingFile(" in CHAT
-    and "LocalStore.keepOriginal(path, from: source)" in CHAT
-    and CHAT.count("stageLocalOutgoingImage(") >= 4
-    and CHAT.count("stageLocalOutgoingFile(") >= 3,
-    "images, live photos, videos and files must be persisted locally before remote completion",
+    "sendingPreview = img\n            sendingPreviews = [img]" in CHAT
+    and "sendingPreview = list.first\n            sendingPreviews = list" in CHAT
+    and "let upstream = try await API.shared.uploadImageForSend(" in CHAT
+    and "seedLocalImage(url, img, data: upstream.data)" in CHAT
+    and "// 文件 URL 在安全作用域内直接流式上传，不在发送前复制整份文件。" in CHAT
+    and "var uploadURL = url" in CHAT
+    and "for (index, u) in urls.enumerated()" in CHAT
+    and "for (index, u) in stagedURLs.enumerated()" not in CHAT,
+    "media must appear immediately in memory and upload directly without staging copies",
+)
+require(
+    "private func confirmedSentMessage(_ message: Message?, kind: String) throws -> Message" in CHAT
+    and CHAT.count("confirmedSentMessage(") >= 7
+    and "try? await API.shared.send" not in CHAT,
+    "media may clear its local uploading state only after the server confirms a message id",
 )
 require(
     "sendingPreview = img\n            sendingPreviews = [img]" in CHAT
@@ -53,8 +61,10 @@ require(
 require(
     "DispatchQueue.main.asyncAfter(deadline: .now() + 0.24)" not in CHAT
     and "filePreview = FilePreviewData(" in CHAT
-    and "await stageLocalOutgoingFile(u)" in CHAT,
-    "file preview must open immediately from local content",
+    and "local: urls[0]" in CHAT
+    and "for (index, u) in urls.enumerated()" in CHAT
+    and "await uploadAndSendFile(u, transfer: transfer)" in CHAT,
+    "file preview must open from the original local URL while bytes stream directly",
 )
 require(
     "python3 tools/verify-local-first-media.py" in WORKFLOW,
