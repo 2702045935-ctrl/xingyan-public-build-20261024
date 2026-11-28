@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 ROW = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
 NATIVE_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
+NAV = (ROOT / "Sources" / "NavGlass.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -39,6 +40,16 @@ require(
     "the chat surface must expose the native edge effect only after scrolling",
 )
 require(
+    "NativeTopGlassMask(active: chatTopScrolled > 0" in CHATS
+    and "edgeBlend: true" in CHATS
+    and "NativeFrostedHeaderMaterial(chrome: edgeBlend)" in NAV
+    and ".systemChromeMaterialDark" in NAV
+    and ".systemChromeMaterialLight" in NAV
+    and "Color.white.opacity(0.018)" in NAV
+    and ".init(color: .clear, location: 1)" in NAV,
+    "the dark conversation chrome must use visible system material with a soft lower edge",
+)
+require(
     "previewLabel.attributedText = nil" in ROW
     and "titleLabel.text = nil" in ROW
     and "foreground.layer.isOpaque = opaque" in ROW
@@ -48,16 +59,16 @@ require(
 require(
     "private let topSheen = UIView()" in ROW
     and "topSheen.isHidden = configuration.isLight" in ROW
-    and "UIColor.white.withAlphaComponent(0.016)" in ROW
+    and "UIColor.white.withAlphaComponent(0.022)" in ROW
     and "topSheen.heightAnchor.constraint(equalToConstant: 0.5)" in ROW,
     "dark rows need a restrained top-light finish without changing row backgrounds",
 )
 require(
-    "chatsIsDark\n            ? C.searchBg" in CHATS
-    and "Color.white.opacity(0.035)" in CHATS
-    and "Color(hex: 0x7F847F)" in CHATS
+    "chatsIsDark\n            ? Color(hex: 0x2A2A2C)" in CHATS
+    and "Color.white.opacity(0.04)" in CHATS
+    and "Color(hex: 0x8D8D93)" in CHATS
     and ".stroke(chatsSearchBorder, lineWidth: 0.5)" in CHATS,
-    "dark search must sit quietly on the near-black canvas instead of using a raised light card",
+    "dark search must use the restrained SMS-like raised control tone",
 )
 require(
     '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS
@@ -78,16 +89,16 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x9FA49F : 0x626B66)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x737873 : 0x858D88)" in CHATS
-    and "static let conversationPreviewInk = Color.dyn(0x626B66, 0x9FA49F)" in CHATS
-    and "static let timeInk = Color.dyn(0x858D88, 0x737873)" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0x8D8D93 : 0x626B66)" in CHATS
+    and "let timeColor = UIColor(hex: isDark ? 0x74767A : 0x858D88)" in CHATS
+    and "static let conversationPreviewInk = Color.dyn(0x626B66, 0x8D8D93)" in CHATS
+    and "static let timeInk = Color.dyn(0x858D88, 0x74767A)" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
-    and "UIColor(hex: isDark ? 0xF1F3F0 : 0x171A18)" in CHATS,
+    and "UIColor(hex: isDark ? 0xF5F5F7 : 0x171A18)" in CHATS,
     "chat-list title, preview and time must use the softened dark hierarchy",
 )
 require(
-    0xF1F3F0 > 0x9FA49F > 0x737873,
+    0xF5F5F7 > 0x8D8D93 > 0x74767A,
     "dark title, preview and time must remain strictly ordered with time weakest",
 )
 require(

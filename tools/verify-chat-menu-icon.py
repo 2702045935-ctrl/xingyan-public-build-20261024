@@ -19,8 +19,8 @@ require(
     "the chats top-right action must match the three-line menu shown above Favorites",
 )
 require(
-    "static let iconInk = Color.dyn(0x35403A, 0xB7BBB7)" in VIEW
-    and "static let utilityIconInk = Color.dyn(0x7A837D, 0x7F847F)" in VIEW
+    "static let iconInk = Color.dyn(0x35403A, 0xBDBEC2)" in VIEW
+    and "static let utilityIconInk = Color.dyn(0x7A837D, 0x8D8D93)" in VIEW
     and "Image(systemName: \"magnifyingglass\")\n                    .font(.system(size: 15, weight: .medium))" in VIEW,
     "chat chrome icons must use the restrained system-gray icon hierarchy",
 )

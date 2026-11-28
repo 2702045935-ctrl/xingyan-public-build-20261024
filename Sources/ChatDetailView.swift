@@ -477,6 +477,63 @@ private struct ChatFrostedEdgeMask: View {
     }
 }
 
+#if canImport(UIKit)
+private struct NativeSearchFieldGlassBackdrop: UIViewRepresentable {
+    let dark: Bool
+
+    func makeUIView(context: Context) -> SearchFieldGlassBackdropView {
+        SearchFieldGlassBackdropView()
+    }
+
+    func updateUIView(_ view: SearchFieldGlassBackdropView, context: Context) {
+        view.apply(style: dark ? .dark : .light)
+    }
+}
+
+private final class SearchFieldGlassBackdropView: UIView {
+    private let field = UISearchTextField()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isUserInteractionEnabled = false
+        clipsToBounds = true
+        field.isUserInteractionEnabled = false
+        field.isAccessibilityElement = false
+        field.accessibilityElementsHidden = true
+        field.placeholder = nil
+        field.text = ""
+        field.borderStyle = .none
+        field.leftViewMode = .never
+        field.rightViewMode = .never
+        field.clearButtonMode = .never
+        field.clipsToBounds = true
+        field.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(field)
+        NSLayoutConstraint.activate([
+            field.leadingAnchor.constraint(equalTo: leadingAnchor),
+            field.trailingAnchor.constraint(equalTo: trailingAnchor),
+            field.topAnchor.constraint(equalTo: topAnchor),
+            field.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        field.layer.cornerRadius = bounds.height / 2
+        field.layer.cornerCurve = .continuous
+    }
+
+    func apply(style: UIUserInterfaceStyle) {
+        overrideUserInterfaceStyle = style
+        field.overrideUserInterfaceStyle = style
+    }
+}
+#endif
+
 private struct ChatHeaderGlassGroup<Content: View>: View {
     let lightInk: Bool
     private let content: Content
@@ -5008,7 +5065,12 @@ struct ChatDetailView: View {
                 .frame(height: composerInputHeight)
                 .background {
                     ZStack {
-                        NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)
+                        if composerUsesLightInk {
+                            NativeSearchFieldGlassBackdrop(dark: true)
+                            composerFieldShape.fill(Color.black.opacity(0.08))
+                        } else {
+                            NativeGlassHeaderMaterial(forcedDark: false)
+                        }
                         if recorder.recording {
                             composerFieldShape.fill(
                                 recorder.willCancel
@@ -5020,8 +5082,23 @@ struct ChatDetailView: View {
                     .clipShape(composerFieldShape)
                 }
                 .overlay {
-                    composerFieldShape
-                        .stroke(composerFieldBorder, lineWidth: 0.6)
+                    if composerUsesLightInk {
+                        composerFieldShape.stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.22),
+                                    Color.white.opacity(0.055),
+                                    Color.black.opacity(0.12)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 0.7
+                        )
+                    } else {
+                        composerFieldShape
+                            .stroke(composerFieldBorder, lineWidth: 0.6)
+                    }
                 }
                 .overlay(alignment: .trailing) {
                     if composerCanExpand {

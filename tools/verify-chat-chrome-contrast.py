@@ -32,10 +32,10 @@ require(
     "chat top and bottom must share one subtle native-frosted page-colour falloff",
 )
 require(
-    "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT
+    "NativeGlassHeaderMaterial(forcedDark: false)" in CHAT
     and ".opacity(composerUsesLightInk ? 0.42 : 0.32)" not in CHAT
-    and "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT,
-    "composer field backing must use one opaque wallpaper-aware surface",
+    and "NativeSearchFieldGlassBackdrop(dark: true)" in CHAT,
+    "composer field must use native search material over dark imagery",
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT

@@ -75,7 +75,7 @@ require(
     and "scheme == .dark ? C.chatRowBg : contactsCanvas" in CONTACTS
     and "scheme == .dark ? C.searchBg : Color(hex: 0xE9EDE8)" in CONTACTS
     and "chatsIsDark\n            ? C.pageBg" in CHATS
-    and "chatsIsDark\n            ? C.searchBg" in CHATS
+    and "chatsIsDark\n            ? Color(hex: 0x2A2A2C)" in CHATS
     and "chatsIsDark\n            ? C.chatRowBg" in CHATS,
     "root tab pages must share the same app canvas without changing the native tab bar",
 )

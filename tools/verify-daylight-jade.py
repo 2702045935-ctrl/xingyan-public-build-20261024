@@ -38,10 +38,10 @@ for token in (
 
 require(
     "chatsIsDark\n            ? C.pageBg" in CHATS
-    and "chatsIsDark\n            ? C.searchBg" in CHATS
+    and "chatsIsDark\n            ? Color(hex: 0x2A2A2C)" in CHATS
     and "chatsIsDark\n            ? C.chatRowBg" in CHATS
-    and "UIColor(hex: isDark ? 0x9FA49F : 0x626B66)" in CHATS
-    and "UIColor(hex: isDark ? 0x737873 : 0x858D88)" in CHATS,
+    and "UIColor(hex: isDark ? 0x8D8D93 : 0x626B66)" in CHATS
+    and "UIColor(hex: isDark ? 0x74767A : 0x858D88)" in CHATS,
     "conversation surfaces must share the softened Apple Messages dark hierarchy",
 )
 require(
@@ -51,7 +51,7 @@ require(
 )
 require(
     "glassEffect(" not in NAV
-    and NAV.count("UIBlurEffect(") == 2
+    and NAV.count("UIBlurEffect(") == 3
     and NAV.count("UIGlassEffect(") == 1
     and "NativeMediaGlassSurface(shape: shape, interactive: interactive)" in NAV,
     "custom glass must be removed while native masks and media glass remain",

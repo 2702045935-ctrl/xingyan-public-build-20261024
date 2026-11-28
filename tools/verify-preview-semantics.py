@@ -38,8 +38,8 @@ require(
     "NativeChatRowMetrics.font(14," in ROW
     and "previewLabel.font = .systemFont(ofSize: 14, weight: .regular)" in ROW
     and ".font(pfStyled(size: 14," in CHATS
-    and "let previewColor = UIColor(hex: isDark ? 0x9FA49F : 0x626B66)" in CHATS
-    and "static let conversationPreviewInk = Color.dyn(0x626B66, 0x9FA49F)" in CHATS,
+    and "let previewColor = UIColor(hex: isDark ? 0x8D8D93 : 0x626B66)" in CHATS
+    and "static let conversationPreviewInk = Color.dyn(0x626B66, 0x8D8D93)" in CHATS,
     "conversation previews must use the Apple Messages neutral-gray hierarchy",
 )
 require(

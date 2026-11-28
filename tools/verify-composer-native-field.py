@@ -13,19 +13,25 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private var composerFieldShape: RoundedRectangle" in CHAT
-    and "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT
+    and "NativeGlassHeaderMaterial(forcedDark: false)" in CHAT
+    and "NativeSearchFieldGlassBackdrop(dark: true)" in CHAT
+    and "composerFieldShape.fill(Color.black.opacity(0.08))" in CHAT
     and ".clipShape(composerFieldShape)" in CHAT,
-    "composer field must use the opaque adaptive surface",
+    "composer field must keep a light fallback and use native search-field material on dark imagery",
 )
 require(
     "composerFieldShape.fill(.regularMaterial)" not in CHAT
     and "composerFieldShape\n+                            .fill((composerUsesLightInk" not in CHAT,
-    "composer field must not use glass or a translucent tint",
+    "composer field must not use SwiftUI material or a stacked custom glass fill",
 )
 require(
-    "Color.white.opacity(0.18)" in CHAT
-    and "Color.black.opacity(0.085)" in CHAT,
-    "composer field needs the subtle native hairline",
+    "UISearchTextField()" in CHAT
+    and "field.leftViewMode = .never" in CHAT
+    and "field.rightViewMode = .never" in CHAT
+    and "field.layer.cornerRadius = bounds.height / 2" in CHAT
+    and "Color.white.opacity(0.22)" in CHAT
+    and "Color.black.opacity(0.12)" in CHAT,
+    "composer field needs the real native search background and a restrained edge",
 )
 
 print("composer-native-field: passed")

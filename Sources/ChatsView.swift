@@ -12,13 +12,13 @@ private enum ChatListVisual {
     static let avatarGap: CGFloat = 12
     static let dividerLeading: CGFloat = 77
 
-    static let ink = Color.dyn(0x171A18, 0xF1F3F0)
-    static let iconInk = Color.dyn(0x35403A, 0xB7BBB7)
-    static let utilityIconInk = Color.dyn(0x7A837D, 0x7F847F)
-    static let previewInk = Color.dyn(0x626B66, 0x9FA49F)
-    static let conversationPreviewInk = Color.dyn(0x626B66, 0x9FA49F)
+    static let ink = Color.dyn(0x171A18, 0xF5F5F7)
+    static let iconInk = Color.dyn(0x35403A, 0xBDBEC2)
+    static let utilityIconInk = Color.dyn(0x7A837D, 0x8D8D93)
+    static let previewInk = Color.dyn(0x626B66, 0x8D8D93)
+    static let conversationPreviewInk = Color.dyn(0x626B66, 0x8D8D93)
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
-    static let timeInk = Color.dyn(0x858D88, 0x737873)
+    static let timeInk = Color.dyn(0x858D88, 0x74767A)
     static let rule = Color(UIColor { trait in
         // WeChat measures 48,48,48 on its 25,25,25 canvas. Our canvas is
         // 10,10,10, so the same perceived weight needs a darker separator.
@@ -27,9 +27,9 @@ private enum ChatListVisual {
             : UIColor(hex: 0xDDE2DD)
     })
     static let badgeRing = Color.dyn(0xFAFBF9, 0x000000)
-    static let chipInk = Color.dyn(0x5E6862, 0x9EA39E)
-    static let selectedChipFill = Color.dyn(0x171A18, 0x292E2A)
-    static let selectedChipInk = Color.dyn(0xF7F9F6, 0xF0F2EF)
+    static let chipInk = Color.dyn(0x5E6862, 0x8D8D93)
+    static let selectedChipFill = Color.dyn(0x171A18, 0x2A2A2C)
+    static let selectedChipInk = Color.dyn(0xF7F9F6, 0xF5F5F7)
 }
 
 private enum OfficialRowVisual {
@@ -1295,14 +1295,14 @@ struct ChatsView: View {
     }
     private var chatsSearchFill: Color {
         chatsIsDark
-            ? C.searchBg
+            ? Color(hex: 0x2A2A2C)
             : Color(hex: 0xE9EDE8)
     }
     private var chatsSearchBorder: Color {
-        chatsIsDark ? Color.white.opacity(0.035) : Color.clear
+        chatsIsDark ? Color.white.opacity(0.04) : Color.clear
     }
     private var chatsSearchInk: Color {
-        chatsIsDark ? Color(hex: 0x7F847F) : Color(hex: 0x6E7771)
+        chatsIsDark ? Color(hex: 0x8D8D93) : Color(hex: 0x6E7771)
     }
     private var chatsCardFill: Color {
         chatsIsDark
@@ -2876,11 +2876,11 @@ struct ChatsView: View {
         let isDark = chatsIsDark
         let titleColor: UIColor = chat.showsOfficialMark
             ? UIColor(hex: isDark ? 0x42C693 : 0x137D5B)
-            : UIColor(hex: isDark ? 0xF1F3F0 : 0x171A18)
-        let previewColor = UIColor(hex: isDark ? 0x9FA49F : 0x626B66)
+            : UIColor(hex: isDark ? 0xF5F5F7 : 0x171A18)
+        let previewColor = UIColor(hex: isDark ? 0x8D8D93 : 0x626B66)
         let memberColor = nativePeerColor(chat.memberColor)
         let rowBg = isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9)
-        let timeColor = UIColor(hex: isDark ? 0x737873 : 0x858D88)
+        let timeColor = UIColor(hex: isDark ? 0x74767A : 0x858D88)
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
 
@@ -3096,7 +3096,8 @@ struct ChatsView: View {
                                         .contentShape(Rectangle())
                                 }
                                 NativeTopGlassMask(active: chatTopScrolled > 0,
-                                                   base: chatsPageFill)
+                                                   base: chatsPageFill,
+                                                   edgeBlend: true)
                                 if #available(iOS 26.0, *) {
                                     NativeScrollEdgeElementBridge(
                                         scrollView: {

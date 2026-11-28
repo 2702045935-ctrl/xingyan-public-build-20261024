@@ -93,6 +93,7 @@ struct NativeGlassHeaderMaterial: UIViewRepresentable {
 /// 顶栏的可靠磨砂层。Liquid Glass 在部分自定义导航容器里几乎透明，
 /// 这里直接使用系统材质模糊，保证内容进入标题区后确实被遮住。
 struct NativeFrostedHeaderMaterial: UIViewRepresentable {
+    var chrome = false
     @Environment(\.colorScheme) private var scheme
 
     func makeUIView(context: Context) -> UIVisualEffectView {
@@ -106,9 +107,14 @@ struct NativeFrostedHeaderMaterial: UIViewRepresentable {
     }
 
     private var effect: UIVisualEffect {
-        UIBlurEffect(style: scheme == .dark
-                     ? .systemMaterialDark
-                     : .systemMaterialLight)
+        if chrome {
+            return UIBlurEffect(style: scheme == .dark
+                                ? .systemChromeMaterialDark
+                                : .systemChromeMaterialLight)
+        }
+        return UIBlurEffect(style: scheme == .dark
+                            ? .systemMaterialDark
+                            : .systemMaterialLight)
     }
 }
 #endif
@@ -181,9 +187,11 @@ struct NativeMediaGlassCircleBackground: View {
 struct NativeTopGlassMask: View {
     var active: Bool
     var base: Color = C.pageBg
+    var edgeBlend = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         Group {
@@ -192,10 +200,49 @@ struct NativeTopGlassMask: View {
             } else {
                 ZStack {
                     if !reduceTransparency {
-                        NativeFrostedHeaderMaterial()
+                        NativeFrostedHeaderMaterial(chrome: edgeBlend)
                     }
-                    base.opacity(reduceTransparency ? 1 : 0.90)
+                    if edgeBlend {
+                        LinearGradient(
+                            stops: [
+                                .init(color: base.opacity(0.28), location: 0),
+                                .init(color: base.opacity(0.18), location: 0.72),
+                                .init(color: base.opacity(0.02), location: 0.94),
+                                .init(color: .clear, location: 1)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        if scheme == .dark {
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.018),
+                                    Color.white.opacity(0.008),
+                                    .clear
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        }
+                    } else {
+                        base.opacity(reduceTransparency ? 1 : 0.90)
+                    }
                 }
+            }
+        }
+        .mask {
+            if edgeBlend {
+                LinearGradient(
+                    stops: [
+                        .init(color: .white, location: 0),
+                        .init(color: .white.opacity(0.94), location: 0.74),
+                        .init(color: .clear, location: 1)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            } else {
+                Rectangle().fill(Color.white)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -20,10 +20,10 @@ require("struct NativeTopGlassMask" in NAV
         and "struct NativeFrostedHeaderMaterial" in NAV
         and "UIBlurEffect(style: scheme == .dark" in NAV
         and "if !active {\n                Color.clear" in NAV
-        and "if !reduceTransparency {\n                        NativeFrostedHeaderMaterial()" in NAV
+        and "if !reduceTransparency {\n                        NativeFrostedHeaderMaterial(chrome: edgeBlend)" in NAV
         and "UIScrollEdgeElementContainerInteraction" in NAV
         and "table.topEdgeEffect.style = .automatic" in NATIVE_LIST
-        and "NativeFrostedHeaderMaterial()" in NAV
+        and ".systemChromeMaterialDark" in NAV
         and NAV.count("UIGlassEffect(") == 1
         and "glassEffect(" not in NAV,
         "shared top mask must use native materials while media controls keep one system glass component")
@@ -50,6 +50,7 @@ require(
     and "if #available(iOS 26.0, *), !isDark" not in NAV
     and ".ignoresSafeArea(edges: .top)" in NAV
     and "NativeTopGlassMask(active: chatTopScrolled > 0," in CHATS
+    and "edgeBlend: true" in CHATS
     and "NativeChatListScrollRegistry.shared.chats" in CHATS
     and "onOffsetChange:" in CHATS
     and "NativeTopGlassMask(active: scrolled > 0)" not in CHATS,
@@ -67,6 +68,7 @@ require(
     and "id: \"search\",\n                kind: .search" in CHATS
     and ".frame(height: chatsSearchH)\n        .offset(y: -6)" in CHATS
     and "NativeTopGlassMask(active: chatTopScrolled > 0," in CHATS
+    and "edgeBlend: true" in CHATS
     and "NativeChatListScrollRegistry.shared.chats" in CHATS
     and "chatTopHeader\n                        .background" in CHATS,
     "resting search must stay at the legacy position while the mask activates only after scrolling",
