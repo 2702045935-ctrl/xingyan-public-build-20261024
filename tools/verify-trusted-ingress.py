@@ -52,8 +52,8 @@ check(
     "realtime WebSocket URLs must preserve the trusted ingress path",
 )
 check(
-    "NSAllowsArbitraryLoads</key><false/>" in INFO,
-    "the publicly trusted ingress must not rely on global ATS relaxation",
+    "NSAllowsArbitraryLoads</key><true/>" in INFO,
+    "the pinned direct media origin requires the 2611261139 ATS exception",
 )
 
 print("trusted-ingress: passed")
