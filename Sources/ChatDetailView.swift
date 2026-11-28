@@ -9475,7 +9475,7 @@ struct ImageBubble: View {
     var body: some View {
         let size = stickerLook
             ? CGSize(width: stickerSide, height: stickerSide)
-            : (box ?? CGSize(width: 150, height: 150))
+            : ImageBubble.thumb(box ?? CGSize(width: 150, height: 150))
 
         Button(action: onTap) {
             Group {
@@ -9489,8 +9489,9 @@ struct ImageBubble: View {
                         if ImageBubble.looksLikeSticker(img.size) {
                             smallSticker = true
                         } else if box == nil {
-                            box = ImageBubble.thumb(img.size)
-                            ImageSizeCache.put(path, box ?? ImageBubble.thumb(img.size))
+                            let normalized = ImageBubble.thumb(img.size)
+                            box = normalized
+                            ImageSizeCache.put(path, normalized)
                         }
                         onSized?()
                     })
@@ -9513,7 +9514,11 @@ struct ImageBubble: View {
         .accessibilityLabel(Tr(stickerLook ? "查看表情" : "查看图片"))
 
         .onAppear {
-            if box == nil, let cached = ImageSizeCache.get(path) { box = cached }
+            if box == nil, let cached = ImageSizeCache.get(path) {
+                let normalized = ImageBubble.thumb(cached)
+                box = normalized
+                ImageSizeCache.put(path, normalized)
+            }
 
             if let p = pixel, p.width > 1, p.height > 1, !stickerLook {
                 ImageSizeCache.put(path, ImageBubble.looksLikeSticker(p) ? CGSize(width: 120, height: 120) : ImageBubble.thumb(p))

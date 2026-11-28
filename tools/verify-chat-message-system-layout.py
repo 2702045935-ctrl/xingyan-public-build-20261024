@@ -47,6 +47,12 @@ require(
     "image, multi-image and video message rendering must remain unchanged",
 )
 require(
+    "ImageBubble.thumb(box ?? CGSize(width: 150, height: 150))" in CHAT
+    and "let normalized = ImageBubble.thumb(cached)" in CHAT
+    and "ImageSizeCache.put(path, normalized)" in CHAT,
+    "legacy oversized image cache values must be normalized before native row sizing",
+)
+require(
     "showsAvatar: true" in CHAT
     and "let isRunStart = pendingIsRunStart(p)\n        let showsAvatar = true" in CHAT
     and "return same ? ChatFeedMetrics.runGap : ChatFeedMetrics.senderChangeGap"
