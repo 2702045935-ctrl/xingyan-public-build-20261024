@@ -5041,20 +5041,52 @@ struct ChatDetailView: View {
                 .frame(height: composerInputHeight)
                 .background {
                     ZStack {
-                        NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)
+                        NativeMediaGlassSurface(
+                            shape: AnyShape(composerFieldShape),
+                            showsEdge: false
+                        )
+                        .environment(
+                            \.colorScheme,
+                            composerUsesLightInk ? .dark : .light
+                        )
                         if recorder.recording {
                             composerFieldShape.fill(
                                 recorder.willCancel
                                     ? Color.red.opacity(0.12)
-                                    : Color.white.opacity(0.08)
+                                    : Color.white.opacity(0.055)
                             )
                         }
                     }
                     .clipShape(composerFieldShape)
+                    .shadow(
+                        color: Color.black.opacity(
+                            composerUsesLightInk ? 0.18 : 0.10
+                        ),
+                        radius: 9,
+                        x: 0,
+                        y: 4
+                    )
                 }
                 .overlay {
                     composerFieldShape
-                        .stroke(composerFieldBorder, lineWidth: 0.6)
+                        .stroke(
+                            LinearGradient(
+                                colors: composerUsesLightInk
+                                    ? [
+                                        Color.white.opacity(0.34),
+                                        Color.white.opacity(0.07),
+                                        Color.black.opacity(0.08)
+                                    ]
+                                    : [
+                                        Color.white.opacity(0.62),
+                                        Color.white.opacity(0.16),
+                                        Color.black.opacity(0.055)
+                                    ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 0.7
+                        )
                 }
                 .overlay(alignment: .trailing) {
                     if composerCanExpand {
@@ -5195,7 +5227,7 @@ struct ChatDetailView: View {
                 }
         }
         .background {
-            if !(panel == .emoji && emojiPanelExpanded) {
+            if panel != .none && !(panel == .emoji && emojiPanelExpanded) {
                 Group {
                     if isStarWorld && newsMode {
                         newsMaskColor

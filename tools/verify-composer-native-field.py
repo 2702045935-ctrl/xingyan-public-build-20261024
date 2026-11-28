@@ -13,19 +13,22 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private var composerFieldShape: RoundedRectangle" in CHAT
-    and "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT
+    and "NativeMediaGlassSurface(\n                            shape: AnyShape(composerFieldShape),\n                            showsEdge: false\n                        )"
+    in CHAT
+    and "composerUsesLightInk ? .dark : .light" in CHAT
     and ".clipShape(composerFieldShape)" in CHAT,
-    "composer field must use the opaque adaptive surface",
+    "composer field must use a native floating glass capsule",
 )
 require(
-    "composerFieldShape.fill(.regularMaterial)" not in CHAT
-    and "composerFieldShape\n+                            .fill((composerUsesLightInk" not in CHAT,
-    "composer field must not use glass or a translucent tint",
+    "if panel != .none && !(panel == .emoji && emojiPanelExpanded)"
+    in CHAT
+    and "radius: 9,\n                        x: 0,\n                        y: 4" in CHAT,
+    "the composer must float without the legacy full-width bottom mask",
 )
 require(
-    "Color.white.opacity(0.18)" in CHAT
-    and "Color.black.opacity(0.085)" in CHAT,
-    "composer field needs the subtle native hairline",
+    "Color.white.opacity(0.62)" in CHAT
+    and "Color.white.opacity(0.16)" in CHAT,
+    "composer glass needs a restrained specular hairline",
 )
 
 print("composer-native-field: passed")

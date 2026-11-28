@@ -30,10 +30,12 @@ require(
     "chat top and bottom must share one subtle native-frosted page-colour falloff",
 )
 require(
-    "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT
-    and ".opacity(composerUsesLightInk ? 0.42 : 0.32)" not in CHAT
-    and "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT,
-    "composer field backing must use one opaque wallpaper-aware surface",
+    "NativeMediaGlassSurface(\n                            shape: AnyShape(composerFieldShape),\n                            showsEdge: false\n                        )"
+    in CHAT
+    and "composerUsesLightInk ? .dark : .light" in CHAT
+    and "if panel != .none && !(panel == .emoji && emojiPanelExpanded)"
+    in CHAT,
+    "composer field must use one floating wallpaper-aware native glass surface",
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT

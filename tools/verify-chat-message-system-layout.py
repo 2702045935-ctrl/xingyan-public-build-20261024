@@ -56,7 +56,7 @@ require(
     "direct and group messages must share one stable avatar/name run hierarchy",
 )
 require(
-    CHAT.count("NativeMediaGlassSurface") <= 4
+    CHAT.count("NativeMediaGlassSurface") <= 5
     and "NativeGlassControlMaterial()" in CHAT
     and CHAT.count("GlassBackground(") >= 1,
     "per-row timestamps and media controls must use the 2611280617 lightweight glass",
