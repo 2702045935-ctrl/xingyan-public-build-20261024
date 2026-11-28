@@ -22,6 +22,8 @@ require("UINotification.lightTap()" in CHAT, "send action must keep native tacti
 require(
     "transaction.disablesAnimations = true" in CHAT
     and "withTransaction(transaction) {\n            outbox.append(pending)" in CHAT
+    and "outbox.append(pending)\n            // WeChat pins on the local outgoing row itself." in CHAT
+    and "pinTick &+= 1" in CHAT
     and "app.previewOutgoingMessage(" in CHAT
     and "nativeMessageController.prepareForOutgoingTailAppend()" in CHAT
     and "if Date() < followOwnSendUntil { return }" in CHAT

@@ -5479,6 +5479,9 @@ struct ChatDetailView: View {
         transaction.disablesAnimations = true
         withTransaction(transaction) {
             outbox.append(pending)
+            // WeChat pins on the local outgoing row itself. The server echo
+            // replaces the pending row in place, so no second scroll is allowed.
+            pinTick &+= 1
             app.previewOutgoingMessage(
                 chat,
                 clientId: pending.id,
