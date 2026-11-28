@@ -32,11 +32,12 @@ require(
     "struct StarWorldSystemView: View" in WORLD
     and "private enum StarWorldRoute" in WORLD
     and 'Text(Tr("世界"))' in WORLD
-    and 'title: Tr("内容")' in WORLD
-    and 'title: Tr("工具")' in WORLD
-    and "LazyVGrid(" in WORLD
+    and 'sectionHeader(Tr("内容"))' in WORLD
+    and 'sectionHeader(Tr("工具"))' in WORLD
+    and ".listStyle(.insetGrouped)" in WORLD
+    and ".environment(\\.defaultMinListRowHeight, 52)" in WORLD
     and "NavigationStack {" in WORLD,
-    "the world tab must be a system-level content and tools hub",
+    "the world tab must be a unified inset-grouped system hub",
 )
 require(
     all(marker not in WORLD for marker in (
