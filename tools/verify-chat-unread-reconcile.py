@@ -75,5 +75,15 @@ require(
     "while !Task.isCancelled {\n                await self?.refreshDotCounts()" in APP,
     "dot polling must calibrate immediately before waiting for the next interval",
 )
+CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+require(
+    "let incomingMessage = message.senderId != myId" in CHAT
+    and "if incomingMessage && !atBottomNow" in CHAT
+    and "unreadHere += 1" in CHAT
+    and "else if incomingMessage" in CHAT
+    and "private func markConversationReadSoon() {\n        guard atBottomNow else { return }"
+    in CHAT,
+    "messages arriving above the bottom must accumulate the back-button unread badge",
+)
 
 print("chat-unread-reconcile: passed")

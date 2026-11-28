@@ -3220,7 +3220,13 @@ struct ChatDetailView: View {
             if let seq = message.seq {
                 Realtime.shared.ackDelivery(chatId: chat.id, seq: seq)
             }
-            markConversationReadSoon()
+            let incomingMessage = message.senderId != myId
+                && message.kindName != "system"
+            if incomingMessage && !atBottomNow {
+                unreadHere += 1
+            } else if incomingMessage {
+                markConversationReadSoon()
+            }
         } else if (ev.type == "message" || ev.type == "chat"),
                   ev.chatId == chat.id {
             pushTask?.cancel()
@@ -3348,6 +3354,7 @@ struct ChatDetailView: View {
     }
 
     private func markConversationReadSoon() {
+        guard atBottomNow else { return }
         let now = Date()
         guard now.timeIntervalSince(lastReadSyncAt) > 1.5 else { return }
         lastReadSyncAt = now
