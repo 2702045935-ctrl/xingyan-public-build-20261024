@@ -26,15 +26,15 @@ require("unreadLabel.backgroundColor = .systemRed" in ROW
         and "systemBlue" not in CHATS,
         "unread counts must use the single red badge language")
 for key, light, dark in (
-    ("pageBg", "0xF2F4F1", "0x101412"),
-    ("navBg", "0xF5F6F4", "0x101412"),
-    ("tabBg", "0xF5F6F4", "0x121613"),
-    ("chatRowBg", "0xFAFBF9", "0x171B18"),
-    ("chatsTopBg", "0xF4F6F3", "0x101412"),
-    ("chatsPageBg", "0xF2F4F1", "0x101412"),
-    ("chatsRowBg", "0xFAFBF9", "0x171B18"),
-    ("contactsBg", "0xF2F4F1", "0x101412"),
-    ("discoverBg", "0xF2F4F1", "0x101412"),
+    ("pageBg", "0xF2F4F1", "0x000000"),
+    ("navBg", "0xF5F6F4", "0x000000"),
+    ("tabBg", "0xF5F6F4", "0x000000"),
+    ("chatRowBg", "0xFAFBF9", "0x000000"),
+    ("chatsTopBg", "0xF4F6F3", "0x000000"),
+    ("chatsPageBg", "0xF2F4F1", "0x000000"),
+    ("chatsRowBg", "0xFAFBF9", "0x000000"),
+    ("contactsBg", "0xF2F4F1", "0x000000"),
+    ("discoverBg", "0xF2F4F1", "0x000000"),
 ):
     require(
         f'UIConfig.fixedDark("{key}", {light}, {dark})' in CORE,
@@ -56,7 +56,7 @@ require(
 )
 require(
     "private enum NativeTabBarVisual" in TAB
-    and "static var normalInk: Color { Color.dyn(0x757D78, 0x8B938E) }" in TAB
+    and "static var normalInk: Color { Color.dyn(0x757D78, 0x8E8E93) }" in TAB
     and "static var selectedInk: Color { Color.dyn(0x117A58, 0x42C693) }" in TAB
     and "let normalIcon = UIColor(NativeTabBarVisual.normalInk)" in TAB
     and "let selectedIcon = UIColor(NativeTabBarVisual.selectedInk)" in TAB
@@ -71,11 +71,12 @@ require(
 )
 require(
     ".background(C.pageBg.ignoresSafeArea())" in MAIN_TAB
+    and ".background(contactsCanvas.ignoresSafeArea())" in CONTACTS
     and "scheme == .dark ? C.chatRowBg : contactsCanvas" in CONTACTS
-    and "scheme == .dark ? C.searchBg : contactsCanvas" in CONTACTS
+    and "scheme == .dark ? C.searchBg : Color(hex: 0xE9EDE8)" in CONTACTS
     and "chatsIsDark\n            ? C.pageBg" in CHATS
     and "chatsIsDark\n            ? C.searchBg" in CHATS
-    and "isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9)" in CHATS,
+    and "chatsIsDark\n            ? C.chatRowBg" in CHATS,
     "root tab pages must share the same app canvas without changing the native tab bar",
 )
 

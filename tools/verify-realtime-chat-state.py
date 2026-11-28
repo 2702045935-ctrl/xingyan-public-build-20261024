@@ -25,8 +25,9 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "Realtime.shared.setChatEventHandler { [weak self] event in" in APP
-    and "if Self.isChatStateEvent(ev.type) {\n            chatEventHandler?(ev)"
-    in REALTIME
+    and "if Self.isChatStateEvent(ev.type) {" in REALTIME
+    and "ev.tick = tick" in REALTIME
+    and "chatEventHandler?(ev)" in REALTIME
     and "if Realtime.isChatStateEvent(ev.type) {\n                // AppState"
     in APP,
     "chat state events must bypass the lossy single-slot SwiftUI event path",

@@ -142,11 +142,18 @@ jobs:
           python3 tools/verify-location-call-polish.py
           python3 tools/verify-file-transfer-preview.py
           python3 tools/verify-local-first-media.py
+          python3 tools/verify-chat-info-layout.py
+          python3 tools/verify-chat-unread-reconcile.py
+          python3 tools/verify-chat-virtual-scrollbar.py
+          python3 tools/verify-realtime-chat-state.py
+          node server/test/mention-index.test.js
           python3 tools/verify-message-menu-polish.py
           python3 tools/verify-realtime-chat-direct.py
           python3 tools/verify-voice-hold-brand.py
           python3 tools/verify-native-top-masks.py
           python3 tools/verify-group-membership-send.py
+          python3 tools/verify-large-group-runtime.py
+          node server/test/large-group-10000.test.js
           python3 tools/verify-friend-removal-consistency.py
           python3 tools/verify-pin-owner-routing.py
           python3 tools/verify-chat-avatar-stability.py
@@ -166,6 +173,7 @@ jobs:
           python3 tools/verify-wallpaper-switch.py
           python3 tools/verify-no-glass.py
           python3 tools/verify-daylight-jade.py
+          python3 tools/verify-dark-neutral-palette.py
           python3 tools/verify-scale-foundation.py
           python3 tools/verify-moment-editorial.py
           python3 tools/verify-moment-like-particles.py

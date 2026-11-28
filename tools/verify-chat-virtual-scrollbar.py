@@ -13,14 +13,11 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "virtualHistoryPosition: nil" in CHAT
-    and "nativeHistoryPosition" not in CHAT,
-    "chat must use the native collection scrollbar",
-)
-require(
-    "collection.showsVerticalScrollIndicator = true" in NATIVE
-    and "guard virtualHistoryPosition != nil else { return }" in NATIVE,
-    "the fallback virtual thumb must be opt-in for non-chat callers only",
+    "virtualHistoryPosition" not in CHAT
+    and "nativeHistoryPosition" not in CHAT
+    and "collection.showsVerticalScrollIndicator = true" in NATIVE
+    and "collection.isDirectionalLockEnabled = true" in NATIVE,
+    "chat must use the native collection scroll indicator without a custom thumb",
 )
 
 print("chat-native-scrollbar: passed")
