@@ -59,7 +59,9 @@ def main() -> None:
             image = Image.open(io.BytesIO(archive.read(APP + name)))
             if image.size != (size, size):
                 raise SystemExit(f"{name}: unexpected size {image.size}")
-            if image.mode != "RGB":
+            # Xcode 26 regenerates legacy icon PNGs from the layered icon stack.
+            # Those generated compatibility files can retain an alpha channel.
+            if image.mode not in {"RGB", "RGBA"}:
                 raise SystemExit(f"{name}: unexpected mode {image.mode}")
 
     digest = hashlib.sha256(ipa.read_bytes()).hexdigest()
