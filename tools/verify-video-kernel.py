@@ -17,6 +17,9 @@ STREAM = (ROOT / "Sources" / "StreamPlayback.swift").read_text(encoding="utf-8")
 TELEMETRY = (ROOT / "Sources" / "VideoKernelTelemetry.swift").read_text(
     encoding="utf-8"
 )
+MEDIA = (ROOT / "Sources" / "ChatMediaBubbles.swift").read_text(
+    encoding="utf-8"
+)
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -85,6 +88,15 @@ require(
     and "release(loader)" in STREAM
     and "while keepOrder.count > 32" in STREAM,
     "stream loaders must be released and retained under a hard upper bound",
+)
+require(
+    "actor VideoPlaybackCache" in STREAM
+    and "private var warming: [String: Task<URL?, Never>]" in STREAM
+    and "LocalStore.keepOriginal(url.path, from: dst)" in STREAM
+    and "Task { _ = await VideoPlaybackCache.shared.warm(url) }" in MEDIA
+    and "automaticallyWaitsToMinimizeStalling = false" in STREAM
+    and "边下边播 3 秒没画面，改用整段下载" not in MEDIA,
+    "remote video must start progressive playback immediately while a deduplicated background cache downloads",
 )
 require(
     "VideoKernelTelemetry.shared.event(\"first_frame\"" in KERNEL_IOS

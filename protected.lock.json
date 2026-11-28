@@ -28,8 +28,8 @@
     },
     {
       "path": "Sources/ChatMediaBubbles.swift",
-      "size": 32549,
-      "sha256": "4db3038a6af02c38c4d536346fbd83a07f4383a212fcfb6d462d7466c5233cb0"
+      "size": 31196,
+      "sha256": "85ae568b28288dc9696307e33d4d3c3fb775bf2d44e62dcc16dacace5df9ddc1"
     },
     {
       "path": "Sources/ChatStressFixture.swift",

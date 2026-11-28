@@ -269,9 +269,7 @@ enum StreamPlay {
             .appendingPathComponent("chris-dl-\(UUID().uuidString).\(ext)")
         try? FileManager.default.removeItem(at: dst)
         guard (try? FileManager.default.moveItem(at: tmp, to: dst)) != nil else { return nil }
-        if let d = try? Data(contentsOf: dst) {
-            LocalStore.keep(url.path, data: d)
-        }
+        LocalStore.keepOriginal(url.path, from: dst)
         return dst
     }
 
@@ -293,5 +291,41 @@ enum StreamPlay {
         keepAlive.removeValue(forKey: key)
         keepOrder.removeAll { $0 == key }
         keepLock.unlock()
+    }
+}
+
+actor VideoPlaybackCache {
+    static let shared = VideoPlaybackCache()
+
+    private var warming: [String: Task<URL?, Never>] = [:]
+
+    func warm(_ url: URL) async -> URL? {
+        if let local = LocalStore.localURL(url.path),
+           FileManager.default.fileExists(atPath: local.path) {
+            return local
+        }
+        guard url.scheme == "http" || url.scheme == "https" else { return url }
+
+        let key = url.absoluteString
+        if let existing = warming[key] {
+            return await existing.value
+        }
+
+        let task = Task<URL?, Never> {
+            await StreamPlay.download(url, preferLocal: false)
+        }
+        warming[key] = task
+        let downloaded = await task.value
+        warming[key] = nil
+
+        if let local = LocalStore.localURL(url.path),
+           FileManager.default.fileExists(atPath: local.path) {
+            if let downloaded,
+               downloaded.standardizedFileURL != local.standardizedFileURL {
+                try? FileManager.default.removeItem(at: downloaded)
+            }
+            return local
+        }
+        return downloaded
     }
 }

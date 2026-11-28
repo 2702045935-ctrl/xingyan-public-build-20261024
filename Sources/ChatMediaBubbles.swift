@@ -655,27 +655,9 @@ struct VideoPlayerSheet: View {
 
             if let p = StreamPlay.player(url) {
                 mount(p)
-
-                let ok = await waitForPicture(p)
-                if ok { return }
-                CrashCatcher.note("视频", "边下边播 3 秒没画面，改用整段下载：" + url.absoluteString.suffix(40))
-                p.pause()
-                if player === p { player = nil }
-                timeObs = nil
-            }
-
-            guard let data = try? await API.shared.assetData(url), !data.isEmpty else {
-                note = "取不到视频文件\n（网络不通或证书没过）\n地址：" + url.absoluteString.suffix(40)
+                Task { _ = await VideoPlaybackCache.shared.warm(url) }
                 return
             }
-            let ext = url.pathExtension.isEmpty ? "mp4" : url.pathExtension
-            let dst = FileManager.default.temporaryDirectory
-                .appendingPathComponent("play-\(UUID().uuidString).\(ext)")
-            guard (try? data.write(to: dst)) != nil else { note = "视频写不进临时文件"; return }
-
-            LocalStore.keep(url.path, data: data)
-            mount(AVPlayer(url: dst))
-            return
         }
         mount(AVPlayer(url: url))
     }
@@ -704,17 +686,6 @@ struct VideoPlayerSheet: View {
         }
     }
 
-    private func waitForPicture(_ p: AVPlayer) async -> Bool {
-        for _ in 0..<15 {
-            if player !== p { return true }
-            if let item = p.currentItem {
-                if item.status == .failed { return false }
-                if item.status == .readyToPlay, CMTimeGetSeconds(p.currentTime()) > 0.05 { return true }
-            }
-            try? await Task.sleep(nanoseconds: 200_000_000)
-        }
-        return false
-    }
 }
 
 struct SendingVideoBubble: View {
