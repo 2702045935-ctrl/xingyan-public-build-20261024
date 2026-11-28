@@ -65,6 +65,10 @@ require(
     "cover adjustment must be rebuilt as a bounded immersive canvas",
 )
 require(
+    ".fullScreenCover(isPresented: Binding(get: { coverDraft != nil }" in DISCOVER,
+    "cover adjustment must use an edge-to-edge full-screen presentation",
+)
+require(
     "NativeMediaGlassSurface(" in adjust
     and "shape: AnyShape(Rectangle())" in adjust
     and "interactive: true" in adjust

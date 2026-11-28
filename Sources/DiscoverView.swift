@@ -1875,8 +1875,8 @@ struct MomentsView: View {
             CameraPicker { image in coverDraft = image }
         }
 
-        .sheet(isPresented: Binding(get: { coverDraft != nil },
-                                    set: { if !$0 { coverDraft = nil } })) {
+        .fullScreenCover(isPresented: Binding(get: { coverDraft != nil },
+                                              set: { if !$0 { coverDraft = nil } })) {
             if let img = coverDraft {
                 CoverAdjustSheet(image: img,
                                  frameSize: CGSize(width: L.width, height: L.coverH)) { out in
