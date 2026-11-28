@@ -7665,6 +7665,7 @@ struct MessageRow: View {
 
         .environment(\.bubbleUsesLightInk, senderNameUsesLightInk)
         .environment(\.bubbleWallpaperTint, wallpaperTint)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var avatarView: some View {

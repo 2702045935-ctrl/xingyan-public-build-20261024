@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 
+private let nativeStaticRowDrawingBleed: CGFloat = 0.75
+
 struct NativeStaticItem: Identifiable, Equatable {
     let id: String
     let signature: String
@@ -583,7 +585,11 @@ where Item.ID: Hashable {
 
         private func measuredHeight(_ item: Item, width: CGFloat) -> CGFloat {
             let host = measurementHost
-            host.rootView = AnyView(row(item).frame(width: width))
+            host.rootView = AnyView(
+                row(item)
+                    .frame(width: width)
+                    .padding(.vertical, nativeStaticRowDrawingBleed)
+            )
             host.view.frame = CGRect(x: 0, y: 0, width: width, height: 240)
             host.view.setNeedsLayout()
             host.view.layoutIfNeeded()
@@ -597,6 +603,7 @@ where Item.ID: Hashable {
             AnyView(
                 row(item)
                     .frame(maxWidth: .infinity, alignment: .top)
+                    .padding(.vertical, nativeStaticRowDrawingBleed)
             )
         }
 

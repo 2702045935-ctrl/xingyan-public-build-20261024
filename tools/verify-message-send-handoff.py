@@ -49,8 +49,14 @@ require(
     and "x1 + out" not in CHAT_SHAPE
     and "x0 - out" not in CHAT_SHAPE
     and "clipsToBounds = false" in NATIVE
-    and "contentView.clipsToBounds = false" in NATIVE,
-    "bubble tails and native cell drawing bounds must stay inside the visible cell",
+    and "contentView.clipsToBounds = false" in NATIVE
+    and "private let nativeStaticRowDrawingBleed: CGFloat = 0.75" in NATIVE
+    and "row(item)\n                    .frame(width: width)\n                    .padding(.vertical, nativeStaticRowDrawingBleed)"
+    in NATIVE
+    and "row(item)\n                    .frame(maxWidth: .infinity, alignment: .top)\n                    .padding(.vertical, nativeStaticRowDrawingBleed)"
+    in NATIVE
+    and ".fixedSize(horizontal: false, vertical: true)" in CHAT,
+    "bubble tails, text and avatars must keep a measured drawing bleed inside every message cell",
 )
 require(
     "let prependDetector: (([Item], [Item]) -> Bool)?" in NATIVE
