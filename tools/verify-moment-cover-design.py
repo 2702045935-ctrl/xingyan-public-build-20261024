@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
+BOTTOM = (ROOT / "Sources" / "BottomSheetSystem.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -46,6 +47,15 @@ require(
     and "let visualHeight = L.coverH + extra + momentProfileFooterHeight + topOverdraw" in cover
     and ".offset(y: -topOverdraw)" in cover,
     "cover artwork must fill the complete moments header without page-colour strips",
+)
+require(
+    "struct BottomChoiceSheet: View" in BOTTOM
+    and "sheet(isPresented: $coverMenu)" in DISCOVER
+    and "BottomChoiceSheet(" in DISCOVER
+    and ".height(BottomChoiceSheet.preferredHeight(itemCount: 2))" in DISCOVER
+    and ".presentationDetents([.fraction(0.78), .large])" in DISCOVER
+    and "confirmationDialog(Tr(\"更换相册封面\")" not in DISCOVER,
+    "cover source selection and crop confirmation must rise from the bottom like WeChat",
 )
 require(
     "python3 tools/verify-moment-cover-design.py" in WORKFLOW,

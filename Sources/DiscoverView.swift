@@ -1866,13 +1866,42 @@ struct MomentsView: View {
             }
         }
 
-        .confirmationDialog(Tr("更换相册封面"), isPresented: $coverMenu, titleVisibility: .visible) {
-            Button(Tr("从手机相册选择")) { showCoverPhoto = true }
-            Button(Tr("拍一张")) { showCoverCamera = true }
-            Button(Tr("取消"), role: .cancel) { }
+        .sheet(isPresented: $coverMenu) {
+            BottomChoiceSheet(
+                title: Tr("更换相册封面"),
+                headerSymbol: "photo.on.rectangle.angled",
+                items: [
+                    BottomChoiceItem(
+                        id: "photo",
+                        title: Tr("从手机相册选择"),
+                        detail: Tr("选一张照片作为生活圈封面"),
+                        symbol: "photo.on.rectangle",
+                        tint: C.green
+                    ),
+                    BottomChoiceItem(
+                        id: "camera",
+                        title: Tr("拍一张"),
+                        detail: Tr("打开相机拍摄封面"),
+                        symbol: "camera.fill",
+                        tint: C.link
+                    )
+                ]
+            ) { selected in
+                if selected == "photo" {
+                    showCoverPhoto = true
+                } else {
+                    showCoverCamera = true
+                }
+            }
+            .presentationDetents([
+                .height(BottomChoiceSheet.preferredHeight(itemCount: 2))
+            ])
+            .presentationDragIndicator(.hidden)
         }
         .sheet(isPresented: $showCoverCamera) {
             CameraPicker { image in coverDraft = image }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
 
         .sheet(isPresented: Binding(get: { coverDraft != nil },
@@ -1883,6 +1912,8 @@ struct MomentsView: View {
                     changeCover(out)
                     coverDraft = nil
                 }
+                .presentationDetents([.fraction(0.78), .large])
+                .presentationDragIndicator(.visible)
             }
         }
 
@@ -1897,6 +1928,8 @@ struct MomentsView: View {
         }
         .sheet(isPresented: $showCoverPhoto) {
             PhotoPicker { image in coverDraft = image }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
         .fullScreenCover(isPresented: $posting) { publishSheet }
 

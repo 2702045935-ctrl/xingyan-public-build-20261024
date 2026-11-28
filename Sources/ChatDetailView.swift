@@ -2418,11 +2418,33 @@ struct ChatDetailView: View {
         }
 
         .sheet(isPresented: $showLocationMenu) {
-            ChatLocationChoiceSheet(
-                onSendLocation: { showSendLocation = true },
-                onLiveLocation: { showLiveLocation = true }
-            )
-            .presentationDetents([.height(316)])
+            BottomChoiceSheet(
+                title: Tr("位置"),
+                headerSymbol: "location.fill",
+                items: [
+                    BottomChoiceItem(
+                        id: "send",
+                        title: Tr("发送位置"),
+                        detail: Tr("选择地图上的地点"),
+                        symbol: "mappin.and.ellipse"
+                    ),
+                    BottomChoiceItem(
+                        id: "live",
+                        title: Tr("共享实时位置"),
+                        detail: Tr("和聊天成员一起看位置"),
+                        symbol: "location.circle.fill"
+                    )
+                ]
+            ) { selected in
+                if selected == "send" {
+                    showSendLocation = true
+                } else {
+                    showLiveLocation = true
+                }
+            }
+            .presentationDetents([
+                .height(BottomChoiceSheet.preferredHeight(itemCount: 2))
+            ])
             .presentationDragIndicator(.hidden)
         }
         .sheet(isPresented: $showSendLocation) {
