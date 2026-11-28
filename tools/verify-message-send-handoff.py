@@ -91,8 +91,11 @@ require(
 require(
     "private var quotePrimaryInk: Color" in CHAT
     and "private var quoteSecondaryInk: Color" in CHAT
+    and "private var quoteBaseSurface: Color" in CHAT
+    and "mine ? ChatTheme.bubbleMine : C.floatingSurface" in CHAT
     and ".foregroundColor(quotePrimaryInk)" in CHAT
     and ".foregroundColor(quoteSecondaryInk)" in CHAT
+    and ".fill(quoteBaseSurface)" in CHAT
     and "Color.dyn(0xE8EBED, 0x34383E).opacity(0.96)" in CHAT
     and "Color.dyn(0x343A37, 0xD7DADD)" in CHAT
     and "Color.dyn(0x525A56, 0xBDC1C5)" in CHAT,

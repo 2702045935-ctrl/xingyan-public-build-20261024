@@ -8186,6 +8186,10 @@ struct MessageRow: View {
             : Color.dyn(0xE8EBED, 0x34383E).opacity(0.96)
     }
 
+    private var quoteBaseSurface: Color {
+        mine ? ChatTheme.bubbleMine : C.floatingSurface
+    }
+
     private var quoteBorder: Color {
         mine
             ? Color.white.opacity(0.18)
@@ -8439,7 +8443,7 @@ struct MessageRow: View {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(C.floatingSurface)
+                        .fill(quoteBaseSurface)
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
                         .fill(quoteSurface)
                 }
