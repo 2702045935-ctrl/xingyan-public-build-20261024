@@ -1941,7 +1941,10 @@ struct MomentsView: View {
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
                 }
             } else {
-                RemoteImage(path: cover, icon: "photo", maxSide: 2560)
+                RemoteImage(path: cover, icon: "photo", mode: .fill, maxSide: 2560)
+                    .frame(width: max(1, L.width),
+                           height: L.coverH + extra)
+                    .clipped()
                     .id(cover)
             }
 

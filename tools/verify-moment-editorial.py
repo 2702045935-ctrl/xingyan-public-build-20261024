@@ -48,9 +48,12 @@ require(
 require(
     "momentProfileFooterHeight" in DISCOVER
     and "headerHeight: L.coverH + momentProfileFooterHeight" in DISCOVER
+    and "RemoteImage(path: cover, icon: \"photo\", mode: .fill, maxSide: 2560)"
+    in DISCOVER
+    and "height: L.coverH + extra" in DISCOVER
     and ".offset(y: 21)" not in DISCOVER
     and "headerContainer.clipsToBounds = false" in FEED,
-    "cover and profile signature must stay inside a clipped-safe native header",
+    "cover must fill edge-to-edge while the signature stays inside the native header",
 )
 
 print("moment-editorial: passed")
