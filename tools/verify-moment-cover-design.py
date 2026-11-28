@@ -22,29 +22,30 @@ adjust_end = DISCOVER.index("struct MomentGridDrop", adjust_start)
 adjust = DISCOVER[adjust_start:adjust_end]
 
 require(
-    "size: L.coverAvatar" in cover
-    and "radius: 18" in cover
+    "size: max(58, L.coverAvatar)" in cover
+    and "radius: 20" in cover
     and ".padding(.trailing, 16)" in cover
     and ".padding(.bottom, 8)" in cover
-    and "minHeight: 64" in cover
-    and "min(336, max(1, L.width - 32))" in cover,
-    "cover identity must stay compact in the original lower-right placement",
+    and "min(328, max(1, L.width - 32))" in cover,
+    "cover identity must stay in the original lower-right placement",
 )
 require(
     ".frame(maxWidth: .infinity, alignment: .trailing)" in cover
-    and ".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)"
+    and ".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)"
     in cover
-    and 'Label(Tr("换封面"), systemImage: "camera.fill")' in cover,
-    "profile identity and the edit control must keep their separate original edges",
+    and 'Image(systemName: "camera.fill")' in cover
+    and 'accessibilityLabel(Tr("换封面"))' in cover,
+    "the editorial identity and compact edit control must use separate lower edges",
 )
 require(
     ".fill(Color.dyn(0xFFFFFF, 0x000000).opacity(0.62))" not in cover
-    and ".white.opacity(0.82)" in cover
+    and 'Text(Tr("生活圈"))' in cover
+    and "font(pf(24, .semibold))" in cover
+    and ".white.opacity(0.84)" in cover
     and "NativeMediaGlassSurface(" in cover
-    and "RoundedRectangle(cornerRadius: 22, style: .continuous)" in cover
-    and "Color.black.opacity(0.42)" in cover
-    and "Color.white.opacity(0.28)" in cover,
-    "cover identity must use one restrained native glass rail",
+    and "Circle().fill(Color.black.opacity(0.28))" in cover
+    and "Color.white.opacity(0.62)" in cover,
+    "the cover must use editorial type hierarchy and one native edit control",
 )
 require(
     "let topOverdraw = max(0, L.safeTop)" in cover

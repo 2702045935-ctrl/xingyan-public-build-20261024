@@ -2100,116 +2100,83 @@ struct MomentsView: View {
                 Button {
                     coverMenu = true
                 } label: {
-                    Label(Tr("换封面"), systemImage: "camera.fill")
-                        .font(pf(12.5, .semibold))
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 13)
-                        .frame(height: 34)
+                        .frame(width: 40, height: 40)
                         .background {
                             ZStack {
                                 NativeMediaGlassSurface(
-                                    shape: AnyShape(Capsule(style: .continuous)),
+                                    shape: AnyShape(Circle()),
                                     interactive: true,
                                     showsEdge: false
                                 )
-                                Capsule().fill(Color.black.opacity(0.22))
+                                Circle().fill(Color.black.opacity(0.28))
                             }
                         }
                         .overlay(
-                            Capsule().stroke(
-                                Color.white.opacity(0.20),
+                            Circle().stroke(
+                                Color.white.opacity(0.24),
                                 lineWidth: 0.7
                             )
                         )
                 }
                 .buttonStyle(.plain)
-                .padding(.trailing, 16)
+                .accessibilityLabel(Tr("换封面"))
+                .padding(.leading, 16)
                 .padding(.bottom, momentProfileFooterHeight + 12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .zIndex(4)
             }
 
-            HStack(alignment: .center, spacing: 11) {
-                VStack(alignment: .trailing, spacing: 3) {
+            HStack(alignment: .center, spacing: 14) {
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(Tr("生活圈"))
+                        .font(pf(9.5, .semibold))
+                        .tracking(1.6)
+                        .foregroundColor(.white.opacity(0.66))
+
                     Text(owner?.name ?? "")
-                        .font(pf(17, .semibold))
+                        .font(pf(24, .semibold))
                         .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.62), radius: 5, x: 0, y: 2)
+                        .shadow(color: Color.black.opacity(0.66), radius: 6, x: 0, y: 2)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.82)
 
                     if let sign = signature {
                         Text(sign)
-                            .font(pf(12.2, .medium))
-                            .foregroundColor(.white.opacity(0.82))
+                            .font(pf(12.8, .medium))
+                            .foregroundColor(.white.opacity(0.84))
                             .lineLimit(2)
                             .multilineTextAlignment(.trailing)
                             .fixedSize(horizontal: false, vertical: true)
+                            .shadow(color: Color.black.opacity(0.52), radius: 4, x: 0, y: 1)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
 
                 Avatar(
                     path: owner?.avatarPath ?? "",
-                    size: L.coverAvatar,
-                    radius: 18
+                    size: max(58, L.coverAvatar),
+                    radius: 20
                 )
                 .overlay {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .stroke(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.58),
-                                    Color.white.opacity(0.10)
+                                    Color.white.opacity(0.62),
+                                    Color.white.opacity(0.08)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
-                            lineWidth: 0.9
+                            lineWidth: 1
                         )
                 }
-                .shadow(color: Color.black.opacity(0.38), radius: 8, x: 0, y: 3)
+                .shadow(color: Color.black.opacity(0.44), radius: 10, x: 0, y: 4)
             }
-            .padding(.leading, 14)
-            .padding(.trailing, 9)
-            .padding(.vertical, 6)
-            .frame(maxWidth: min(336, max(1, L.width - 32)),
-                   minHeight: 64,
-                   alignment: .trailing)
-            .background {
-                ZStack {
-                    NativeMediaGlassSurface(
-                        shape: AnyShape(RoundedRectangle(cornerRadius: 22,
-                                                         style: .continuous)),
-                        showsEdge: false
-                    )
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.black.opacity(0.42),
-                                    Color.black.opacity(0.20)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.28),
-                                Color.white.opacity(0.08)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.7
-                    )
-            }
-            .shadow(color: Color.black.opacity(0.24), radius: 14, x: 0, y: 6)
+            .frame(maxWidth: min(328, max(1, L.width - 32)), alignment: .trailing)
             .padding(.trailing, 16)
             .padding(.bottom, 8)
             .allowsHitTesting(false)
