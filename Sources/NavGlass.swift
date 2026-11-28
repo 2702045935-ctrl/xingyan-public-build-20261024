@@ -180,6 +180,7 @@ struct NativeMediaGlassCircleBackground: View {
 
 struct NativeTopGlassMask: View {
     var active: Bool
+    var base: Color = C.pageBg
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -188,10 +189,13 @@ struct NativeTopGlassMask: View {
         Group {
             if !active {
                 Color.clear
-            } else if reduceTransparency {
-                C.pageBg
             } else {
-                NativeFrostedHeaderMaterial()
+                ZStack {
+                    if !reduceTransparency {
+                        NativeFrostedHeaderMaterial()
+                    }
+                    base.opacity(reduceTransparency ? 1 : 0.90)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

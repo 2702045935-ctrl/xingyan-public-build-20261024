@@ -91,7 +91,7 @@ require(
     "chat timestamps must use intrinsic width and translucent system glass",
 )
 require(
-    "NativeTopGlassMask(active: chatTopScrolled > 0)" in CHATS
+    "NativeTopGlassMask(active: chatTopScrolled > 0," in CHATS
     and "NativeChatListScrollRegistry.shared.chats" in CHATS
     and "NativeChatsTopEdgeChrome" not in NAV_GLASS
     and "value: scrolled > 0" not in NAV_GLASS,

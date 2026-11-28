@@ -19,7 +19,7 @@ require("struct NativeTopGlassMask" in NAV
         and "struct NativeFrostedHeaderMaterial" in NAV
         and "UIBlurEffect(style: scheme == .dark" in NAV
         and "if !active {\n                Color.clear" in NAV
-        and "} else {\n                NativeFrostedHeaderMaterial()" in NAV
+        and "if !reduceTransparency {\n                        NativeFrostedHeaderMaterial()" in NAV
         and "UIScrollEdgeElementContainerInteraction" in NAV
         and "table.topEdgeEffect.style = .automatic" in NATIVE_LIST
         and "NativeFrostedHeaderMaterial()" in NAV
@@ -30,6 +30,11 @@ require("NativeGlassControlMaterial" in NAV
         and "NativeMediaGlassSurface(shape: shape, interactive: interactive)" in NAV
         and "shape\n            .fill(C.floatingSurface)" not in NAV,
         "controls must use the single native system glass source")
+require(
+    "var base: Color = C.pageBg" in NAV
+    and "base.opacity(reduceTransparency ? 1 : 0.90)" in NAV,
+    "scroll masks must tint to the exact page background before blur",
+)
 require(
     "table.topEdgeEffect.style = .automatic" in NATIVE_LIST
     and "table.topEdgeEffect.isHidden = true" in NATIVE_LIST
@@ -43,7 +48,7 @@ require(
     and "let edgeShape = UIView()" in NAV
     and "if #available(iOS 26.0, *), !isDark" not in NAV
     and ".ignoresSafeArea(edges: .top)" in NAV
-    and "NativeTopGlassMask(active: chatTopScrolled > 0)" in CHATS
+    and "NativeTopGlassMask(active: chatTopScrolled > 0," in CHATS
     and "NativeChatListScrollRegistry.shared.chats" in CHATS
     and "onOffsetChange:" in CHATS
     and "NativeTopGlassMask(active: scrolled > 0)" not in CHATS,
@@ -60,12 +65,13 @@ require(
     in CHATS
     and "id: \"search\",\n                kind: .search" in CHATS
     and ".frame(height: chatsSearchH)\n        .offset(y: -6)" in CHATS
-    and "NativeTopGlassMask(active: chatTopScrolled > 0)" in CHATS
+    and "NativeTopGlassMask(active: chatTopScrolled > 0," in CHATS
     and "NativeChatListScrollRegistry.shared.chats" in CHATS
     and "chatTopHeader\n                        .background" in CHATS,
     "resting search must stay at the legacy position while the mask activates only after scrolling",
 )
-require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
+require("NativeTopGlassMask(active: navScrolled > 0," in CONTACTS
+        and "base: contactsCanvas" in CONTACTS
         and "NativeTopScrollObserver" in CONTACTS
         and "NativeScrollEdgeElementBridge(" in CONTACTS
         and "NativeTopScrollRegistry.shared.contacts = scroll" in CONTACTS
@@ -74,7 +80,8 @@ require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         and "TopGlassBar(" not in CONTACTS
         and "TopGlassLine(" not in CONTACTS,
         "contacts must observe the native scroll view and remove its custom top material")
-require("NativeTopGlassMask(active: navScrolled > 0)" in DISCOVER
+require("NativeTopGlassMask(active: navScrolled > 0," in DISCOVER
+        and "base: worldCanvas" in DISCOVER
         and "NativeTopScrollObserver" in DISCOVER
         and "topScrollTracking($navScrolled" not in DISCOVER
         and "TopGlassBar(" not in DISCOVER

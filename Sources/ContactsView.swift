@@ -344,7 +344,8 @@ private var funcs: [(String, String, Color, String)] {
 
                     .background {
                         ZStack {
-                            NativeTopGlassMask(active: navScrolled > 0)
+                            NativeTopGlassMask(active: navScrolled > 0,
+                                               base: contactsCanvas)
                             if #available(iOS 26.0, *) {
                                 NativeScrollEdgeElementBridge(
                                     scrollView: { NativeTopScrollRegistry.shared.contacts }

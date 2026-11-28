@@ -3093,7 +3093,8 @@ struct ChatsView: View {
                                     Color.clear
                                         .contentShape(Rectangle())
                                 }
-                                NativeTopGlassMask(active: chatTopScrolled > 0)
+                                NativeTopGlassMask(active: chatTopScrolled > 0,
+                                                   base: chatsPageFill)
                                 if #available(iOS 26.0, *) {
                                     NativeScrollEdgeElementBridge(
                                         scrollView: {
