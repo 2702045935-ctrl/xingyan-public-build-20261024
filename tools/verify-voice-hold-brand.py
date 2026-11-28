@@ -71,5 +71,15 @@ require(
     and "timeout: TimeInterval = 30" in FILE_SPEECH,
     "voice-to-text must use system speech recognition with an online fallback",
 )
+require(
+    "let local = LocalStore.localURL(path)" in CHAT
+    and "let localExists = local.map" in CHAT
+    and "guard localExists || remote != nil else" in CHAT
+    and "if localExists, let local" in CHAT
+    and "audioData = try? Data(contentsOf: local)" in CHAT
+    and "audioData = try? await API.shared.assetData(remote)" in CHAT
+    and "text = await FileSpeech.recognize(url: tmp)" in CHAT,
+    "voice-to-text must prefer the local recording before downloading the remote asset",
+)
 
 print("voice-hold-brand: passed")

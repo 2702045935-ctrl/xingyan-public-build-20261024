@@ -6128,8 +6128,16 @@ struct ChatDetailView: View {
     private func transcribeMessage(_ m: Message) {
         guard let data = m.body.data(using: .utf8),
               let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let path = o["url"] as? String,
-              let url = API.shared.assetURL(path) else {
+              let path = o["url"] as? String, !path.isEmpty else {
+            app.show(Tr("这条语音找不到了"))
+            return
+        }
+        let local = LocalStore.localURL(path)
+        let localExists = local.map {
+            FileManager.default.fileExists(atPath: $0.path)
+        } ?? false
+        let remote = API.shared.assetURL(path)
+        guard localExists || remote != nil else {
             app.show(Tr("这条语音找不到了"))
             return
         }
@@ -6142,8 +6150,19 @@ struct ChatDetailView: View {
                 return
             }
             var text = ""
-            if let d = try? await API.shared.assetData(url), !d.isEmpty {
-                let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("asr-\(m.id).m4a")
+            let audioData: Data?
+            if localExists, let local {
+                audioData = try? Data(contentsOf: local)
+            } else if let remote {
+                audioData = try? await API.shared.assetData(remote)
+            } else {
+                audioData = nil
+            }
+            if let d = audioData, !d.isEmpty {
+                let ext = path.isEmpty ? "m4a" : (path as NSString).pathExtension
+                let suffix = ext.isEmpty ? "m4a" : ext
+                let tmp = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("asr-\(m.id).\(suffix)")
                 try? d.write(to: tmp)
                 text = await FileSpeech.recognize(url: tmp)
                 try? FileManager.default.removeItem(at: tmp)
