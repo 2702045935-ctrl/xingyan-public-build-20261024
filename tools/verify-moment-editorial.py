@@ -64,10 +64,11 @@ require(
     and "headerHeight: L.coverH + momentProfileFooterHeight" in DISCOVER
     and "RemoteImage(path: cover, icon: \"photo\", mode: .fill, maxSide: 2560)"
     in DISCOVER
-    and "height: L.coverH + extra" in DISCOVER
-    and ".offset(y: 21)" not in DISCOVER
+    and "let visualHeight = L.coverH + extra + momentProfileFooterHeight + topOverdraw"
+    in DISCOVER
+    and ".offset(y: 21)" in DISCOVER
     and "headerContainer.clipsToBounds = false" in FEED,
-    "cover must fill edge-to-edge while the signature stays inside the native header",
+    "cover must fill edge-to-edge with the 11/21 signature placement",
 )
 
 print("moment-editorial: passed")

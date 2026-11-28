@@ -2092,23 +2092,22 @@ struct MomentsView: View {
                     coverMenu = true
                 } label: {
                     Label(Tr("换封面"), systemImage: "camera.fill")
-                        .font(pf(12.5, .semibold))
+                        .font(pf(12.5, .medium))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 13)
-                        .frame(height: 34)
+                        .frame(width: 88, height: 32)
                         .background(Capsule()
-                            .fill(Color.black.opacity(0.46)))
+                            .fill(Color.black.opacity(0.62)))
                         .overlay(
                             Capsule().stroke(
-                                Color.white.opacity(0.20),
+                                Color.white.opacity(0.24),
                                 lineWidth: 0.7
                             )
                         )
                 }
                 .buttonStyle(.plain)
-                .padding(.trailing, 16)
-                .padding(.bottom, momentProfileFooterHeight + 12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .padding(.leading, 12)
+                .padding(.bottom, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .zIndex(4)
             }
 
@@ -2126,57 +2125,28 @@ struct MomentsView: View {
                     Avatar(
                         path: owner?.avatarPath ?? "",
                         size: L.coverAvatar,
-                        radius: 16
+                        radius: 8
                     )
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.52),
-                                        Color.white.opacity(0.10)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 0.9
-                            )
-                    }
-                    .shadow(color: Color.black.opacity(0.38), radius: 9, x: 0, y: 4)
+                    .shadow(color: Color.black.opacity(0.28), radius: 5, x: 0, y: 2)
 
                     if let sign = signature {
                         Text(sign)
-                            .font(pf(12.5, .medium))
-                            .foregroundColor(.white.opacity(0.90))
+                            .font(pf(12.5))
+                            .foregroundColor(C.label)
                             .lineLimit(2)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
                             .frame(width: L.coverAvatar + 56, alignment: .center)
-                            .background {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                Color.black.opacity(0.44),
-                                                Color.black.opacity(0.26)
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                            }
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .stroke(Color.white.opacity(0.14), lineWidth: 0.6)
-                            }
+                            .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(Color.dyn(0xFFFFFF, 0x000000).opacity(0.62)))
                     }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             .padding(.trailing, 16)
-            .padding(.bottom, 8)
+            .offset(y: 21)
             .allowsHitTesting(false)
         }
         .frame(height: L.coverH + extra + momentProfileFooterHeight)

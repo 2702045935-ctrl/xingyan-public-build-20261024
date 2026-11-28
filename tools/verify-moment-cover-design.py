@@ -20,26 +20,26 @@ cover = DISCOVER[start:end]
 
 require(
     "size: L.coverAvatar" in cover
-    and "radius: 16" in cover
+    and "radius: 8" in cover
     and ".padding(.trailing, 16)" in cover
-    and ".padding(.bottom, 8)" in cover
+    and ".offset(y: 21)" in cover
     and ".padding(.bottom, 24)" in cover,
-    "cover identity must remain in the original lower-right placement",
+    "cover identity must match the 11/21 lower-right placement",
 )
 require(
-    ".frame(maxWidth: .infinity, alignment: .trailing)" in cover
-    and ".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)"
+    ".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)"
     in cover
-    and 'Label(Tr("换封面"), systemImage: "camera.fill")' in cover,
-    "profile identity and the edit control must keep their separate original edges",
+    and ".padding(.leading, 12)" in cover
+    and ".frame(width: 88, height: 32)" in cover
+    and ".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)"
+    in cover,
+    "profile identity and cover edit control must match their 11/21 edges",
 )
 require(
-    ".fill(Color.dyn(0xFFFFFF, 0x000000).opacity(0.62))" not in cover
-    and ".white.opacity(0.90)" in cover
-    and "Color.black.opacity(0.44)" in cover
-    and "Color.black.opacity(0.26)" in cover
-    and "Color.white.opacity(0.14)" in cover,
-    "the signature must use a restrained dark material without a white card",
+    ".fill(Color.dyn(0xFFFFFF, 0x000000).opacity(0.62))" in cover
+    and "RoundedRectangle(cornerRadius: 6, style: .continuous)" in cover
+    and "Color.black.opacity(0.62)" in cover,
+    "the signature and edit control must use the 11/21 material",
 )
 require(
     "let topOverdraw = max(0, L.safeTop)" in cover
