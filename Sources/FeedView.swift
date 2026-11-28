@@ -297,7 +297,7 @@ struct ChannelsView: View {
                             .font(.system(size: 19, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(width: 44, height: L.navH)
-                            .background(Color.black.opacity(0.16), in: Circle())
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Tr("返回"))
@@ -355,7 +355,7 @@ struct ChannelsView: View {
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(width: 42, height: L.navH)
-                        .background(Color.black.opacity(0.16), in: Circle())
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Tr("更多"))
@@ -366,7 +366,7 @@ struct ChannelsView: View {
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(width: 42, height: L.navH)
-                            .background(Color.black.opacity(0.16), in: Circle())
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Tr("发布视频"))

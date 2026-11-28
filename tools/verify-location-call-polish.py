@@ -64,12 +64,13 @@ require(
 )
 require(
     "private var avatarLayer" in CALL
-    and "size: 90, radius: 28" in CALL
-    and "RadialGradient(" in CALL
+    and "size: 96," in CALL
+    and "radius: 48," in CALL
+    and "circle: true" in CALL
     and "statusText" in CALL
     and "bottomBar" in CALL
     and "LinearGradient(" in CALL,
-    "voice-call must use the higher-quality avatar, status and floating control composition",
+    "voice-call must use the FaceTime-style circular identity and system controls",
 )
 
 print("location-call-polish: passed")

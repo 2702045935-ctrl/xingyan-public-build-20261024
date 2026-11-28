@@ -288,40 +288,30 @@ struct CallView: View {
             Spacer().frame(height: max(58, 154 - L.safeTop))
             ZStack {
                 Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [Color.white.opacity(0.16), Color.clear],
-                            center: .center,
-                            startRadius: 12,
-                            endRadius: 92
-                        )
-                    )
-                    .frame(width: 174, height: 174)
+                    .fill(Color.white.opacity(0.06))
+                    .frame(width: 116, height: 116)
                 Circle()
-                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
-                    .frame(width: 132, height: 132)
-                Avatar(path: call.peerAvatar, size: 90, radius: 28)
+                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                    .frame(width: 106, height: 106)
+                Avatar(
+                    path: call.peerAvatar,
+                    size: 96,
+                    radius: 48,
+                    circle: true
+                )
                     .overlay {
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        Circle()
                             .stroke(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.52),
-                                        Color.white.opacity(0.08),
-                                        Color.black.opacity(0.18)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1
+                                Color.white.opacity(0.24),
+                                lineWidth: 0.9
                             )
                     }
-                    .shadow(color: Color.black.opacity(0.42), radius: 20, y: 10)
+                    .shadow(color: Color.black.opacity(0.38), radius: 16, y: 8)
             }
             Text(call.peerName)
-                .font(pfExact(22, .semibold))
+                .font(pfExact(24, .semibold))
                 .foregroundColor(.white)
-                .padding(.top, 10)
+                .padding(.top, 14)
             HStack(spacing: 6) {
                 if call.phase == .active {
                     Circle()
@@ -332,11 +322,8 @@ struct CallView: View {
                     .font(pfExact(13, .medium))
                     .foregroundColor(.white.opacity(0.78))
             }
-            .padding(.horizontal, 12)
-            .frame(height: 30)
-            .background(Capsule().fill(Color.black.opacity(0.22)))
-            .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.6))
-            .padding(.top, 8)
+            .frame(height: 24)
+            .padding(.top, 5)
             .opacity(call.phase == .outgoing ? 0 : 1)
             if call.phase == .outgoing {
 

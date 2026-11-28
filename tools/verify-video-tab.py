@@ -20,5 +20,11 @@ require('UIImage(systemName: "play.rectangle")' in BAR,
 require("items.count == 5" in BAR, "the tab bar must expose five items")
 require("ChannelsView(embedded: true)" in VIDEO,
         "the video tab must mount the shared full-screen reel instead of a placeholder")
+require(
+    ".background(Color.black.opacity(0.16), in: Circle())" not in (
+        ROOT / "Sources" / "FeedView.swift"
+    ).read_text(encoding="utf-8"),
+    "video chrome must use plain system controls without decorative black circles",
+)
 
 print("video-tab: passed")
