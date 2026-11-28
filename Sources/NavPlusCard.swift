@@ -113,16 +113,9 @@ final class NativeNavMenuControl: UIButton {
             glassView.effect = nil
             return
         }
-        if #available(iOS 26.0, *) {
-            let glass = UIGlassEffect(style: .regular)
-            glass.isInteractive = true
-            glassView.effect = glass
-        } else {
-            glassView.effect = UIBlurEffect(
-                style: traitCollection.userInterfaceStyle == .dark
-                    ? .systemThinMaterialDark
-                    : .systemThinMaterialLight
-            )
-        }
+        glassView.effect = nativeSystemGlassEffect(
+            interactive: true,
+            dark: traitCollection.userInterfaceStyle == .dark
+        )
     }
 }

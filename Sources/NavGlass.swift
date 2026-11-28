@@ -114,6 +114,18 @@ struct NativeFrostedHeaderMaterial: UIViewRepresentable {
 #endif
 
 #if canImport(UIKit)
+func nativeSystemGlassEffect(interactive: Bool,
+                             dark: Bool) -> UIVisualEffect {
+    if #available(iOS 26.0, *) {
+        let glass = UIGlassEffect(style: .regular)
+        glass.isInteractive = interactive
+        return glass
+    }
+    return UIBlurEffect(style: dark
+                        ? .systemThinMaterialDark
+                        : .systemThinMaterialLight)
+}
+
 struct NativeMediaGlassMaterial: UIViewRepresentable {
     var interactive = false
 
@@ -132,14 +144,8 @@ struct NativeMediaGlassMaterial: UIViewRepresentable {
 
     private var effect: UIVisualEffect? {
         guard !reduceTransparency else { return nil }
-        if #available(iOS 26.0, *) {
-            let glass = UIGlassEffect(style: .regular)
-            glass.isInteractive = interactive
-            return glass
-        }
-        return UIBlurEffect(style: scheme == .dark
-                            ? .systemThinMaterialDark
-                            : .systemThinMaterialLight)
+        return nativeSystemGlassEffect(interactive: interactive,
+                                       dark: scheme == .dark)
     }
 }
 #endif

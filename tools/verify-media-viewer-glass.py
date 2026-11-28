@@ -57,6 +57,8 @@ require(
     and ".tabViewStyle(.page(indexDisplayMode: .never))\n            .ignoresSafeArea()" in CORE
     and "RemoteImage(path: path, mode: .fill)" in CORE
     and "ZoomableRemoteImage(path: paths[i], onDoubleTap:" not in CORE
+    and ".ignoresSafeArea()\n        .preferredColorScheme(.dark)" in CORE
+    and ".persistentSystemOverlays(showActions && !chromeVisible ? .hidden : .automatic)" in CORE
     and "private func toggleChrome()" in CORE,
     "the full-screen image viewer must start immersive, fill the screen, and reveal controls only on tap",
 )

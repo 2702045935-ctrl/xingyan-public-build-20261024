@@ -2930,7 +2930,10 @@ struct PhotoPager: View {
             onIndexChange?(value)
         }
         .onDisappear { hideChromeTask?.cancel() }
+        .ignoresSafeArea()
+        .preferredColorScheme(.dark)
         .statusBarHidden(showActions && !chromeVisible)
+        .persistentSystemOverlays(showActions && !chromeVisible ? .hidden : .automatic)
 
         .sheet(isPresented: $showForward) {
             if let p = currentPath {

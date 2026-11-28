@@ -2586,6 +2586,7 @@ struct ChatDetailView: View {
         .fullScreenCover(item: $viewer) { item in
 
             PhotoPager(paths: item.paths, startIndex: item.index, showActions: true) { viewer = nil }
+                .ignoresSafeArea()
         }
         .modifier(TapAvatarCard(cardUser: $cardUser))
         .sheet(isPresented: $botCard) {
