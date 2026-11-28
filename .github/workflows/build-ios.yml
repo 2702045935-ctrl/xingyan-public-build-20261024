@@ -184,6 +184,7 @@ jobs:
           python3 tools/verify-liquid-app-icon.py
           python3 tools/verify-moment-own-publish.py
           python3 tools/verify-moment-native-pages.py
+          python3 tools/verify-moment-cover-design.py
           python3 tools/verify-me-current.py
           python3 tools/verify-me-native.py
           python3 tools/verify-system-settings-pages.py

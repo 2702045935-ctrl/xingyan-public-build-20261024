@@ -2030,8 +2030,8 @@ struct MomentsView: View {
                                 startPoint: .top, endPoint: .bottom)
                         )
                 } else {
-                    LinearGradient(colors: [Color.black.opacity(0), Color.black.opacity(0.22),
-                                            Color.black.opacity(0.36)],
+                    LinearGradient(colors: [Color.black.opacity(0), Color.black.opacity(0.28),
+                                            Color.black.opacity(0.58)],
                                    startPoint: .top, endPoint: .bottom)
                 }
             }
@@ -2049,57 +2049,64 @@ struct MomentsView: View {
             }
 
             if coverEditable && !cover.isEmpty {
-                HStack {
-                    Button {
-                        coverMenu = true
-                    } label: {
-                        Text(Tr("换封面"))
-                            .font(pf(12.5, .medium))
-                            .foregroundColor(.white)
-                            .frame(width: 88, height: 32)
-                            .background(Capsule()
-                                .fill(Color.black.opacity(0.62)))
-                            .overlay(Capsule().stroke(Color.white.opacity(0.24), lineWidth: 0.7))
-                    }
-                    .buttonStyle(.plain)
-                    Spacer(minLength: 0)
+                Button {
+                    coverMenu = true
+                } label: {
+                    Label(Tr("换封面"), systemImage: "camera.fill")
+                        .font(pf(12.5, .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 13)
+                        .frame(height: 34)
+                        .background(Capsule()
+                            .fill(Color.black.opacity(0.46)))
+                        .overlay(
+                            Capsule().stroke(
+                                Color.white.opacity(0.20),
+                                lineWidth: 0.7
+                            )
+                        )
                 }
-                .padding(.leading, 12)
+                .buttonStyle(.plain)
+                .padding(.trailing, 16)
                 .padding(.bottom, momentProfileFooterHeight + 12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 .zIndex(4)
             }
 
-            HStack(alignment: .bottom, spacing: 12) {
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text(owner?.name ?? "")
-                        .font(pf(17, .semibold))
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.55), radius: 4, x: 0, y: 1)
-                        .lineLimit(1)
+            HStack(alignment: .center, spacing: 14) {
+                Avatar(
+                    path: owner?.avatarPath ?? "",
+                    size: max(58, L.coverAvatar),
+                    radius: 16
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.white.opacity(0.24), lineWidth: 0.8)
                 }
-                .padding(.bottom, 24)
-                VStack(spacing: 4) {
-                    Avatar(path: owner?.avatarPath ?? "", size: L.coverAvatar, radius: 8)
-                        .shadow(color: Color.black.opacity(0.28), radius: 5, x: 0, y: 2)
+                .shadow(color: Color.black.opacity(0.34), radius: 8, x: 0, y: 3)
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(owner?.name ?? "")
+                        .font(pf(21, .semibold))
+                        .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.62), radius: 5, x: 0, y: 2)
+                        .lineLimit(1)
                     if let sign = signature {
                         Text(sign)
-                            .font(pf(12.5))
-                            .foregroundColor(C.label)
+                            .font(pf(13.5, .medium))
+                            .foregroundColor(.white.opacity(0.86))
                             .lineLimit(2)
-                            .multilineTextAlignment(.center)
+                            .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(Color.dyn(0xFFFFFF, 0x000000).opacity(0.62)))
-                            .frame(width: L.coverAvatar + 56, alignment: .center)
+                            .shadow(color: Color.black.opacity(0.52), radius: 4, x: 0, y: 1)
+                            .frame(maxWidth: 268, alignment: .leading)
                     }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.trailing, 16)
-            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 22)
+            .padding(.trailing, 92)
+            .padding(.bottom, 12)
             .allowsHitTesting(false)
         }
         .frame(height: L.coverH + extra + momentProfileFooterHeight)
