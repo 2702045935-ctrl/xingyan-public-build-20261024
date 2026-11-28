@@ -1353,7 +1353,6 @@ struct ChatsView: View {
     @State private var oaOpenId = ""
     @State private var showOA = false
     @State private var showOAList = false
-    @State private var plusMenu = false
     @State private var showScan = false
 
     @State private var showPayCode = false
@@ -1801,19 +1800,56 @@ struct ChatsView: View {
                     .buttonStyle(ChatChromeIconPressStyle())
                 }
 
-                Button {
-                    withAnimation(.spring(response: 0.32, dampingFraction: 0.62)) {
-                        plusMenu = true
-                    }
-                } label: {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(ChatListVisual.iconInk)
-                        .frame(width: 40, height: 40)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(ChatChromeIconPressStyle())
-                .accessibilityLabel(Tr("更多"))
+                NativeNavMenuButton(
+                    title: Tr("更多"),
+                    symbol: "line.3.horizontal.decrease.circle",
+                    tint: UIColor(ChatListVisual.iconInk),
+                    items: [
+                        NativeNavMenuAction(
+                            id: "filter",
+                            title: Tr("筛选会话"),
+                            symbol: "line.3.horizontal.decrease.circle"
+                        ) {
+                            showChatFilterSheet = true
+                        },
+                        NativeNavMenuAction(
+                            id: "new-group",
+                            title: Tr("发起群聊"),
+                            symbol: "person.2.fill"
+                        ) {
+                            path.append("newGroup")
+                        },
+                        NativeNavMenuAction(
+                            id: "face-group",
+                            title: Tr("面对面建群"),
+                            symbol: "person.3.sequence.fill"
+                        ) {
+                            path.append("faceGroup")
+                        },
+                        NativeNavMenuAction(
+                            id: "add-friend",
+                            title: Tr("添加朋友"),
+                            symbol: "person.badge.plus"
+                        ) {
+                            path.append("addFriend")
+                        },
+                        NativeNavMenuAction(
+                            id: "scan",
+                            title: Tr("扫一扫"),
+                            symbol: "qrcode.viewfinder"
+                        ) {
+                            showScan = true
+                        },
+                        NativeNavMenuAction(
+                            id: "pay-code",
+                            title: Tr("收付款"),
+                            symbol: "creditcard.fill"
+                        ) {
+                            showPayCode = true
+                        }
+                    ]
+                )
+                .frame(width: 44, height: 44)
             }
         }
         .padding(.horizontal, 16)
@@ -3276,25 +3312,6 @@ struct ChatsView: View {
                 }
             }
         }
-
-        .navPlusOverlay($plusMenu, items: [
-            NavPlusItem(title: Tr("筛选会话"), symbol: "line.3.horizontal.decrease.circle",
-                        colors: [Color(hex: 0x8A8F98), Color(hex: 0x5F6670)]) {
-                showChatFilterSheet = true
-            },
-            NavPlusItem(title: Tr("发起群聊"), symbol: "person.2.fill",
-                        colors: [C.green, C.green.opacity(0.78)]) { path.append("newGroup") },
-            NavPlusItem(title: Tr("面对面建群"), symbol: "person.3.sequence.fill",
-                        colors: [Color(hex: 0x5FD38A), Color(hex: 0x178A58)]) {
-                path.append("faceGroup")
-            },
-            NavPlusItem(title: Tr("添加朋友"), symbol: "person.badge.plus",
-                        colors: [Color(hex: 0x64B5F6), Color(hex: 0x2A6BC4)]) { path.append("addFriend") },
-            NavPlusItem(title: Tr("扫一扫"), symbol: "qrcode.viewfinder",
-                        colors: [C.green, C.green.opacity(0.78)]) { showScan = true },
-            NavPlusItem(title: Tr("收付款"), symbol: "creditcard.fill",
-                        colors: [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)]) { showPayCode = true }
-        ])
 
         .fullScreenCover(item: $botChat) { c in
             BotChatView(chat: c).environmentObject(app)

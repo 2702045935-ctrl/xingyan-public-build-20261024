@@ -108,24 +108,29 @@ require(
     "contact search must distinguish an empty result from a missing contact list",
 )
 require(
-    "private var displayedLetters: [String] { Self.letters }" in INDEX
-    and "ForEach(displayedLetters, id: \\.self)" in INDEX
-    and "nearestAvailableLetter(to: i)" in INDEX
-    and "haptic.selectionChanged()" in INDEX
+    "private final class NativeContactIndexControl: UIControl" in INDEX
+    and "override func beginTracking" in INDEX
+    and "override func continueTracking" in INDEX
+    and "override func endTracking" in INDEX
+    and "override func cancelTracking" in INDEX
+    and "UISelectionFeedbackGenerator" in INDEX
+    and "nearestAvailableLetter(to: index)" in INDEX
+    and "DragGesture" not in INDEX
     and "UIImpactFeedbackGenerator(style: .heavy)" not in INDEX,
-    "contact index positions must stay stable and use lightweight selection feedback",
+    "contact index tracking must use native UIControl events with stable letter slots",
 )
 require(
-    "private var indexInk: Color { Color.dyn(0x4A4A4F, 0xB8BCC2) }" in INDEX
-    and "Capsule(style: .continuous)\n                                .fill(ContactVisual.indexFill)" in INDEX
-    and ".stroke(Color.white.opacity(0.14)" in INDEX
-    and "indexInk.opacity(0.22)" in INDEX
-    and "@Environment(\\.accessibilityReduceMotion) private var reduceMotion" in INDEX,
-    "the index rail must use a neutral hierarchy and a restrained active capsule",
+    "indexInk: UIColor(Color.dyn(0x4A4A4F, 0xB8BCC2))" in INDEX
+    and "accent: UIColor(ContactVisual.indexFill)" in INDEX
+    and "activeBubble.backgroundColor = accent" in INDEX
+    and "indexInk.withAlphaComponent(isAvailable ? 1 : 0.22)" in INDEX
+    and "override func accessibilityIncrement" in INDEX
+    and "override func accessibilityDecrement" in INDEX,
+    "the native index rail must retain the restrained hierarchy and adjustable accessibility",
 )
 require(
-    "guard active != letter else { return }" in INDEX
-    and INDEX.find("guard active != letter else { return }") < INDEX.find("onPick(letter)"),
+    "guard activeLetter != letter else { return }" in INDEX
+    and INDEX.find("guard activeLetter != letter else { return }") < INDEX.find("onPick(letter)"),
     "index dragging must scroll only when the target letter actually changes",
 )
 require(

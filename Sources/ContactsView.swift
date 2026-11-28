@@ -470,7 +470,6 @@ private var funcs: [(String, String, Color, String)] {
                                      if idxLetter != next { idxLetter = next }
                                  }
                              )
-                            .padding(.trailing, 8)
                             .frame(maxHeight: .infinity, alignment: .center)
                         }
 

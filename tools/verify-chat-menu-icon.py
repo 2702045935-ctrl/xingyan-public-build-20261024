@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VIEW = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
+NAV_PLUS = (ROOT / "Sources" / "NavPlusCard.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -12,11 +13,19 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    'Image(systemName: "line.3.horizontal.decrease.circle")' in VIEW
-    and ".font(.system(size: 20, weight: .medium))" in VIEW
-    and ".foregroundStyle(ChatListVisual.iconInk)" in VIEW
-    and ".buttonStyle(ChatChromeIconPressStyle())" in VIEW,
-    "the chats top-right action must match the three-line menu shown above Favorites",
+    "NativeNavMenuButton(" in VIEW
+    and 'symbol: "line.3.horizontal.decrease.circle"' in VIEW
+    and "tint: UIColor(ChatListVisual.iconInk)" in VIEW
+    and ".navPlusOverlay($plusMenu" not in VIEW,
+    "the chats top-right action must use the native menu button",
+)
+require(
+    "struct NativeNavMenuButton: UIViewRepresentable" in NAV_PLUS
+    and "button.showsMenuAsPrimaryAction = true" in NAV_PLUS
+    and "button.menu = UIMenu(" in NAV_PLUS
+    and "UIImage(systemName: symbol)" in NAV_PLUS
+    and "UIAction(" in NAV_PLUS,
+    "the three-line menu must be implemented with a native UIButton and UIMenu",
 )
 require(
     "static let iconInk = Color.dyn(0x35403A, 0xAEAEB2)" in VIEW
