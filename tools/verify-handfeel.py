@@ -104,7 +104,7 @@ require(
 require(
     "NativeTopGlassMask(" in CHATS
     and "active: chatTopScrolled > 0" in CHATS
-    and "if #available(iOS 26.0, *) {" in CHATS
+    and "if #available(iOS 26.0, *), chatsIsDark {" in CHATS
     and "NativeScrollEdgeElementBridge(" in CHATS
     and "NativeChatListScrollRegistry.shared.chats" in CHATS
     and "NativeChatsTopEdgeChrome" not in NAV_GLASS

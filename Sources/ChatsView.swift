@@ -3095,7 +3095,7 @@ struct ChatsView: View {
                                     Color.clear
                                         .contentShape(Rectangle())
                                 }
-                                if #available(iOS 26.0, *) {
+                                if #available(iOS 26.0, *), chatsIsDark {
                                     NativeScrollEdgeElementBridge(
                                         scrollView: {
                                             NativeChatListScrollRegistry.shared.chats
