@@ -713,49 +713,70 @@ struct VideoPlayerSheet: View {
 
 struct SendingVideoBubble: View {
     var cover: UIImage?
+    var previews: [UIImage] = []
     var progress: Double
 
+    private var images: [UIImage] {
+        previews.isEmpty ? [cover].compactMap { $0 } : previews
+    }
+
     private var size: CGSize {
-        guard let c = cover, c.size.width > 0, c.size.height > 0 else {
+        if images.count > 1 {
+            return MultiImageMosaic.containerSize(for: images.count, width: 229)
+        }
+        guard let c = images.first, c.size.width > 0, c.size.height > 0 else {
             return videoBubbleSize(w: 0, h: 0)
         }
         return videoBubbleSize(w: Int(c.size.width), h: Int(c.size.height))
     }
 
     var body: some View {
-        ZStack {
-            if let c = cover {
+        ZStack(alignment: .bottomTrailing) {
+            if images.count > 1 {
+                GeometryReader { geo in
+                    let frames = MultiImageMosaic.frames(
+                        count: images.count,
+                        in: CGRect(origin: .zero, size: geo.size)
+                    )
+                    ZStack(alignment: .topLeading) {
+                        ForEach(Array(images.enumerated()), id: \.offset) { index, image in
+                            if index < frames.count {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: frames[index].width,
+                                           height: frames[index].height)
+                                    .clipped()
+                                    .offset(x: frames[index].minX,
+                                            y: frames[index].minY)
+                            }
+                        }
+                    }
+                }
+            } else if let c = images.first {
                 Image(uiImage: c)
                     .resizable()
                     .scaledToFill()
             } else {
                 Color.dyn(0xDDDDDD, 0x333333)
             }
-            Color.black.opacity(0.42)
 
             ZStack {
                 Circle()
-                    .stroke(Color.white.opacity(0.30), lineWidth: 4)
-                    .frame(width: 54, height: 54)
+                    .fill(Color.black.opacity(0.28))
+                    .frame(width: 24, height: 24)
 
                 Circle()
                     .trim(from: 0, to: max(0.04, min(1, progress)))
-                    .stroke(Color.white, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                    .frame(width: 54, height: 54)
-                if progress > 0.01 {
-                    Text("\(Int(min(1, progress) * 100))%")
-                        .font(pfStyled(size: 13.5, weight: .semibold))
-                        .foregroundColor(.white)
-                } else {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 15))
-                        .foregroundColor(.white.opacity(0.95))
-                }
+                    .frame(width: 17, height: 17)
             }
+            .padding(7)
         }
         .frame(width: size.width, height: size.height)
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .accessibilityLabel(Tr("正在发送媒体"))
     }
 }
 

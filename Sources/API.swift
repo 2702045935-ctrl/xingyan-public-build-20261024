@@ -5714,6 +5714,13 @@ private struct StarredPayload: Decodable {
         return (url, data)
     }
 
+    func uploadPreparedImageForSend(
+        _ data: Data,
+        onProgress: ((Double) -> Void)? = nil
+    ) async throws -> String {
+        try await uploadData(data, onProgress: onProgress)
+    }
+
     func streamingAsset(_ path: String) -> AVURLAsset? {
         guard let u = assetURL(path) else { return nil }
         let headers: [String: String] = token.isEmpty ? [:] : ["Authorization": "Bearer \(token)"]
@@ -5912,9 +5919,9 @@ private struct StarredPayload: Decodable {
     }
 
     private var uploadBases: [String] {
-        var result = [base]
-        if API.directUploadBases[0] != result[0] {
-            result.append(API.directUploadBases[0])
+        var result = API.directUploadBases
+        if !result.contains(base) {
+            result.append(base)
         }
         return result
     }

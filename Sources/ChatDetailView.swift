@@ -1211,6 +1211,7 @@ struct ChatDetailView: View {
     @State private var sendingMedia = ""
 
     @State private var sendingPreview: UIImage?
+    @State private var sendingPreviews: [UIImage] = []
     @State private var sendProgress: Double = 0
     @State private var sendingFileName = ""
     @State private var sendingFileBytes = 0
@@ -2982,7 +2983,7 @@ struct ChatDetailView: View {
                 pending.failureReason ?? ""
             ].joined(separator: "|")
         case .sendingVideo:
-            return "sending-video:\(sendProgress):\(sendingPreview != nil)"
+            return "sending-video:\(sendProgress):\(sendingPreviews.count):\(sendingPreview != nil)"
         case .sendingFile:
             return "sending-file:\(sendingFileName):\(sendingFileBytes):\(sendingFileProgress ?? 0)"
         case .bottom:
@@ -3023,7 +3024,9 @@ struct ChatDetailView: View {
         case .sendingVideo:
             HStack(spacing: 8) {
                 Spacer(minLength: 0)
-                SendingVideoBubble(cover: sendingPreview, progress: sendProgress)
+                SendingVideoBubble(cover: sendingPreview,
+                                   previews: sendingPreviews,
+                                   progress: sendProgress)
             }
             .padding(.horizontal, L.msgPad)
             .padding(.bottom, 12)
@@ -5600,6 +5603,7 @@ struct ChatDetailView: View {
         case .image(let img, let nativeCamera):
             uploading = true
             sendingPreview = img
+            sendingPreviews = [img]
             sendingMedia = Tr("图片上传中…")
             sendProgress = 0.02
             scrollTick += 1
@@ -5607,16 +5611,39 @@ struct ChatDetailView: View {
             Task {
                 let t0 = Date()
                 do {
-                    let up = try await API.shared.uploadImageForSend(
-                        img, original: original,
-                        preserveResolution: nativeCamera,
-                        onProgress: { p in
-                            DispatchQueue.main.async {
-                                sendProgress = min(0.82, 0.02 + p * 0.80)
+                    let staged = await stageLocalOutgoingImage(
+                        img,
+                        original: original,
+                        preserveResolution: nativeCamera
+                    )
+                    defer { discardStagedLocalMedia(staged?.path) }
+                    let url: String
+                    let imageData: Data
+                    if let staged {
+                        url = try await API.shared.uploadPreparedImageForSend(
+                            staged.data,
+                            onProgress: { p in
+                                DispatchQueue.main.async {
+                                    sendProgress = min(0.82, 0.02 + p * 0.80)
+                                }
                             }
-                        })
-                    let url = up.url
-                    seedLocalImage(url, img, data: up.data)
+                        )
+                        imageData = staged.data
+                    } else {
+                        let upstream = try await API.shared.uploadImageForSend(
+                            img,
+                            original: original,
+                            preserveResolution: nativeCamera,
+                            onProgress: { p in
+                                DispatchQueue.main.async {
+                                    sendProgress = min(0.82, 0.02 + p * 0.80)
+                                }
+                            }
+                        )
+                        url = upstream.url
+                        imageData = upstream.data
+                    }
+                    seedLocalImage(url, img, data: imageData)
                     sendingMedia = Tr("正在发送…")
                     sendProgress = 0.9
                     let tUp = Date()
@@ -5632,6 +5659,7 @@ struct ChatDetailView: View {
                 uploading = false
                 sendingMedia = ""
                 sendingPreview = nil
+                sendingPreviews = []
                 sendProgress = 0
                 await app.loadChats()
             }
@@ -5642,6 +5670,7 @@ struct ChatDetailView: View {
             CrashCatcher.note("发图", "多选 \(list.count) 张，开始上传")
             uploading = true
             sendingPreview = list.first
+            sendingPreviews = list
             sendingMedia = Tr("图片上传中…") + " 0/\(list.count)"
             sendProgress = 0.02
             scrollTick += 1
@@ -5651,27 +5680,66 @@ struct ChatDetailView: View {
                     var urls: [String] = []
                     var dims: [(w: Int, h: Int)] = []
 
-                    var upResults: [(idx: Int, url: String, w: Int, h: Int, data: Data)] = []
+                    var upResults: [(
+                        idx: Int, url: String, w: Int, h: Int,
+                        data: Data, localPath: String
+                    )] = []
                     var upError: String? = nil
-                    await withTaskGroup(of: (Int, String, Int, Int, Data, String?).self) { group in
+                    await withTaskGroup(
+                        of: (Int, String, Int, Int, Data, String, String?).self
+                    ) { group in
                         var nextIdx = 0
                         func addUpload(_ i: Int) {
                             let img = list[i]
                             let px = img.sendPixelSize
                             group.addTask {
+                                let staged = await stageLocalOutgoingImage(
+                                    img,
+                                    original: original,
+                                    preserveResolution: false
+                                )
                                 do {
-                                    let up = try await API.shared.uploadImageForSend(
-                                        img, original: original,
-                                        onProgress: { p in
-                                            let state = progress.update(index: i, value: p)
-                                            DispatchQueue.main.async {
-                                                sendProgress = min(0.82, 0.02 + state.progress * 0.80)
-                                                sendingMedia = Tr("图片上传中…") + " \(state.completed)/\(list.count)"
+                                    let url: String
+                                    let imageData: Data
+                                    let localPath: String
+                                    if let staged {
+                                        url = try await API.shared.uploadPreparedImageForSend(
+                                            staged.data,
+                                            onProgress: { p in
+                                                let state = progress.update(index: i, value: p)
+                                                DispatchQueue.main.async {
+                                                    sendProgress = min(0.82, 0.02 + state.progress * 0.80)
+                                                    sendingMedia = Tr("图片上传中…") + " \(state.completed)/\(list.count)"
+                                                }
                                             }
-                                        })
-                                    return (i, up.url, px.w, px.h, up.data, nil)
+                                        )
+                                        imageData = staged.data
+                                        localPath = staged.path
+                                    } else {
+                                        let upstream = try await API.shared.uploadImageForSend(
+                                            img,
+                                            original: original,
+                                            onProgress: { p in
+                                                let state = progress.update(index: i, value: p)
+                                                DispatchQueue.main.async {
+                                                    sendProgress = min(0.82, 0.02 + state.progress * 0.80)
+                                                    sendingMedia = Tr("图片上传中…") + " \(state.completed)/\(list.count)"
+                                                }
+                                            }
+                                        )
+                                        url = upstream.url
+                                        imageData = upstream.data
+                                        localPath = ""
+                                    }
+                                    return (i, url, px.w, px.h, imageData,
+                                            localPath, nil)
                                 } catch {
+                                    if let staged,
+                                       let local = LocalStore.localURL(staged.path) {
+                                        try? FileManager.default.removeItem(at: local)
+                                    }
                                     return (i, "", 0, 0, Data(),
+                                            "",
                                             (error as? APIError)?.errorDescription ?? "图片上传失败")
                                 }
                             }
@@ -5681,16 +5749,25 @@ struct ChatDetailView: View {
                             if let e = r.5 {
                                 if upError == nil { upError = e }
                             } else {
-                                upResults.append((idx: r.0, url: r.1, w: r.2, h: r.3, data: r.4))
+                                upResults.append((
+                                    idx: r.0, url: r.1, w: r.2, h: r.3,
+                                    data: r.4, localPath: r.5
+                                ))
                             }
                             if nextIdx < list.count { addUpload(nextIdx); nextIdx += 1 }
                         }
                     }
-                    if let e = upError, upResults.count != list.count { throw APIError.message(e) }
+                    if let e = upError, upResults.count != list.count {
+                        upResults.forEach {
+                            discardStagedLocalMedia($0.localPath)
+                        }
+                        throw APIError.message(e)
+                    }
                     for r in upResults.sorted(by: { $0.idx < $1.idx }) {
                         urls.append(r.url)
                         dims.append((w: r.w, h: r.h))
                         seedLocalImage(r.url, list[r.idx], data: r.data)
+                        discardStagedLocalMedia(r.localPath)
                     }
                     if urls.count >= 2 {
                         sendingMedia = Tr("正在发送…")
@@ -5714,6 +5791,7 @@ struct ChatDetailView: View {
                 uploading = false
                 sendingMedia = ""
                 sendingPreview = nil
+                sendingPreviews = []
                 sendProgress = 0
                 await app.loadChats()
             }
@@ -5722,13 +5800,17 @@ struct ChatDetailView: View {
             uploading = true
             sendProgress = 0.02
             sendingPreview = preview
+            sendingPreviews = [preview].compactMap { $0 }
             sendingMedia = Tr("视频发送中…")
             scrollTick += 1
             Task {
+                let stagedVideo = await stageLocalOutgoingFile(url)
+                defer { discardStagedLocalMedia(stagedVideo) }
 
                 let cover: UIImage?
                 if let p = preview { cover = p } else { cover = await MediaTool.firstFrame(url) }
                 if cover != nil { sendingPreview = cover }
+                sendingPreviews = [cover].compactMap { $0 }
 
                 let coverTask = Task { () -> String? in
                     guard let c = cover else { return nil }
@@ -5762,6 +5844,7 @@ struct ChatDetailView: View {
                     uploading = false
                     sendingMedia = ""
                     sendingPreview = nil
+                    sendingPreviews = []
                     app.show(Tr("视频上传失败"))
                     return
                 }
@@ -5780,6 +5863,7 @@ struct ChatDetailView: View {
                 uploading = false
                 sendingMedia = ""
                 sendingPreview = nil
+                sendingPreviews = []
                 await app.loadChats()
             }
 
@@ -5789,13 +5873,37 @@ struct ChatDetailView: View {
             uploading = true
             sendProgress = 0.02
             sendingPreview = img
+            sendingPreviews = [img]
             sendingMedia = Tr("实况发送中…")
             scrollTick += 1
             Task {
+                let stagedImage = await stageLocalOutgoingImage(
+                    img,
+                    original: original,
+                    preserveResolution: false
+                )
+                let stagedVideo = await stageLocalOutgoingFile(url)
+                defer {
+                    discardStagedLocalMedia(stagedImage?.path)
+                    discardStagedLocalMedia(stagedVideo)
+                }
                 do {
-                    let up = try await API.shared.uploadImageForSend(img, original: original)
-                    let iurl = up.url
-                    seedLocalImage(iurl, img, data: up.data)
+                    let iurl: String
+                    let imageData: Data
+                    if let stagedImage {
+                        iurl = try await API.shared.uploadPreparedImageForSend(
+                            stagedImage.data
+                        )
+                        imageData = stagedImage.data
+                    } else {
+                        let upstream = try await API.shared.uploadImageForSend(
+                            img,
+                            original: original
+                        )
+                        iurl = upstream.url
+                        imageData = upstream.data
+                    }
+                    seedLocalImage(iurl, img, data: imageData)
                     DispatchQueue.main.async { sendProgress = 0.25 }
                     var file = url
                     var uploadFrom = 0.25
@@ -5822,6 +5930,7 @@ struct ChatDetailView: View {
                 uploading = false
                 sendingMedia = ""
                 sendingPreview = nil
+                sendingPreviews = []
                 await app.loadChats()
             }
         }
@@ -5838,16 +5947,78 @@ struct ChatDetailView: View {
         }
     }
 
+    private func stageLocalOutgoingImage(
+        _ image: UIImage,
+        original: Bool,
+        preserveResolution: Bool
+    ) async -> (path: String, data: Data)? {
+        let maxSide: CGFloat = original ? 1920 : 1280
+        let quality: CGFloat = preserveResolution ? 1 : (original ? 0.88 : 0.75)
+        let data = await Task.detached(priority: .userInitiated) {
+            preserveResolution
+                ? image.jpegData(compressionQuality: quality)
+                : image.resizedJPEG(maxSide: maxSide, quality: quality)
+        }.value
+        guard let data, !data.isEmpty else { return nil }
+        let path = "local-upload-\(UUID().uuidString).jpg"
+        let saved = await Task.detached(priority: .utility) {
+            LocalStore.keep(path, data: data)
+            return LocalStore.has(path)
+        }.value
+        guard saved else { return nil }
+        ImageStore.shared.put(path, image)
+        ImageSizeCache.put(path, ImageBubble.thumb(image.size))
+        return (path, data)
+    }
+
+    private func stageLocalOutgoingFile(_ source: URL) async -> String? {
+        let safeName = source.lastPathComponent
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+        let path = "local-upload-\(UUID().uuidString)-\(safeName)"
+        return await Task.detached(priority: .utility) {
+            let scoped = source.startAccessingSecurityScopedResource()
+            defer { if scoped { source.stopAccessingSecurityScopedResource() } }
+            LocalStore.keepOriginal(path, from: source)
+            return LocalStore.has(path) ? path : nil
+        }.value
+    }
+
+    private func discardStagedLocalMedia(_ path: String?) {
+        guard let path, path.hasPrefix("local-upload-"),
+              let url = LocalStore.localURL(path) else { return }
+        try? FileManager.default.removeItem(at: url)
+    }
+
     private func sendImage(_ image: UIImage) {
         uploading = true
+        sendingPreview = image
+        sendingPreviews = [image]
+        sendingMedia = Tr("图片上传中…")
         let px = image.sendPixelSize
         Task {
             let t0 = Date()
             do {
-                let up = try await API.shared.uploadImageForSend(image, original: false)
-                let url = up.url
-
-                seedLocalImage(url, image, data: up.data)
+                let staged = await stageLocalOutgoingImage(
+                    image,
+                    original: false,
+                    preserveResolution: false
+                )
+                defer { discardStagedLocalMedia(staged?.path) }
+                let url: String
+                let imageData: Data
+                if let staged {
+                    url = try await API.shared.uploadPreparedImageForSend(staged.data)
+                    imageData = staged.data
+                } else {
+                    let upstream = try await API.shared.uploadImageForSend(
+                        image,
+                        original: false
+                    )
+                    url = upstream.url
+                    imageData = upstream.data
+                }
+                seedLocalImage(url, image, data: imageData)
                 let tUp = Date()
                 if let message = try await API.shared.send(chatId: chat.id, kind: "image", content: url,
                                                            imgW: px.w, imgH: px.h) {
@@ -5862,6 +6033,9 @@ struct ChatDetailView: View {
                 app.show((error as? APIError)?.errorDescription ?? "图片发送失败")
             }
             uploading = false
+            sendingMedia = ""
+            sendingPreview = nil
+            sendingPreviews = []
             await app.loadChats()
         }
     }
@@ -6016,21 +6190,37 @@ struct ChatDetailView: View {
             bytes: (try? urls[0].resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0,
             fileCount: urls.count
         )
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
-            filePreview = FilePreviewData(
-                name: urls[0].lastPathComponent,
-                local: urls[0],
-                favoriteTitle: chat.name,
-                favoriteFrom: Tr("聊天文件"),
-                transfer: transfer
-            )
-            Task {
-                for (index, u) in urls.enumerated() {
-                    let accessing = u.startAccessingSecurityScopedResource()
-                    transfer.begin(index: index + 1)
-                    await uploadAndSendFile(u, transfer: transfer)
-                    if accessing { u.stopAccessingSecurityScopedResource() }
+        filePreview = FilePreviewData(
+            name: urls[0].lastPathComponent,
+            local: urls[0],
+            favoriteTitle: chat.name,
+            favoriteFrom: Tr("聊天文件"),
+            transfer: transfer
+        )
+        Task {
+            var stagedURLs: [URL] = []
+            for u in urls {
+                if let path = await stageLocalOutgoingFile(u),
+                   let local = LocalStore.localURL(path) {
+                    stagedURLs.append(local)
+                } else {
+                    stagedURLs.append(u)
                 }
+            }
+            if let first = stagedURLs.first, urls.count == 1 {
+                filePreview = FilePreviewData(
+                    name: first.lastPathComponent,
+                    local: first,
+                    favoriteTitle: chat.name,
+                    favoriteFrom: Tr("聊天文件"),
+                    transfer: transfer
+                )
+            }
+            for (index, u) in stagedURLs.enumerated() {
+                let accessing = u.startAccessingSecurityScopedResource()
+                transfer.begin(index: index + 1)
+                await uploadAndSendFile(u, transfer: transfer)
+                if accessing { u.stopAccessingSecurityScopedResource() }
             }
         }
     }

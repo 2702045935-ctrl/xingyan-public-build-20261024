@@ -91,16 +91,17 @@ require(
 )
 require(
     "@State private var sendingPreview: UIImage?" in CHAT
+    and "@State private var sendingPreviews: [UIImage] = []" in CHAT
     and "@State private var sendProgress: Double = 0" in CHAT
     and "@State private var sendingFileProgress: Double? = nil" in CHAT
-    and "sendingPreviews" not in CHAT
     and "mediaUploadPhase" not in CHAT
     and "fileUploadPhase" not in CHAT
     and "UploadRateMeter" not in CHAT,
-    "the upload-in-progress page must match the 11/21 simple state",
+    "the local-first page must retain a simple progress state without phase chrome",
 )
 require(
-    "SendingVideoBubble(cover: sendingPreview, progress: sendProgress)" in CHAT
+    "SendingVideoBubble(cover: sendingPreview," in CHAT
+    and "previews: sendingPreviews" in CHAT
     and "progress: sendingFileProgress ?? 0" in CHAT
     and "struct SendingVideoBubble: View" in MEDIA
     and "struct SendingFileBubble: View" in MEDIA
@@ -110,7 +111,7 @@ require(
     and "var phase:" not in MEDIA
     and "onRetry:" not in MEDIA
     and ".frame(width: 218)" in MEDIA,
-    "media and file placeholders must use the compact 11/21 cards",
+    "media and file placeholders must use the compact local-first cards",
 )
 require(
     "fs.createWriteStream(outPath)" in SERVER

@@ -61,8 +61,9 @@ require(
 require(
     "struct SendingVideoBubble: View" in MEDIA
     and "var cover: UIImage?" in MEDIA
+    and "var previews: [UIImage] = []" in MEDIA
     and "var progress: Double" in MEDIA
-    and "SendingVideoBubble(cover: sendingPreview, progress: sendProgress)" in (
+    and "previews: sendingPreviews" in (
         ROOT / "Sources" / "ChatDetailView.swift"
     ).read_text(encoding="utf-8")
     and "struct SendingFileBubble: View" in MEDIA
@@ -70,7 +71,7 @@ require(
     and "progress: sendingFileProgress ?? 0" in (
         ROOT / "Sources" / "ChatDetailView.swift"
     ).read_text(encoding="utf-8"),
-    "pending media and files must use the compact 11/21 progress cards",
+    "pending media and files must use the compact local-first media cards",
 )
 
 print("video-interactions: passed")

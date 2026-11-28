@@ -16,10 +16,10 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private var uploadBases: [String]" in API
-    and "var result = [base]" in API
-    and "if API.directUploadBases[0] != result[0]" in API
-    and "result.append(API.directUploadBases[0])" in API,
-    "media uploads must use the healthy ingress first and keep direct upload as fallback",
+    and "var result = API.directUploadBases" in API
+    and "if !result.contains(base)" in API
+    and "result.append(base)" in API,
+    "media uploads must use the 11/20 direct origin first and keep public ingress as fallback",
 )
 require(
     API.count("for base in uploadBases {") == 2
