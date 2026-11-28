@@ -2024,15 +2024,24 @@ struct MomentsView: View {
                             .overlay {
                                 Capsule(style: .continuous)
                                     .stroke(Color.white.opacity(0.42), lineWidth: 0.8)
-                            }
+                        }
                     }
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 18)
                 .frame(maxWidth: 286)
-                .background(RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Color.black.opacity(0.58)))
+                .background {
+                    ZStack {
+                        NativeMediaGlassSurface(
+                            shape: AnyShape(RoundedRectangle(cornerRadius: 22,
+                                                             style: .continuous)),
+                            showsEdge: false
+                        )
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(Color.black.opacity(0.34))
+                    }
+                }
                 .overlay {
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
                         .stroke(Color.white.opacity(0.24), lineWidth: 0.7)
@@ -2096,8 +2105,16 @@ struct MomentsView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 13)
                         .frame(height: 34)
-                        .background(Capsule()
-                            .fill(Color.black.opacity(0.46)))
+                        .background {
+                            ZStack {
+                                NativeMediaGlassSurface(
+                                    shape: AnyShape(Capsule(style: .continuous)),
+                                    interactive: true,
+                                    showsEdge: false
+                                )
+                                Capsule().fill(Color.black.opacity(0.22))
+                            }
+                        }
                         .overlay(
                             Capsule().stroke(
                                 Color.white.opacity(0.20),
@@ -2155,17 +2172,18 @@ struct MomentsView: View {
                             .padding(.vertical, 5)
                             .frame(width: L.coverAvatar + 56, alignment: .center)
                             .background {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                Color.black.opacity(0.44),
-                                                Color.black.opacity(0.26)
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
+                                ZStack {
+                                    NativeMediaGlassSurface(
+                                        shape: AnyShape(RoundedRectangle(
+                                            cornerRadius: 10,
+                                            style: .continuous
+                                        )),
+                                        showsEdge: false
                                     )
+                                    RoundedRectangle(cornerRadius: 10,
+                                                     style: .continuous)
+                                        .fill(Color.black.opacity(0.24))
+                                }
                             }
                             .overlay {
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
