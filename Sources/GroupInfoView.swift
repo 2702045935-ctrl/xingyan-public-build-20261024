@@ -973,6 +973,12 @@ struct GroupInfoView: View {
         Array(members.prefix(5))
     }
 
+    private var heroOverflowText: String {
+        let remaining = max(0, displayedMemberCount - heroMembers.count)
+        if remaining >= 1_000 { return "\(remaining / 1_000)k+" }
+        return "+\(remaining)"
+    }
+
     private var memberPresenceLine: String {
         var parts: [String] = []
         if onlineMemberCount > 0 {
@@ -1314,7 +1320,7 @@ struct GroupInfoView: View {
                 }
 
                 if displayedMemberCount > heroMembers.count {
-                    Text("+\(displayedMemberCount - heroMembers.count)")
+                    Text(heroOverflowText)
                         .font(pf(10.5, .semibold))
                         .monospacedDigit()
                         .foregroundColor(C.subLabel)

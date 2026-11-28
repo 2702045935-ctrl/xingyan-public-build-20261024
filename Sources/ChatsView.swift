@@ -1737,7 +1737,7 @@ struct ChatsView: View {
             HStack(spacing: 7) {
                 Text(navTitle)
                     .font(pf(17, .semibold))
-                    .foregroundStyle(C.label)
+                    .foregroundStyle(ChatListVisual.ink)
                     .accessibilityLabel(navTitle)
 
                 if chatFilter != .all {
