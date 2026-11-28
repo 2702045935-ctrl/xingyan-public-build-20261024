@@ -26,9 +26,10 @@ struct NativeNavMenuButton: UIViewRepresentable {
     let symbol: String
     let tint: UIColor
     let items: [NativeNavMenuAction]
+    var showsGlassBackground = true
 
-    func makeUIView(context: Context) -> UIButton {
-        let button = UIButton(type: .system)
+    func makeUIView(context: Context) -> NativeNavMenuControl {
+        let button = NativeNavMenuControl()
         button.showsMenuAsPrimaryAction = true
         button.changesSelectionAsPrimaryAction = false
         button.accessibilityLabel = title
@@ -36,7 +37,7 @@ struct NativeNavMenuButton: UIViewRepresentable {
         return button
     }
 
-    func updateUIView(_ button: UIButton, context: Context) {
+    func updateUIView(_ button: NativeNavMenuControl, context: Context) {
         var configuration = UIButton.Configuration.plain()
         configuration.contentInsets = .zero
         configuration.image = UIImage(systemName: symbol)
@@ -46,6 +47,7 @@ struct NativeNavMenuButton: UIViewRepresentable {
         button.configuration = configuration
         button.accessibilityLabel = title
         button.accessibilityHint = Tr("轻点打开菜单")
+        button.setGlassBackground(showsGlassBackground)
         button.menu = UIMenu(
             title: "",
             preferredElementSize: .medium,
@@ -60,5 +62,67 @@ struct NativeNavMenuButton: UIViewRepresentable {
                 }
             }
         )
+    }
+}
+
+final class NativeNavMenuControl: UIButton {
+    private let glassView = UIVisualEffectView(effect: nil)
+    private var wantsGlass = false
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .clear
+        glassView.isUserInteractionEnabled = false
+        glassView.clipsToBounds = true
+        glassView.layer.cornerCurve = .continuous
+        insertSubview(glassView, at: 0)
+        updateGlassEffect()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func setGlassBackground(_ enabled: Bool) {
+        wantsGlass = enabled
+        glassView.isHidden = !enabled
+        updateGlassEffect()
+        setNeedsLayout()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        glassView.frame = bounds.insetBy(dx: 4, dy: 4)
+        glassView.layer.cornerRadius = min(glassView.bounds.width,
+                                           glassView.bounds.height) / 2
+        bringSubviewToFront(glassView)
+        if let imageView {
+            bringSubviewToFront(imageView)
+        }
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle {
+            updateGlassEffect()
+        }
+    }
+
+    private func updateGlassEffect() {
+        guard wantsGlass else {
+            glassView.effect = nil
+            return
+        }
+        if #available(iOS 26.0, *) {
+            let glass = UIGlassEffect(style: .regular)
+            glass.isInteractive = true
+            glassView.effect = glass
+        } else {
+            glassView.effect = UIBlurEffect(
+                style: traitCollection.userInterfaceStyle == .dark
+                    ? .systemThinMaterialDark
+                    : .systemThinMaterialLight
+            )
+        }
     }
 }

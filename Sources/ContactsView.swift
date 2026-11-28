@@ -345,7 +345,8 @@ private var funcs: [(String, String, Color, String)] {
                 ) {
                     showScan = true
                 }
-            ]
+            ],
+            showsGlassBackground: false
         )
         .frame(width: 44, height: 44)
         .zIndex(20)

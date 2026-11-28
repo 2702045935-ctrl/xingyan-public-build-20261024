@@ -22,6 +22,11 @@ require(
 require(
     "struct NativeNavMenuButton: UIViewRepresentable" in NAV_PLUS
     and "button.showsMenuAsPrimaryAction = true" in NAV_PLUS
+    and "final class NativeNavMenuControl: UIButton" in NAV_PLUS
+    and "let glass = UIGlassEffect(style: .regular)" in NAV_PLUS
+    and ".systemThinMaterialDark" in NAV_PLUS
+    and ".systemThinMaterialLight" in NAV_PLUS
+    and "glassView.layer.cornerRadius" in NAV_PLUS
     and "button.menu = UIMenu(" in NAV_PLUS
     and "UIImage(systemName: symbol)" in NAV_PLUS
     and "UIAction(" in NAV_PLUS,
