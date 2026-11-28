@@ -157,6 +157,66 @@ struct PendingMsg: Identifiable, Hashable {
     }
 }
 
+struct PendingMediaPayload: Hashable {
+    let kind: String
+    var paths: [String]
+    var widths: [Int]
+    var heights: [Int]
+    var seconds: Int
+    var coverPath: String?
+    var original: Bool
+
+    static func placeholder(kind: String, original: Bool) -> PendingMediaPayload {
+        PendingMediaPayload(kind: kind, paths: [], widths: [], heights: [],
+                            seconds: 0, coverPath: nil, original: original)
+    }
+
+    init(kind: String, paths: [String], widths: [Int], heights: [Int],
+         seconds: Int, coverPath: String?, original: Bool) {
+        self.kind = kind
+        self.paths = paths
+        self.widths = widths
+        self.heights = heights
+        self.seconds = seconds
+        self.coverPath = coverPath
+        self.original = original
+    }
+
+    init?(json: String) {
+        guard let data = json.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              object["xingyanOutboxMedia"] as? Bool == true,
+              let kind = object["kind"] as? String else { return nil }
+        func integers(_ key: String) -> [Int] {
+            (object[key] as? [Any])?.compactMap {
+                ($0 as? NSNumber)?.intValue
+            } ?? []
+        }
+        self.kind = kind
+        paths = object["paths"] as? [String] ?? []
+        widths = integers("widths")
+        heights = integers("heights")
+        seconds = (object["seconds"] as? NSNumber)?.intValue ?? 0
+        coverPath = object["coverPath"] as? String
+        original = object["original"] as? Bool ?? false
+    }
+
+    var json: String {
+        let object: [String: Any] = [
+            "xingyanOutboxMedia": true,
+            "kind": kind,
+            "paths": paths,
+            "widths": widths,
+            "heights": heights,
+            "seconds": seconds,
+            "coverPath": coverPath ?? "",
+            "original": original
+        ]
+        return (try? JSONSerialization.data(withJSONObject: object))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+    }
+}
+
 private enum DeliveryFailureAction {
     case retry
     case details
@@ -1221,6 +1281,8 @@ struct ChatDetailView: View {
     @State private var sendingPreview: UIImage?
     @State private var sendingPreviews: [UIImage] = []
     @State private var sendingVideoURL: URL?
+    @State private var pendingMediaPreviews: [String: [UIImage]] = [:]
+    @State private var pendingMediaProgress: [String: Double] = [:]
     @State private var sendProgress: Double = 0
     @State private var sendingFileName = ""
     @State private var sendingFileBytes = 0
@@ -3481,6 +3543,8 @@ struct ChatDetailView: View {
                     }
                     if p.kind == "audio" {
                         pendingAudioBubble(p, tail: isRunStart)
+                    } else if let media = PendingMediaPayload(json: p.content) {
+                        pendingMediaBubble(p, media: media)
                     } else {
                         Text(pendingText)
                             .font(pf(L.chatFontSize))
@@ -3521,6 +3585,34 @@ struct ChatDetailView: View {
         }
         .padding(.bottom, pendingGapAfter(p))
         .id(p.id)
+    }
+
+    private func pendingMediaBubble(_ pending: PendingMsg,
+                                    media: PendingMediaPayload) -> some View {
+        let restoredImages: [UIImage]
+        if media.kind == "video" {
+            restoredImages = media.coverPath
+                .flatMap { UIImage(contentsOfFile: $0) }
+                .map { [$0] } ?? []
+        } else {
+            restoredImages = media.paths.compactMap {
+                UIImage(contentsOfFile: $0)
+            }
+        }
+        let images = pendingMediaPreviews[pending.id] ?? restoredImages
+        let progress = pendingMediaProgress[pending.id] ?? 0.02
+        let videoURL = media.kind == "video"
+            ? media.paths.first.flatMap { URL(fileURLWithPath: $0) }
+            : nil
+        return SendingVideoBubble(
+            cover: images.first,
+            previews: images,
+            progress: progress,
+            localURL: videoURL
+        ) { url in
+            videoToPlay = url
+            videoPayload = ""
+        }
     }
 
     private func pendingAudioBubble(_ pending: PendingMsg, tail: Bool) -> some View {
@@ -5738,13 +5830,22 @@ struct ChatDetailView: View {
             outbox[idx].sending = true
             outbox[idx].failed = false
             outbox[idx].failureReason = nil
+            if let media = PendingMediaPayload(json: p.content) {
+                startPendingMediaSend(p, payload: media)
+                continue
+            }
             do {
                 let outgoingContent = p.kind == "audio"
                     ? try await prepareAudioContentForSend(p.content)
                     : p.content
-                if let message = try await API.shared.send(chatId: chat.id, kind: p.kind, content: outgoingContent,
-                                                           mentions: p.mentions, clientId: p.id,
-                                                           quote: Self.quoteDict(p.quoteJSON)) {
+                if let message = try await API.shared.send(
+                    chatId: chat.id,
+                    kind: p.kind,
+                    content: outgoingContent,
+                    mentions: p.mentions,
+                    clientId: p.id,
+                    quote: Self.quoteDict(p.quoteJSON)
+                ) {
                     /* 先把本地发送占位撤掉，再落入服务端确认气泡。
                        两步在同一个 MainActor 事务里完成，避免同一条消息短暂出现两张气泡。 */
                     var commit = Transaction(animation: nil)
@@ -5757,7 +5858,7 @@ struct ChatDetailView: View {
                 } else if let i2 = outbox.firstIndex(where: { $0.id == p.id }) {
                     outbox[i2].sending = false
                     outbox[i2].failed = true
-                    outbox[i2].failureReason = "消息没有发出去，点重试再发一次"
+                    outbox[i2].failureReason = "还没有发出去，点重试"
                     break
                 }
             } catch {
@@ -5783,6 +5884,181 @@ struct ChatDetailView: View {
         }
         persistOutboxAfterFrame()
         await app.loadChats()
+    }
+
+    private func startPendingMediaSend(_ pending: PendingMsg,
+                                       payload: PendingMediaPayload) {
+        Task { @MainActor in
+            var succeeded = false
+            do {
+                let message = try await sendPendingMedia(
+                    pending,
+                    payload: payload
+                )
+                guard let message else {
+                    throw APIError.message(Tr("服务器没有确认这条媒体消息"))
+                }
+                var commit = Transaction(animation: nil)
+                commit.disablesAnimations = true
+                withTransaction(commit) {
+                    outbox.removeAll { $0.id == pending.id }
+                    appendVisibleMessage(message)
+                    app.ensureChatVisible(chat, latest: message)
+                }
+                cleanupOptimisticMedia(payload)
+                pendingMediaPreviews.removeValue(forKey: pending.id)
+                pendingMediaProgress.removeValue(forKey: pending.id)
+                succeeded = true
+            } catch {
+                let reason = (error as? APIError)?.errorDescription
+                    ?? Tr("媒体没有发出去")
+                if let index = outbox.firstIndex(where: { $0.id == pending.id }) {
+                    outbox[index].sending = false
+                    outbox[index].failed = true
+                    outbox[index].failureReason = reason
+                }
+                pendingMediaProgress[pending.id] = 0.02
+            }
+            persistOutboxAfterFrame()
+            await app.loadChats()
+            if succeeded {
+                await flushOutbox()
+            }
+        }
+    }
+
+    private func sendPendingMedia(_ pending: PendingMsg,
+                                  payload: PendingMediaPayload) async throws -> Message? {
+        guard !payload.paths.isEmpty else {
+            throw APIError.message(Tr("本地文件还没有准备好"))
+        }
+
+        if payload.kind == "image" || payload.kind == "images" {
+            var uploaded: [String] = []
+            let total = max(1, payload.paths.count)
+            for (index, path) in payload.paths.enumerated() {
+                let data = try Data(contentsOf: URL(fileURLWithPath: path))
+                guard let image = UIImage(data: data) else {
+                    throw APIError.message(Tr("图片读取失败"))
+                }
+                let url = try await API.shared.uploadPreparedImageForSend(
+                    data,
+                    uploadGroup: payload.kind == "images" ? pending.id : nil,
+                    onProgress: { value in
+                        let done = Double(index) + min(1, max(0, value))
+                        DispatchQueue.main.async {
+                            pendingMediaProgress[pending.id] =
+                                min(0.97, max(0.03, done / Double(total)))
+                        }
+                    }
+                )
+                seedLocalImage(url, image, data: data)
+                uploaded.append(url)
+            }
+            if uploaded.count >= 2 {
+                let body = "{\"paths\":" + Self.jsonStringArray(uploaded) + "}"
+                return try await API.shared.send(
+                    chatId: chat.id,
+                    kind: "images",
+                    content: body,
+                    mentions: pending.mentions,
+                    clientId: pending.id,
+                    quote: Self.quoteDict(pending.quoteJSON)
+                )
+            }
+            guard let url = uploaded.first else {
+                throw APIError.message(Tr("图片上传失败"))
+            }
+            let width = payload.widths.first ?? 0
+            let height = payload.heights.first ?? 0
+            return try await API.shared.send(
+                chatId: chat.id,
+                kind: "image",
+                content: url,
+                mentions: pending.mentions,
+                clientId: pending.id,
+                imgW: width,
+                imgH: height,
+                quote: Self.quoteDict(pending.quoteJSON)
+            )
+        }
+
+        if payload.kind == "video" {
+            guard let path = payload.paths.first else {
+                throw APIError.message(Tr("视频文件还没准备好"))
+            }
+            var file = URL(fileURLWithPath: path)
+            var uploadFrom = 0.03
+            if !payload.original, await MediaTool.needsCompress(file) {
+                uploadFrom = 0.42
+                file = (await MediaTool.compress(file) { value in
+                    DispatchQueue.main.async {
+                        pendingMediaProgress[pending.id] =
+                            min(0.42, 0.03 + value * 0.39)
+                    }
+                }) ?? file
+            }
+            let seconds = max(1, payload.seconds)
+            let width = payload.widths.first ?? 0
+            let height = payload.heights.first ?? 0
+            let from = uploadFrom
+            guard let remote = await MediaTool.upload(
+                file,
+                onProgress: { value in
+                    DispatchQueue.main.async {
+                        pendingMediaProgress[pending.id] =
+                            min(0.97, from + value * (0.97 - from))
+                    }
+                },
+                skipServerTranscode: true
+            ) else {
+                throw APIError.message(Tr("视频上传失败"))
+            }
+            LocalStore.keepOriginal(remote, from: file)
+
+            var coverURL: String?
+            if let path = payload.coverPath,
+               let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+               let image = UIImage(data: data) {
+                if let up = try? await API.shared.uploadImageForSend(
+                    image,
+                    original: false
+                ) {
+                    seedLocalImage(up.url, image, data: up.data)
+                    coverURL = up.url
+                }
+            }
+
+            var body: [String: Any] = ["url": remote, "seconds": seconds]
+            if width > 1, height > 1 {
+                body["w"] = width
+                body["h"] = height
+            }
+            if let coverURL { body["cover"] = coverURL }
+            let json = (try? JSONSerialization.data(withJSONObject: body))
+                .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+            return try await API.shared.send(
+                chatId: chat.id,
+                kind: "video",
+                content: json,
+                mentions: pending.mentions,
+                clientId: pending.id,
+                quote: Self.quoteDict(pending.quoteJSON)
+            )
+        }
+
+        throw APIError.message(Tr("不支持的本地媒体类型"))
+    }
+
+    private func cleanupOptimisticMedia(_ payload: PendingMediaPayload) {
+        let rootPath = LocalStore.root.standardizedFileURL.path
+        var files = Set(payload.paths)
+        if let coverPath = payload.coverPath { files.insert(coverPath) }
+        for path in files {
+            let url = URL(fileURLWithPath: path).standardizedFileURL
+            guard url.path.hasPrefix(rootPath + "/") else { continue }
+            try? FileManager.default.removeItem(at: url)
+        }
     }
 
     private func tapRedPacket(_ info: RedPacketInfo) {
@@ -5831,236 +6107,184 @@ struct ChatDetailView: View {
         sendMedia(.images(images), live: false, original: false)
     }
 
+    @discardableResult
+    private func enqueueOptimisticMedia(kind: String,
+                                        images: [UIImage]) -> String {
+        let id = UUID().uuidString
+        let payload = PendingMediaPayload.placeholder(
+            kind: kind,
+            original: false
+        )
+        let pending = PendingMsg(
+            id: id,
+            kind: kind,
+            content: payload.json,
+            sending: true
+        )
+        pendingMediaPreviews[id] = images
+        pendingMediaProgress[id] = 0.02
+        nativeMessageController.prepareForOutgoingTailAppend(
+            following: nativePendingItemID(id)
+        )
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            outbox.append(pending)
+            app.previewOutgoingMessage(
+                chat,
+                clientId: id,
+                kind: kind,
+                content: payload.json
+            )
+        }
+        followOwnSendUntil = Date().addingTimeInterval(5)
+        persistOutboxAfterFrame()
+        pinToBottomSoon(force: true)
+        UINotification.lightTap()
+        return id
+    }
+
+    private func commitOptimisticMedia(_ id: String,
+                                       payload: PendingMediaPayload) {
+        guard let index = outbox.firstIndex(where: { $0.id == id }) else {
+            cleanupOptimisticMedia(payload)
+            return
+        }
+        outbox[index].content = payload.json
+        outbox[index].sending = false
+        pendingMediaProgress[id] = 0.03
+        persistOutboxAfterFrame()
+        pinToBottomSoon()
+        Task { await flushOutbox() }
+    }
+
+    private func enqueueOptimisticImages(_ images: [UIImage],
+                                         original: Bool,
+                                         preserveResolution: Bool) {
+        guard !images.isEmpty else { return }
+        let kind = images.count > 1 ? "images" : "image"
+        let id = enqueueOptimisticMedia(kind: kind, images: images)
+        Task {
+            let payload = await Task.detached(priority: .userInitiated) {
+                () -> PendingMediaPayload in
+                let dir = LocalStore.root
+                    .appendingPathComponent("Media/image", isDirectory: true)
+                try? FileManager.default.createDirectory(
+                    at: dir,
+                    withIntermediateDirectories: true
+                )
+                var paths: [String] = []
+                var widths: [Int] = []
+                var heights: [Int] = []
+                for (index, image) in images.enumerated() {
+                    let side: CGFloat = original ? 1920 : 1280
+                    let quality: CGFloat = preserveResolution
+                        ? 1.0
+                        : (original ? 0.88 : 0.75)
+                    let data = preserveResolution
+                        ? image.jpegData(compressionQuality: quality)
+                        : image.resizedJPEG(maxSide: side, quality: quality)
+                    guard let data, !data.isEmpty else { continue }
+                    let file = dir.appendingPathComponent(
+                        "outbox-\(id)-\(index).jpg"
+                    )
+                    guard (try? data.write(to: file, options: .atomic)) != nil else {
+                        continue
+                    }
+                    let px = image.sendPixelSize
+                    paths.append(file.path)
+                    widths.append(px.w)
+                    heights.append(px.h)
+                }
+                return PendingMediaPayload(
+                    kind: kind,
+                    paths: paths,
+                    widths: widths,
+                    heights: heights,
+                    seconds: 0,
+                    coverPath: paths.first,
+                    original: original
+                )
+            }.value
+            await MainActor.run {
+                commitOptimisticMedia(id, payload: payload)
+            }
+        }
+    }
+
+    private func enqueueOptimisticVideo(_ url: URL,
+                                        cover: UIImage?,
+                                        original: Bool) {
+        let images = [cover].compactMap { $0 }
+        let id = enqueueOptimisticMedia(kind: "video", images: images)
+        Task {
+            let payload = await Task.detached(priority: .userInitiated) {
+                () -> PendingMediaPayload in
+                let dir = LocalStore.root
+                    .appendingPathComponent("Media/video", isDirectory: true)
+                try? FileManager.default.createDirectory(
+                    at: dir,
+                    withIntermediateDirectories: true
+                )
+                let ext = url.pathExtension.isEmpty ? "mp4" : url.pathExtension
+                let file = dir.appendingPathComponent("outbox-\(id).\(ext)")
+                try? FileManager.default.copyItem(at: url, to: file)
+
+                var coverPath: String?
+                if let cover,
+                   let data = cover.jpegData(compressionQuality: 0.82) {
+                    let imageDir = LocalStore.root
+                        .appendingPathComponent("Media/image", isDirectory: true)
+                    try? FileManager.default.createDirectory(
+                        at: imageDir,
+                        withIntermediateDirectories: true
+                    )
+                    let coverFile = imageDir.appendingPathComponent(
+                        "outbox-\(id)-cover.jpg"
+                    )
+                    if (try? data.write(to: coverFile, options: .atomic)) != nil {
+                        coverPath = coverFile.path
+                    }
+                }
+
+                let wh = await MediaTool.aspect(file)
+                let seconds = await MediaTool.seconds(file)
+                return PendingMediaPayload(
+                    kind: "video",
+                    paths: FileManager.default.fileExists(atPath: file.path)
+                        ? [file.path] : [],
+                    widths: [wh?.w ?? Int(cover?.size.width ?? 0)],
+                    heights: [wh?.h ?? Int(cover?.size.height ?? 0)],
+                    seconds: seconds,
+                    coverPath: coverPath,
+                    original: original
+                )
+            }.value
+            await MainActor.run {
+                commitOptimisticMedia(id, payload: payload)
+            }
+        }
+    }
+
     private func sendMedia(_ p: MediaSendSheet.Payload, live: Bool, original: Bool) {
         switch p {
         case .image(let img, let nativeCamera):
-            uploading = true
-            sendingPreview = img
-            sendingPreviews = [img]
-            sendingMedia = Tr("图片上传中…")
-            sendProgress = 0.02
-            scrollTick += 1
-            let px = img.sendPixelSize
-            Task {
-                let t0 = Date()
-                do {
-                    let upstream = try await API.shared.uploadImageForSend(
-                        img,
-                        original: original,
-                        preserveResolution: nativeCamera,
-                        onProgress: { p in
-                            DispatchQueue.main.async {
-                                sendProgress = min(0.82, 0.02 + p * 0.80)
-                            }
-                        }
-                    )
-                    let url = upstream.url
-                    seedLocalImage(url, img, data: upstream.data)
-                    sendingMedia = Tr("正在发送…")
-                    sendProgress = 0.9
-                    let tUp = Date()
-                    let sent = try await API.shared.send(
-                        chatId: chat.id,
-                        kind: "image",
-                        content: url,
-                        imgW: px.w,
-                        imgH: px.h
-                    )
-                    appendVisibleMessage(try confirmedSentMessage(sent, kind: Tr("图片")))
-                    let tSend = Date()
-                    Task { await API.shared.callDiag("发图(+) 压+传=\(Int(tUp.timeIntervalSince(t0) * 1000))ms"
-                        + " 发送=\(Int(tSend.timeIntervalSince(tUp) * 1000))ms"
-                        + " 原图=\(original ? 1 : 0) 原始=\(Int(img.size.width))x\(Int(img.size.height))") }
-                } catch { app.show((error as? APIError)?.errorDescription ?? "图片发送失败") }
-                uploading = false
-                sendingMedia = ""
-                sendingPreview = nil
-                sendingPreviews = []
-                sendProgress = 0
-                await app.loadChats()
-            }
+            enqueueOptimisticImages(
+                [img],
+                original: original,
+                preserveResolution: nativeCamera
+            )
 
         case .images(let list):
-
             guard !list.isEmpty else { return }
-            CrashCatcher.note("发图", "多选 \(list.count) 张，开始上传")
-            uploading = true
-            sendingPreview = list.first
-            sendingPreviews = list
-            sendingMedia = Tr("图片上传中…")
-            sendProgress = 0.02
-            scrollTick += 1
-            let progress = ImageUploadProgress(count: list.count)
-            let uploadGroup = "multi-" + UUID().uuidString
-            Task {
-                do {
-                    var urls: [String] = []
-                    var dims: [(w: Int, h: Int)] = []
-
-                    var upResults: [(
-                        idx: Int, url: String, w: Int, h: Int, data: Data
-                    )] = []
-                    var upError: String? = nil
-                    await withTaskGroup(
-                        of: (Int, String, Int, Int, Data, String?).self
-                    ) { group in
-                        var nextIdx = 0
-                        func addUpload(_ i: Int) {
-                            let img = list[i]
-                            let px = img.sendPixelSize
-                            group.addTask {
-                                do {
-                                    let upstream = try await API.shared.uploadImageForSend(
-                                        img,
-                                        original: original,
-                                        uploadGroup: uploadGroup,
-                                        onProgress: { p in
-                                            let state = progress.update(index: i, value: p)
-                                            DispatchQueue.main.async {
-                                                sendProgress = min(0.82, 0.02 + state.progress * 0.80)
-                                                sendingMedia = Tr("图片上传中…")
-                                            }
-                                        }
-                                    )
-                                    return (i, upstream.url, px.w, px.h, upstream.data, nil)
-                                } catch {
-                                    return (i, "", 0, 0, Data(),
-                                            (error as? APIError)?.errorDescription ?? "图片上传失败")
-                                }
-                            }
-                        }
-                        while nextIdx < min(3, list.count) { addUpload(nextIdx); nextIdx += 1 }
-                        for await r in group {
-                            if let e = r.5 {
-                                if upError == nil { upError = e }
-                            } else {
-                                upResults.append((
-                                    idx: r.0, url: r.1, w: r.2, h: r.3,
-                                    data: r.4
-                                ))
-                            }
-                            if nextIdx < list.count { addUpload(nextIdx); nextIdx += 1 }
-                        }
-                    }
-                    if let e = upError, upResults.count != list.count {
-                        throw APIError.message(e)
-                    }
-                    for r in upResults.sorted(by: { $0.idx < $1.idx }) {
-                        urls.append(r.url)
-                        dims.append((w: r.w, h: r.h))
-                        seedLocalImage(r.url, list[r.idx], data: r.data)
-                    }
-                    if urls.count >= 2 {
-                        sendingMedia = Tr("正在发送…")
-                        sendProgress = 0.9
-                        CrashCatcher.note("发图", "合成一条相册消息（\(urls.count) 张）")
-                        let body = "{\"paths\":" + Self.jsonStringArray(urls) + "}"
-                        let sent = try await API.shared.send(
-                            chatId: chat.id,
-                            kind: "images",
-                            content: body
-                        )
-                        appendVisibleMessage(try confirmedSentMessage(sent, kind: Tr("图片")))
-                    } else {
-                        CrashCatcher.note("发图", "\(urls.count) 张，分开一条一条发")
-                        for (i, u) in urls.enumerated() {
-                            let d: (w: Int, h: Int) = i < dims.count ? dims[i] : (w: 0, h: 0)
-                            let sent = try await API.shared.send(
-                                chatId: chat.id,
-                                kind: "image",
-                                content: u,
-                                imgW: d.w,
-                                imgH: d.h
-                            )
-                            appendVisibleMessage(try confirmedSentMessage(sent, kind: Tr("图片")))
-                        }
-                    }
-                } catch { app.show((error as? APIError)?.errorDescription ?? "图片发送失败") }
-                uploading = false
-                sendingMedia = ""
-                sendingPreview = nil
-                sendingPreviews = []
-                sendProgress = 0
-                await app.loadChats()
-            }
+            enqueueOptimisticImages(
+                list,
+                original: original,
+                preserveResolution: false
+            )
 
         case .video(let url, let preview):
-            uploading = true
-            sendProgress = 0.02
-            sendingPreview = preview
-            sendingPreviews = [preview].compactMap { $0 }
-            sendingVideoURL = url
-            sendingMedia = Tr("视频发送中…")
-            scrollTick += 1
-            Task {
-                let cover: UIImage?
-                if let p = preview { cover = p } else { cover = await MediaTool.firstFrame(url) }
-                if cover != nil { sendingPreview = cover }
-                sendingPreviews = [cover].compactMap { $0 }
-
-                let coverTask = Task { () -> String? in
-                    guard let c = cover else { return nil }
-                    let up = try? await API.shared.uploadImageForSend(c, original: false)
-                    if let up = up { seedLocalImage(up.url, c, data: up.data) }
-                    return up?.url
-                }
-
-                var file = url
-
-                var uploadFrom = 0.0
-                if !original, await MediaTool.needsCompress(url) {
-                    sendingMedia = Tr("视频压缩中…")
-                    uploadFrom = 0.45
-                    file = (await MediaTool.compress(url) { p in
-                        DispatchQueue.main.async { sendProgress = min(0.45, p * 0.45) }
-                    }) ?? url
-                    sendingMedia = Tr("视频发送中…")
-                }
-
-                let secs = await MediaTool.seconds(file)
-
-                let wh = await MediaTool.aspect(file)
-                let from = uploadFrom
-                guard let up = await MediaTool.upload(file, onProgress: { p in
-                    DispatchQueue.main.async {
-                        sendProgress = from + p * (1 - from)
-                        if p >= 0.999 { sendingMedia = Tr("服务器处理中…") }
-                    }
-                }, skipServerTranscode: true) else {
-                    uploading = false
-                    sendingMedia = ""
-                    sendingPreview = nil
-                    sendingPreviews = []
-                    sendingVideoURL = nil
-                    app.show(Tr("视频上传失败"))
-                    return
-                }
-
-                LocalStore.keepOriginal(up, from: file)
-                var body: [String: Any] = ["url": up, "seconds": secs]
-                if let wh = wh { body["w"] = wh.w; body["h"] = wh.h }
-
-                if let cp = await coverTask.value {
-                    body["cover"] = cp
-                }
-                let json = (try? JSONSerialization.data(withJSONObject: body)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
-                do {
-                    let sent = try await API.shared.send(
-                        chatId: chat.id,
-                        kind: "video",
-                        content: json
-                    )
-                    appendVisibleMessage(try confirmedSentMessage(sent, kind: Tr("视频")))
-                } catch {
-                    app.show((error as? APIError)?.errorDescription ?? Tr("视频发送失败"))
-                }
-                uploading = false
-                sendingMedia = ""
-                sendingPreview = nil
-                sendingPreviews = []
-                sendingVideoURL = nil
-                await app.loadChats()
-            }
+            enqueueOptimisticVideo(url, cover: preview, original: original)
 
         case .live(let img, let url):
 

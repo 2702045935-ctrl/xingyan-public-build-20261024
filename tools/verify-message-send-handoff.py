@@ -12,7 +12,7 @@ def require(condition: bool, message: str) -> None:
         raise SystemExit("message send handoff verification failed: " + message)
 
 
-start = CHAT.index("if let message = try await API.shared.send(chatId: chat.id, kind: p.kind")
+start = CHAT.index("if let message = try await API.shared.send(")
 end = CHAT.index("} catch {", start)
 block = CHAT[start:end]
 remove = block.index("outbox.removeAll { $0.id == p.id }")

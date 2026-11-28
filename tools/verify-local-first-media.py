@@ -29,33 +29,37 @@ require(
     "uploads must try the direct origin before the slower public ingress",
 )
 require(
-    "sendingPreview = img\n            sendingPreviews = [img]" in CHAT
-    and "sendingPreview = list.first\n            sendingPreviews = list" in CHAT
-    and 'let uploadGroup = "multi-" + UUID().uuidString' in CHAT
-    and "uploadGroup: uploadGroup" in CHAT
-    and 'sendingMedia = Tr("图片上传中…") + " \\(state.completed)/\\(list.count)"' not in CHAT
-    and "let upstream = try await API.shared.uploadImageForSend(" in CHAT
-    and "seedLocalImage(url, img, data: upstream.data)" in CHAT
+    "struct PendingMediaPayload: Hashable" in CHAT
+    and "private func enqueueOptimisticMedia(" in CHAT
+    and "pendingMediaPreviews[id] = images" in CHAT
+    and "private func startPendingMediaSend(" in CHAT
+    and "outbox.first(where: { !$0.sending })" in CHAT
+    and "private func sendPendingMedia(" in CHAT
+    and "API.shared.uploadPreparedImageForSend(" in CHAT
+    and "seedLocalImage(url, image, data: data)" in CHAT
+    and "clientId: pending.id" in CHAT
     and "// 文件 URL 在安全作用域内直接流式上传，不在发送前复制整份文件。" in CHAT
     and "var uploadURL = url" in CHAT
     and "for (index, u) in urls.enumerated()" in CHAT
     and "for (index, u) in stagedURLs.enumerated()" not in CHAT,
-    "multi-image sends must use one logical upload group and no per-file upload counter",
+    "images must enter the local outbox immediately while their staged files upload in the background",
 )
 require(
     "private func confirmedSentMessage(_ message: Message?, kind: String) throws -> Message" in CHAT
-    and CHAT.count("confirmedSentMessage(") >= 7
+    and CHAT.count("confirmedSentMessage(") >= 3
+    and "guard let message else" in CHAT
+    and "服务器没有确认这条媒体消息" in CHAT
     and "try? await API.shared.send" not in CHAT,
-    "media may clear its local uploading state only after the server confirms a message id",
+    "the local media row may be replaced only after the server confirms a message id",
 )
 require(
-    "sendingPreview = img\n            sendingPreviews = [img]" in CHAT
-    and "sendingPreview = list.first\n            sendingPreviews = list" in CHAT
-    and "sendingVideoBubble" not in CHAT
-    and "SendingVideoBubble(cover: sendingPreview," in CHAT
-    and "previews: sendingPreviews" in CHAT
+    "private func pendingMediaBubble(" in CHAT
+    and "PendingMediaPayload(json: p.content)" in CHAT
+    and "SendingVideoBubble(\n            cover: images.first" in CHAT
+    and "previews: images" in CHAT
+    and "pendingMediaProgress[pending.id]" in CHAT
     and "MultiImageMosaic.frames(" in MEDIA,
-    "the real local image or mosaic must appear immediately while upload continues",
+    "the local image or mosaic must render inside the real outbox row while upload continues",
 )
 require(
     "Color.black.opacity(0.42)" not in VIDEO_BUBBLE
@@ -68,13 +72,12 @@ require(
     "private var playableURL: URL?" in MEDIA
     and "LocalStore.localURL(path)" in MEDIA
     and "return local" in MEDIA
-    and "localURL: sendingVideoURL" in CHAT
-    and "sendingVideoURL = url" in VIDEO_SEND
-    and "sendingVideoURL = nil" in VIDEO_SEND
+    and "private func enqueueOptimisticVideo(" in CHAT
+    and "kind: \"video\"" in CHAT
+    and "localURL: videoURL" in CHAT
+    and "LocalStore.keepOriginal(remote, from: file)" in CHAT
     and "var localURL: URL? = nil" in VIDEO_BUBBLE
-    and "if let localURL { onOpen?(localURL) }" in VIDEO_BUBBLE
-    and VIDEO_SEND.index("LocalStore.keepOriginal(up, from: file)")
-    < VIDEO_SEND.index("API.shared.send("),
+    and "if let localURL { onOpen?(localURL) }" in VIDEO_BUBBLE,
     "a video must be locally playable immediately after send and while its upload row is visible",
 )
 require(
