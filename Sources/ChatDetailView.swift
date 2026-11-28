@@ -9216,8 +9216,8 @@ struct MessageRow: View {
 
     private func stackedMultiImageGlass(cornerRadius: CGFloat) -> some View {
         GeometryReader { proxy in
-            let plateW = max(1, proxy.size.width - 16)
-            let plateH = max(1, proxy.size.height - 12)
+            let plateW = max(1, proxy.size.width - 6)
+            let plateH = max(1, proxy.size.height - 8)
             ZStack {
                 RoundedRectangle(cornerRadius: cornerRadius + 2, style: .continuous)
                     .fill(
@@ -9235,11 +9235,16 @@ struct MessageRow: View {
                                          style: .continuous)
                             .stroke(Color.white.opacity(0.13), lineWidth: 0.5)
                     }
-                    .frame(width: plateW - 12, height: plateH - 8)
-                    .rotationEffect(.degrees(-1.9), anchor: .bottomLeading)
-                    .offset(x: -6, y: 5)
-                    .shadow(color: Color.black.opacity(0.075),
-                            radius: 5, x: 0, y: 3)
+                    .frame(width: plateW, height: plateH)
+                    .rotationEffect(.degrees(-2.8), anchor: .bottomLeading)
+                    .rotation3DEffect(
+                        .degrees(8),
+                        axis: (x: 0, y: 1, z: 0),
+                        perspective: 0.52
+                    )
+                    .offset(x: -8, y: 6)
+                    .shadow(color: Color.black.opacity(0.10),
+                            radius: 6, x: 0, y: 4)
 
                 RoundedRectangle(cornerRadius: cornerRadius + 1, style: .continuous)
                     .fill(
@@ -9257,11 +9262,16 @@ struct MessageRow: View {
                                          style: .continuous)
                             .stroke(Color.white.opacity(0.18), lineWidth: 0.6)
                     }
-                    .frame(width: plateW - 4, height: plateH - 2)
-                    .rotationEffect(.degrees(-0.85), anchor: .bottomLeading)
-                    .offset(x: -3, y: 3)
-                    .shadow(color: Color.black.opacity(0.09),
-                            radius: 6, x: 0, y: 3)
+                    .frame(width: plateW, height: plateH)
+                    .rotationEffect(.degrees(-1.35), anchor: .bottomLeading)
+                    .rotation3DEffect(
+                        .degrees(-5),
+                        axis: (x: 1, y: 0, z: 0),
+                        perspective: 0.52
+                    )
+                    .offset(x: -4, y: 3)
+                    .shadow(color: Color.black.opacity(0.11),
+                            radius: 7, x: 0, y: 4)
 
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(
@@ -9279,11 +9289,16 @@ struct MessageRow: View {
                                          style: .continuous)
                             .stroke(Color.white.opacity(0.15), lineWidth: 0.6)
                     }
-                    .frame(width: plateW + 2, height: plateH + 1)
-                    .rotationEffect(.degrees(0.75), anchor: .bottomTrailing)
-                    .offset(x: 3, y: 2)
-                    .shadow(color: Color.black.opacity(0.10),
-                            radius: 7, x: 0, y: 3)
+                    .frame(width: plateW, height: plateH)
+                    .rotationEffect(.degrees(1.05), anchor: .bottomTrailing)
+                    .rotation3DEffect(
+                        .degrees(3),
+                        axis: (x: 1, y: 0, z: 0),
+                        perspective: 0.52
+                    )
+                    .offset(x: 4, y: 2)
+                    .shadow(color: Color.black.opacity(0.12),
+                            radius: 8, x: 0, y: 4)
 
                 NativeMediaGlassSurface(
                     shape: AnyShape(RoundedRectangle(cornerRadius: cornerRadius,

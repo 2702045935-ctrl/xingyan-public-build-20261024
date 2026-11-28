@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MOSAIC = (ROOT / "Sources" / "MultiImageMosaic.swift").read_text(encoding="utf-8")
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
-NATIVE = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(encoding="utf-8")
+MEDIA = (ROOT / "Sources" / "ChatMediaBubbles.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(encoding="utf-8")
 
 
@@ -25,20 +25,24 @@ require(
     "the shared mosaic must use two-up, hero, and 2x2 compositions",
 )
 require(
-    "MultiImageMosaic.visibleCount(for: total)" in CHAT
-    and "MultiImageMosaic.frames(" in CHAT
-    and 'Text("+\\(total - visible)")' in CHAT
-    and "RemoteImage(path: paths[index], maxSide: 1200)" in CHAT
-    and "RoundedRectangle(cornerRadius: outerRadius" in CHAT,
+    "let strip = Array(paths.dropFirst().prefix(3))" in CHAT
+    and 'Text("+\\(total - strip.count - 1)")' in CHAT
+    and "RemoteImage(path: paths[0], maxSide: 1200)" in CHAT
+    and "private func stackedMultiImageGlass" in CHAT
+    and ".rotationEffect(.degrees(-2.8), anchor: .bottomLeading)" in CHAT
+    and ".rotationEffect(.degrees(-1.35), anchor: .bottomLeading)" in CHAT
+    and ".rotationEffect(.degrees(1.05), anchor: .bottomTrailing)" in CHAT
+    and CHAT.count(".rotation3DEffect(") >= 3
+    and "perspective: 0.52" in CHAT
+    and CHAT.count(".frame(width: plateW, height: plateH)") >= 3
+    and "NativeMediaGlassSurface(" in CHAT,
     "SwiftUI multi-image messages must render the shared adaptive mosaic",
 )
 require(
-    "MultiImageMosaic.visibleCount(for: paths.count)" in NATIVE
-    and "MultiImageMosaic.frames(count: paths.count, in: body)" in NATIVE
-    and "badgeLabel.text = \"+\\(paths.count - visible)\"" in NATIVE
-    and "view.layer.cornerRadius = min(12" in NATIVE
-    and "containerSize(for: paths.count, width: 229)" in NATIVE,
-    "native media rows must use the same mosaic geometry without per-row blur",
+    "MultiImageMosaic.containerSize(for: images.count, width: 229)" in MEDIA
+    and "MultiImageMosaic.frames(" in MEDIA
+    and "SendingVideoBubble" in MEDIA,
+    "pending media rows must use the same adaptive mosaic geometry",
 )
 require(
     "python3 tools/verify-multi-image-mosaic.py" in WORKFLOW,
