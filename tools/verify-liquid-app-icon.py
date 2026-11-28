@@ -26,7 +26,8 @@ require(
     "the bundle must select the AppIcon asset catalog instead of only loose PNGs",
 )
 require(
-    "bash tools/prepare-liquid-icon.sh Assets.xcassets" in WORKFLOW
+    "bash tools/prepare-liquid-icon.sh ." in WORKFLOW
+    and "xcrun actool AppIcon.icon Assets.xcassets" in WORKFLOW
     and "--app-icon AppIcon" in WORKFLOW
     and "--include-all-app-icons" in WORKFLOW,
     "Xcode 26 must compile the layered iOS icon catalog and all generated sizes",

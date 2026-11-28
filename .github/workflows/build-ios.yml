@@ -306,10 +306,12 @@ jobs:
             "info": { "version": 1, "author": "xcode" }
           }
           JSON
-          bash tools/prepare-liquid-icon.sh Assets.xcassets
-          xcrun actool Assets.xcassets --compile "$APP" --platform iphoneos \
+          bash tools/prepare-liquid-icon.sh .
+          xcrun actool AppIcon.icon Assets.xcassets --compile "$APP" --platform iphoneos \
             --target-device iphone --minimum-deployment-target 16.0 \
             --app-icon AppIcon --include-all-app-icons \
+            --notices --warnings --errors \
+            --enable-on-demand-resources NO --development-region en \
             --output-partial-info-plist /tmp/XingyanAppIconInfo.plist \
             --output-format human-readable-text
           test -f "$APP/Assets.car"
