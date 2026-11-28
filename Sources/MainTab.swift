@@ -352,9 +352,7 @@ private struct ChatPresentationBackgroundModifier: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
         if #available(iOS 16.4, *) {
-            content.presentationBackground(
-                defaultChatCanvasColor().ignoresSafeArea()
-            )
+            content.presentationBackground(defaultChatCanvasColor())
         } else {
             content
         }

@@ -493,6 +493,47 @@ private struct ChatImmersiveEdgeMask: View {
     }
 }
 
+private struct ChatWeChatLightEdgeMask: View {
+    let edge: ChatWallpaperEdge
+
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        GeometryReader { proxy in
+            let base = C.pageBg
+
+            if reduceTransparency {
+                Rectangle().fill(base)
+            } else if edge == .top {
+                LinearGradient(
+                    stops: [
+                        .init(color: base.opacity(0.995), location: 0),
+                        .init(color: base.opacity(0.96), location: 0.62),
+                        .init(color: base.opacity(0.80), location: 0.86),
+                        .init(color: .clear, location: 1)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(width: proxy.size.width, height: proxy.size.height)
+            } else {
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: base.opacity(0.80), location: 0.14),
+                        .init(color: base.opacity(0.96), location: 0.38),
+                        .init(color: base.opacity(0.995), location: 1)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(width: proxy.size.width, height: proxy.size.height)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
 private struct ChatTopGlassBackdrop: View {
     let lightInk: Bool
 
@@ -2180,14 +2221,8 @@ struct ChatDetailView: View {
                 Group {
                     if isStarWorld && newsMode {
                         newsMaskColor
-                    } else if scheme == .light && !hasPickedChatWallpaper {
-                        ChatImmersiveEdgeMask(path: backgroundPath,
-                                              edge: .top,
-                                              tint: wallpaperTopTint,
-                                              dark: topBarUsesLightInk,
-                                              effect: backgroundEffect,
-                                              preset: ChatTheme.preset,
-                                              themeVersion: chatTheme.version)
+                    } else if scheme == .light {
+                        ChatWeChatLightEdgeMask(edge: .top)
                     } else {
                         ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)
                     }
@@ -2894,6 +2929,7 @@ struct ChatDetailView: View {
                 }
                 guard atBottomNow, !holdScroll else { return }
                 if ChatScrollHandle.shared.moving { return }
+                if Date() < followOwnSendUntil { return }
                 ChatScrollDiag.shared.note("内容变高 → 原生消息列表贴底")
                 nativeMessageController.scrollToBottom(
                     animated: shouldAnimateAutomaticBottomScroll
@@ -2927,6 +2963,7 @@ struct ChatDetailView: View {
                 return
             }
             guard !holdScroll else { return }
+            if Date() < followOwnSendUntil { return }
             guard atBottomNow || messages.last?.senderId == myId else { return }
             nativeMessageController.scrollToBottom(
                 animated: shouldAnimateAutomaticBottomScroll
@@ -3161,7 +3198,6 @@ struct ChatDetailView: View {
             wasAtBottom = true
             await Task.yield()
             if Task.isCancelled { return }
-            nativeMessageController.scrollToBottom(animated: false)
             initialOpenQuietUntil = Date().addingTimeInterval(0.55)
             initialScrollReady = true
             initialOpenSettling = false
@@ -3338,13 +3374,13 @@ struct ChatDetailView: View {
     private func scheduleSettledBottom() {
         guard allowSettledBottom else { return }
         guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
-        let followOwnSend = Date() < followOwnSendUntil
+        guard Date() >= followOwnSendUntil else { return }
         settleTask?.cancel()
         settleTask = Task { @MainActor in
             await Task.yield()
             if Task.isCancelled { return }
             guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
-            if !followOwnSend, let gap = ChatScrollHandle.shared.gap, gap > 24 { return }
+            if let gap = ChatScrollHandle.shared.gap, gap > 24 { return }
             pinTick += 1
         }
     }
@@ -5120,8 +5156,8 @@ struct ChatDetailView: View {
                 Group {
                     if isStarWorld && newsMode {
                         newsMaskColor
-                    } else if scheme == .light && hasPickedChatWallpaper {
-                        C.pageBg
+                    } else if scheme == .light {
+                        ChatWeChatLightEdgeMask(edge: .bottom)
                     } else {
                         ChatImmersiveEdgeMask(path: backgroundPath,
                                               edge: .bottom,
@@ -5567,8 +5603,6 @@ struct ChatDetailView: View {
         persistOutboxAfterFrame()
 
         UINotification.lightTap()
-        pinToBottomImmediately(force: true)
-        pinToBottomSoon(force: true)
         Task { await flushOutbox() }
     }
 

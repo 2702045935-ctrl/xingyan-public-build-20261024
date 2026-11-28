@@ -8,6 +8,7 @@ CONTACTS = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
 DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 NAV = (ROOT / "Sources" / "NavGlass.swift").read_text(encoding="utf-8")
 NATIVE_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
+CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -87,5 +88,12 @@ require("NativeTopGlassMask(active: navScrolled > 0," in DISCOVER
         and "TopGlassBar(" not in DISCOVER
         and "TopGlassLine(" not in DISCOVER,
         "world top bar must observe the native scroll view and use the shared material")
+require(
+    "struct ChatWeChatLightEdgeMask" in CHAT
+    and "ChatWeChatLightEdgeMask(edge: .top)" in CHAT
+    and "ChatWeChatLightEdgeMask(edge: .bottom)" in CHAT
+    and "else if scheme == .light && !hasPickedChatWallpaper" not in CHAT,
+    "light chat chrome must use the unified WeChat-style background-matched masks",
+)
 
 print("native-top-masks: passed")
