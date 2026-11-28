@@ -182,6 +182,60 @@ def build_icon(
     return Image.alpha_composite(background, rim).convert("RGB")
 
 
+def build_liquid_layers() -> tuple[Image.Image, Image.Image, Image.Image]:
+    orbit = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    orbit_draw = ImageDraw.Draw(orbit)
+    orbit_draw.ellipse(
+        (326, 704, 1722, 1344),
+        outline=(238, 255, 250, 178),
+        width=24,
+    )
+    orbit_draw.arc(
+        (420, 760, 1628, 1302),
+        198,
+        337,
+        fill=(255, 232, 177, 218),
+        width=18,
+    )
+    orbit = orbit.rotate(
+        -25,
+        resample=Image.Resampling.BICUBIC,
+        center=(CENTER, CENTER),
+    )
+
+    star_size = 1536
+    mask = star_mask(star_size, 650, 192)
+    star = Image.new("RGBA", (star_size, star_size), (0, 0, 0, 0))
+    star_fill = diagonal_gradient(
+        star_size,
+        (255, 255, 255),
+        (215, 255, 240),
+    ).convert("RGBA")
+    star_fill.putalpha(mask)
+    star.alpha_composite(star_fill)
+    star = star.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
+
+    accents = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    detail = ImageDraw.Draw(accents)
+    detail.rounded_rectangle(
+        (954, 974, 998, 1042),
+        radius=22,
+        fill=(3, 111, 69, 255),
+    )
+    detail.rounded_rectangle(
+        (1050, 974, 1094, 1042),
+        radius=22,
+        fill=(3, 111, 69, 255),
+    )
+    detail.ellipse((1514, 500, 1590, 576), fill=(255, 255, 252, 255))
+    detail.ellipse((486, 1416, 542, 1472), fill=(188, 255, 221, 255))
+
+    def downsample(layer: Image.Image) -> Image.Image:
+        return layer.resize((1024, 1024), Image.Resampling.LANCZOS)
+
+    return downsample(orbit), downsample(star), downsample(accents)
+
+
 def main() -> None:
     icon = build_icon()
     icon.resize((1024, 1024), Image.Resampling.LANCZOS).save(
@@ -196,6 +250,11 @@ def main() -> None:
         ROOT / "AppIcon60x60@3x.png",
         optimize=True,
     )
+
+    orbit, star, accents = build_liquid_layers()
+    orbit.save(ROOT / "app-icon-liquid-orbit-1024.png", optimize=True)
+    star.save(ROOT / "app-icon-liquid-star-1024.png", optimize=True)
+    accents.save(ROOT / "app-icon-liquid-accents-1024.png", optimize=True)
 
 
 if __name__ == "__main__":
