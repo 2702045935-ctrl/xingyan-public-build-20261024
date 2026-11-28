@@ -50,6 +50,8 @@ struct NativeChatRowConfiguration {
     var time: String
     var timeColor: UIColor
     var rowBackground: UIColor
+    var rowGradientTop: UIColor? = nil
+    var rowGradientBottom: UIColor? = nil
     var dividerColor: UIColor
     var showsDivider: Bool = true
     var badgeRing: UIColor
@@ -160,6 +162,7 @@ final class NativeChatRowCell: UITableViewCell {
     private let unreadBell = UIImageView()
     private let divider = UIView()
     private let pressOverlay = UIView()
+    private let rowGradient = CAGradientLayer()
     private var configuration: NativeChatRowConfiguration?
     private var avatarSignature = ""
     private var accessibilitySignature = ""
@@ -180,6 +183,11 @@ final class NativeChatRowCell: UITableViewCell {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        rowGradient.frame = foreground.bounds
     }
 
     override func prepareForReuse() {
@@ -208,6 +216,17 @@ final class NativeChatRowCell: UITableViewCell {
         self.configuration = configuration
         backgroundColor = configuration.rowBackground
         foreground.backgroundColor = configuration.rowBackground
+        if let top = configuration.rowGradientTop,
+           let bottom = configuration.rowGradientBottom {
+            rowGradient.isHidden = false
+            rowGradient.colors = [top.cgColor, bottom.cgColor]
+            rowGradient.startPoint = CGPoint(x: 0.5, y: 0)
+            rowGradient.endPoint = CGPoint(x: 0.5, y: 1)
+            foreground.backgroundColor = .clear
+        } else {
+            rowGradient.isHidden = true
+            rowGradient.colors = nil
+        }
         let opaque = configuration.rowBackground.cgColor.alpha >= 0.999
         isOpaque = opaque
         foreground.isOpaque = opaque
@@ -415,6 +434,8 @@ final class NativeChatRowCell: UITableViewCell {
 
         foreground.clipsToBounds = true
         foreground.isOpaque = true
+        rowGradient.isHidden = true
+        foreground.layer.insertSublayer(rowGradient, at: 0)
         contentView.isUserInteractionEnabled = false
         contentView.addSubview(foreground)
         let textGuide = UILayoutGuide()

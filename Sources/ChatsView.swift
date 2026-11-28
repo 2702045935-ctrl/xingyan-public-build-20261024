@@ -2945,7 +2945,12 @@ struct ChatsView: View {
             : UIColor(hex: isDark ? 0xFFFFFF : 0x171A18)
         let previewColor = UIColor(hex: isDark ? 0xAEAEB2 : 0x626B66)
         let memberColor = nativePeerColor(chat.memberColor)
-        let rowBg = isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9)
+        let liftAirDark = isDark && AppInfo.needsLiftedDarkSurface
+        let rowGradientTop = liftAirDark ? UIColor(hex: 0x141416) : nil
+        let rowGradientBottom = liftAirDark ? UIColor(hex: 0x0C0C0E) : nil
+        let rowBg = liftAirDark
+            ? UIColor(hex: 0x121214)
+            : (isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9))
         let timeColor = UIColor(hex: isDark ? 0x8E8E93 : 0x858D88)
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
@@ -2962,11 +2967,13 @@ struct ChatsView: View {
             time: TimeFmt.listConversation(chat.listTimestamp),
             timeColor: timeColor,
             rowBackground: rowBg,
+            rowGradientTop: rowGradientTop,
+            rowGradientBottom: rowGradientBottom,
             dividerColor: isDark
-                ? UIColor(C.hairline)
+                ? (liftAirDark ? UIColor(hex: 0x242426) : UIColor(C.hairline))
                 : UIColor(hex: 0xDDE2DD),
             showsDivider: true,
-            badgeRing: isDark ? UIColor(C.chatRowBg) : UIColor(hex: 0xFAFBF9),
+            badgeRing: isDark ? rowBg : UIColor(hex: 0xFAFBF9),
             chatId: chat.id,
             avatarPaths: avatarPaths,
             groupMemberIds: chat.memberIds ?? [],
