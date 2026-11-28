@@ -36,6 +36,19 @@ struct PrivacyView: View {
                 row(Tr("群聊"), $p.addByGroup, "addByGroup")
                 row(Tr("二维码"), $p.addByQR, "addByQR")
             }
+
+            Section(header: Text(Tr("朋友权限"))) {
+                NavigationLink {
+                    FriendBlocklistView()
+                } label: {
+                    HStack {
+                        Text(Tr("通讯录黑名单"))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                }
+            }
         }
         .listStyle(.insetGrouped)
         .navigationTitle(Tr("隐私"))
@@ -70,6 +83,82 @@ struct PrivacyView: View {
                 Task { await API.shared.setPrivacy(key, v) }
             }
         ))
+    }
+}
+
+struct FriendBlocklistView: View {
+    @EnvironmentObject private var app: AppState
+    @State private var users: [User] = []
+    @State private var loading = true
+    @State private var working: Set<String> = []
+
+    var body: some View {
+        List {
+            if loading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 120)
+            } else if users.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "hand.raised.slash")
+                        .font(.system(size: 30, weight: .light))
+                        .foregroundStyle(.secondary)
+                    Text(Tr("黑名单是空的"))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, minHeight: 160)
+            } else {
+                ForEach(users) { user in
+                    HStack(spacing: 12) {
+                        Avatar(path: user.avatarPath, size: 44,
+                               radius: 22, circle: true)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(user.name)
+                                .font(.body.weight(.medium))
+                            if let username = user.username, !username.isEmpty {
+                                Text(Tr("星言号") + "：" + username)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        Spacer(minLength: 8)
+                        Button {
+                            unblock(user)
+                        } label: {
+                            Text(working.contains(user.id) ? Tr("处理中") : Tr("移出黑名单"))
+                                .font(.subheadline.weight(.medium))
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(working.contains(user.id))
+                    }
+                    .padding(.vertical, 3)
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("通讯录黑名单"))
+        .hidesTabBar()
+        .task { await load() }
+    }
+
+    private func load() async {
+        loading = true
+        users = (try? await API.shared.blockedUsers()) ?? []
+        loading = false
+    }
+
+    private func unblock(_ user: User) {
+        guard !working.contains(user.id) else { return }
+        working.insert(user.id)
+        Task {
+            if await API.shared.setFriendMeta(userId: user.id, block: false) {
+                users.removeAll { $0.id == user.id }
+                await app.loadContacts()
+                await app.loadChats()
+            } else {
+                app.show(Tr("没保存上，再试一次"))
+            }
+            working.remove(user.id)
+        }
     }
 }
 

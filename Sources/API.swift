@@ -3184,6 +3184,12 @@ private struct StarredPayload: Decodable {
         return m
     }
 
+    func blockedUsers() async throws -> [User] {
+        struct Payload: Decodable { var users: [User]? }
+        let p: Payload = try await get("/api/friends/blocklist", as: Payload.self)
+        return p.users ?? []
+    }
+
     func starredFriends() async throws -> [String] {
         let p: StarredPayload = try await get("/api/friends/starred", as: StarredPayload.self)
         return p.ids ?? []

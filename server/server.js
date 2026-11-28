@@ -22675,6 +22675,25 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
+  if (parts[0] === 'friends' && parts[1] === 'blocklist' && method === 'GET') {
+    const byOwner = readFriendMeta().byOwner[user.id] || {};
+    const ids = Object.keys(byOwner).filter((id) => byOwner[id] && byOwner[id].block === true);
+    await Promise.all(ids.map(async (id) => {
+      if (!findUser(id)) await lookupRemoteUserById(id);
+    }));
+    const myFriends = friendSetCached(user.id);
+    const users = ids.map((id) => {
+      const target = findUser(id);
+      if (!target) return null;
+      return Object.assign(publicUserBrief(target, user.id, myFriends), {
+        block: true,
+        blockedAt: byOwner[id].blockedAt || ''
+      });
+    }).filter(Boolean);
+    ok(res, { users });
+    return;
+  }
+
   if (parts[0] === 'friends' && parts[1] === 'starred' && method === 'GET') {
     const ids = friendIds(user.id).filter((id) => metaOf(user.id, id).star === true);
     ok(res, {
@@ -22823,7 +22842,15 @@ async function handleApi(req, res, pathname, query) {
     /* 备注之类的一并清掉 */
     const dbm = readFriendMeta();
     if (dbm.byOwner[user.id]) {
-      delete dbm.byOwner[user.id][target.id];
+      const existing = dbm.byOwner[user.id][target.id];
+      if (existing && existing.block === true) {
+        dbm.byOwner[user.id][target.id] = {
+          block: true,
+          blockedAt: existing.blockedAt || now()
+        };
+      } else {
+        delete dbm.byOwner[user.id][target.id];
+      }
       saveFriendMeta();
     }
     sendTo(user.id, { type: 'friend', action: 'removed', userId: target.id });
