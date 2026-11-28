@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
 CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
 APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
+CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -39,6 +40,15 @@ require(
     and "_image = State(initialValue: fallback)" in CORE
     and "if loadedPath == identity { return }" in CORE,
     "RemoteImage must paint a cached avatar on its first frame without a placeholder flash",
+)
+require(
+    "private var myAvatarPath: String" in CHAT
+    and "return current.isEmpty ? app.lastAvatar : current" in CHAT
+    and "Avatar(path: myAvatarPath," in CHAT
+    and "let mine = myAvatarPath" in CHAT
+    and "showsAvatar: mineFor(message) || isRunStart(message)" in CHAT
+    and "let isRunStart = pendingIsRunStart(p)\n        let showsAvatar = true" in CHAT,
+    "pending and confirmed own-message bubbles must keep a stable visible avatar",
 )
 
 print("chat-avatar-stability: passed")

@@ -47,12 +47,20 @@ require(
     "image, multi-image and video message rendering must remain unchanged",
 )
 require(
-    "showsAvatar: isRunStart(message)" in CHAT
+    "showsAvatar: mineFor(message) || isRunStart(message)" in CHAT
+    and "let isRunStart = pendingIsRunStart(p)\n        let showsAvatar = true" in CHAT
     and "return same ? ChatFeedMetrics.runGap : ChatFeedMetrics.senderChangeGap"
     in CHAT
     and "if mine {\n                Spacer().frame(width: ChatFeedMetrics.avatarGap)"
     in CHAT,
     "direct and group messages must share one stable avatar/name run hierarchy",
+)
+require(
+    CHAT.count("NativeMediaGlassSurface") <= 3
+    and "NativeGlassControlMaterial()" in CHAT
+    and "shape: RoundedRectangle(cornerRadius: 18, style: .continuous),\n                    shadow: true"
+    in CHAT,
+    "per-row timestamps and media controls must use the 2611280617 lightweight glass",
 )
 require(
     ".fill(ChatTheme.bubbleMine)" in CHAT

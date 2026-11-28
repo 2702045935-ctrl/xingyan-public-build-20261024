@@ -1333,6 +1333,11 @@ struct ChatDetailView: View {
     @State private var lastInputSnapshot = ""
 
     private var myId: String { app.me?.id ?? "" }
+    private var myAvatarPath: String {
+        let current = (app.me?.avatarPath ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return current.isEmpty ? app.lastAvatar : current
+    }
     private var isGroup: Bool {
 
         if chat.type == "group" { return true }
@@ -3418,7 +3423,8 @@ struct ChatDetailView: View {
     }
 
     private func pendingBubble(_ p: PendingMsg) -> some View {
-        let showsAvatar = pendingIsRunStart(p)
+        let isRunStart = pendingIsRunStart(p)
+        let showsAvatar = true
         return HStack(alignment: .top, spacing: 0) {
             Spacer(minLength: 0)
 
@@ -3448,7 +3454,7 @@ struct ChatDetailView: View {
                         .padding(.vertical,
                                  ChatFeedMetrics.textVerticalPadding)
                         .background(BubbleFill(mine: true,
-                                               tail: showsAvatar,
+                                               tail: isRunStart,
                                                glass: false))
                         .opacity(p.failed ? 0.9 : 1)
                 }
@@ -3462,7 +3468,7 @@ struct ChatDetailView: View {
 
             Spacer().frame(width: ChatFeedMetrics.avatarGap)
             if showsAvatar {
-                Avatar(path: app.me?.avatarPath ?? "",
+                Avatar(path: myAvatarPath,
                        size: ChatFeedMetrics.avatarSize,
                        radius: ChatFeedMetrics.avatarSize / 2)
             } else {
@@ -3731,9 +3737,7 @@ struct ChatDetailView: View {
             .padding(.vertical, L.o("chatTimePadY", 4))
             .background {
                 ZStack {
-                    NativeMediaGlassSurface(
-                        shape: AnyShape(Capsule(style: .continuous))
-                    )
+                    NativeGlassControlMaterial()
                     Capsule(style: .continuous)
                         .fill(adaptiveSystemSurface.opacity(
                             scheme == .dark ? 0.08 : 0.12
@@ -3795,7 +3799,7 @@ struct ChatDetailView: View {
                    senderOnline: senderIsOnline(message),
                    avatarSize: L.chatAvatar,
                    maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
-                   showsAvatar: isRunStart(message),
+                   showsAvatar: mineFor(message) || isRunStart(message),
                    reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
@@ -4010,7 +4014,7 @@ struct ChatDetailView: View {
         if let path = message.senderAvatar, !path.isEmpty { return path }
         let senderId = message.senderId ?? ""
         if senderId == app.me?.id {
-            let mine = (app.me?.avatarPath ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let mine = myAvatarPath
             if !mine.isEmpty { return mine }
         }
         if let path = app.contact(for: senderId)?.avatarPath, !path.isEmpty { return path }
@@ -8536,10 +8540,9 @@ struct MessageRow: View {
             }
             .padding(4)
             .background {
-                NativeMediaGlassSurface(
-                    shape: AnyShape(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    )
+                GlassBackground(
+                    shape: RoundedRectangle(cornerRadius: 18, style: .continuous),
+                    shadow: true
                 )
             }
         } else {
@@ -8577,10 +8580,10 @@ struct MessageRow: View {
                                         .padding(.horizontal, 8)
                                         .frame(height: 25)
                                         .background {
-                                            NativeMediaGlassSurface(
-                                                shape: AnyShape(
-                                                    Capsule(style: .continuous)
-                                                )
+                                            GlassBackground(
+                                                shape: Capsule(style: .continuous),
+                                                opacity: 0.84,
+                                                tint: Color.black.opacity(0.30)
                                             )
                                         }
                                         .padding(6)
@@ -8603,10 +8606,9 @@ struct MessageRow: View {
             }
             .padding(4)
             .background {
-                NativeMediaGlassSurface(
-                    shape: AnyShape(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    )
+                GlassBackground(
+                    shape: RoundedRectangle(cornerRadius: 18, style: .continuous),
+                    shadow: true
                 )
             }
         }
