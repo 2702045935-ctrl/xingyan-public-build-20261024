@@ -12,6 +12,7 @@ INDEX = (ROOT / "Sources" / "ContactIndex.swift").read_text(encoding="utf-8")
 MENU = (ROOT / "Sources" / "MainTab.swift").read_text(encoding="utf-8")
 PHONE = (ROOT / "Sources" / "PhoneContactsView.swift").read_text(encoding="utf-8")
 PROFILE = (ROOT / "Sources" / "Profile.swift").read_text(encoding="utf-8")
+CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -58,6 +59,15 @@ require(
     ".background(contactsCanvas)" in VIEW
     and ".frame(height: sectionHeaderHeight)" in VIEW,
     "alphabet headers must stay close to the surrounding canvas without a heavy band",
+)
+require(
+    "AvatarSystemEdge(shape: shape)" in CORE
+    and "AvatarEdgeFinish" not in CORE
+    and "scheme == .dark\n                ? Color.white.opacity(0.09)\n                : Color.black.opacity(0.10)" in CORE
+    and "lineWidth: 0.5" in CORE
+    and "if level >= 4, size >= 56" in CORE
+    and ".shadow(\n            color: size >= 56" not in CORE,
+    "list avatars must use system photo cropping, one neutral hairline and no decorative shadow",
 )
 require(
     "private var funcStrip" in VIEW

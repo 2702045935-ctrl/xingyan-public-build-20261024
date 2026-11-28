@@ -1365,7 +1365,6 @@ struct Avatar: View {
     var group = false
 
     var level: Int = 0
-    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         Group {
@@ -1405,18 +1404,11 @@ struct Avatar: View {
         }
 
         .overlay {
-            AvatarEdgeFinish(shape: shape, size: size)
+            AvatarSystemEdge(shape: shape)
                 .allowsHitTesting(false)
         }
-        .shadow(
-            color: size >= 56
-                ? Color.black.opacity(scheme == .dark ? 0.18 : 0.065)
-                : Color.clear,
-            radius: 4,
-            y: 2
-        )
         .overlay {
-            if level >= 4, GrowthFlags.avatarFrame != false {
+            if level >= 4, size >= 56, GrowthFlags.avatarFrame != false {
                 QQAvatarFrame(
                     level: level,
                     size: size,
@@ -1437,34 +1429,17 @@ struct Avatar: View {
     }
 }
 
-private struct AvatarEdgeFinish: View {
+private struct AvatarSystemEdge: View {
     let shape: AnyShape
-    let size: CGFloat
     @Environment(\.colorScheme) private var scheme
 
-    private var lineWidth: CGFloat {
-        max(0.55, min(0.9, size * 0.014))
-    }
-
     var body: some View {
-        ZStack {
-            shape.stroke(
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(scheme == .dark ? 0.34 : 0.62),
-                        Color.white.opacity(0.08),
-                        Color.black.opacity(scheme == .dark ? 0.32 : 0.10)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                lineWidth: lineWidth
-            )
-            shape.stroke(
-                Color.white.opacity(scheme == .dark ? 0.045 : 0.10),
-                lineWidth: max(0.45, lineWidth * 0.55)
-            )
-        }
+        shape.stroke(
+            scheme == .dark
+                ? Color.white.opacity(0.09)
+                : Color.black.opacity(0.10),
+            lineWidth: 0.5
+        )
     }
 }
 
@@ -1519,11 +1494,9 @@ struct GroupAvatarMosaic: View {
         .background(Color.dyn(0xE8E8EC, 0x222528))
         .clipShape(shape)
         .overlay {
-            AvatarEdgeFinish(shape: shape, size: size)
+            AvatarSystemEdge(shape: shape)
         }
         .drawingGroup(opaque: false, colorMode: .nonLinear)
-        .shadow(color: Color.black.opacity(size >= 56 ? 0.06 : 0),
-                radius: 4, y: 2)
         .task(id: memberIds) {
             await refreshMembers()
         }
