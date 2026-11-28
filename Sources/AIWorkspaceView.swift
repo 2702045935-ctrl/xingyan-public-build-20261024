@@ -827,7 +827,6 @@ struct AIWorkspaceView: View {
             } catch {
                 uploading = false
                 waitingReply = false
-                app.show((error as? LocalizedError)?.errorDescription ?? "文件发送失败")
             }
         }
     }

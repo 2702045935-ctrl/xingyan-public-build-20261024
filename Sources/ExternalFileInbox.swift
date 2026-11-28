@@ -126,7 +126,7 @@ struct ExternalFileSendView: View {
     @State private var sending = false
     @State private var progress = ""
     @State private var transferFraction: Double = 0
-    @State private var alert = ""
+    @State private var operationError = ""
     @State private var forwardScrollTick = 0
     @State private var filePreview: FilePreviewData?
     @State private var showShare = false
@@ -201,10 +201,6 @@ struct ExternalFileSendView: View {
                 sendDock
             }
             .task { if app.chats.isEmpty { await app.loadChats() } }
-            .alert(alert, isPresented: Binding(get: { !alert.isEmpty },
-                                               set: { if !$0 { alert = "" } })) {
-                Button(Tr("知道了"), role: .cancel) {}
-            }
             .fullScreenCover(item: $filePreview) { f in
                 FilePreviewSheet(name: f.name, local: f.local)
             }
@@ -414,9 +410,37 @@ struct ExternalFileSendView: View {
                             .font(pfStyled(size: 10.5, weight: .semibold, design: .rounded))
                             .foregroundStyle(OrbitTheme.jade)
                     }
-                    ProgressView(value: min(1, max(0, transferFraction)))
-                        .tint(OrbitTheme.jade)
+                    FileUploadProgressBar(progress: transferFraction,
+                                          tint: OrbitTheme.jade,
+                                          height: 4)
                 }
+            }
+
+            if !operationError.isEmpty {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(C.red)
+                        .padding(.top, 1)
+                    Text(operationError)
+                        .font(pfStyled(size: 11.5, weight: .medium))
+                        .foregroundStyle(C.red)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: 6)
+                    Button {
+                        operationError = ""
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(OrbitTheme.secondary)
+                            .frame(width: 24, height: 24)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(C.red.opacity(0.08),
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
 
             HStack(spacing: 12) {
@@ -549,16 +573,17 @@ struct ExternalFileSendView: View {
             }
             guard let chat else {
                 sending = false
-                alert = Tr("这个朋友暂时无法创建会话")
+                operationError = Tr("这个朋友暂时无法创建会话")
                 return
             }
             var done = 0
             let count = max(1, inbox.files.count)
             for (index, item) in inbox.files.enumerated() {
-                progress = Tr("正在上传") + " \(done + 1)/\(inbox.files.count)"
+                progress = FileUploadUX.batchUploading(done + 1,
+                                                       of: inbox.files.count)
                 let bytes = (try? item.local.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-                if bytes > 100 * 1024 * 1024 {
-                    alert = Tr("单个文件不能超过 100MB")
+                if FileUploadUX.exceedsLimit(bytes) {
+                    operationError = FileUploadUX.limitMessage
                     break
                 }
                 guard bytes > 0 else { continue }
@@ -581,13 +606,15 @@ struct ExternalFileSendView: View {
                     _ = try await API.shared.send(chatId: chat.id, kind: "file", content: content)
                     done += 1
                 } catch {
-                    alert = (error as? APIError)?.errorDescription ?? Tr("文件发送失败")
+                    operationError = FileUploadUX.failure(
+                        (error as? APIError)?.errorDescription ?? ""
+                    )
                     break
                 }
             }
             sending = false
             transferFraction = 0
-            if alert.isEmpty && done > 0 {
+            if operationError.isEmpty && done > 0 {
                 await app.loadChats()
                 inbox.finish()
                 dismiss()
@@ -606,8 +633,8 @@ struct ExternalFileSendView: View {
             for (index, item) in inbox.files.enumerated() {
                 progress = Tr("正在收藏") + " \(done + 1)/\(inbox.files.count)"
                 let bytes = (try? item.local.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-                if bytes > 100 * 1024 * 1024 {
-                    alert = Tr("单个文件不能超过 100MB")
+                if FileUploadUX.exceedsLimit(bytes) {
+                    operationError = FileUploadUX.limitMessage
                     break
                 }
                 guard bytes > 0 else { continue }
@@ -629,11 +656,13 @@ struct ExternalFileSendView: View {
                                   content: String(data: body, encoding: .utf8) ?? "{\"url\":\"\(uploadedURL)\"}"))
                     done += 1
                 } catch {
-                    alert = (error as? APIError)?.errorDescription ?? Tr("收藏失败")
+                    operationError = FileUploadUX.failure(
+                        (error as? APIError)?.errorDescription ?? ""
+                    )
                     break
                 }
             }
-            if alert.isEmpty && done > 0 {
+            if operationError.isEmpty && done > 0 {
                 var allOK = true
                 for file in saved {
                     let ok = await API.shared.addFavorite(kind: "file",
@@ -647,7 +676,7 @@ struct ExternalFileSendView: View {
                     inbox.finish()
                     dismiss()
                 } else {
-                    alert = Tr("收藏失败")
+                    operationError = Tr("保存没有完成，请返回后重试")
                 }
             }
             favoriteBusy = false

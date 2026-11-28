@@ -509,7 +509,6 @@ struct AIPageView: View {
             } catch {
                 await MainActor.run {
                     uploading = false
-                    app.show((error as? LocalizedError)?.errorDescription ?? "文件发送失败")
                 }
             }
         }

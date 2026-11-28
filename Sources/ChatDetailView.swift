@@ -1059,7 +1059,7 @@ struct ChatDetailView: View {
                                                       content: fav.content,
                                                       title: chat.name,
                                                       from: displayName(m))
-                app.show(ok ? Tr("已收藏") : Tr("收藏失败"))
+                if ok { app.show(Tr("已收藏")) }
             }
         case "quote":
             quote = m
@@ -6410,8 +6410,8 @@ struct ChatDetailView: View {
         )
         let sizeBytes = uploadedValues?.fileSize ?? values?.fileSize ?? 0
         let name = values?.name ?? url.lastPathComponent
-        if sizeBytes > 100 * 1024 * 1024 {
-            app.show(Tr("这个文件超过 100MB，先压缩一下再发"))
+        if FileUploadUX.exceedsLimit(sizeBytes) {
+            app.show(FileUploadUX.limitMessage)
             return
         }
         guard sizeBytes > 0 else {
@@ -6422,7 +6422,7 @@ struct ChatDetailView: View {
         if transfer == nil {
             sendingFileName = name
             sendingFileBytes = sizeBytes
-            sendingFileProgress = 0.01
+            sendingFileProgress = 0
             scrollTick += 1
         } else {
             transfer?.prepare(name: name, bytes: sizeBytes)
@@ -6486,8 +6486,10 @@ struct ChatDetailView: View {
                 sendingFileBytes = 0
             }
         } catch {
-            transfer?.failed((error as? APIError)?.errorDescription ?? "文件发送失败")
-            app.show((error as? APIError)?.errorDescription ?? "文件发送失败")
+            let reason = FileUploadUX.failure(
+                (error as? APIError)?.errorDescription ?? ""
+            )
+            transfer?.failed(reason)
         }
         await app.loadChats()
     }
@@ -9376,7 +9378,7 @@ final class FileTransferState: ObservableObject {
     }
 
     func upload(progress value: Double) {
-        progress = min(1, max(progress, value))
+        progress = FileUploadUX.progress(max(progress, value))
         phase = .uploading
     }
 
@@ -9391,7 +9393,7 @@ final class FileTransferState: ObservableObject {
     }
 
     func failed(_ reason: String) {
-        phase = .failed(reason)
+        phase = .failed(FileUploadUX.failure(reason))
     }
 }
 
@@ -9712,7 +9714,7 @@ struct FilePreviewSheet: View {
                                                   title: favoriteTitle,
                                                   from: favoriteFrom)
             favoriting = false
-            app.show(ok ? Tr("已收藏") : Tr("收藏失败"))
+            if ok { app.show(Tr("已收藏")) }
         }
     }
 }
@@ -9720,9 +9722,13 @@ struct FilePreviewSheet: View {
 private struct FileTransferProgressCard: View {
     @ObservedObject var transfer: FileTransferState
 
+    private var look: (symbol: String, color: Color, badge: String) {
+        FileKind.look(transfer.name)
+    }
+
     private var accent: Color {
         if case .failed = transfer.phase { return C.red }
-        return OrbitTheme.jade
+        return look.color
     }
 
     var body: some View {
@@ -9761,23 +9767,9 @@ private struct FileTransferProgressCard: View {
                 }
             }
 
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(C.fieldBg)
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(hex: 0x55D6A2), accent],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: max(transfer.progress > 0 ? 5 : 0,
-                                          geo.size.width * transfer.progress))
-                }
-            }
-            .frame(height: 5)
-            .animation(.linear(duration: 0.14), value: transfer.progress)
+            FileUploadProgressBar(progress: transfer.progress,
+                                  tint: accent,
+                                  height: 5)
         }
         .padding(13)
         .background(
@@ -9793,11 +9785,11 @@ private struct FileTransferProgressCard: View {
 
     private var statusTitle: String {
         switch transfer.phase {
-        case .preparing: return Tr("准备发送文件")
-        case .uploading: return Tr("正在上传")
-        case .processing: return Tr("服务器处理中")
-        case .sent: return Tr("文件已发送")
-        case .failed: return Tr("文件发送失败")
+        case .preparing: return Tr("准备发送")
+        case .uploading: return FileUploadUX.uploading(transfer.progress)
+        case .processing: return Tr("发送中…")
+        case .sent: return Tr("已发送")
+        case .failed: return Tr("发送失败")
         }
     }
 
@@ -9810,19 +9802,13 @@ private struct FileTransferProgressCard: View {
             ? "\(transfer.fileIndex)/\(transfer.fileCount) · "
             : ""
         if case .failed(let reason) = transfer.phase {
-            return index + reason
+            return index + FileUploadUX.failure(reason)
         }
         return index + transfer.name + " · " + size
     }
 
     private var symbol: String {
-        switch transfer.phase {
-        case .preparing: return "doc.badge.clock"
-        case .uploading: return "arrow.up.circle.fill"
-        case .processing: return "gearshape.2.fill"
-        case .sent: return "paperplane.fill"
-        case .failed: return "exclamationmark.circle.fill"
-        }
+        look.symbol
     }
 }
 

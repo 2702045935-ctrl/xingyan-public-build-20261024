@@ -546,7 +546,6 @@ struct VideoPlayerSheet: View {
         Task {
             defer { Task { @MainActor in saving = false } }
             guard let file = await videoFileForSaving() else {
-                await MainActor.run { app.show(Tr("视频下载失败，暂时不能保存")) }
                 return
             }
             let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
@@ -560,7 +559,6 @@ struct VideoPlayerSheet: View {
                 }
                 await MainActor.run { app.show(Tr("已保存到相册")) }
             } catch {
-                await MainActor.run { app.show(Tr("视频保存失败")) }
             }
         }
     }
@@ -820,27 +818,14 @@ struct SendingFileBubble: View {
                             .font(pf(11))
                             .foregroundColor(C.subLabel)
                         Spacer(minLength: 4)
-                        Text(value >= 0.995
-                             ? Tr("服务器处理中…")
-                             : Tr("上传中") + " \(Int(value * 100))%")
+                        Text(FileUploadUX.uploading(value))
                             .font(pf(10.5, .medium))
                             .foregroundColor(look.color)
                     }
                 }
             }
 
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(C.fieldBg)
-                    Capsule()
-                        .fill(look.color)
-                        .frame(width: max(CGFloat(value > 0 ? 4 : 0),
-                                          geo.size.width * CGFloat(value)))
-                }
-            }
-            .frame(height: 3)
-            .animation(.linear(duration: 0.16), value: value)
+            FileUploadProgressBar(progress: value, tint: look.color)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 11)
