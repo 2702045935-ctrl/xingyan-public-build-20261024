@@ -5797,10 +5797,11 @@ struct ChatDetailView: View {
             uploading = true
             sendingPreview = list.first
             sendingPreviews = list
-            sendingMedia = Tr("图片上传中…") + " 0/\(list.count)"
+            sendingMedia = Tr("图片上传中…")
             sendProgress = 0.02
             scrollTick += 1
             let progress = ImageUploadProgress(count: list.count)
+            let uploadGroup = "multi-" + UUID().uuidString
             Task {
                 do {
                     var urls: [String] = []
@@ -5822,11 +5823,12 @@ struct ChatDetailView: View {
                                     let upstream = try await API.shared.uploadImageForSend(
                                         img,
                                         original: original,
+                                        uploadGroup: uploadGroup,
                                         onProgress: { p in
                                             let state = progress.update(index: i, value: p)
                                             DispatchQueue.main.async {
                                                 sendProgress = min(0.82, 0.02 + state.progress * 0.80)
-                                                sendingMedia = Tr("图片上传中…") + " \(state.completed)/\(list.count)"
+                                                sendingMedia = Tr("图片上传中…")
                                             }
                                         }
                                     )

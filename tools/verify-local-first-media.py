@@ -28,13 +28,16 @@ require(
 require(
     "sendingPreview = img\n            sendingPreviews = [img]" in CHAT
     and "sendingPreview = list.first\n            sendingPreviews = list" in CHAT
+    and 'let uploadGroup = "multi-" + UUID().uuidString' in CHAT
+    and "uploadGroup: uploadGroup" in CHAT
+    and 'sendingMedia = Tr("图片上传中…") + " \\(state.completed)/\\(list.count)"' not in CHAT
     and "let upstream = try await API.shared.uploadImageForSend(" in CHAT
     and "seedLocalImage(url, img, data: upstream.data)" in CHAT
     and "// 文件 URL 在安全作用域内直接流式上传，不在发送前复制整份文件。" in CHAT
     and "var uploadURL = url" in CHAT
     and "for (index, u) in urls.enumerated()" in CHAT
     and "for (index, u) in stagedURLs.enumerated()" not in CHAT,
-    "media must appear immediately in memory and upload directly without staging copies",
+    "multi-image sends must use one logical upload group and no per-file upload counter",
 )
 require(
     "private func confirmedSentMessage(_ message: Message?, kind: String) throws -> Message" in CHAT

@@ -24887,6 +24887,7 @@ async function handleApi(req, res, pathname, query) {
      （base64 会多传 33%，一条 5MB 视频要多跑 1.7MB 流量 → 手机上就是多等十几秒） */
   if (parts[0] === 'upload' && parts[1] === 'raw' && method === 'POST') {
     const clientSaidCompressed = String(req.headers['x-chris-compressed'] || '').trim() === '1';   // CHRIS_UPLOAD_SKIP_SHRINK_V1
+    const uploadGroup = String(req.headers['x-chris-upload-group'] || '').trim().slice(0, 120);
     if (!uploadRateAllow(user.id)) {
       return fail(res, 429, '上传太频繁了，歇一会儿再传');
     }
@@ -25007,12 +25008,13 @@ async function handleApi(req, res, pathname, query) {
     } catch (_) {
       return fail(res, 422, '文件保存失败，请重试');
     }
-    noteUpload(user.id, size);
+    noteUpload(user.id, size, uploadGroup);
     ok(res, { url: '/uploads/' + name, bytes: size });
     return;
   }
 
   if (parts[0] === 'upload' && method === 'POST') {
+    const uploadGroup = String(req.headers['x-chris-upload-group'] || '').trim().slice(0, 120);
     if (!uploadRateAllow(user.id)) {
       return fail(res, 429, '上传太频繁了，歇一会儿再传（10 分钟最多 60 个、200MB）');
     }
@@ -25022,7 +25024,7 @@ async function handleApi(req, res, pathname, query) {
     const body = await readBody(req);
     const saved = saveUploadedFile(body);
     if (saved.error) return fail(res, saved.status, saved.error);
-    noteUpload(user.id, saved.bytes || 0);
+    noteUpload(user.id, saved.bytes || 0, uploadGroup);
     ok(res, saved);
     return;
   }
@@ -26859,10 +26861,18 @@ function uploadRateAllow(userId) {
   if (uploadHits.size > 5000) uploadHits.clear();
   return r.n < UPLOAD_MAX_COUNT && r.bytes < UPLOAD_MAX_BYTES;
 }
-function noteUpload(userId, bytes) {
+function noteUpload(userId, bytes, uploadGroup = '') {
   const r = uploadHits.get(userId);
   if (r) {
-    r.n += 1;
+    if (!uploadGroup) {
+      r.n += 1;
+    } else {
+      if (!r.groups) r.groups = new Set();
+      if (!r.groups.has(uploadGroup)) {
+        r.groups.add(uploadGroup);
+        r.n += 1;
+      }
+    }
     r.bytes += bytes;
   }
   uploadDirUsageCache = {

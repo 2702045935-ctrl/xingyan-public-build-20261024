@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
+SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -38,6 +39,13 @@ require(
     and 'dict["error"] as? String' in API
     and 'return "上传失败（HTTP \\(status)）"' in API,
     "upload failures must surface the server reason instead of a generic message",
+)
+require(
+    'req.setValue(uploadGroup, forHTTPHeaderField: "x-chris-upload-group")' in API
+    and "x-chris-upload-group" in SERVER
+    and "if (!r.groups.has(uploadGroup))" in SERVER
+    and "r.groups.add(uploadGroup)" in SERVER,
+    "one multi-image send must consume one upload quota unit",
 )
 require(
     'let payload: Any = object["data"] ?? object' in API
