@@ -3410,9 +3410,17 @@ struct ChatDetailView: View {
         return min(preferred, configured)
     }
 
+    private func pendingDisplayText(_ raw: String) -> String {
+        ClassicEmojiSet.expand(raw)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private func pendingBubble(_ p: PendingMsg) -> some View {
         let isRunStart = pendingIsRunStart(p)
         let showsAvatar = true
+        let pendingText = p.kind == "text"
+            ? pendingDisplayText(p.preview)
+            : p.preview
         return HStack(alignment: .top, spacing: 0) {
             Spacer(minLength: 0)
 
@@ -3433,11 +3441,11 @@ struct ChatDetailView: View {
                     if p.kind == "audio" {
                         pendingAudioBubble(p, tail: isRunStart)
                     } else {
-                        Text(p.preview)
+                        Text(pendingText)
                             .font(pf(L.chatFontSize))
                             .foregroundColor(Color.white.opacity(0.98))
                             .lineLimit(6)
-                            .lineSpacing(pendingTextLineSpacing(p.preview))
+                            .lineSpacing(pendingTextLineSpacing(pendingText))
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal,

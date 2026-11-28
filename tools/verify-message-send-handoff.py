@@ -73,8 +73,14 @@ require(
     "confirmed bubbles must replace the pending row in one non-animated transaction",
 )
 require(
-    ".lineSpacing(pendingTextLineSpacing(p.preview))" in CHAT
+    "let pendingText = p.kind == \"text\"" in CHAT
+    and "? pendingDisplayText(p.preview)" in CHAT
+    and "Text(pendingText)" in CHAT
+    and "ClassicEmojiSet.expand(raw)" in CHAT
+    and ".trimmingCharacters(in: .whitespacesAndNewlines)" in CHAT
+    and ".lineSpacing(pendingTextLineSpacing(pendingText))" in CHAT
     and "private func pendingTextLineSpacing(_ raw: String) -> CGFloat" in CHAT
+    and "private func pendingDisplayText(_ raw: String) -> String" in CHAT
     and ".padding(.bottom, pendingGapAfter(p))" in CHAT
     and ".padding(.vertical, 3)\n        .id(p.id)" not in CHAT
     and "insertion: .scale(scale: 0.94" not in CHAT,
