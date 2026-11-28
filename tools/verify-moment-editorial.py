@@ -64,7 +64,7 @@ require(
     and "headerHeight: L.coverH + momentProfileFooterHeight" in DISCOVER
     and "RemoteImage(path: cover, icon: \"photo\", mode: .fill, maxSide: 2560)"
     in DISCOVER
-    and "let visualHeight = L.coverH + extra + momentProfileFooterHeight + topOverdraw"
+    and "let visualHeight = L.coverH + extra + momentProfileFooterHeight\n            + topOverdraw + bottomOverdraw"
     in DISCOVER
     and ".offset(y: 21)" in DISCOVER
     and "headerContainer.clipsToBounds = false" in FEED,

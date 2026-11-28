@@ -32,7 +32,7 @@ for token in (
     'UIConfig.fixedDark("chatsRowBg", 0xFAFBF9, 0x000000)',
     'UIConfig.fixedDark("previewColor", 0x626B66, 0xAEAEB2)',
     'UIConfig.fixedDark("timeColor", 0x858D88, 0x8E8E93)',
-    'UIConfig.fixedDark("lineColor", 0xDDE2DD, 0x38383A)',
+    'UIConfig.fixedDark("lineColor", 0xDDE2DD, 0x2C2C2E)',
 ):
     require(token in CORE, "missing shared Apple Messages dark token: " + token)
 

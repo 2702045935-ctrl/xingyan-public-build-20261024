@@ -46,6 +46,15 @@ require(
     "the dark native chrome fallback must use the app-wide navigation canvas",
 )
 require(
+    'UIConfig.fixedDark("lineColor", 0xDDE2DD, 0x2C2C2E)' in CORE
+    and 'UIConfig.fixedDark("navLineColor", 0xD9DED9, 0x2C2C2E)' in CORE
+    and "static let iconInk = Color.dyn(0x35403A, 0xAEAEB2)" in CHATS
+    and "UIColor(hex: 0x2C2C2E)" in CHATS
+    and "static let selectedChipFill = Color.dyn(0x171A18, 0x0A84FF)" in CHATS
+    and "static let selectedChipInk = Color.dyn(0xF7F9F6, 0xFFFFFF)" in CHATS,
+    "dark mode must follow Messages' black canvas, neutral raised surfaces and weakest separators",
+)
+require(
     "appearance.configureWithOpaqueBackground()" in TAB
     and "appearance.backgroundEffect = nil" in TAB
     and "appearance.backgroundColor = UIColor(themed)" in TAB

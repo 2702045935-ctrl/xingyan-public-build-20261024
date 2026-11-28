@@ -467,11 +467,11 @@ enum C {
     static var searchIcon  : Color { UIConfig.fixedDark("searchIcon", 0x87908A, 0x8E8E93) }
     static var searchIcon2 : Color { UIConfig.fixedDark("searchIcon2", 0x6E7771, 0xAEAEB2) }
     static let searchBorder = Color(UIColor { t in
-        t.userInterfaceStyle == .dark ? UIColor(white: 1, alpha: 0.11) : UIColor(hex: 0xD9DED9)
+        t.userInterfaceStyle == .dark ? UIColor(white: 1, alpha: 0.08) : UIColor(hex: 0xD9DED9)
     })
 
     static let searchBorderChats = Color(UIColor { t in
-        t.userInterfaceStyle == .dark ? UIColor(white: 1, alpha: 0.12) : UIColor.clear
+        t.userInterfaceStyle == .dark ? UIColor(white: 1, alpha: 0.08) : UIColor.clear
     })
     static var name        : Color { UIConfig.fixedDark("nameColor", 0x171A18, 0xFFFFFF) }
     static var label       : Color { UIConfig.fixedDark("labelColor", 0x171A18, 0xFFFFFF) }
@@ -480,8 +480,8 @@ enum C {
 
     static var ctIdxColor  : Color { UIConfig.color("ctIdxColor", 0x555555, 0x8E8E93) }
     static var subLabel    : Color { UIConfig.fixedDark("subLabelColor", 0x727B76, 0x8E8E93) }
-    static var hairline    : Color { UIConfig.fixedDark("lineColor", 0xDDE2DD, 0x38383A) }
-    static var navLine     : Color { UIConfig.fixedDark("navLineColor", 0xD9DED9, 0x38383A) }
+    static var hairline    : Color { UIConfig.fixedDark("lineColor", 0xDDE2DD, 0x2C2C2E) }
+    static var navLine     : Color { UIConfig.fixedDark("navLineColor", 0xD9DED9, 0x2C2C2E) }
 
     static var green       : Color { UIConfig.color("greenColor", 0x24C77F, 0x3AD48C) }
     static var red         : Color { UIConfig.color("redColor", 0xFA5151, 0xFA5151) }

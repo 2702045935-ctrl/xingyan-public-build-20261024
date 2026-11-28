@@ -13,23 +13,22 @@ private enum ChatListVisual {
     static let dividerLeading: CGFloat = 77
 
     static let ink = Color.dyn(0x171A18, 0xFFFFFF)
-    static let iconInk = Color.dyn(0x35403A, 0xBDBDC2)
+    static let iconInk = Color.dyn(0x35403A, 0xAEAEB2)
     static let utilityIconInk = Color.dyn(0x7A837D, 0x8E8E93)
     static let previewInk = Color.dyn(0x626B66, 0xAEAEB2)
     static let conversationPreviewInk = Color.dyn(0x626B66, 0xAEAEB2)
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
     static let timeInk = Color.dyn(0x858D88, 0x8E8E93)
     static let rule = Color(UIColor { trait in
-        // WeChat measures 48,48,48 on its 25,25,25 canvas. Our canvas is
-        // 10,10,10, so the same perceived weight needs a darker separator.
+        // iOS Messages uses a low-contrast 44,44,46 separator on a black canvas.
         trait.userInterfaceStyle == .dark
-            ? UIColor(hex: 0x38383A)
+            ? UIColor(hex: 0x2C2C2E)
             : UIColor(hex: 0xDDE2DD)
     })
     static let badgeRing = Color.dyn(0xFAFBF9, 0x000000)
     static let chipInk = Color.dyn(0x5E6862, 0xAEAEB2)
-    static let selectedChipFill = Color.dyn(0x171A18, 0xE7ECE8)
-    static let selectedChipInk = Color.dyn(0xF7F9F6, 0x101412)
+    static let selectedChipFill = Color.dyn(0x171A18, 0x0A84FF)
+    static let selectedChipInk = Color.dyn(0xF7F9F6, 0xFFFFFF)
 }
 
 private enum OfficialRowVisual {
