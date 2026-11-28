@@ -37,7 +37,12 @@ require(
     and "isLowPowerModeEnabled" in PROFILE
     and "thermalStateDidChangeNotification" in PROFILE
     and "didReceiveMemoryWarningNotification" in PROFILE
-    and "result = result.degraded" in PROFILE,
+    and "result = result.degraded" in PROFILE
+    and 'environment["XINGYAN_PERFORMANCE_TIER"]' in PROFILE
+    and '"-XingyanPerformanceTier"' in PROFILE
+    and 'case "legacy": return .legacy' in PROFILE
+    and 'case "balanced": return .balanced' in PROFILE
+    and 'case "high": return .high' in PROFILE,
     "hardware, thermal, low-power and memory pressure must share one tier policy",
 )
 require(

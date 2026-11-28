@@ -22,13 +22,15 @@ final class DevicePerformanceProfile: ObservableObject {
 
     private init() {
         physicalBytes = ProcessInfo.processInfo.physicalMemory
+        let hardwareTier: DevicePerformanceTier
         if physicalBytes >= 5_500_000_000 {
-            baseTier = .high
+            hardwareTier = .high
         } else if physicalBytes >= 3_500_000_000 {
-            baseTier = .balanced
+            hardwareTier = .balanced
         } else {
-            baseTier = .legacy
+            hardwareTier = .legacy
         }
+        baseTier = Self.testOverride() ?? hardwareTier
 
         let center = NotificationCenter.default
         observers.append(center.addObserver(
@@ -149,6 +151,23 @@ final class DevicePerformanceProfile: ObservableObject {
             return
         }
         revision &+= 1
+    }
+
+    /// Lets simulator and connected-device automation exercise every rendering
+    /// budget on one physical phone. Production launches pass no override.
+    private static func testOverride() -> DevicePerformanceTier? {
+        let arguments = ProcessInfo.processInfo.arguments
+        var requested = ProcessInfo.processInfo.environment["XINGYAN_PERFORMANCE_TIER"]
+        if let index = arguments.firstIndex(of: "-XingyanPerformanceTier"),
+           arguments.indices.contains(index + 1) {
+            requested = arguments[index + 1]
+        }
+        switch requested?.lowercased() {
+        case "legacy": return .legacy
+        case "balanced": return .balanced
+        case "high": return .high
+        default: return nil
+        }
     }
 }
 
