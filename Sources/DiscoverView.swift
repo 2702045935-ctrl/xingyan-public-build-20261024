@@ -1466,6 +1466,38 @@ private final class MomentDragClock {
     var lastDragAt = Date(timeIntervalSince1970: 0)
 }
 
+struct ColorBall: View {
+    var size: CGFloat = 34
+    var spin: Double = 0
+
+    var body: some View {
+        ZStack {
+            Circle().fill(AngularGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: 0xFF6B6B), Color(hex: 0xFFD166),
+                    Color(hex: 0x5FD07A), Color(hex: 0x4AB6FF),
+                    Color(hex: 0xA06DE0), Color(hex: 0xFF6BD6),
+                    Color(hex: 0xFF6B6B)
+                ]),
+                center: .center
+            ))
+            Circle().fill(RadialGradient(
+                gradient: Gradient(colors: [
+                    .white.opacity(0.95),
+                    .white.opacity(0)
+                ]),
+                center: UnitPoint(x: 0.37, y: 0.3),
+                startRadius: 0.5,
+                endRadius: size * 0.36
+            ))
+            .padding(size * 0.14)
+        }
+        .frame(width: size, height: size)
+        .rotationEffect(.degrees(spin))
+        .shadow(color: .black.opacity(0.28), radius: 7, y: 4)
+    }
+}
+
 struct MomentsView: View {
     private static let momentPageSize = 70
     private static let stressMomentWindow = 120
