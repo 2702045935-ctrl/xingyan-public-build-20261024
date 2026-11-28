@@ -30,8 +30,8 @@ require(
 )
 require(
     "private func scheduleTypingExpiry()" in CHAT
-    and ".addingTimeInterval(5)" in CHAT
-    and "typingPeers.filter { $0.value.updatedAt < cutoff }.keys" in CHAT,
+    and "addingTimeInterval(-5)" in CHAT
+    and "let expired = typingPeers.filter" in CHAT,
     "typing indicators must expire independently after inactivity",
 )
 require(
@@ -49,8 +49,9 @@ require(
     "typing indicator must animate smoothly and respect reduced motion",
 )
 require(
-    "if selectMode { return Tr(\"已选择\") + \" \\(selected.count) \" + Tr(\"项\") }\n        return navTitle"
+    "if selectMode { return Tr(\"已选择\") + \" \\(selected.count) \" + Tr(\"项\") }"
     in CHAT
+    and "guard isPeerTyping else { return navTitle }" in CHAT
     and ".frame(height: 18)" in CHAT
     and ".accessibilityLabel(typingAccessibilityText)" in CHAT,
     "typing must stay in a fixed subtitle rail without replacing the chat title",

@@ -117,6 +117,7 @@ jobs:
           python3 tools/verify-login-entry.py
           python3 tools/verify-chat-top-title.py
           python3 tools/verify-group-preview.py
+          python3 tools/verify-typing-indicator.py
           python3 tools/verify-contacts-whatsapp.py
           python3 tools/verify-contact-flow-layout.py
           python3 tools/verify-contacts-derived-cache.py
@@ -127,6 +128,7 @@ jobs:
           python3 tools/verify-no-splash-page.py
           python3 tools/verify-handfeel.py
           python3 tools/verify-moment-compose-wechat.py
+          python3 tools/verify-cover-immediate.py
           python3 tools/verify-video-tab.py
           python3 tools/verify-video-works-integration.py
           python3 tools/verify-video-publish-douyin.py
@@ -161,6 +163,7 @@ jobs:
           python3 tools/verify-cache-first-pages.py
           python3 tools/verify-account-sidebar.py
           python3 tools/verify-theme-immediacy.py
+          python3 tools/verify-wallpaper-switch.py
           python3 tools/verify-no-glass.py
           python3 tools/verify-daylight-jade.py
           python3 tools/verify-scale-foundation.py

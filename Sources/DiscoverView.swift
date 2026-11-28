@@ -1526,6 +1526,7 @@ struct MomentsView: View {
     @State private var coverLocked = false
     @State private var coverLockPull: CGFloat = 0
     @State private var coverOverride = ""
+    @State private var coverPreview: UIImage?
 
     @State private var coverPullBox = MomentCoverPullBox()
     @State private var composerPick = false
@@ -1927,7 +1928,14 @@ struct MomentsView: View {
         ZStack(alignment: .top) {
             C.pageBg
 
-            if cover.isEmpty {
+            if let coverPreview {
+                Image(uiImage: coverPreview)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: max(1, L.width),
+                           height: L.coverH + extra)
+                    .clipped()
+            } else if cover.isEmpty {
 
                 if UIImage(named: "moments-cover") != nil {
 
@@ -3227,6 +3235,9 @@ struct MomentsView: View {
     }
 
     private func changeCover(_ image: UIImage) {
+        // Publish the in-memory pixels before any disk or network work so the
+        // cover changes in the same touch frame.
+        coverPreview = image
         let localPath = stageLocalImagePreview(image, prefix: "local-cover")
         setCoverOverride(localPath)
         if var me = app.me {

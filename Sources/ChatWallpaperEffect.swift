@@ -562,6 +562,7 @@ final class ChatWallpaperEffectRenderer {
     static let shared = ChatWallpaperEffectRenderer()
 
     private let cache = NSCache<NSString, UIImage>()
+    private let sourceCache = NSCache<NSString, UIImage>()
     private let context = CIContext(options: [
         .cacheIntermediates: true,
         .workingColorSpace: CGColorSpace(name: CGColorSpace.sRGB) as Any
@@ -570,6 +571,8 @@ final class ChatWallpaperEffectRenderer {
     private init() {
         cache.countLimit = 24
         cache.totalCostLimit = 128 * 1024 * 1024
+        sourceCache.countLimit = 12
+        sourceCache.totalCostLimit = 64 * 1024 * 1024
     }
 
     func image(path: String,
@@ -588,13 +591,30 @@ final class ChatWallpaperEffectRenderer {
         ].joined(separator: "#") as NSString
 
         if let hit = cache.object(forKey: key) { return hit }
-        guard let data = await sourceData(path),
-              let source = await Task.detached(priority: .userInitiated, operation: {
-                  RemoteImage.downsampled(
-                      data,
-                      maxSide: max(2400, chatWallpaperDecodeSide())
-                  )
-              }).value else { return nil }
+        let diskKey = "wallpaper-effect:"
+            + ImageCacheKey.stablePath(path)
+            + ":" + effect.rawValue
+            + ":\(Int(width.rounded()))x\(Int(height.rounded()))"
+        if let memory = ImageStore.shared.get(diskKey) {
+            cache.setObject(
+                memory,
+                forKey: key,
+                cost: Int(memory.size.width * memory.size.height * 4)
+            )
+            return memory
+        }
+        if let data = await Task.detached(priority: .userInitiated, operation: {
+            ImageStore.shared.diskRead(diskKey)
+        }).value, let disk = UIImage(data: data) {
+            ImageStore.shared.put(diskKey, disk)
+            cache.setObject(
+                disk,
+                forKey: key,
+                cost: Int(disk.size.width * disk.size.height * 4)
+            )
+            return disk
+        }
+        guard let source = await sourceImage(path) else { return nil }
         guard !Task.isCancelled else { return nil }
 
         let output = await Task.detached(priority: .userInitiated) { [context] in
@@ -607,30 +627,51 @@ final class ChatWallpaperEffectRenderer {
             cache.setObject(output,
                             forKey: key,
                             cost: Int(output.size.width * output.size.height * 4))
+            ImageStore.shared.put(diskKey, output)
+            Task.detached(priority: .utility) {
+                if let data = output.jpegData(compressionQuality: 0.9) {
+                    ImageStore.shared.diskWrite(diskKey, data)
+                }
+            }
         }
         return output
     }
 
-    private func sourceData(_ path: String) async -> Data? {
+    private func sourceImage(_ path: String) async -> UIImage? {
+        let maxSide = max(2400, chatWallpaperDecodeSide())
+        let key = "wallpaper-source:"
+            + ImageCacheKey.stablePath(path)
+            + ":\(Int(maxSide))"
+        if let hit = sourceCache.object(forKey: key as NSString) {
+            return hit
+        }
         if path.hasPrefix("data:"),
            let comma = path.firstIndex(of: ","),
            let data = Data(base64Encoded: String(path[path.index(after: comma)...]),
                            options: .ignoreUnknownCharacters) {
-            return data
+            guard let image = RemoteImage.downsampled(data, maxSide: maxSide) else {
+                return nil
+            }
+            sourceCache.setObject(image, forKey: key as NSString)
+            return image
         }
-        if let direct = ImageStore.shared.get(path),
-           let data = await Task.detached(priority: .userInitiated, operation: {
-               direct.jpegData(compressionQuality: 0.92)
-           }).value {
-            return data
+        if let direct = ImageStore.shared.getBestAvailable(path) {
+            sourceCache.setObject(direct, forKey: key as NSString)
+            return direct
         }
         if let data = await Task.detached(priority: .userInitiated, operation: {
             ImageStore.shared.diskRead(path)
-        }).value {
-            return data
+        }).value, let image = RemoteImage.downsampled(data, maxSide: maxSide) {
+            sourceCache.setObject(image, forKey: key as NSString)
+            return image
         }
         if let url = API.shared.assetURL(path) {
-            return try? await API.shared.assetData(url)
+            guard let data = try? await API.shared.assetData(url),
+                  let image = await Task.detached(priority: .userInitiated, operation: {
+                      RemoteImage.downsampled(data, maxSide: maxSide)
+                  }).value else { return nil }
+            sourceCache.setObject(image, forKey: key as NSString)
+            return image
         }
         return nil
     }

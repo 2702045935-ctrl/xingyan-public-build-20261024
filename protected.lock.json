@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 383951,
-      "sha256": "6a07b28c7a23add70051b886e5958735ac7b254a35891f81580a612e1f2fd881"
+      "size": 387008,
+      "sha256": "f342f2fd3d558942d555c81a9867b99c86ace68ac833f797d83fb4800ed4b9da"
     },
     {
       "path": "Sources/ChatDeferred.swift",
@@ -43,8 +43,8 @@
     },
     {
       "path": "Sources/ChatWallpaperEffect.swift",
-      "size": 30366,
-      "sha256": "fd856175f9a7642cbfc1d06b9db91da1ed3a68335645f9f0683156c91571232f"
+      "size": 32218,
+      "sha256": "0887e4d94b8610ddecf7314bbed02a14cb3a4834e39e1b16da9c10e826c4c98f"
     },
     {
       "path": "Sources/ChatsView.swift",
@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/DiscoverView.swift",
-      "size": 164978,
-      "sha256": "a0d6d2f7080091609ce75d181150540f486d77628d9d919860e7fa036f889463"
+      "size": 165472,
+      "sha256": "072eb57828258f9c33ed0a49067dc936c876dfb6047dbb3818c068875530f33f"
     },
     {
       "path": "Sources/MomentMediaLayout.swift",

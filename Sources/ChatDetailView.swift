@@ -8,27 +8,41 @@ import CoreImage
 
 private struct ChatTypingDots: View {
     let color: Color
-    @State private var active = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: 3) {
-            ForEach(0..<3, id: \.self) { index in
-                Circle()
-                    .fill(color)
-                    .frame(width: 3.6, height: 3.6)
-                    .scaleEffect(active ? 1 : 0.58)
-                    .opacity(active ? 1 : 0.42)
-                    .animation(
-                        .easeInOut(duration: 0.58)
-                            .repeatForever(autoreverses: true)
-                            .delay(Double(index) * 0.13),
-                        value: active
-                    )
+        Group {
+            if reduceMotion {
+                dots(level: 0.72)
+            } else {
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                    let t = timeline.date.timeIntervalSinceReferenceDate
+                    HStack(spacing: 3) {
+                        ForEach(0..<3, id: \.self) { index in
+                            let phase = (sin(t * 5.2 - Double(index) * 0.82) + 1) / 2
+                            Circle()
+                                .fill(color)
+                                .frame(width: 3.6, height: 3.6)
+                                .scaleEffect(0.58 + phase * 0.42)
+                                .opacity(0.42 + phase * 0.58)
+                        }
+                    }
+                }
             }
         }
         .frame(width: 17, height: 10)
-        .onAppear { active = true }
         .accessibilityHidden(true)
+    }
+
+    private func dots(level: Double) -> some View {
+        HStack(spacing: 3) {
+            ForEach(0..<3, id: \.self) { _ in
+                Circle()
+                    .fill(color)
+                    .frame(width: 3.6, height: 3.6)
+                    .opacity(level)
+            }
+        }
     }
 }
 
@@ -385,6 +399,12 @@ enum PanelKind { case none, emoji, plus, gift, mention }
 private enum ChatWallpaperEdge: Equatable {
     case top
     case bottom
+}
+
+private struct TypingPeer {
+    let userId: String
+    var nickname: String
+    var updatedAt: Date
 }
 
 #if canImport(UIKit)
@@ -1203,7 +1223,7 @@ struct ChatDetailView: View {
 
     @State private var videoPayload = ""
 
-    @State private var peerTyping = ""
+    @State private var typingPeers: [String: TypingPeer] = [:]
     @State private var typingClear: Task<Void, Never>?
 
     @State private var lastTypingSent = Date.distantPast
@@ -1285,14 +1305,14 @@ struct ChatDetailView: View {
     private var navTitleShown: String {
         if selectMode { return Tr("已选择") + " \(selected.count) " + Tr("项") }
         if loadingAllGroupHistory { return Tr("正在同步全部消息…") }
-        guard !peerTyping.isEmpty else { return navTitle }
-        return isGroup ? "有人正在输入…" : "对方正在输入…"
+        guard isPeerTyping else { return navTitle }
+        return isGroup ? typingIndicatorText : "对方正在输入…"
     }
 
     private var chatNavigationStatus: String {
         guard !selectMode else { return "" }
-        if !peerTyping.isEmpty {
-            return isGroup ? "有人正在输入…" : "对方正在输入…"
+        if isPeerTyping {
+            return isGroup ? typingIndicatorText : "对方正在输入…"
         }
         if MessageStressFixture.isStressChat(chat.id),
            let first = messages.first?.seq, let last = messages.last?.seq {
@@ -1310,14 +1330,56 @@ struct ChatDetailView: View {
 
     private var whatsAppChatSubtitle: String {
         if loadingAllGroupHistory { return navTitle }
-        if !peerTyping.isEmpty {
-            return isGroup ? "有人正在输入…" : "对方正在输入…"
+        if isPeerTyping {
+            return isGroup ? typingIndicatorText : "对方正在输入…"
         }
         return chatNavigationStatus.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var isPeerTyping: Bool {
-        !peerTyping.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !typingPeers.isEmpty
+    }
+
+    private var sortedTypingPeers: [TypingPeer] {
+        typingPeers.values.sorted {
+            if $0.updatedAt == $1.updatedAt {
+                return $0.userId < $1.userId
+            }
+            return $0.updatedAt > $1.updatedAt
+        }
+    }
+
+    private var typingIndicatorText: String {
+        let peers = sortedTypingPeers
+        guard !peers.isEmpty else { return "" }
+        if peers.count == 1 {
+            let name = peers[0].nickname.trimmingCharacters(in: .whitespacesAndNewlines)
+            return (name.isEmpty ? "对方" : name) + "正在输入…"
+        }
+        if peers.count == 2 {
+            let first = peers[0].nickname.trimmingCharacters(in: .whitespacesAndNewlines)
+            let second = peers[1].nickname.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !first.isEmpty, !second.isEmpty {
+                return first + "、" + second + "正在输入…"
+            }
+        }
+        return "\(peers.count)" + Tr("人正在输入") + "…"
+    }
+
+    private var typingAccessibilityText: Text {
+        Text(typingIndicatorText)
+    }
+
+    private var chatTypingIndicator: some View {
+        HStack(spacing: 4) {
+            ChatTypingDots(color: Color(hex: 0x25D366))
+            Text(typingIndicatorText)
+                .font(pf(10.5, .regular))
+                .foregroundStyle(adaptiveTopInk.opacity(0.74))
+                .lineLimit(1)
+        }
+        .frame(height: 18)
+        .accessibilityLabel(typingAccessibilityText)
     }
 
     private var navAvatarPath: String {
@@ -1488,13 +1550,7 @@ struct ChatDetailView: View {
                                 .truncationMode(.tail)
 
                             if isPeerTyping {
-                                HStack(spacing: 4) {
-                                    ChatTypingDots(color: Color(hex: 0x25D366))
-                                    Text(isGroup ? Tr("有人正在输入") : Tr("正在输入"))
-                                        .font(pf(10.5, .regular))
-                                        .foregroundStyle(adaptiveTopInk.opacity(0.74))
-                                        .lineLimit(1)
-                                }
+                                chatTypingIndicator
                                 .transition(.opacity.combined(with: .move(edge: .top)))
                             } else if !whatsAppChatSubtitle.isEmpty {
                                 Text(whatsAppChatSubtitle)
@@ -3127,17 +3183,11 @@ struct ChatDetailView: View {
         }
 
         if ev.type == "typing", ev.chatId == chat.id {
-            peerTyping = "对方"
-            typingClear?.cancel()
-            typingClear = Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 5_000_000_000)
-                if !Task.isCancelled { peerTyping = "" }
-            }
+            markPeerTyping(userId: ev.userId, nickname: ev.nickname)
         }
 
         if ev.type == "message", ev.chatId == chat.id {
-            typingClear?.cancel()
-            peerTyping = ""
+            clearTyping(ev.userId.isEmpty ? nil : ev.userId)
         }
 
         if ev.type == "pat", ev.chatId == chat.id {
@@ -3192,6 +3242,52 @@ struct ChatDetailView: View {
                 try? await Task.sleep(nanoseconds: 250_000_000)
                 if Task.isCancelled { return }
                 await load(initial: false)
+            }
+        }
+    }
+
+    private func markPeerTyping(userId: String, nickname: String) {
+        let id = userId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !id.isEmpty, id != myId else { return }
+        let fallback = app.contact(for: id)?.name ?? ""
+        let name = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
+        typingPeers[id] = TypingPeer(
+            userId: id,
+            nickname: name.isEmpty ? fallback : name,
+            updatedAt: Date()
+        )
+        scheduleTypingExpiry()
+    }
+
+    private func clearTyping(_ userId: String? = nil) {
+        if let userId, !userId.isEmpty {
+            typingPeers.removeValue(forKey: userId)
+        } else {
+            typingPeers.removeAll()
+        }
+        if typingPeers.isEmpty {
+            typingClear?.cancel()
+            typingClear = nil
+        }
+    }
+
+    private func scheduleTypingExpiry() {
+        guard typingClear == nil else { return }
+        typingClear = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                if Task.isCancelled { return }
+                let cutoff = Date().addingTimeInterval(-5)
+                let expired = typingPeers.filter {
+                    $0.value.updatedAt < cutoff
+                }.keys
+                for id in expired {
+                    typingPeers.removeValue(forKey: id)
+                }
+                if typingPeers.isEmpty {
+                    typingClear = nil
+                    return
+                }
             }
         }
     }
