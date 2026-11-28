@@ -1959,7 +1959,7 @@ struct MomentsView: View {
     private func coverView(_ extra: CGFloat) -> some View {
         let topOverdraw = max(0, L.safeTop)
         let visualHeight = L.coverH + extra + topOverdraw
-        ZStack(alignment: .top) {
+        return ZStack(alignment: .top) {
             C.pageBg
 
             if let coverPreview {

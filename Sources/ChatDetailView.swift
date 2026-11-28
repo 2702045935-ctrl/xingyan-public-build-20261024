@@ -8277,22 +8277,61 @@ struct MessageRow: View {
         let addr = (o["addr"] as? String) ?? ""
         let pt = LocationPoint(lat: lat, lng: lng, name: name, addr: addr)
         return VStack(spacing: 0) {
-
-            MapSnapshotView(point: pt, width: 216, height: 136)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(name).font(pf(15)).foregroundColor(bubblePrimaryInk).lineLimit(1)
-                Text(addr.isEmpty ? "点击查看地图" : addr)
-                    .font(pf(12)).foregroundColor(bubbleSecondaryInk).lineLimit(1)
+            ZStack(alignment: .topLeading) {
+                MapSnapshotView(point: pt, width: 238, height: 144)
+                Label(Tr("地图"), systemImage: "map.fill")
+                    .font(pf(10.5, .semibold))
+                    .foregroundStyle(Color.black.opacity(0.72))
+                    .padding(.horizontal, 8)
+                    .frame(height: 24)
+                    .background(Color.white.opacity(0.86), in: Capsule())
+                    .padding(9)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: 10) {
+                Image(systemName: "mappin.and.ellipse")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(mine ? Color.white : C.green)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        mine
+                            ? Color.white.opacity(0.14)
+                            : C.green.opacity(0.10),
+                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(name)
+                        .font(pf(15, .semibold))
+                        .foregroundColor(bubblePrimaryInk)
+                        .lineLimit(1)
+                    Text(addr.isEmpty ? Tr("点击查看地图") : addr)
+                        .font(pf(11.5))
+                        .foregroundColor(bubbleSecondaryInk)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 4)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundColor(bubbleSecondaryInk.opacity(0.82))
+            }
             .padding(.horizontal, 12)
-            .padding(.vertical, 9)
+            .frame(height: 58)
+            .background(bubbleFill)
         }
-        .frame(width: 216)
-
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-
-        .background(BubbleFill(mine: false, tail: showTail))
+        .frame(width: 238)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(
+                    mine
+                        ? Color.white.opacity(0.15)
+                        : Color.black.opacity(0.055),
+                    lineWidth: 0.6
+                )
+        }
     }
 
     private var transferBubble: some View {

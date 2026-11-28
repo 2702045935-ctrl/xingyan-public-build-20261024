@@ -54,6 +54,15 @@ require(
     "live location must use an immersive map, avatar annotations and a floating control panel",
 )
 require(
+    "MapSnapshotView(point: pt, width: 238, height: 144)" in CHAT
+    and "mappin.and.ellipse" in CHAT
+    and ".background(bubbleFill)" in CHAT
+    and "RoundedRectangle(cornerRadius: 14, style: .continuous)" in CHAT
+    and "MapSnapshotView(point: pt, width: 216, height: 136)" not in CHAT
+    and "BubbleFill(mine: false, tail: showTail)" not in CHAT,
+    "sent map cards must use the unified premium map media card",
+)
+require(
     "private var avatarLayer" in CALL
     and "size: 90, radius: 28" in CALL
     and "RadialGradient(" in CALL
