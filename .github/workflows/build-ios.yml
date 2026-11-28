@@ -100,6 +100,7 @@ jobs:
           python3 tools/verify-chat-feed-skeleton.py
           python3 tools/verify-chats-dark-surface.py
           python3 tools/verify-chat-chrome-contrast.py
+          python3 tools/verify-chat-edge-masks.py
           python3 tools/verify-recall-preview.py
           python3 tools/verify-preview-semantics.py
           python3 tools/verify-success-toast.py
@@ -171,6 +172,7 @@ jobs:
           python3 tools/verify-cache-first-pages.py
           python3 tools/verify-account-sidebar.py
           python3 tools/verify-theme-immediacy.py
+          python3 tools/verify-chat-theme-page.py
           python3 tools/verify-wallpaper-switch.py
           python3 tools/verify-no-glass.py
           python3 tools/verify-daylight-jade.py

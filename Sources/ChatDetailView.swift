@@ -429,58 +429,72 @@ private struct NativeChatFrostedEdgeMaterial: UIViewRepresentable {
 
     private var effect: UIVisualEffect {
         UIBlurEffect(style: scheme == .dark
-                     ? .systemUltraThinMaterialDark
-                     : .systemUltraThinMaterialLight)
+                     ? .systemThinMaterialDark
+                     : .systemThinMaterialLight)
     }
 }
 #endif
 
 private struct ChatFrostedEdgeMask: View {
     let edge: ChatWallpaperEdge
+    let base: Color
 
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         GeometryReader { proxy in
-            let base = C.pageBg
             let direction: (UnitPoint, UnitPoint) = edge == .top
                 ? (.top, .bottom)
                 : (.bottom, .top)
+            let materialMask = LinearGradient(
+                stops: edge == .top
+                    ? [
+                        .init(color: .black, location: 0),
+                        .init(color: .black.opacity(0.94), location: 0.56),
+                        .init(color: .black.opacity(0.62), location: 0.78),
+                        .init(color: .black.opacity(0.20), location: 0.92),
+                        .init(color: .clear, location: 1)
+                    ]
+                    : [
+                        .init(color: .clear, location: 0),
+                        .init(color: .black.opacity(0.18), location: 0.10),
+                        .init(color: .black.opacity(0.60), location: 0.30),
+                        .init(color: .black.opacity(0.94), location: 0.58),
+                        .init(color: .black, location: 1)
+                    ],
+                startPoint: direction.0,
+                endPoint: direction.1
+            )
 
-            ZStack {
-                if !reduceTransparency {
+            Group {
+                if reduceTransparency {
+                    base
+                } else {
+                    ZStack {
                     NativeChatFrostedEdgeMaterial()
-                        .mask {
-                            LinearGradient(
-                                stops: [
-                                    .init(color: .black, location: 0),
-                                    .init(color: .black.opacity(0.88), location: 0.58),
-                                    .init(color: .black.opacity(0.42), location: 0.84),
-                                    .init(color: .clear, location: 1)
-                                ],
-                                startPoint: direction.0,
-                                endPoint: direction.1
-                            )
-                        }
-                }
 
-                LinearGradient(
-                    stops: edge == .top
-                        ? [
-                            .init(color: base.opacity(0.78), location: 0),
-                            .init(color: base.opacity(0.66), location: 0.62),
-                            .init(color: base.opacity(0.32), location: 0.86),
-                            .init(color: .clear, location: 1)
-                        ]
-                        : [
-                            .init(color: .clear, location: 0),
-                            .init(color: base.opacity(0.32), location: 0.14),
-                            .init(color: base.opacity(0.66), location: 0.38),
-                            .init(color: base.opacity(0.78), location: 1)
-                        ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                        LinearGradient(
+                            stops: edge == .top
+                                ? [
+                                    .init(color: base.opacity(0.90), location: 0),
+                                    .init(color: base.opacity(0.84), location: 0.56),
+                                    .init(color: base.opacity(0.56), location: 0.79),
+                                    .init(color: base.opacity(0.18), location: 0.93),
+                                    .init(color: .clear, location: 1)
+                                ]
+                                : [
+                                    .init(color: .clear, location: 0),
+                                    .init(color: base.opacity(0.14), location: 0.10),
+                                    .init(color: base.opacity(0.50), location: 0.32),
+                                    .init(color: base.opacity(0.82), location: 0.62),
+                                    .init(color: base.opacity(0.94), location: 1)
+                                ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    }
+                    .mask { materialMask }
+                }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
@@ -1840,6 +1854,18 @@ struct ChatDetailView: View {
         Color(uiColor: .systemGroupedBackground)
     }
 
+    private var chatTopMaskBase: Color {
+        if isStarWorld && newsMode { return newsMaskColor }
+        if usesPlainDefaultChatChrome { return ChatTheme.page }
+        return topBarUsesLightInk ? Color.black : Color.white
+    }
+
+    private var chatBottomMaskBase: Color {
+        if isStarWorld && newsMode { return newsMaskColor }
+        if usesPlainDefaultChatChrome { return ChatTheme.page }
+        return composerUsesLightInk ? Color.black : Color.white
+    }
+
     private static func prefersLightTopInk(for luminance: Double) -> Bool {
         let lightInkLuminance = 0.86
         let darkInkLuminance = 0.018
@@ -2173,7 +2199,7 @@ struct ChatDetailView: View {
                     if isStarWorld && newsMode {
                         newsMaskColor
                     } else {
-                        ChatFrostedEdgeMask(edge: .top)
+                        ChatFrostedEdgeMask(edge: .top, base: chatTopMaskBase)
                     }
                 }
                 .ignoresSafeArea(edges: .top)
@@ -5121,7 +5147,7 @@ struct ChatDetailView: View {
                     if isStarWorld && newsMode {
                         newsMaskColor
                     } else {
-                        ChatFrostedEdgeMask(edge: .bottom)
+                        ChatFrostedEdgeMask(edge: .bottom, base: chatBottomMaskBase)
                     }
                 }
                 .ignoresSafeArea(edges: .bottom)

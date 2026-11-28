@@ -14,11 +14,11 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private struct NativeChatFrostedEdgeMaterial" in CHAT
-    and ".systemUltraThinMaterialDark" in CHAT
+    and ".systemThinMaterialDark" in CHAT
     and "private struct ChatFrostedEdgeMask" in CHAT
-    and "let base = C.pageBg" in CHAT
-    and "ChatFrostedEdgeMask(edge: .top)" in CHAT,
-    "chat top chrome must use the subtle native-frosted page-colour falloff",
+    and "let base: Color" in CHAT
+    and "ChatFrostedEdgeMask(edge: .top, base: chatTopMaskBase)" in CHAT,
+    "chat top chrome must use the system thin material and theme-matched falloff",
 )
 require(
     "sv.topEdgeEffect.style = .automatic" in (
@@ -35,7 +35,7 @@ require(
 )
 require(
     "chatBackdrop" in CHAT
-    and "ChatFrostedEdgeMask(edge: .top)" in CHAT
+    and "ChatFrostedEdgeMask(edge: .top, base: chatTopMaskBase)" in CHAT
     and "ChatTopGlassBackdrop" not in CHAT,
     "the top edge must no longer place a heavy glass layer over the wallpaper",
 )

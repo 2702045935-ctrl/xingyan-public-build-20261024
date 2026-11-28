@@ -224,47 +224,52 @@ struct ChatThemePickerView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
-                    themePreview(selected)
+            List {
+                Section {
+                    ChatThemeHeroCard(preset: selected)
+                        .listRowInsets(EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(Tr("选择主题"))
-                            .font(.title3.weight(.semibold))
-                        Text(Tr("选择主题后，聊天背景会恢复为该主题的默认背景，同时改变上下遮罩、收发气泡和输入区。"))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                Section {
+                    ForEach(ChatAppearancePreset.allCases) { preset in
+                        themeRow(preset, isSelected: selected == preset)
                     }
+                } header: {
+                    Text(Tr("主题"))
+                } footer: {
+                    Text(Tr("主题会同时应用到聊天背景、上下遮罩、收发气泡和输入区，返回聊天后立即生效。"))
+                }
 
-                    VStack(spacing: 0) {
-                        ForEach(Array(ChatAppearancePreset.allCases.enumerated()), id: \.element.id) { index, preset in
-                            Button {
-                                withAnimation(.easeOut(duration: 0.18)) {
-                                    previewPreset = preset
-                                    store.set(preset, chatId: chatId)
-                                }
-                                UISelectionFeedbackGenerator().selectionChanged()
-                            } label: {
-                                themeRow(preset, isSelected: selected == preset)
-                            }
-                            .buttonStyle(.plain)
-
-                            if index < ChatAppearancePreset.allCases.count - 1 {
-                                Divider().padding(.leading, 72)
+                Section {
+                    Button {
+                        select(.whatsapp)
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "arrow.counterclockwise")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.tint)
+                                .frame(width: 28)
+                            Text(Tr("恢复默认主题"))
+                                .foregroundStyle(.primary)
+                            Spacer(minLength: 8)
+                            if selected == .whatsapp {
+                                Text(Tr("当前"))
+                                    .font(.caption.weight(.medium))
+                                    .foregroundStyle(.secondary)
                             }
                         }
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                     }
-                    .background(Color(uiColor: .secondarySystemGroupedBackground),
-                                in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(Color.primary.opacity(0.06), lineWidth: 0.6)
-                    }
+                    .buttonStyle(.plain)
+                    .disabled(selected == .whatsapp)
+                    .accessibilityHint(Tr("恢复 WhatsApp 经典主题"))
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 12)
-                .padding(.bottom, max(24, L.safeBottom + 12))
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
             .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
             .navigationTitle(Tr("聊天主题"))
             .navigationBarTitleDisplayMode(.inline)
@@ -280,253 +285,266 @@ struct ChatThemePickerView: View {
         }
     }
 
-    private func themePreview(_ preset: ChatAppearancePreset) -> some View {
-        ZStack {
-            ChatThemeBackdrop(preset: preset)
-                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            preset.mine.opacity(0.22),
-                            preset.mine.opacity(0.045),
-                            Color.clear
-                        ],
-                        center: UnitPoint(x: 0.86, y: 0.12),
-                        startRadius: 2,
-                        endRadius: 240
-                    )
-                )
-
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.46),
-                            Color.white.opacity(0.04),
-                            Color.black.opacity(0.08)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.8
-                )
-
-            VStack(spacing: 11) {
-                HStack {
-                    HStack(spacing: 7) {
-                        Circle()
-                            .fill(preset.mine)
-                            .frame(width: 7, height: 7)
-                            .shadow(color: preset.mine.opacity(0.38), radius: 4)
-                        Image(systemName: preset.symbol)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(preset.mine)
-                        Text(preset.title)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(preset == .midnight ? Color.white : Color.primary)
-                    }
-                    Spacer()
-                    Text(Tr("主题"))
-                        .font(.system(size: 9.5, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .frame(height: 21)
-                        .background(C.floatingSurface,
-                                    in: Capsule(style: .continuous))
-                }
-
-                HStack {
-                    Text(Tr("周末有空吗？"))
-                        .font(.subheadline)
-                        .foregroundStyle(Color.primary)
-                        .padding(.horizontal, 13)
-                        .padding(.vertical, 9)
-                        .background {
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(preset.other)
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(Color.white.opacity(0.24), lineWidth: 0.5)
-                                }
-                                .shadow(color: Color.black.opacity(0.07), radius: 5, y: 2)
-                        }
-                    Spacer(minLength: 42)
-                }
-
-                HStack {
-                    Spacer(minLength: 42)
-                    Text(Tr("有，晚点联系你。"))
-                        .font(.subheadline)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 13)
-                        .padding(.vertical, 9)
-                        .background {
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            preset.mine,
-                                            preset.mine.opacity(0.82)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .overlay(alignment: .top) {
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [
-                                                    Color.white.opacity(0.16),
-                                                    Color.clear
-                                                ],
-                                                startPoint: .top,
-                                                endPoint: .bottom
-                                            )
-                                        )
-                                }
-                                .shadow(color: preset.mine.opacity(0.22), radius: 6, y: 2)
-                        }
-                }
-
-                HStack(spacing: 8) {
-                    Image(systemName: "face.smiling")
-                    Image(systemName: "plus")
-                    Text(Tr("输入消息"))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Circle()
-                        .fill(preset.mine)
-                        .frame(width: 21, height: 21)
-                        .overlay {
-                            Image(systemName: "arrow.up")
-                                .font(.system(size: 9.5, weight: .bold))
-                                .foregroundStyle(.white)
-                        }
-                }
-                .font(.system(size: 17, weight: .medium))
-                .padding(.horizontal, 13)
-                .frame(height: 42)
-                .background {
-                    RoundedRectangle(cornerRadius: 21, style: .continuous)
-                        .fill(preset.panel)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 21, style: .continuous)
-                                .stroke(Color.white.opacity(0.16), lineWidth: 0.5)
-                        }
-                        .shadow(color: Color.black.opacity(0.08), radius: 7, y: 3)
-                }
-            }
-            .padding(18)
+    private func select(_ preset: ChatAppearancePreset) {
+        guard selected != preset else { return }
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.90)) {
+            previewPreset = preset
+            store.set(preset, chatId: chatId)
         }
-        .frame(width: 214, height: 408)
-        .overlay(alignment: .top) {
-            Capsule()
-                .fill(Color.black.opacity(0.88))
-                .frame(width: 66, height: 18)
-                .padding(.top, 8)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(Color.black.opacity(0.82), lineWidth: 5)
-        }
-        .shadow(color: Color.black.opacity(0.10), radius: 18, y: 8)
+        UISelectionFeedbackGenerator().selectionChanged()
     }
 
     private func themeRow(_ preset: ChatAppearancePreset,
                           isSelected: Bool) -> some View {
-        HStack(spacing: 13) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(preset.previewBackground)
+        Button {
+            select(preset)
+        } label: {
+            HStack(spacing: 14) {
+                ChatThemeMiniature(preset: preset)
+                    .frame(width: 58, height: 82)
 
-                RadialGradient(
-                    colors: [preset.mine.opacity(0.24), Color.clear],
-                    center: UnitPoint(x: 0.88, y: 0.08),
-                    startRadius: 1,
-                    endRadius: 60
-                )
-
-                VStack(spacing: 5) {
-                    Capsule()
-                        .fill(Color.black.opacity(0.78))
-                        .frame(width: 18, height: 3)
-                    HStack {
-                        Text("9:41")
-                        Spacer()
-                        Image(systemName: preset.symbol)
-                    }
-                    .font(.system(size: 4.5, weight: .semibold))
-                    .foregroundStyle(preset == .midnight || preset == .graphite
-                                     ? Color.white.opacity(0.76) : Color.black.opacity(0.56))
-
-                    HStack(spacing: 3) {
-                        Circle().fill(preset.other).frame(width: 5, height: 5)
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)
-                            .fill(preset.other)
-                            .frame(width: 24, height: 8)
-                        Spacer(minLength: 0)
-                    }
-                    HStack {
-                        Spacer(minLength: 12)
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)
-                            .fill(preset.mine)
-                            .frame(width: 25, height: 8)
-                    }
-                    HStack(spacing: 3) {
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(preset.panel)
-                            .frame(height: 9)
-                        Circle().fill(preset.mine).frame(width: 6, height: 6)
-                    }
-                    Spacer(minLength: 0)
-                    HStack(spacing: 5) {
-                        Circle().frame(width: 3, height: 3)
-                        Circle().frame(width: 3, height: 3)
-                        Circle().frame(width: 3, height: 3)
-                        Spacer()
-                    }
-                    .foregroundStyle(Color.black.opacity(0.34))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(preset.title)
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Text(preset.subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
                 }
-                .padding(6)
+
+                Spacer(minLength: 8)
+
+                Group {
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.tint)
+                    } else {
+                        Color.clear
+                    }
+                }
+                .frame(width: 22, height: 22)
+                .accessibilityHidden(true)
             }
-            .frame(width: 54, height: 86)
-            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .frame(minHeight: 88)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(preset.title)
+        .accessibilityValue(isSelected ? Tr("已选择") : "")
+    }
+}
+
+private struct ChatThemeHeroCard: View {
+    let preset: ChatAppearancePreset
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(preset.mine.opacity(0.13))
+                    Image(systemName: preset.symbol)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(preset.mine)
+                }
+                .frame(width: 42, height: 42)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(preset.title)
+                        .font(.headline)
+                    Text(preset.subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 8)
+
+                Text(Tr("当前"))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(preset.mine)
+                    .padding(.horizontal, 9)
+                    .frame(height: 24)
+                    .background(preset.mine.opacity(0.11), in: Capsule())
+            }
+
+            ZStack {
+                ChatThemeBackdrop(preset: preset)
+
+                VStack(spacing: 9) {
+                    HStack {
+                        Text(preset.title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+                        Spacer()
+                        Image(systemName: "ellipsis")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.92))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.top, 10)
+
+                    HStack(alignment: .bottom, spacing: 7) {
+                        Circle()
+                            .fill(preset.other)
+                            .frame(width: 24, height: 24)
+                            .overlay {
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                            }
+                        Text(Tr("周末有空吗？"))
+                            .font(.subheadline)
+                            .foregroundStyle(Color.primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(preset.other, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                        Spacer(minLength: 34)
+                    }
+                    .padding(.horizontal, 12)
+
+                    HStack {
+                        Spacer(minLength: 52)
+                        Text(Tr("有，晚点联系你。"))
+                            .font(.subheadline)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                LinearGradient(
+                                    colors: [preset.mine, preset.mine.opacity(0.82)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            )
+                    }
+                    .padding(.horizontal, 12)
+
+                    HStack(spacing: 7) {
+                        Image(systemName: "face.smiling")
+                        Image(systemName: "plus")
+                        Text(Tr("输入消息"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Circle()
+                            .fill(preset.mine)
+                            .frame(width: 23, height: 23)
+                            .overlay {
+                                Image(systemName: "arrow.up")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(.white)
+                            }
+                    }
+                    .font(.system(size: 16, weight: .medium))
+                    .padding(.horizontal, 12)
+                    .frame(height: 42)
+                    .background(preset.panel, in: RoundedRectangle(cornerRadius: 21, style: .continuous))
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 8)
+                }
+            }
+            .frame(height: 216)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .stroke(
-                        isSelected
-                            ? Color.accentColor.opacity(0.82)
-                            : Color.black.opacity(0.72),
-                        lineWidth: isSelected ? 2 : 1.8
-                    )
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(0.16), lineWidth: 0.6)
             }
-            .shadow(
-                color: isSelected
-                    ? Color.accentColor.opacity(0.18)
-                    : Color.black.opacity(0.07),
-                radius: isSelected ? 7 : 3,
-                y: 2
+
+            HStack(spacing: 16) {
+                swatch(Tr("对方"), preset.other)
+                swatch(Tr("自己"), preset.mine)
+                swatch(Tr("输入区"), preset.panel)
+            }
+        }
+        .padding(16)
+        .background(
+            Color(uiColor: .secondarySystemGroupedBackground),
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.055), lineWidth: 0.6)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func swatch(_ title: String, _ color: Color) -> some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(color)
+                .frame(width: 12, height: 12)
+                .overlay(Circle().stroke(Color.primary.opacity(0.10), lineWidth: 0.5))
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct ChatThemeMiniature: View {
+    let preset: ChatAppearancePreset
+
+    var body: some View {
+        ZStack {
+            preset.previewBackground
+
+            RadialGradient(
+                colors: [preset.mine.opacity(0.20), Color.clear],
+                center: UnitPoint(x: 0.88, y: 0.08),
+                startRadius: 1,
+                endRadius: 64
             )
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(preset.title)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(.primary)
-                Text(preset.subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            VStack(spacing: 5) {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(preset.mine)
+                        .frame(width: 7, height: 7)
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(Color.primary.opacity(0.14))
+                        .frame(width: 22, height: 4)
+                    Spacer(minLength: 0)
+                }
+
+                HStack(alignment: .bottom, spacing: 3) {
+                    Circle()
+                        .fill(preset.other)
+                        .frame(width: 7, height: 7)
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(preset.other)
+                        .frame(width: 27, height: 12)
+                    Spacer(minLength: 0)
+                }
+
+                HStack {
+                    Spacer(minLength: 15)
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(preset.mine)
+                        .frame(width: 27, height: 12)
+                }
+
+                Spacer(minLength: 0)
+
+                HStack(spacing: 3) {
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(preset.panel)
+                    Circle()
+                        .fill(preset.mine)
+                        .frame(width: 8, height: 8)
+                }
+                .frame(height: 12)
             }
-            Spacer(minLength: 6)
-            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary.opacity(0.35))
+            .padding(6)
         }
-        .padding(.horizontal, 14)
-        .frame(minHeight: 96)
-        .contentShape(Rectangle())
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.primary.opacity(0.10), lineWidth: 0.6)
+        }
     }
 }

@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 388597,
-      "sha256": "86f32b8a33f62e13943a758db1551994173b00e20cf861639a3ab8cf22deb995"
+      "size": 388408,
+      "sha256": "1a9e3e7b0e2d0615e687bedeb8639792fd095b875a88f8a5ac5e49cbae839030"
     },
     {
       "path": "Sources/ChatDeferred.swift",
@@ -38,8 +38,8 @@
     },
     {
       "path": "Sources/ChatThemes.swift",
-      "size": 21661,
-      "sha256": "ae9923bcd0d304469b8e1fb6cbf87e67ddf0206d5090ffd5b0b0a8de7f8cc5e7"
+      "size": 20832,
+      "sha256": "a26fd06080490d9d7f6b4867a510d830054dc534b96b5c40c3e0c6c7f150eeb5"
     },
     {
       "path": "Sources/ChatWallpaperEffect.swift",
@@ -98,8 +98,8 @@
     },
     {
       "path": "Sources/NativeStaticList.swift",
-      "size": 25338,
-      "sha256": "d5a78865e93e2c2c3b70299cda72a8bf0228b8579f9eae9b4d5916d6a3d40c90"
+      "size": 26387,
+      "sha256": "a7a2ecbffbdd816ea755062a9b9a25d3558a6383ff43766bf956072e247da22a"
     },
     {
       "path": "Sources/NativeMomentFeed.swift",

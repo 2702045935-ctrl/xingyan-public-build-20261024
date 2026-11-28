@@ -19,11 +19,10 @@ require(
     "appearance choices must use a portrait phone preview",
 )
 require(
-    ".frame(width: 214, height: 408)" in THEMES,
-    "chat theme detail preview must use a phone-shaped canvas",
-)
-require(
-    ".frame(width: 54, height: 86)" in THEMES,
+    "struct ChatThemeHeroCard" in THEMES
+    and ".listStyle(.insetGrouped)" in THEMES
+    and "struct ChatThemeMiniature" in THEMES
+    and ".frame(width: 58, height: 82)" in THEMES,
     "each theme row must include a miniature phone preview",
 )
 require(
