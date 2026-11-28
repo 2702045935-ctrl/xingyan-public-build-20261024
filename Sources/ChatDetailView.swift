@@ -5845,7 +5845,7 @@ struct ChatDetailView: View {
                         }
                         while nextIdx < min(3, list.count) { addUpload(nextIdx); nextIdx += 1 }
                         for await r in group {
-                            if let e = r.5 {
+                            if let e = r.6 {
                                 if upError == nil { upError = e }
                             } else {
                                 upResults.append((
