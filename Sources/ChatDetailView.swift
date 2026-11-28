@@ -550,16 +550,10 @@ private struct ComposerIconButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .background {
-                ZStack {
-                    NativeMediaGlassSurface(
-                        shape: AnyShape(Circle()),
-                        interactive: true
-                    )
-                    Circle()
-                        .fill((active || configuration.isPressed)
-                              ? ink.opacity(configuration.isPressed ? 0.13 : 0.08)
-                              : Color.clear)
-                }
+                Circle()
+                    .fill((active || configuration.isPressed)
+                          ? ink.opacity(configuration.isPressed ? 0.13 : 0.08)
+                          : Color.clear)
             }
             .scaleEffect(configuration.isPressed ? 0.90 : 1)
             .opacity(configuration.isPressed ? 0.70 : 1)
@@ -4173,7 +4167,7 @@ struct ChatDetailView: View {
                     .frame(width: max(20, side - 2), height: max(20, side - 2))
             } else {
                 Image(systemName: "plus")
-                    .font(.system(size: max(20, side - 1), weight: .semibold))
+                    .font(.system(size: max(22, side), weight: .semibold))
                     .foregroundStyle(panel == .plus ? C.green : adaptivePlusInk)
             }
         }
@@ -4740,11 +4734,13 @@ struct ChatDetailView: View {
                                 .foregroundStyle(recorder.willCancel ? C.red : OrbitTheme.jadeDeep)
                         } else if voiceMode {
                             Image(systemName: "keyboard")
-                                .font(.system(size: 20, weight: .medium))
+                                .font(.system(size: 20,
+                                               weight: scheme == .light ? .semibold : .medium))
                                 .foregroundStyle(composerUtilityInk)
                         } else {
                             Image(systemName: "mic")
-                                .font(.system(size: 22, weight: .medium))
+                                .font(.system(size: 22,
+                                               weight: scheme == .light ? .semibold : .medium))
                                 .foregroundStyle(composerUtilityInk)
                         }
                     }
@@ -5055,7 +5051,8 @@ struct ChatDetailView: View {
                             panel = (panel == .emoji) ? .none : .emoji
                         } label: {
                             Image(systemName: "face.smiling")
-                                .font(.system(size: 24, weight: .medium))
+                                .font(.system(size: 24,
+                                               weight: scheme == .light ? .semibold : .medium))
                                 .symbolRenderingMode(.monochrome)
                                 .foregroundStyle(panel == .emoji ? C.green : adaptiveEmojiInk)
                                 .frame(width: 38, height: 42)
@@ -5098,7 +5095,8 @@ struct ChatDetailView: View {
                                 panel = (panel == .emoji) ? .none : .emoji
                             } label: {
                                 Image(systemName: "face.smiling")
-                                    .font(.system(size: 24, weight: .medium))
+                                    .font(.system(size: 24,
+                                                   weight: scheme == .light ? .semibold : .medium))
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(panel == .emoji ? C.green : adaptiveEmojiInk)
                                     .frame(width: 38, height: 42)

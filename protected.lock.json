@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 383935,
-      "sha256": "e170629b5d15d5ad2aa5fbd0c40acbf2bd0f39cb67c66a5230cf7c2d5cdd4f8c"
+      "size": 384028,
+      "sha256": "85da5eaffe1227759b0c7d156db7493d690f32b3ab7deac12630ea83d9d6eedc"
     },
     {
       "path": "Sources/ChatDeferred.swift",

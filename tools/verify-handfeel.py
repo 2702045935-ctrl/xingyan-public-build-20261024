@@ -25,6 +25,15 @@ require(
     and "withTransaction(transaction)" in MAIN,
     "tab selection must publish without an implicit page animation",
 )
+COMPOSER_ICON_STYLE = CHAT_DETAIL[
+    CHAT_DETAIL.index("private struct ComposerIconButtonStyle: ButtonStyle"):
+    CHAT_DETAIL.index("private struct ComposerSendButtonStyle: ButtonStyle")
+]
+require(
+    "NativeMediaGlassSurface" not in COMPOSER_ICON_STYLE
+    and "Circle()\n                    .fill((active || configuration.isPressed)" in COMPOSER_ICON_STYLE,
+    "unpressed composer utility icons must stay plain and crisp without a glass ring",
+)
 require(
     "SystemNavBackPressStyle" in MAIN
     and ".interactiveSpring(response: 0.20, dampingFraction: 0.86)" in MAIN

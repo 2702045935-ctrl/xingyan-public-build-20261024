@@ -46,8 +46,8 @@ require(
 )
 require(
     "NativeGlassControlMaterial()" in CHAT
-    and CHAT.count("NativeMediaGlassSurface(") >= 3
-    and "interactive: true" in CHAT
+    and CHAT.count("NativeMediaGlassSurface(") >= 2
+    and "NativeMediaGlassSurface(shape: AnyShape(Rectangle()))" in CHAT
     and "showsEdge: false" in CHAT,
     "chat must keep lightweight row glass while native glass stays on global controls",
 )
