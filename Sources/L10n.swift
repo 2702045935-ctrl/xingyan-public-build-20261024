@@ -106,6 +106,7 @@ enum L10n {
         "所有保护项均已开启": "All protections are enabled",
         "项保护": "protections",
         "建议开启实名认证、支付密码和应用安全锁，降低账号与资金风险。": "Enable identity verification, a payment password, and app locks to reduce account and financial risk.",
+        "发送给好友": "Send to friends",
         "」打电话？": "” Call?",
         "🔥 消息已焚毁": "🔥 Message burned",
         "按住 说话": "Hold to talk",

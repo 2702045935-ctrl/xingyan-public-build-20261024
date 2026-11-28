@@ -72,11 +72,13 @@ require(
     "chat wallpaper must use native preview, gallery and crop flow",
 )
 require(
-    "private struct ShareActionRow" in SHARE
-    and ".background(C.floatingSurface)" in SHARE
+    "ShareActionRow" not in SHARE
+    and "private var actionGrid" in SHARE
+    and "LazyVGrid(" in SHARE
+    and "ShareActionTile(" in SHARE
     and "ShareSheetTheme" in SHARE
     and "UIActivityViewController(activityItems: items" in SHARE,
-    "share must use an opaque action list with the native activity fallback",
+    "share must use QQ's icon grid with the native activity fallback",
 )
 require(
     "Form {" in PROFILE

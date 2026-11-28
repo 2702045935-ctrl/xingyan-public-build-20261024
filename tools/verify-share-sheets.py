@@ -23,15 +23,16 @@ require(
     "the shared outbound sheet must be a custom SwiftUI page",
 )
 for token in ("分享到", "SharePreviewCard", "ShareActionTile", "系统分享", "取消"):
-    require(token in SHARE, f"shared Xiaohongshu-style hierarchy is missing {token}")
+    require(token in SHARE, f"shared QQ-style hierarchy is missing {token}")
 require(
-    "private struct ShareActionRow" in SHARE
-    and "ShareActionRow(\n                        title: copied" in SHARE
-    and ".background(C.floatingSurface)\n            .clipShape(RoundedRectangle(cornerRadius: 16"
-    in SHARE
-    and "static var accent: Color { Color.dyn(0x0F8B65, 0x36CA95) }" in SHARE
+    "private var actionGrid" in SHARE
+    and "ShareActionRow" not in SHARE
+    and "LazyVGrid(" in SHARE
+    and "count: 4" in SHARE
+    and "ShareActionTile(\n                        title: copied" in SHARE
+    and "static var accent: Color { Color.dyn(0x0099FF, 0x4CB8FF) }" in SHARE
     and "Color(hex: 0xFF2442)" not in SHARE,
-    "the primary share sheet must use the restrained system action-list hierarchy",
+    "the primary share sheet must use QQ's preview and four-column utility icon grid",
 )
 require(
     "UIActivityViewController(activityItems: items" in SHARE,
@@ -98,7 +99,7 @@ require(
     and "RoundedRectangle(cornerRadius: 18, style: .continuous)" in SHARE
     and "Text(Tr(\"分享到\"))\n                .font(pf(17, .semibold))" in SHARE
     and "pf(20, .bold)" not in SHARE,
-    "share sheet layout must use the compact grouped production hierarchy",
+    "share sheet layout must use QQ's compact app grid and utility hierarchy",
 )
 require(
     ".ddLight()" not in MALL[MALL.index("struct DDShareSheet"):MALL.index("struct DDOrderDetailView")],

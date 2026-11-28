@@ -138,7 +138,7 @@ struct ShareBrandRail: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(Tr("常用应用"))
+            Text(Tr("发送给好友"))
                 .font(pf(12, .semibold))
                 .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
 
@@ -192,11 +192,11 @@ struct ShareFile: Identifiable {
 }
 
 /// Shared visual language for every outbound share surface in the app.
-/// The hierarchy follows Xiaohongshu: content preview, compact circular
-/// actions, secondary utility row, then one explicit cancel action.
+/// The hierarchy follows QQ: compact content preview, app grid, utility
+/// icon grid, then one explicit cancel action.
 enum ShareSheetTheme {
-    static var accent: Color { Color.dyn(0x0F8B65, 0x36CA95) }
-    static var secondaryAccent: Color { Color.dyn(0x007AFF, 0x0A84FF) }
+    static var accent: Color { Color.dyn(0x0099FF, 0x4CB8FF) }
+    static var secondaryAccent: Color { Color.dyn(0x5B6EF5, 0x8B9AFF) }
 
     static func page(_ scheme: ColorScheme) -> Color {
         C.pageBg
@@ -285,23 +285,14 @@ struct ShareActionTile: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 7) {
+            VStack(spacing: 8) {
                 ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    tint.opacity(scheme == .dark ? 0.34 : 0.18),
-                                    tint.opacity(scheme == .dark ? 0.17 : 0.08)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(C.floatingSurface)
                         .frame(width: 54, height: 54)
                         .overlay {
-                            Circle()
-                                .stroke(Color.white.opacity(scheme == .dark ? 0.10 : 0.46),
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .stroke(tint.opacity(scheme == .dark ? 0.24 : 0.14),
                                         lineWidth: 0.8)
                         }
                     Image(systemName: symbol)
@@ -309,68 +300,15 @@ struct ShareActionTile: View {
                         .foregroundStyle(tint)
                 }
                 Text(Tr(title))
-                    .font(pf(11.5, .medium))
+                    .font(pf(11, .medium))
                     .foregroundStyle(ShareSheetTheme.ink(scheme))
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
-                if let subtitle, !subtitle.isEmpty {
-                    Text(Tr(subtitle))
-                        .font(pf(9.5))
-                        .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
-                        .lineLimit(1)
-                }
             }
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-}
-
-private struct ShareActionRow: View {
-    @Environment(\.colorScheme) private var scheme
-
-    let title: String
-    let subtitle: String?
-    let symbol: String
-    let tint: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: symbol)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(tint)
-                    .frame(width: 34, height: 34)
-                    .background(
-                        RoundedRectangle(cornerRadius: 9, style: .continuous)
-                            .fill(tint.opacity(scheme == .dark ? 0.18 : 0.10))
-                    )
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Tr(title))
-                        .font(.body)
-                        .foregroundStyle(ShareSheetTheme.ink(scheme))
-                    if let subtitle, !subtitle.isEmpty {
-                        Text(Tr(subtitle))
-                            .font(.caption)
-                            .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
-                            .lineLimit(1)
-                    }
-                }
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(ShareSheetTheme.secondaryInk(scheme).opacity(0.62))
-            }
-            .padding(.horizontal, 16)
-            .frame(minHeight: 58)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(MenuPressStyle())
     }
 }
 
@@ -478,7 +416,7 @@ struct ShareSheet: View {
                 VStack(spacing: 18) {
                     preview
                     brandRail
-                    actionRail
+                    actionGrid
                     privacyNote
                 }
                 .padding(.horizontal, 16)
@@ -587,13 +525,19 @@ struct ShareSheet: View {
         }
     }
 
-    private var actionRail: some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private var actionGrid: some View {
+        VStack(alignment: .leading, spacing: 10) {
             shareSectionTitle(Tr("更多操作"))
 
-            VStack(spacing: 0) {
+            LazyVGrid(
+                columns: Array(
+                    repeating: GridItem(.flexible(), spacing: 8),
+                    count: 4
+                ),
+                spacing: 12
+            ) {
                 if copyText != nil {
-                    ShareActionRow(
+                    ShareActionTile(
                         title: copied ? "已复制" : "复制链接",
                         subtitle: copied ? nil : "发送给朋友",
                         symbol: copied ? "checkmark" : "link",
@@ -603,14 +547,10 @@ struct ShareSheet: View {
                         withAnimation(.easeOut(duration: 0.16)) { copied = true }
                         UINotificationFeedbackGenerator().notificationOccurred(.success)
                     }
-
-                    if image != nil || copyText != nil {
-                        Divider().padding(.leading, 62)
-                    }
                 }
 
                 if image != nil {
-                    ShareActionRow(
+                    ShareActionTile(
                         title: saved ? "已保存" : "保存图片",
                         subtitle: saved ? nil : "存入相册",
                         symbol: saved ? "checkmark" : "arrow.down.to.line.compact",
@@ -621,10 +561,9 @@ struct ShareSheet: View {
                         withAnimation(.easeOut(duration: 0.16)) { saved = true }
                         UINotificationFeedbackGenerator().notificationOccurred(.success)
                     }
-                    Divider().padding(.leading, 62)
                 }
 
-                ShareActionRow(
+                ShareActionTile(
                     title: "系统分享",
                     subtitle: "更多应用",
                     symbol: "square.and.arrow.up",
@@ -634,8 +573,7 @@ struct ShareSheet: View {
                 }
 
                 if copyText != nil {
-                    Divider().padding(.leading, 62)
-                    ShareActionRow(
+                    ShareActionTile(
                         title: "复制内容",
                         subtitle: "复制原始内容",
                         symbol: "doc.on.doc",
@@ -647,8 +585,6 @@ struct ShareSheet: View {
                     }
                 }
             }
-            .background(C.floatingSurface)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }
 
